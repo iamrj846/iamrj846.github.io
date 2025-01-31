@@ -34,15 +34,3 @@ function loadHead() {
 }
 
 document.addEventListener("DOMContentLoaded", loadHead);
-
-function loadBlogList() {
-  fetch("/docker-blog-list.html")  // Make sure the path is correct
-      .then(response => response.text())
-      .then(data => {
-          document.getElementById("docker-blog-list-placeholder").innerHTML = data;
-      })
-      .catch(error => console.error("Error loading blog list:", error));
-}
-
-// Run the function once the DOM is fully loaded
-document.addEventListener("DOMContentLoaded", loadBlogList);
