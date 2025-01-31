@@ -1,13 +1,5 @@
 "use strict";
 
-/* ======= Highlight.js Plugin ======= */ 
-/* Ref: https://highlightjs.org/usage/ */ 
-document.addEventListener('DOMContentLoaded', (event) => {
-  document.querySelectorAll('pre code').forEach((block) => {
-    hljs.highlightBlock(block);
-  });
-});
-
 function loadHeader() {
   fetch("/assets/header.html")  // Ensure correct path to header.html
       .then(response => response.text())
@@ -42,3 +34,15 @@ function loadHead() {
 }
 
 document.addEventListener("DOMContentLoaded", loadHead);
+
+function loadBlogList() {
+  fetch("/docker-blog-list.html")  // Make sure the path is correct
+      .then(response => response.text())
+      .then(data => {
+          document.getElementById("docker-blog-list-placeholder").innerHTML = data;
+      })
+      .catch(error => console.error("Error loading blog list:", error));
+}
+
+// Run the function once the DOM is fully loaded
+document.addEventListener("DOMContentLoaded", loadBlogList);
