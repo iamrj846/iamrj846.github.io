@@ -1,368 +1,308 @@
-Docker images are small and standalone software packages. They have everything needed to run software. This includes the code, runtime, libraries, environment variables, and configuration files. We can think of them as a blueprint for making Docker containers. Containers are the running versions of these images. When we use Docker images, we help our applications run the same way in different environments. This helps us avoid the problem of "it works on my machine."
+Creating a Docker container from an image means starting a running version of a Docker image. A Docker image is a small, standalone software package. It includes everything we need to run a software, like the code, runtime, libraries, and other things. When we create a Docker container from an image, we make a separate space where our applications can run without messing with other applications or the main system.
 
-In this article, we will look at the basics of Docker images. We will talk about how they work and what they are made of. We will also learn how to create our own Docker image. Additionally, we will explore Docker image layers and caching. We will discuss how we can use Docker images in our projects. We will give tips on managing and improving them for better performance. Lastly, we will answer some common questions about Docker images to help us understand this important part of containerization.
+In this article, we will show you how to create a Docker container from an image. We will talk about what we need before using Docker. Then we will explain how to pull a Docker image from Docker Hub. We will also go through the steps to create a Docker container with the Docker run command. After that, we will cover how to manage our Docker containers after we create them. We will also see how to access and work with them easily. Here are the topics we will talk about:
 
-- What Are Docker Images and How Do They Function?
-- Understanding the Structure of Docker Images
-- How to Create Your Own Docker Image?
-- Exploring Docker Image Layers and Caching
-- How to Use Docker Images in Your Projects?
-- Managing and Optimizing Docker Images
+- Creating a Docker Container from an Image Step by Step
+- What Prerequisites Do You Need for Docker?
+- How to Pull a Docker Image from Docker Hub?
+- How to Create a Docker Container Using the Docker Run Command?
+- How to Manage Your Docker Containers After Creation?
+- How to Access and Interact with Your Docker Container?
 - Frequently Asked Questions
 
-For more reading on related topics, we can check these articles: [What is Docker and Why Should You Use It?](https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html), [How Does Docker Differ from Virtual Machines?](https://bestonlinetutorial.com/docker/how-does-docker-differ-from-virtual-machines.html), [What Are the Benefits of Using Docker in Development?](https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html), [What is Containerization and How Does It Relate to Docker?](https://bestonlinetutorial.com/docker/what-is-containerization-and-how-does-it-relate-to-docker.html), and [How to Install Docker on Different Operating Systems?](https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html).
+For more reading on Docker and its parts, you might like these articles: [What is Docker and Why Should You Use It?](https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html), [How to Install Docker on Different Operating Systems](https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html), and [What is a Docker Container and How Does It Operate?](https://bestonlinetutorial.com/docker/what-is-a-docker-container-and-how-does-it-operate.html).
 
-## Understanding the Structure of Docker Images
+## What Prerequisites Do You Need for Docker?
 
-We know that Docker images are built using layers. This helps us store and share application parts easily. Each image has one or more layers stacked on each other. We can break down the structure of a Docker image into these parts:
+To make a Docker container from an image, we need to have some things ready first:
 
-1. **Layers**: Each layer shows changes to files or commands from a Dockerfile. Layers are read-only. We create them using commands like `RUN`, `COPY`, or `ADD`. If we change a layer, we create a new layer on top.
+1. **Operating System**: Docker works on many operating systems like:
+   - Linux (Ubuntu, CentOS, etc.)
+   - macOS
+   - Windows 10 (Pro or Enterprise)
 
-2. **Base Image**: The bottom layer of a Docker image is usually a base image. This can be an operating system like Ubuntu or a simple image like `scratch`. This base image is the starting point for our application.
+2. **Docker Installation**: We must install Docker on our system. We can follow the official guide to install Docker for different operating systems [here](https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html).
 
-3. **Dockerfile**: We write the steps to build a Docker image in a file called `Dockerfile`. This file has commands that define how the image looks and works. This includes installing needed packages or setting environment variables.
+3. **Hardware Requirements**:
+   - We need at least 4GB of RAM (8GB is better).
+   - Our CPU should support virtualization (Intel VT-x or AMD-V).
 
-4. **Metadata**: Each Docker image has metadata. This includes details like the image name, tag, and the command to run when the container starts. We store this metadata in a JSON format. We can see it using the `docker inspect` command.
+4. **User Permissions**: We need permission to run Docker commands. Usually, we run these commands as a root user or we can add our user to the Docker group:
+   ```bash
+   sudo usermod -aG docker $USER
+   ```
+   After we run this command, we should log out and log back in for the changes to work.
 
-5. **Union File System (UFS)**: Docker uses a union file system to join the layers into one view. This helps containers read from the layers without making copies of the data. It makes storage more efficient.
+5. **Network Access**: We need internet access to get images from Docker Hub or other Docker registries.
 
-### Example Dockerfile
+6. **Understanding of Command Line**: It is important to know a bit about command-line interfaces (CLI) to work with Docker.
 
-Here is a simple Dockerfile that shows the structure of a Docker image:
+When we have these things ready, we can create a Docker container from an image easily. For more details about Docker images and how they work, check this article [What Are Docker Images and How Do They Work?](https://bestonlinetutorial.com/docker/what-are-docker-images-and-how-do-they-work.html).
 
-```dockerfile
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+## How to Pull a Docker Image from Docker Hub?
 
-# Set the working directory in the container
-WORKDIR /app
+To pull a Docker image from Docker Hub, we use the `docker pull` command. We follow this with the name of the image. Docker Hub is where we can find Docker images. It helps us share and manage our images.
 
-# Copy the current directory contents into the container at /app
-COPY . .
+### Steps to Pull a Docker Image
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+1. **Open your terminal or command prompt.**
+2. **Use the `docker pull` command.** The way to do this is:
 
-# Run app.py when the container launches
-CMD ["python", "app.py"]
-```
+   ```bash
+   docker pull <image_name>:<tag>
+   ```
 
-### Building the Docker Image
+   - `<image_name>`: This is the name of the Docker image we want to pull.
+   - `<tag>`: This is the version of the image. If we do not put a tag, Docker pulls the `latest` version by default.
 
-To build a Docker image from this Dockerfile, we use this command:
+### Example
 
-```bash
-docker build -t my-python-app .
-```
-
-This command makes an image called `my-python-app` based on the steps in the Dockerfile. Each command in the Dockerfile makes a new layer. This helps Docker remember them for future builds.
-
-We think understanding the structure of Docker images is important. It helps us build better and manage images well. For more information about Docker and its benefits, we can look at [what are the benefits of using Docker in development](https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html).
-
-## How to Create Your Own Docker Image?
-
-We can create our own Docker image by writing a `Dockerfile`. This file is like a script that tells Docker how to build our image. Here is a simple guide to help us do it.
-
-### Step 1: Write a Dockerfile
-
-First, we open a text editor. Then we create a file called `Dockerfile`. Here is a basic example of a `Dockerfile` for a simple Node.js app:
-
-```dockerfile
-# Use the official Node.js image as a base
-FROM node:14
-
-# Set the working directory in the container
-WORKDIR /usr/src/app
-
-# Copy package.json and package-lock.json
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy the rest of the application code
-COPY . .
-
-# Expose the application port
-EXPOSE 3000
-
-# Command to run the application
-CMD ["node", "app.js"]
-```
-
-### Step 2: Build the Docker Image
-
-Next, we go to the folder where our `Dockerfile` is located. We run this command to build our Docker image. We should change `your-image-name` to whatever name we want:
+If we want to pull the latest version of the Nginx image, we can run:
 
 ```bash
-docker build -t your-image-name .
+docker pull nginx:latest
 ```
 
-### Step 3: Verify the Image Creation
+If we want a specific version, like version 1.19, we can run:
 
-Once the build is done, we can check our new image by listing all Docker images:
+```bash
+docker pull nginx:1.19
+```
+
+### Verifying the Image
+
+After we pull the image, we can check if it downloaded correctly by listing the images on our local machine:
 
 ```bash
 docker images
 ```
 
-### Step 4: Run Your Docker Image
+This shows us a list of all Docker images we have, including the one we just pulled.
 
-Now we can run a container using our image with this command:
+For more detail about Docker Hub and what it can do, we can look at the article on [what is Docker Hub and how do you use it](https://bestonlinetutorial.com/docker/what-is-docker-hub-and-how-do-you-use-it.html).
+
+## How to Create a Docker Container Using the Docker Run Command?
+
+To make a Docker container from an image, we use the `docker run` command. This command makes a container and also starts it. The simple way to write it is:
 
 ```bash
-docker run -p 3000:3000 your-image-name
+docker run [OPTIONS] IMAGE [COMMAND] [ARG...]
 ```
 
-This command connects port 3000 of the container to port 3000 on our host machine.
+### Common Options for `docker run`:
 
-### Additional Tips
+- `-d`: Run container in the background.
+- `-p`: Link host ports to container ports (for example, `-p 8080:80`).
+- `--name`: Give a name to the container.
+- `-e`: Set environment values (like `-e ENV_VAR=value`).
+- `-v`: Connect volumes (like `-v /host/path:/container/path`).
 
-- We can use `.dockerignore` to avoid copying some files to the image.
-- We should keep our images small. We can do this by optimizing the `Dockerfile` and using multi-stage builds if we need to.
-- For more details, we can check the official [Docker documentation](https://docs.docker.com/engine/reference/builder/).
+### Example Commands:
 
-By following these steps, we can make custom Docker images for our apps. This makes our work of developing and deploying easier. For more information about Docker and its advantages, we can also look at [what are the benefits of using Docker in development](https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html).
-
-## Exploring Docker Image Layers and Caching
-
-Docker images are made of layers. Each layer shows changes in the filesystem. These changes can be adding, changing, or deleting files and folders. We need to understand these layers well. This helps us make better image builds and improve performance when we run them.
-
-### Docker Image Layers
-
-- **Layer Structure**: Each layer sits on top of the last one. When we use a Dockerfile, each command creates a new layer. For example:
-  ```dockerfile
-  FROM ubuntu:20.04
-  RUN apt-get update
-  RUN apt-get install -y nginx
-  ```
-
-  This Dockerfile makes three layers:
-  1. The base layer from `ubuntu:20.04`
-  2. A layer from the `RUN apt-get update` command
-  3. A layer from the `RUN apt-get install -y nginx` command
-
-- **Read-Only Layers**: All layers are read-only. When we create a container from an image, we add a thin writable layer on top. This means changes in the container do not change the original image.
-
-### Caching Mechanism
-
-Docker has a caching system. This helps to build images faster. If a command in the Dockerfile stays the same, Docker will use the saved layer instead of making a new one. This can save a lot of time when building.
-
-- **Cache Behavior**:
-  - If a command in the Dockerfile (like `RUN`, `COPY`, `ADD`) is the same and its dependencies are also the same, Docker uses the saved layer.
-  - If we change a command, all layers after it must be rebuilt.
-
-- **Cache Busting**: If we want Docker to rebuild a layer, we can change the command or use a build argument. For example:
-  ```dockerfile
-  ARG CACHEBUST=1
-  RUN echo "This command will always be run"
-  ```
-
-### Layer Size and Optimization
-
-- **Minimize Layers**: We can combine commands to make fewer layers. For example:
-  ```dockerfile
-  RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
-  ```
-
-- **Order of Instructions**: We should put commands that change often at the end of the Dockerfile. This way, we can use caching for the layers that do not change much.
-
-We need to understand Docker image layers and caching well. This helps us create Docker images that build fast and use storage space wisely. For more on Docker and how it helps in development, check out [What Are the Benefits of Using Docker in Development](https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html).
-
-## How to Use Docker Images in Your Projects?
-
-We can use Docker images in our projects to create consistent environments. This helps with easy deployment and better teamwork. Here is how we can use Docker images well:
-
-1. **Pulling Docker Images**: First, we pull existing images from Docker Hub.
-
+1. **Running a Basic Container**:
    ```bash
-   docker pull <image-name>:<tag>
+   docker run ubuntu
    ```
 
-   For example, to pull the latest Ubuntu image, we can use:
-
+2. **Running a Detached Container**:
    ```bash
-   docker pull ubuntu:latest
+   docker run -d --name my-nginx nginx
    ```
 
-2. **Running Docker Images**: Next, we create and run a container from a Docker image.
-
+3. **Mapping Ports**:
    ```bash
-   docker run -d --name <container-name> <image-name>:<tag>
+   docker run -d -p 8080:80 --name my-nginx nginx
    ```
 
-   For example:
-
+4. **Setting Environment Variables**:
    ```bash
-   docker run -d --name my-ubuntu-container ubuntu:latest
+   docker run -d -e MY_ENV=value --name my-app my-image
    ```
 
-3. **Building Custom Images**: We can make our own Docker images using a Dockerfile. Here is a simple example:
-
-   ```dockerfile
-   # Use an official Python runtime as a parent image
-   FROM python:3.8-slim
-
-   # Set the working directory
-   WORKDIR /app
-
-   # Copy the current directory contents into the container at /app
-   COPY . /app
-
-   # Install any needed packages specified in requirements.txt
-   RUN pip install --no-cache-dir -r requirements.txt
-
-   # Make port 80 available to the world outside this container
-   EXPOSE 80
-
-   # Define environment variable
-   ENV NAME World
-
-   # Run app.py when the container launches
-   CMD ["python", "app.py"]
-   ```
-
-   To build the image, we use:
-
+5. **Mounting a Volume**:
    ```bash
-   docker build -t my-python-app .
+   docker run -d -v /host/data:/container/data --name my-data-container my-image
    ```
 
-4. **Managing Containers**: We can list running containers and their statuses.
+### Accessing the Container:
+
+To work with the container after it has started, we can use:
+
+```bash
+docker exec -it my-nginx /bin/bash
+```
+
+This command will open a Bash shell inside the running `my-nginx` container.
+
+For more details on how Docker works with images and containers, we can check out [what is a Docker container and how does it differ from a virtual machine](https://bestonlinetutorial.com/docker/what-is-a-docker-container-and-how-does-it-differ-from-a-virtual-machine.html).
+
+## How to Manage Your Docker Containers After Creation?
+
+After we create a Docker container from an image, it is really important to manage it well. This helps us keep everything running smoothly. Here are some simple commands and tips for managing our Docker containers.
+
+### Listing Docker Containers
+
+To see all running containers, we can use:
+
+```bash
+docker ps
+```
+
+If we want to see all containers, even the stopped ones, we use:
+
+```bash
+docker ps -a
+```
+
+### Stopping a Docker Container
+
+If we need to stop a running container, we can use this command with the container ID or name:
+
+```bash
+docker stop <container_id_or_name>
+```
+
+### Starting a Docker Container
+
+To start a container that is stopped, we use:
+
+```bash
+docker start <container_id_or_name>
+```
+
+### Removing a Docker Container
+
+Before we remove a container, we need to make sure it is stopped. Then we can use:
+
+```bash
+docker rm <container_id_or_name>
+```
+
+If we want to remove all stopped containers, we can run:
+
+```bash
+docker container prune
+```
+
+### Viewing Container Logs
+
+To see the logs for a specific container, we use:
+
+```bash
+docker logs <container_id_or_name>
+```
+
+### Executing Commands Inside a Running Container
+
+If we want to run a command inside a running container, we can do it like this:
+
+```bash
+docker exec -it <container_id_or_name> <command>
+```
+
+For example, to open a shell session, we use:
+
+```bash
+docker exec -it <container_id_or_name> /bin/bash
+```
+
+### Updating Container Configuration
+
+When we need to update a container's configuration, we usually have to recreate it with the new settings. First, we stop and remove the old container. Then we create a new one with the updated settings.
+
+### Inspecting a Container
+
+To get detailed information about a container, including its settings and state, we can use:
+
+```bash
+docker inspect <container_id_or_name>
+```
+
+### Networking and Port Mapping
+
+To see the ports linked to a container, we check the output of:
+
+```bash
+docker ps
+```
+
+If we need to expose a port when we create a container, we use the `-p` flag like this:
+
+```bash
+docker run -d -p <host_port>:<container_port> <image_name>
+```
+
+### Managing Container Resources
+
+We can limit the resources for a container using flags like `--memory` and `--cpus`:
+
+```bash
+docker run -d --memory="256m" --cpus="1" <image_name>
+```
+
+These commands and tips will help us manage our Docker containers well after we create them. If you want to learn more about Docker containers, you can check [this article](https://bestonlinetutorial.com/docker/what-is-a-docker-container-and-how-does-it-differ-from-a-virtual-machine.html).
+
+## How to Access and Interact with Your Docker Container?
+
+We can access and interact with our Docker container using the `docker exec` command. This command lets us run commands inside a container that is already running. Here is how we can do it:
+
+1. **List Running Containers**: First, we need to find the container we want to access. We do this by listing all running containers.
 
    ```bash
    docker ps
    ```
 
-   To stop a running container, we use:
+2. **Access the Container**: Next, we use the `docker exec` command with the `-it` flags. These flags mean interactive and terminal. This opens a shell in our container. We must replace `container_name_or_id` with our container's actual name or ID.
 
    ```bash
-   docker stop <container-name>
+   docker exec -it container_name_or_id /bin/bash
    ```
 
-5. **Persisting Data**: We can use Docker volumes to keep data that Docker containers generate and use.
+   If our container has a different shell, like `sh`, we can change `/bin/bash` to that shell.
+
+3. **Run Commands Inside the Container**: After we are inside the container, we can run any command like we are on a normal Linux machine.
+
+4. **Exit the Container Shell**: To leave the interactive shell, we just type `exit` or press `Ctrl + D`.
+
+5. **Using Docker Attach**: If we want to attach our terminal to the main process of a container, we can use this command:
 
    ```bash
-   docker run -d -v /host/path:/container/path <image-name>
+   docker attach container_name_or_id
    ```
 
-6. **Tagging Images**: It is good to tag our images for better management.
+   We should know that this may not work well if the application in the container does not handle input/output properly.
+
+6. **Viewing Container Logs**: To see the logs of our container, we use this command:
 
    ```bash
-   docker tag <image-name>:<tag> <new-image-name>:<new-tag>
+   docker logs container_name_or_id
    ```
 
-7. **Pushing Images**: We can share our images on Docker Hub.
+This helps us to check the output of our application that is running inside the Docker container.
 
-   ```bash
-   docker login
-   docker push <your-dockerhub-username>/<image-name>:<tag>
-   ```
-
-8. **Working with Docker Compose**: We can use `docker-compose.yml` to define and run multi-container Docker applications.
-
-   Here is an example of `docker-compose.yml`:
-
-   ```yaml
-   version: '3'
-   services:
-     web:
-       image: nginx:latest
-       ports:
-         - "80:80"
-     db:
-       image: postgres:latest
-       environment:
-         POSTGRES_USER: example
-         POSTGRES_PASSWORD: example
-   ```
-
-   We can run the application with:
-
-   ```bash
-   docker-compose up
-   ```
-
-By doing these steps, we can use Docker images in our projects. This helps to make sure we have consistent and separate development environments. For more information about Docker and its benefits, we can check out [What Are the Benefits of Using Docker in Development](https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html).
-
-## Managing and Optimizing Docker Images
-
-Managing and optimizing Docker images is very important for good development and deployment. Here are some key practices we can think about:
-
-- **Image Cleanup**: We should regularly remove images we do not use. This helps free up disk space. We can use this command:
-  ```bash
-  docker image prune
-  ```
-
-- **Tagging Images**: We can use tags to manage versions easily. For example:
-  ```bash
-  docker build -t myapp:v1.0 .
-  ```
-
-- **Minimize Image Size**: It is good to start from a smaller base image like `alpine`. We should only add the necessary things in our Dockerfile:
-  ```Dockerfile
-  FROM alpine:latest
-  RUN apk add --no-cache python3 py3-pip
-  ```
-
-- **Multi-Stage Builds**: We can use multi-stage builds. This helps to make final image size smaller by separating build and runtime:
-  ```Dockerfile
-  FROM golang:1.16 AS builder
-  WORKDIR /app
-  COPY . .
-  RUN go build -o myapp
-
-  FROM alpine:latest
-  WORKDIR /app
-  COPY --from=builder /app/myapp .
-  CMD ["./myapp"]
-  ```
-
-- **Layer Optimization**: We can combine commands in the Dockerfile. This reduces the number of layers:
-  ```Dockerfile
-  RUN apt-get update && apt-get install -y \
-      package1 \
-      package2 && \
-      rm -rf /var/lib/apt/lists/*
-  ```
-
-- **Use .dockerignore**: We should create a `.dockerignore` file. This helps to exclude unnecessary files from the build. This speeds up the process and reduces image size:
-  ```
-  node_modules
-  tmp
-  *.log
-  ```
-
-- **Automate Builds**: We can use CI/CD pipelines. This helps to automate the building and testing of our Docker images. This way, we get consistent deployments.
-
-- **Monitor and Audit Images**: We need to regularly scan images for problems. We can use tools like `Docker Bench Security` or `Anchore`.
-
-- **Push to a Registry**: We use a Docker registry, like Docker Hub or a private one, to store and manage our images:
-  ```bash
-  docker push myapp:v1.0
-  ```
-
-By following these practices, we can manage and optimize our Docker images well. This will improve performance and keep our environment clean. For more info on what Docker can do, we can check this article on [What is Docker and Why Should You Use It?](https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html).
+For more details about Docker containers and how to manage them, we can look at [what is a Docker container and how does it differ from a virtual machine](https://bestonlinetutorial.com/docker/what-is-a-docker-container-and-how-does-it-differ-from-a-virtual-machine.html).
 
 ## Frequently Asked Questions
 
-### What are Docker images and how do they differ from containers?
-Docker images are small and self-contained packages. They have everything needed to run a software, like code, runtime, libraries, and environment variables. A Docker container is a running version of a Docker image. So, images are like templates to make containers. It is important to know the differences for better container use.
+### 1. What is the difference between a Docker image and a Docker container?
+A Docker image is a small package that has everything we need to run software. This includes code, libraries, and other things. A Docker container is what we call a running Docker image. It gives us a separate space for our applications. If we want to know more, we can read our article on [what is a Docker image and how is it different from a container](https://bestonlinetutorial.com/docker/what-is-a-docker-image-and-how-is-it-different-from-a-container.html).
 
-### How can I optimize my Docker images for faster builds?
-To make your Docker images faster to build, we should try to reduce the number of layers. We can do this by combining commands in the Dockerfile. Using `.dockerignore` files helps to leave out files that we do not need in the build. We should also use caching smartly by arranging commands from least to most likely to change. These steps will help us build faster and work better.
-
-### What is the purpose of Docker image layers?
-Docker images have many layers. Each layer shows changes made to the base image. Each layer is saved, so we can build and deploy faster by using layers that have not changed. By understanding how these layers work, we can make our images better and manage them well. Only the layers that we change need to be rebuilt.
-
-### How do I create a Docker image from an existing container?
-To make a Docker image from a running container, we can use the `docker commit` command. This command saves the current state of the container as a new image. The usual way to use it is:
+### 2. How do I pull a Docker image from Docker Hub?
+To pull a Docker image from Docker Hub, we use the `docker pull` command. We write the image name and tag after it. For example, to get the latest Ubuntu image, we run:
 ```bash
-docker commit <container_id> <new_image_name>
+docker pull ubuntu:latest
 ```
-After we run this command, the new image will be ready for our projects.
+This command will download the image to our computer. We can then create a Docker container from it later. For more details, we can check our article on [how do you pull a Docker image from Docker Hub](https://bestonlinetutorial.com/docker/how-do-you-pull-a-docker-image-from-docker-hub.html).
 
-### Can I use Docker images across different operating systems?
-Yes, Docker images can work on different operating systems. But they need to be compatible with the Docker engine on the host system. This means we can build a Docker image on one OS and run it on another. Both systems must support the needed architecture and have Docker installed. For more details on how to install Docker on different operating systems, you can read this article on [how to install Docker on different operating systems](https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html).
+### 3. What prerequisites do I need to create a Docker container?
+Before we create a Docker container, we must have Docker installed on our system. We should also know some basic command-line interface (CLI) commands. It helps to understand Docker images too. We need to pull or have an image ready to make a container. For help on installation, we can visit our article on [how to install Docker on different operating systems](https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html).
 
-By answering these common questions about Docker images, we want to help you understand how they work and how to use them well in your projects. If you are new to Docker or want to make your workflows better, knowing these important ideas will help a lot.
+### 4. How can I access my Docker container once it's created?
+To access a running Docker container, we use the `docker exec` command. This command lets us run commands inside the container. For example, to start a shell session in a container called "my_container", we write:
+```bash
+docker exec -it my_container /bin/bash
+```
+This way, we can work with the container directly. For more tips, we can look at our article on [how to access and interact with your Docker container](https://bestonlinetutorial.com/docker/how-to-access-and-interact-with-your-docker-container.html).
+
+### 5. How do I manage my Docker containers after creation?
+To manage our Docker containers, we can use commands like `docker ps` to see running containers. We can use `docker stop` to stop a container and `docker rm` to remove a stopped container. These commands help us keep our containers organized. For more management tips, we should check our article on [how to manage your Docker containers after creation](https://bestonlinetutorial.com/docker/how-to-manage-your-docker-containers-after-creation.html).

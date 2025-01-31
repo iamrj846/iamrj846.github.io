@@ -1,0 +1,475 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>What Are Multi-stage Docker Builds and How Do They Improve Efficiency?</title>
+            <meta name="description" content="Discover how multi-stage Docker builds enhance efficiency by optimizing image size and streamlining the development process.">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">What Are Multi-stage Docker Builds and How Do They Improve Efficiency?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p><strong>Multi-stage Docker Builds: A Simple Guide</strong></p>
+<p>Multi-stage Docker builds is a strong tool in Docker. It helps us
+make better images by using many FROM statements in one Dockerfile. With
+this method, we can separate build and runtime environments. This way,
+we can make the final image smaller and improve how we build. By adding
+only what we need in the final image, multi-stage builds make deployment
+easier and improve speed.</p>
+<p>In this article, we will look at what multi-stage Docker builds are
+and how they change our development work. We will talk about how they
+function, the main benefits they give us, and tips for writing a
+multi-stage Dockerfile. We will also show real examples of multi-stage
+builds and share some best practices. This will help us work better in
+our Docker projects. Here’s what we will cover:</p>
+<ul>
+<li>What Are Multi-stage Docker Builds and How Can They Help Us?</li>
+<li>How Do Multi-stage Docker Builds Work?</li>
+<li>What Are the Key Benefits of Using Multi-stage Builds?</li>
+<li>How to Write a Multi-stage Dockerfile?</li>
+<li>Can We See Practical Examples of Multi-stage Builds?</li>
+<li>What Are Common Best Practices for Multi-stage Docker Builds?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>If we want to learn more about the basic ideas of Docker, we can read
+about <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">what
+Docker is and why we should use it</a> or check out <a
+href="https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html">the
+benefits of using Docker in development</a>.</p>
+<h2 id="how-do-multi-stage-docker-builds-work">How Do Multi-stage Docker
+Builds Work?</h2>
+<p>We can use multi-stage Docker builds to make smaller and better
+Docker images. This method uses many <code>FROM</code> statements in one
+Dockerfile. Each stage can have a different base image. This helps us
+separate build tools from the final runtime environment. With this
+method, we can make the image smaller and build faster.</p>
+<h3 id="basic-structure">Basic Structure</h3>
+<p>A normal multi-stage Dockerfile starts by defining many build stages.
+Only the last stage makes the output image. We can give each stage a
+name or alias. Here is an example:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># First stage: Build the application</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> golang:1.16 <span class="kw">AS</span> builder</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">go</span> build <span class="at">-o</span> myapp</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Second stage: Create the final image</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> alpine:latest</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /root/</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /app/myapp .</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;./myapp&quot;</span>]</span></code></pre></div>
+<h3 id="explanation-of-the-stages">Explanation of the Stages</h3>
+<ol type="1">
+<li><strong>Builder Stage</strong>:
+<ul>
+<li>It uses a Go base image (<code>golang:1.16</code>).</li>
+<li>We set the working directory to <code>/app</code>.</li>
+<li>The current directory’s content goes into the container.</li>
+<li>We build the Go application and create an executable called
+<code>myapp</code>.</li>
+</ul></li>
+<li><strong>Final Stage</strong>:
+<ul>
+<li>It uses a small Alpine image.</li>
+<li>The working directory is set to <code>/root/</code>.</li>
+<li>We copy the built executable from the builder stage with
+<code>COPY --from=builder</code> syntax.</li>
+<li>We specify the command to run the application.</li>
+</ul></li>
+</ol>
+<h3 id="benefits-of-this-approach">Benefits of This Approach</h3>
+<ul>
+<li><strong>Reduced Size</strong>: Only the runtime dependencies go into
+the final image. This makes it much smaller.</li>
+<li><strong>Improved Security</strong>: We leave out build tools and
+libraries from the final image. This makes it safer.</li>
+<li><strong>Efficiency</strong>: The build context is separate. This
+helps us have faster builds and makes debugging easier because we can
+optimize each stage on its own.</li>
+</ul>
+<p>Multi-stage builds make the Docker image creation process simpler.
+They help us be more efficient and keep our workflow easier to manage.
+For more details about Docker basics, see <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">what
+is Docker and why should you use it</a>.</p>
+<h2 id="what-are-the-key-benefits-of-using-multi-stage-builds">What Are
+the Key Benefits of Using Multi-stage Builds?</h2>
+<p>Multi-stage Docker builds help us create Docker images more easily.
+They let us keep the build environment separate from the runtime
+environment. This gives us several important benefits.</p>
+<ol type="1">
+<li><p><strong>Reduced Image Size:</strong> We can copy only the needed
+files from one stage to another. This way, we do not carry extra files
+and dependencies to the final image. The result is smaller images that
+are faster to download and use.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> golang:1.17 <span class="kw">AS</span> builder</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">go</span> build <span class="at">-o</span> myapp</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> alpine:latest</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /app/myapp .</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;./myapp&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>Improved Build Efficiency:</strong> Multi-stage builds
+help us use caching well. Layers that do not change much can be reused.
+This cuts down the build time when we are developing.</p></li>
+<li><p><strong>Enhanced Security:</strong> When we reduce the number of
+dependencies in the final image, we make it safer. We only include what
+we really need. This makes it harder for bad things to happen.</p></li>
+<li><p><strong>Simplified Dockerfiles:</strong> Instead of having many
+Dockerfiles or using different folders for each part of the build, we
+can put everything in one Dockerfile. This makes it easier for us to
+manage and understand.</p></li>
+<li><p><strong>Separation of Concerns:</strong> We can use different
+stages for different jobs like building, testing, and packaging. This
+gives us a clearer structure and helps organize the build
+process.</p></li>
+<li><p><strong>Flexibility in Choosing Base Images:</strong> Each stage
+can use a different base image for specific jobs. For example, we can
+use a complete image for building and a smaller one for running.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14 <span class="kw">AS</span> build</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /usr/src/app</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package*.json ./</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> run build</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> nginx:alpine</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=build</span> /usr/src/app/dist /usr/share/nginx/html</span></code></pre></div></li>
+<li><p><strong>Easier Debugging:</strong> When something goes wrong, we
+can run the stages in between. This helps us check and fix issues
+without rebuilding the whole image.</p></li>
+</ol>
+<p>Using multi-stage Docker builds helps us work better. It also helps
+us manage our resources and keep our containerized applications secure.
+If we want to learn more about Docker and its parts, we can read <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-images-and-how-do-they-work.html">What
+Are Docker Images and How Do They Work?</a>.</p>
+<h2 id="how-to-write-a-multi-stage-dockerfile">How to Write a
+Multi-stage Dockerfile?</h2>
+<p>We can create a multi-stage Dockerfile by using many
+<code>FROM</code> statements. Each statement is a different build stage.
+This way, we can make the final image smaller by leaving out files and
+dependencies that we do not need. Let’s see how to write a good
+multi-stage Dockerfile.</p>
+<h3 id="basic-structure-of-a-multi-stage-dockerfile">Basic Structure of
+a Multi-stage Dockerfile</h3>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Build Stage</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14 <span class="kw">AS</span> build</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package*.json ./</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> run build</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 2: Production Stage</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> nginx:alpine</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=build</span> /app/build /usr/share/nginx/html</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPOSE</span> 80</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;nginx&quot;</span>, <span class="st">&quot;-g&quot;</span>, <span class="st">&quot;daemon off;&quot;</span>]</span></code></pre></div>
+<h3 id="explanation-of-the-dockerfile-stages">Explanation of the
+Dockerfile Stages</h3>
+<ol type="1">
+<li><strong>Build Stage</strong>:
+<ul>
+<li>We use a base image that is good for building our application. For
+example, Node.js for a React app.</li>
+<li>We set the working directory.</li>
+<li>We copy package files and install dependencies.</li>
+<li>We copy the rest of the application code and build it.</li>
+</ul></li>
+<li><strong>Production Stage</strong>:
+<ul>
+<li>We use a light base image like Nginx to serve the application.</li>
+<li>We copy only the files we need from the build stage to the
+production image.</li>
+<li>We expose the right port and set the command to run the
+application.</li>
+</ul></li>
+</ol>
+<h3 id="tips-for-writing-multi-stage-dockerfiles">Tips for Writing
+Multi-stage Dockerfiles</h3>
+<ul>
+<li><strong>Minimize Layers</strong>: We can combine commands to make
+fewer layers in our image.</li>
+<li><strong>Use Specific Tags</strong>: It is better to use specific
+version tags instead of <code>latest</code> to make it easier to
+reproduce.</li>
+<li><strong>Clean Up</strong>: We should remove files or dependencies we
+do not need during the build process. This keeps the final image
+small.</li>
+</ul>
+<h3 id="example-of-cleaning-up">Example of Cleaning Up</h3>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Build Stage</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> golang:1.16 <span class="kw">AS</span> builder</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /go/src/app</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">go</span> build <span class="at">-o</span> myapp .</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 2: Production Stage</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> alpine:latest</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /root/</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /go/src/app/myapp .</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;./myapp&quot;</span>]</span></code></pre></div>
+<p>In this example, we copy the Golang build files to a small Alpine
+image. This gives us a smaller final image size.</p>
+<p>By using these tips, we can write multi-stage Dockerfiles to make our
+Docker builds better. This helps us keep things efficient and small in
+production. For more info on Docker images and how they work, check out
+<a
+href="https://bestonlinetutorial.com/docker/what-are-docker-images-and-how-do-they-work.html">what
+are Docker images and how do they work</a>.</p>
+<h2 id="can-we-provide-practical-examples-of-multi-stage-builds">Can We
+Provide Practical Examples of Multi-stage Builds?</h2>
+<p>Multi-stage builds in Docker help us make our images smaller and
+better by keeping the build environment separate from the final runtime
+environment. This means we get smaller and more efficient images. Here
+are some easy examples to show how we can use multi-stage builds
+well.</p>
+<h3 id="example-1-building-a-go-application">Example 1: Building a Go
+Application</h3>
+<p>In this example, we build a simple Go application. The first stage
+compiles the application. The second stage makes a small image to run
+the binary.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Build</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> golang:1.17 <span class="kw">AS</span> builder</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">go</span> build <span class="at">-o</span> myapp</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 2: Run</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> alpine:latest</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /app/myapp .</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;./myapp&quot;</span>]</span></code></pre></div>
+<h3 id="example-2-node.js-application">Example 2: Node.js
+Application</h3>
+<p>Now, we show how to create a multi-stage Dockerfile for a Node.js
+application. The first stage installs the needed packages and builds the
+application. The second stage runs the application.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Build</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14 <span class="kw">AS</span> builder</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package*.json ./</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> run build</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 2: Run</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14-alpine</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /app/build ./build</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package*.json ./</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install <span class="at">--only</span><span class="op">=</span>production</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;node&quot;</span>, <span class="st">&quot;build/index.js&quot;</span>]</span></code></pre></div>
+<h3 id="example-3-python-application">Example 3: Python Application</h3>
+<p>In this example, we build a Python application using multi-stage
+builds to make the image smaller.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Build</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> python:3.9 <span class="kw">AS</span> builder</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> requirements.txt .</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">pip</span> install <span class="at">--no-cache-dir</span> <span class="at">-r</span> requirements.txt</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 2: Run</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> python:3.9-slim</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /app .</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;python&quot;</span>, <span class="st">&quot;app.py&quot;</span>]</span></code></pre></div>
+<h3 id="example-4-.net-core-application">Example 4: .NET Core
+Application</h3>
+<p>This example shows how we can use multi-stage builds to create a .NET
+Core application.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Build</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> mcr.microsoft.com/dotnet/sdk:5.0 <span class="kw">AS</span> build</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /src</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> [<span class="st">&quot;MyApp/MyApp.csproj&quot;</span>, <span class="st">&quot;MyApp/&quot;</span>]</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">dotnet</span> restore <span class="st">&quot;MyApp/MyApp.csproj&quot;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> <span class="st">&quot;/src/MyApp&quot;</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">dotnet</span> build <span class="st">&quot;MyApp.csproj&quot;</span> <span class="at">-c</span> Release <span class="at">-o</span> /app/build</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 2: Publish</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> build <span class="kw">AS</span> publish</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">dotnet</span> publish <span class="st">&quot;MyApp.csproj&quot;</span> <span class="at">-c</span> Release <span class="at">-o</span> /app/publish</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 3: Run</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> mcr.microsoft.com/dotnet/aspnet:5.0 <span class="kw">AS</span> final</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=publish</span> /app/publish .</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="kw">ENTRYPOINT</span> [<span class="st">&quot;dotnet&quot;</span>, <span class="st">&quot;MyApp.dll&quot;</span>]</span></code></pre></div>
+<p>These examples show how multi-stage Docker builds can help us work
+better and create optimized images for different programming languages
+and frameworks. For more information on Docker images and how they work,
+we can read more about <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-images-and-how-do-they-work.html">Docker
+images</a>.</p>
+<h2
+id="what-are-common-best-practices-for-multi-stage-docker-builds">What
+Are Common Best Practices for Multi-stage Docker Builds?</h2>
+<p>When we use multi-stage Docker builds, following some best practices
+helps a lot. It makes our Docker images better in size and easier to
+manage. Here are some simple practices we can think about:</p>
+<ol type="1">
+<li><p><strong>Use Specific Base Images</strong>: We should start with a
+base image that fits our application needs. This helps to make the image
+smaller and the build faster.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14 <span class="kw">AS</span> build</span></code></pre></div></li>
+<li><p><strong>Minimize Layers</strong>: We can combine commands when we
+can. This way, we reduce the number of layers in our image. Each command
+in a Dockerfile makes a new layer.</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apt-get</span> update <span class="kw">&amp;&amp;</span> <span class="ex">apt-get</span> install <span class="at">-y</span> <span class="dt">\</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    package1 <span class="dt">\</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    package2 <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rm</span> <span class="at">-rf</span> /var/lib/apt/lists/<span class="pp">*</span></span></code></pre></div></li>
+<li><p><strong>Only Copy Necessary Files</strong>: In each stage, we
+only copy the files that we need for that stage. This helps to make the
+context size and image size smaller.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package.json ./</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install</span></code></pre></div></li>
+<li><p><strong>Use <code>.dockerignore</code> File</strong>: We can
+create a <code>.dockerignore</code> file. This file helps to exclude
+files that we do not need for the build. It can make the build process
+faster.</p>
+<pre><code>node_modules
+*.log</code></pre></li>
+<li><p><strong>Leverage Caching</strong>: We should organize our
+Dockerfile to use Docker’s caching. We can put commands that change less
+at the top.</p></li>
+<li><p><strong>Tag Your Images</strong>: We need to use good tags for
+our images. This helps us keep track of versions and changes. It is very
+important for CI/CD pipelines.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> myapp:1.0 .</span></code></pre></div></li>
+<li><p><strong>Keep Runtime Images Lean</strong>: We must make sure our
+final image only has what we need to run our application. We can use a
+small base image like <code>alpine</code>.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> alpine:latest</span></code></pre></div></li>
+<li><p><strong>Use Environment Variables</strong>: We can define
+environment variables. This makes our Dockerfile more flexible and
+easier to manage.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> NODE_ENV production</span></code></pre></div></li>
+<li><p><strong>Cleanup After Installations</strong>: We should remove
+build dependencies after we compile our application. This keeps the
+image size smaller.</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apk</span> add <span class="at">--no-cache</span> build-base <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># build commands here &amp;&amp; \</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    apk del build-base</span></code></pre></div></li>
+<li><p><strong>Document Your Dockerfile</strong>: We can use comments in
+our Dockerfile. This helps to explain what each stage or command does.
+It makes maintenance easier.</p></li>
+</ol>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Build the application</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14 <span class="kw">AS</span> build</span></code></pre></div>
+<p>By following these best practices for multi-stage Docker builds, we
+can make our Docker images better. This helps us with efficiency,
+security, and maintenance. For more information about Docker and how it
+works, we can look at <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-images-and-how-do-they-work.html">what
+are Docker images and how do they work</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-a-multi-stage-docker-build">1. What is a multi-stage
+Docker build?</h3>
+<p>A multi-stage Docker build is a way to use many <code>FROM</code>
+lines in one Dockerfile. This helps us create smaller and safer images.
+We can separate the build area from the final runtime area. By copying
+only what we need from each stage, we can make the image size smaller
+and make deployment faster.</p>
+<h3 id="how-do-multi-stage-builds-reduce-image-size">2. How do
+multi-stage builds reduce image size?</h3>
+<p>Multi-stage builds help make the final image smaller. They do this by
+not including unneeded tools and files in the final image. During the
+build, we only take the important parts from the middle stages to the
+final stage. This removes extra development tools. As a result, we get
+cleaner and lighter images that load quicker and use less space.</p>
+<h3 id="can-multi-stage-docker-builds-be-used-for-any-application">3.
+Can multi-stage Docker builds be used for any application?</h3>
+<p>Yes, we can use multi-stage Docker builds for many types of
+applications. This includes web apps, microservices, and APIs. By
+setting up our Dockerfile with different stages that fit our
+application’s needs, we can make the build process better. For more on
+Docker applications, see <a
+href="https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html">the
+benefits of using Docker in development</a>.</p>
+<h3 id="how-do-i-write-a-dockerfile-for-multi-stage-builds">4. How do I
+write a Dockerfile for multi-stage builds?</h3>
+<p>To write a multi-stage Dockerfile, we start with many
+<code>FROM</code> lines. Each line shows a different stage. We use the
+<code>COPY</code> command to move files from one stage to another. For
+example, we can have a build stage that puts together our application
+and a final stage that runs it. For more details about Dockerfiles,
+check out this article on <a
+href="https://bestonlinetutorial.com/docker/what-is-the-dockerfile-and-how-do-you-create-one.html">what
+is a Dockerfile and how do you create one</a>.</p>
+<h3 id="what-are-the-best-practices-for-multi-stage-docker-builds">5.
+What are the best practices for multi-stage Docker builds?</h3>
+<p>Best practices for multi-stage Docker builds are to lower the number
+of layers by combining commands. We should use specific base images for
+each stage and remove unneeded files after each stage. Also, we must
+test our multi-stage builds for efficiency and safety. By following
+these best practices, we keep our Docker images simple and easy to
+manage. For more tips on Docker image management, visit <a
+href="https://bestonlinetutorial.com/docker/how-to-list-and-inspect-docker-images.html">how
+to list and inspect Docker images</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
