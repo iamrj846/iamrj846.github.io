@@ -25,12 +25,11 @@ function loadFooter() {
 document.addEventListener("DOMContentLoaded", loadFooter);
 
 function loadHead() {
-  fetch("/assets/head.html")
-      .then(response => response.text())
-      .then(data => {
-          document.getElementById("head-placeholder").innerHTML = data;
-      })
-      .catch(error => console.error("Error loading head:", error));
+    fetch('/assets/head.html')
+    .then(response => response.text())
+    .then(data => {
+        document.head.innerHTML += data; // Ensure it goes inside <head>
+    }).catch(error => console.error("Error loading head:", error));
 }
 
 document.addEventListener("DOMContentLoaded", loadHead);
