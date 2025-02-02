@@ -1,448 +1,316 @@
-Docker Compose is a tool that helps us manage Docker applications with many containers. It lets us define services, networks, and volumes in one YAML file. This makes it simpler to deploy and manage applications with many parts that work together. By using Docker Compose, we can make the deployment process smoother. It helps us keep things the same across different environments. We also get to use Docker’s container features.
+Monitoring Docker containers is very important for keeping our applications working well. When we use Prometheus and Grafana, we can collect data, see it clearly, and understand how our Docker containers are doing. Prometheus helps us monitor and send alerts. Grafana gives us a simple dashboard to show the data we collect. This helps us keep an eye on how our containers perform.
 
-In this article, we will learn how to use Docker Compose well in a production environment. We will talk about the best ways to set up our Docker Compose files. We will cover how to set environment variables for production. We will also discuss how to scale services, networking methods, and how to keep our data safe. We will answer common questions to help you understand Docker Compose in production better.
+In this article, we will show how to monitor Docker containers with Prometheus and Grafana. We will talk about what we need to set up monitoring. We will also explain how to configure Prometheus for Docker monitoring. Then we will see how to visualize Docker metrics with Grafana. We will look at how to gather Docker metrics using cAdvisor. Lastly, we will share some helpful Grafana dashboards made for Docker monitoring. We will also answer some common questions to help you understand the monitoring process better.
 
-- How Can We Use Docker Compose for Production Deployments?
-- What Are the Best Ways to Structure Our Docker Compose Files?
-- How to Set Environment Variables for Production with Docker Compose?
-- How Can We Scale Services Using Docker Compose in Production?
-- What Networking Strategies Should We Use in Docker Compose?
-- How to Keep Data Safe with Docker Compose in Production?
-- Common Questions
+- How Can You Monitor Docker Containers with Prometheus and Grafana?
+- What Are the Prerequisites for Monitoring Docker Containers?
+- How to Set Up Prometheus for Docker Monitoring?
+- How to Configure Grafana for Visualizing Docker Metrics?
+- How to Collect Docker Metrics Using cAdvisor?
+- What Are Some Useful Grafana Dashboards for Docker Monitoring?
+- Frequently Asked Questions
 
-If we want to understand Docker and its tools better, we can check these resources: [What is Docker and Why Should You Use It?](https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html), [What is Docker Compose and How Does It Simplify Multi-Container Applications?](https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html), and [How to Scale Services with Docker Compose](https://bestonlinetutorial.com/docker/how-to-scale-services-with-docker-compose.html).
+## What Are the Prerequisites for Monitoring Docker Containers?
 
-## What Are the Best Practices for Structuring Your Docker Compose Files?
+To monitor Docker containers with Prometheus and Grafana, we need to meet some basic requirements. Here is a simple list of what we need:
 
-When we structure our Docker Compose files for production, we should follow some best practices. This helps us keep things clear, easy to maintain, and ready to grow.
+1. **Docker Installation**: First, we need to install Docker on our host machine. Make sure Docker is running. We can follow the guide on [how to install Docker on different operating systems](https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html).
 
-1. **Use Multiple Compose Files**: Let's separate our setup into different Compose files for each environment. For example, we can use `docker-compose.yml`, `docker-compose.override.yml`, and `docker-compose.prod.yml`. This way, we can adjust settings for development, testing, and production.
+2. **Prometheus**: Next, we should install Prometheus. It helps us scrape and store metrics from our Docker containers. We can download it from [Prometheus's official site](https://prometheus.io/download/).
 
-   ```yaml
-   version: '3.8'
-   services:
-     app:
-       image: myapp:latest
-       ports:
-         - "80:80"
-       environment:
-         - NODE_ENV=production
+3. **Grafana**: Then, we need to install Grafana. It helps us see the metrics that Prometheus collects. We can get Grafana from [Grafana's official site](https://grafana.com/get).
+
+4. **cAdvisor**: We also need to deploy cAdvisor. It collects metrics from the containers. cAdvisor shows us how much resources the containers use and their performance. We can run it as a Docker container like this:
+
+   ```bash
+   docker run -d \
+     --name=cadvisor \
+     --volume=/var/run:/var/run:rw \
+     --volume=/sys:/sys:ro \
+     --volume=/var/lib/docker:/var/lib/docker:ro \
+     -p 8080:8080 \
+     google/cadvisor:latest
    ```
 
-2. **Define Explicit Versioning**: We must always state the version of Docker Compose. This helps us avoid problems with compatibility. Using the latest version might bring some breaking changes.
+5. **Network Configuration**: We must check the network settings. Prometheus needs to access the metrics from cAdvisor. By default, cAdvisor shows metrics on port 8080.
 
-3. **Limit Service Responsibilities**: Each service should do one job only. For instance, we can put databases, caches, and web servers in their own services.
-
-   ```yaml
-   services:
-     web:
-       build: ./web
-     db:
-       image: postgres
-   ```
-
-4. **Utilize Named Volumes**: We should use named volumes instead of bind mounts. This keeps our data safe even if we remove the container.
+6. **Prometheus Configuration**: We need to create a `prometheus.yml` file. This file helps Prometheus know where to scrape metrics from cAdvisor:
 
    ```yaml
-   volumes:
-     db_data:
-   services:
-     db:
-       image: postgres
-       volumes:
-         - db_data:/var/lib/postgresql/data
+   global:
+     scrape_interval: 15s
+
+   scrape_configs:
+     - job_name: 'cadvisor'
+       static_configs:
+         - targets: ['<YOUR_CADVISOR_IP>:8080']
    ```
 
-5. **Environment Variables Configuration**: We can keep sensitive info like passwords or API keys in environment variables or `.env` files. We should reference these in our Compose file. This way, we avoid hardcoding sensitive data.
+7. **Grafana Datasource Configuration**: Finally, we need to add Prometheus as a data source in Grafana. Here are the settings we should use:
+   - URL: `http://<YOUR_PROMETHEUS_IP>:9090`
+   - Access: Server (default)
+
+When we set up and configure these components correctly, we can monitor our Docker containers using Prometheus and Grafana.
+
+## How to Set Up Prometheus for Docker Monitoring?
+
+To set up Prometheus for Docker monitoring, we can follow these steps:
+
+1. **Create a Docker Network** (this is optional but helps with isolation):
+   ```bash
+   docker network create monitoring
+   ```
+
+2. **Run Prometheus**:
+   First, we need to make a `prometheus.yml` configuration file. Here is what we should put in it:
 
    ```yaml
-   services:
-     app:
-       environment:
-         - DATABASE_URL=${DATABASE_URL}
+   global:
+     scrape_interval: 15s
+
+   scrape_configs:
+     - job_name: 'docker'
+       static_configs:
+         - targets: ['cadvisor:8080']
    ```
 
-6. **Use Health Checks**: We need to add health checks. This helps us monitor our services and make sure they run correctly.
+   Now, we can run the Prometheus container with this command:
 
-   ```yaml
-   services:
-     app:
-       image: myapp:latest
-       healthcheck:
-         test: ["CMD", "curl", "-f", "http://localhost/health"]
-         interval: 30s
-         timeout: 10s
-         retries: 3
+   ```bash
+   docker run -d \
+     --name=prometheus \
+     --network=monitoring \
+     -p 9090:9090 \
+     -v $(pwd)/prometheus.yml:/etc/prometheus/prometheus.yml \
+     prom/prometheus
    ```
 
-7. **Organize Configuration**: We should group related settings together. This makes it easier to read. We can also use comments to explain complex settings.
-
-   ```yaml
-   services:
-     web:
-       image: myapp:latest
-       ports:
-         - "80:80"  # Expose port 80
-       networks:
-         - front-tier
-   networks:
-     front-tier:
+3. **Run cAdvisor** to collect Docker metrics:
+   ```bash
+   docker run -d \
+     --name=cadvisor \
+     --network=monitoring \
+     -p 8080:8080 \
+     --volume=/:/rootfs:ro \
+     --volume=/var/run:/var/run:rw \
+     --volume=/sys:/sys:ro \
+     --volume=/var/lib/docker/:/var/lib/docker:ro \
+     google/cadvisor:latest
    ```
 
-8. **Leverage Docker Compose Commands**: We can use Docker Compose commands smartly to manage our services. For example, we can use `docker-compose up -d` for detached mode and `docker-compose logs` to check what's happening.
+4. **Access Prometheus**:
+   We should open our web browser and go to `http://localhost:9090`. We will see the Prometheus UI. There we can start to query metrics from Docker containers.
 
-9. **Resource Limitation**: We should set limits on resources for our services. This stops them from using too much of the host's resources.
-
-   ```yaml
-   services:
-     app:
-       image: myapp:latest
-       deploy:
-         resources:
-           limits:
-             cpus: '0.5'
-             memory: 512M
+5. **Verify the Setup**:
+   We can check if cAdvisor metrics are being scraped. To do this, we run this query in the Prometheus UI:
+   ```
+   up{job="docker"}
    ```
 
-By following these best practices for structuring our Docker Compose files, we can build a stronger and easier to maintain setup for production. For more details on Docker Compose, check this [guide on how to write a simple Docker Compose YAML file](https://bestonlinetutorial.com/docker/how-to-write-a-simple-docker-compose-yml-file.html).
+This setup helps us to monitor Docker containers using Prometheus well. For more info on Docker and how it works, we can look at articles like [What is Docker and Why Should You Use It?](https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html) and [How to Install Docker on Different Operating Systems](https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html).
 
-## How to Configure Environment Variables for Production with Docker Compose?
+## How to Configure Grafana for Visualizing Docker Metrics?
 
-Configuring environment variables in production with Docker Compose is very important. It helps us manage settings without putting sensitive info in our code. We can define environment variables in our `docker-compose.yml` file or use a separate `.env` file.
+We can set up Grafana to see Docker metrics that Prometheus collects. Here are the steps to do it:
 
-### Defining Environment Variables in `docker-compose.yml`
+1. **Install Grafana:**
+   If we don't have Grafana installed, we can run it using Docker:
 
-We can set environment variables for services directly in the `environment` section. Here is an example:
+   ```bash
+   docker run -d -p 3000:3000 grafana/grafana
+   ```
+
+2. **Access Grafana:**
+   Open your web browser and go to `http://localhost:3000`. The default login info is:
+   - **Username:** admin
+   - **Password:** admin (it will ask you to change it after first login)
+
+3. **Add Prometheus as a Data Source:**
+   - Click on the gear icon (⚙️) on the left side to open the Configuration menu.
+   - Choose **Data Sources** and click on **Add data source**.
+   - Pick **Prometheus** from the list.
+   - In the **HTTP** part, set the URL to your Prometheus server, like `http://localhost:9090`.
+   - Click on **Save & Test** to check if Grafana can connect to Prometheus.
+
+4. **Create a Dashboard:**
+   - Click on the “+” icon in the sidebar and choose **Dashboard**.
+   - Click on **Add new panel**.
+
+5. **Add Metrics:**
+   - In the new panel, choose **Prometheus** as the data source.
+   - In the **Query** section, we can enter a Prometheus query to show Docker metrics. For example:
+
+   ```promql
+   rate(container_cpu_usage_seconds_total{image!="",container_name!="POD"}[5m])
+   ```
+
+   This query shows how much CPU each container is using.
+
+6. **Configure Visualization:**
+   - Choose the kind of visualization we want (like Graph, Gauge, Table) from the choices.
+   - Change the settings for the visualization if we need to (like axes, legend, thresholds).
+
+7. **Save the Dashboard:**
+   - After we set up the panels and visualizations, click on the **Save dashboard** icon (diskette icon) at the top.
+   - Give a name to your dashboard and click **Save**.
+
+8. **Explore Pre-built Dashboards:**
+   - Grafana has many ready-made dashboards. We can find them in the **Dashboard** section by clicking on **Import**.
+   - We can enter the ID of popular dashboards from Grafana's dashboard repository, like:
+     - Docker Monitoring: 893
+     - cAdvisor Monitoring: 8935
+
+By following these steps, we can easily set up Grafana to see Docker metrics. This setup helps us watch how our Docker containers perform in real-time. We get useful info about resource use and other important metrics.
+
+## How to Collect Docker Metrics Using cAdvisor?
+
+To monitor Docker containers well, cAdvisor (Container Advisor) is a great tool. It gives us insights into how containers use resources and their performance. Let's see how we can set it up and use it to collect Docker metrics.
+
+### Step 1: Pull the cAdvisor Docker Image
+
+First, we need to pull the cAdvisor image from Docker Hub:
+
+```bash
+docker pull google/cadvisor:latest
+```
+
+### Step 2: Run cAdvisor Container
+
+Next, we run cAdvisor in a Docker container. We should map the right ports and bind mount the Docker socket. This will let cAdvisor access Docker metrics:
+
+```bash
+docker run -d \
+  --name=cadvisor \
+  --volume=/:/rootfs:ro \
+  --volume=/var/run:/var/run:rw \
+  --volume=/sys:/sys:ro \
+  --volume=/var/lib/docker/:/var/lib/docker:ro \
+  -p 8080:8080 \
+  google/cadvisor:latest
+```
+
+### Step 3: Access cAdvisor Dashboard
+
+After we start cAdvisor, we can access the dashboard. Just go to `http://<YOUR_HOST_IP>:8080` in any web browser. There, we can see metrics like CPU usage, memory usage, network I/O, and filesystem usage for each running container.
+
+### Step 4: Integrate cAdvisor with Prometheus
+
+To collect metrics from cAdvisor using Prometheus, we need to add cAdvisor as a target in our Prometheus configuration file (`prometheus.yml`):
 
 ```yaml
-version: '3.8'
-
-services:
-  web:
-    image: myapp:latest
-    environment:
-      - DATABASE_URL=mysql://user:password@db:3306/mydatabase
-      - SECRET_KEY=supersecretkey
-    ports:
-      - "80:80"
-  
-  db:
-    image: mysql:5.7
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: mydatabase
-      MYSQL_USER: user
-      MYSQL_PASSWORD: password
+scrape_configs:
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['<YOUR_HOST_IP>:8080']
 ```
 
-### Using an External `.env` File
+### Step 5: Restart Prometheus
 
-To make it easier and cleaner, we can use a `.env` file. We need to create a file called `.env` in the same folder as our `docker-compose.yml`:
-
-```
-DATABASE_URL=mysql://user:password@db:3306/mydatabase
-SECRET_KEY=supersecretkey
-MYSQL_ROOT_PASSWORD=rootpassword
-MYSQL_DATABASE=mydatabase
-MYSQL_USER=user
-MYSQL_PASSWORD=password
-```
-
-Then, we can use these variables in our `docker-compose.yml`:
-
-```yaml
-version: '3.8'
-
-services:
-  web:
-    image: myapp:latest
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - SECRET_KEY=${SECRET_KEY}
-    ports:
-      - "80:80"
-  
-  db:
-    image: mysql:5.7
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-```
-
-### Best Practices
-
-- **Avoid Hardcoding:** We should not hardcode sensitive info in our `docker-compose.yml`. Use environment variables instead.
-- **Keep Secrets Secure:** We can think about using Docker secrets or other tools for sensitive info in production.
-- **Document Variables:** It is good to write down what each environment variable does in our project docs. This helps us later.
-
-By using these methods and best practices, we can manage environment settings for our production apps with Docker Compose. For more info on Docker Compose, check out [this article](https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html).
-
-## How Can We Scale Services Using Docker Compose in Production?
-
-Scaling services in production with Docker Compose is easy and effective. Docker Compose helps us define and run multi-container Docker apps. Here is how we can scale services well.
-
-To scale a service, we can use the `docker-compose up` command with the `--scale` option. For example, if we have a service called `web`, we can scale it to three instances like this:
+After we update the configuration, we should restart our Prometheus server to make changes apply:
 
 ```bash
-docker-compose up --scale web=3 -d
+docker restart <prometheus_container_name>
 ```
 
-This command makes three instances of the `web` service from our `docker-compose.yml` file. It runs them in detached mode.
+### Step 6: Visualize Metrics in Grafana
 
-### Example Docker Compose Configuration
+Once Prometheus is collecting metrics from cAdvisor, we can see these metrics in Grafana. We need to add Prometheus as a data source in Grafana and create dashboards with the metrics we got from cAdvisor.
 
-Here is an example of a `docker-compose.yml` file for a web app with a database:
+By doing these steps, we can collect and see Docker metrics using cAdvisor, Prometheus, and Grafana. This helps us monitor our containers better.
 
-```yaml
-version: '3.8'
-services:
-  web:
-    image: my-web-app:latest
-    deploy:
-      replicas: 3
-    ports:
-      - "80:80"
-    networks:
-      - my-network
+For more details on Docker monitoring, we can check this [Docker Monitoring Tutorial](https://bestonlinetutorial.com/docker/how-to-monitor-docker-swarm-cluster-health.html).
 
-  db:
-    image: postgres:latest
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-    networks:
-      - my-network
+## What Are Some Useful Grafana Dashboards for Docker Monitoring?
 
-networks:
-  my-network:
-    driver: bridge
-```
+We can use Grafana to monitor Docker containers. It has many dashboards that help us with this. Here are some good Grafana dashboards for Docker monitoring:
 
-In this setup, the `deploy` part under the `web` service says we want three replicas. But remember, the `deploy` part works only in Docker Swarm mode. If we are using Docker Compose without Swarm, we can only scale using the `--scale` option.
+1. **Docker Overview Dashboard**
+   - This dashboard shows overall Docker metrics. It includes container status, CPU usage, memory usage, and network I/O.
+   - Dashboard ID: `893`. We can import it through Grafana's dashboard settings.
 
-### Monitoring and Managing Scaled Services
-
-To check the status of our scaled services, we can use:
-
-```bash
-docker-compose ps
-```
-
-This command shows all running containers for the services in our `docker-compose.yml` file. It helps us see their health and status.
-
-### Load Balancing
-
-When we scale services, we should think about using a load balancer. This helps to share incoming traffic between the different instances of our service. We can use a reverse proxy like Nginx or HAProxy. Here is a simple Nginx setup:
-
-```nginx
-http {
-    upstream web {
-        server web_1:80;
-        server web_2:80;
-        server web_3:80;
-    }
-
-    server {
-        listen 80;
-
-        location / {
-            proxy_pass http://web;
-        }
-    }
-}
-```
-
-This setup sends traffic to the scaled instances of the `web` service.
-
-Scaling services with Docker Compose in production improves reliability and performance. We should test our scaling setup in a staging environment before going to production for the best results. For more details about scaling services, we can check this article on [how to scale services with Docker Compose](https://bestonlinetutorial.com/docker/how-to-scale-services-with-docker-compose.html).
-
-## What Strategies Should We Use for Networking in Docker Compose?
-
-When we use Docker Compose in a production setting, good networking strategies are very important. They help our services to talk to each other without problems. Here are some strategies we can think about:
-
-1. **Use Default Bridge Network**: Docker Compose makes a bridge network for us by default. This lets our containers talk by using their service names as hostnames.
-
-   ```yaml
-   version: '3'
-   services:
-     web:
-       image: nginx
-     app:
-       image: myapp
-       depends_on:
-         - web
+   ```json
+   {
+     "id": 893,
+     "title": "Docker Overview",
+     "url": "https://grafana.com/grafana/dashboards/893"
+   }
    ```
 
-2. **Define Custom Networks**: If we want more control, we can make custom networks. This helps us to separate services and manage communication better.
+2. **cAdvisor Dashboard**
+   - This dashboard shows detailed metrics from cAdvisor about how containers use resources.
+   - Dashboard ID: `893`. We can import it from the Grafana dashboard management page.
 
-   ```yaml
-   version: '3'
-   services:
-     web:
-       image: nginx
-       networks:
-         - frontend
-     app:
-       image: myapp
-       networks:
-         - backend
-   networks:
-     frontend:
-     backend:
+   ```json
+   {
+     "id": 893,
+     "title": "cAdvisor",
+     "url": "https://grafana.com/grafana/dashboards/893"
+   }
    ```
 
-3. **Set Network Aliases**: We can create aliases for services in networks. This makes it easier to find services.
+3. **Docker Container Metrics**
+   - This dashboard monitors metrics for each container. It shows CPU, memory, network, and disk usage.
+   - Dashboard ID: `179`. We can easily import it via Grafana.
 
-   ```yaml
-   version: '3'
-   services:
-     app:
-       image: myapp
-       networks:
-         frontend:
-           aliases:
-             - myapp-alias
-   networks:
-     frontend:
+   ```json
+   {
+     "id": 179,
+     "title": "Docker Container Metrics",
+     "url": "https://grafana.com/grafana/dashboards/179"
+   }
    ```
 
-4. **Utilize Overlay Networks for Swarm**: If we use Docker Swarm, we should use overlay networks. They let containers talk across different Docker hosts.
+4. **Docker Swarm Monitoring**
+   - This is a full dashboard for monitoring Docker Swarm clusters. It shows node states, service health, and resource usage.
+   - Dashboard ID: `1122`. We can import it.
 
-   ```yaml
-   version: '3'
-   services:
-     app:
-       image: myapp
-       networks:
-         my_overlay_network:
-           deploy:
-             replicas: 3
-   networks:
-     my_overlay_network:
-       driver: overlay
+   ```json
+   {
+     "id": 1122,
+     "title": "Docker Swarm Monitoring",
+     "url": "https://grafana.com/grafana/dashboards/1122"
+   }
    ```
 
-5. **Configure DNS Settings**: We can change DNS settings for our containers if we need to. We can add DNS servers in our Compose file.
+5. **Node Exporter Full**
+   - This dashboard helps us monitor the host system that runs Docker containers and shows Docker metrics too.
+   - Dashboard ID: `1860`. We can import it using Grafana's dashboard feature.
 
-   ```yaml
-   version: '3'
-   services:
-     app:
-       image: myapp
-       dns:
-         - 8.8.8.8
-         - 8.8.4.4
+   ```json
+   {
+     "id": 1860,
+     "title": "Node Exporter Full",
+     "url": "https://grafana.com/grafana/dashboards/1860"
+   }
    ```
 
-6. **Leverage Host Networking for Performance**: If our app needs fast network performance, we can use host networking mode. This connects the container to the host's network directly.
+To use these dashboards:
+- We go to Grafana, click the "+" icon, and select "Import".
+- We enter the dashboard ID or upload the JSON file if we have it.
+- We need to set up our data sources to see the metrics.
 
-   ```yaml
-   version: '3'
-   services:
-     app:
-       image: myapp
-       network_mode: host
-   ```
-
-7. **Ensure Service Discovery**: We should use Docker’s built-in service discovery. This means we use the service name as the hostname in our settings.
-
-8. **Monitor Network Traffic**: We can use tools like `curl` or `ping` inside containers. This helps us to test connections and find networking problems.
-
-By using these strategies in our Docker Compose setups, we can make our services more reliable and faster in a production environment. For more information about Docker networking, check out [this article](https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html).
-
-## How to Handle Data Persistence with Docker Compose in Production?
-
-When we deploy applications using Docker Compose in production, it is very important to handle data persistence. Docker containers do not keep data because they are temporary. Any data saved inside a container will be lost when we remove the container. To keep data safe beyond a container’s life, we can use Docker volumes or bind mounts.
-
-### Using Docker Volumes
-
-We can use Docker volumes to save data. Docker manages these volumes, and they are stored outside of the container filesystem. This means the data stays even if the container restarts or is removed.
-
-Here is how we can define a volume in our `docker-compose.yml` file:
-
-```yaml
-version: '3.8'
-services:
-  web:
-    image: myapp:latest
-    volumes:
-      - webdata:/var/www/html
-
-volumes:
-  webdata:
-```
-
-In this example, the `web` service uses a volume called `webdata` to save data in the `/var/www/html` directory.
-
-### Using Bind Mounts
-
-Bind mounts let us choose a path on the host machine to mount into the container. This is good for development and can also be used in production when we want direct access to files.
-
-Here is an example of a bind mount:
-
-```yaml
-version: '3.8'
-services:
-  web:
-    image: myapp:latest
-    volumes:
-      - ./data:/var/www/html
-```
-
-In this case, the `./data` directory on the host will be mounted to `/var/www/html` in the container.
-
-### Data Backup and Recovery
-
-To keep our data safe, we should have a backup plan for our volumes. We can use this command to create a backup of a volume:
-
-```bash
-docker run --rm -v webdata:/data -v $(pwd):/backup busybox tar czvf /backup/webdata_backup.tar.gz -C /data .
-```
-
-### Managing Volumes
-
-We can check volumes for more information about data storage:
-
-```bash
-docker volume inspect webdata
-```
-
-To see all volumes, we can use:
-
-```bash
-docker volume ls
-```
-
-### Cleaning Up Unused Volumes
-
-Sometimes, we have unused volumes. We can remove these extra volumes with this command:
-
-```bash
-docker volume prune
-```
-
-By managing data persistence with Docker volumes or bind mounts in our Docker Compose setup, we can keep our application’s state and data safe in a production environment. For more info on using Docker well, check out [what is Docker and why should you use it](https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html).
+For more information about Docker and best ways to monitor it, we can read [How to Monitor Docker Containers with Prometheus and Grafana](https://bestonlinetutorial.com/docker/how-to-monitor-docker-containers-with-prometheus-and-grafana.html).
 
 ## Frequently Asked Questions
 
-### 1. What is Docker Compose and how is it used in production?
+### 1. How do we monitor Docker containers with Prometheus and Grafana?
+To monitor Docker containers with Prometheus and Grafana, we need to set up Prometheus to get metrics from our Docker containers. We can use tools like cAdvisor to collect these metrics. Then, Prometheus can retrieve them. We can configure Grafana to display these metrics. This way, we can make dashboards that show the performance and health of our Docker containers.
 
-We can say Docker Compose is a tool. It helps us define and manage multi-container Docker applications. We use a simple YAML file for this. In production, Docker Compose makes deployment easier. We can start many services with just one command. This keeps things consistent and makes it easier to manage complex applications. To understand more about how Docker Compose helps with multi-container apps, check our article on [What is Docker Compose?](https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html).
+### 2. What is cAdvisor and how does it help in Docker monitoring?
+cAdvisor (Container Advisor) is a free tool that gives us information about how our containers are performing. It collects and shares metrics like CPU, memory, file system, and network usage. When we use cAdvisor with Prometheus, we can monitor our Docker containers better. This helps us see how resources are used and how performance changes over time.
 
-### 2. Can I use Docker Compose for scaling services in production?
+### 3. What are the prerequisites for using Prometheus and Grafana with Docker?
+Before we can use Prometheus and Grafana for Docker monitoring, we must have Docker installed on our system. We also need to install Prometheus and Grafana, plus any exporters like cAdvisor. It is important to know some Docker commands and how to set up Prometheus and Grafana. This will help us see our Docker metrics clearly.
 
-Yes, we can use Docker Compose to scale services. This is important when we have more load in production. We can set the number of container instances for a service in our `docker-compose.yml` file. This way, we can change our app’s capacity based on traffic. For more details on scaling services, see our article on [How to Scale Services with Docker Compose](https://bestonlinetutorial.com/docker/how-to-scale-services-with-docker-compose.html).
+### 4. How can we configure Grafana to visualize Docker metrics?
+To set up Grafana for showing Docker metrics, we must add Prometheus as a data source in Grafana. After that, we can create dashboards using queries to get metrics from Prometheus that come from Docker containers. Grafana gives us many ways to visualize, like graphs and charts, so we can show our metrics in easy to understand ways.
 
-### 3. How do I manage environment variables with Docker Compose in production?
+### 5. What are some useful Grafana dashboards for monitoring Docker containers?
+There are many ready-made Grafana dashboards for monitoring Docker containers. These dashboards usually have panels for CPU usage, memory use, network traffic, and more. They give us a full view of container performance. We can find community dashboards on Grafana's official site or GitHub. We can import and change them to fit our monitoring needs.
 
-Managing environment variables is very important for our applications in production. We can define these variables in our `docker-compose.yml` file. Or we can load them from an `.env` file. This makes it easy to change settings without changing the code. For more information, visit our guide on [How to Configure Environment Variables for Production with Docker Compose](https://bestonlinetutorial.com/docker/how-to-configure-environment-variables-for-production-with-docker-compose.html).
+For more insights into Docker and its parts, we can look at these resources:
+- [What is Docker and Why Should You Use It?](https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html)
+- [How to Install Docker on Different Operating Systems](https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html)
+- [What is Containerization and How Does it Relate to Docker?](https://bestonlinetutorial.com/docker/what-is-containerization-and-how-does-it-relate-to-docker.html)
 
-### 4. What are the best practices for structuring Docker Compose files for production?
-
-We need to structure our Docker Compose files correctly. This is important for keeping things easy to manage and scale. It is good to have separate files for development and production. We should also use version control and overrides for settings based on the environment. Following these best practices helps reduce mistakes when we deploy our application. For more insights, check our article on [Best Practices for Structuring Your Docker Compose Files](https://bestonlinetutorial.com/docker/what-are-volumes-and-networks-in-docker-compose.html).
-
-### 5. How do I ensure data persistence with Docker Compose in production?
-
-Data persistence in Docker Compose comes from using volumes. When we define named volumes in our `docker-compose.yml` file, we can keep our data safe during container restarts and updates. This is very important for databases and apps that need stored data. For more details on data persistence, visit our article on [How to Handle Data Persistence with Docker Compose in Production](https://bestonlinetutorial.com/docker/how-to-handle-data-persistence-with-docker-compose-in-production.html).
+These articles can help us understand Docker better. This will make our monitoring with Prometheus and Grafana work better too.

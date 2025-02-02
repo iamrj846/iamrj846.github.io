@@ -1,0 +1,444 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How to Monitor Docker Containers with Prometheus and Grafana?</title>
+            <meta name="description" content="Learn to effectively monitor your Docker containers using Prometheus and Grafana with our step-by-step guide. Boost your insights!">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How to Monitor Docker Containers with Prometheus and Grafana?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Monitoring Docker containers is very important for keeping our
+applications working well. When we use Prometheus and Grafana, we can
+collect data, see it clearly, and understand how our Docker containers
+are doing. Prometheus helps us monitor and send alerts. Grafana gives us
+a simple dashboard to show the data we collect. This helps us keep an
+eye on how our containers perform.</p>
+<p>In this article, we will show how to monitor Docker containers with
+Prometheus and Grafana. We will talk about what we need to set up
+monitoring. We will also explain how to configure Prometheus for Docker
+monitoring. Then we will see how to visualize Docker metrics with
+Grafana. We will look at how to gather Docker metrics using cAdvisor.
+Lastly, we will share some helpful Grafana dashboards made for Docker
+monitoring. We will also answer some common questions to help you
+understand the monitoring process better.</p>
+<ul>
+<li>How Can You Monitor Docker Containers with Prometheus and
+Grafana?</li>
+<li>What Are the Prerequisites for Monitoring Docker Containers?</li>
+<li>How to Set Up Prometheus for Docker Monitoring?</li>
+<li>How to Configure Grafana for Visualizing Docker Metrics?</li>
+<li>How to Collect Docker Metrics Using cAdvisor?</li>
+<li>What Are Some Useful Grafana Dashboards for Docker Monitoring?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2
+id="what-are-the-prerequisites-for-monitoring-docker-containers">What
+Are the Prerequisites for Monitoring Docker Containers?</h2>
+<p>To monitor Docker containers with Prometheus and Grafana, we need to
+meet some basic requirements. Here is a simple list of what we need:</p>
+<ol type="1">
+<li><p><strong>Docker Installation</strong>: First, we need to install
+Docker on our host machine. Make sure Docker is running. We can follow
+the guide on <a
+href="https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html">how
+to install Docker on different operating systems</a>.</p></li>
+<li><p><strong>Prometheus</strong>: Next, we should install Prometheus.
+It helps us scrape and store metrics from our Docker containers. We can
+download it from <a href="https://prometheus.io/download/">Prometheus’s
+official site</a>.</p></li>
+<li><p><strong>Grafana</strong>: Then, we need to install Grafana. It
+helps us see the metrics that Prometheus collects. We can get Grafana
+from <a href="https://grafana.com/get">Grafana’s official
+site</a>.</p></li>
+<li><p><strong>cAdvisor</strong>: We also need to deploy cAdvisor. It
+collects metrics from the containers. cAdvisor shows us how much
+resources the containers use and their performance. We can run it as a
+Docker container like this:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="dt">\</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--name</span><span class="op">=</span>cadvisor <span class="dt">\</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--volume</span><span class="op">=</span>/var/run:/var/run:rw <span class="dt">\</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--volume</span><span class="op">=</span>/sys:/sys:ro <span class="dt">\</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--volume</span><span class="op">=</span>/var/lib/docker:/var/lib/docker:ro <span class="dt">\</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 8080:8080 <span class="dt">\</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  google/cadvisor:latest</span></code></pre></div></li>
+<li><p><strong>Network Configuration</strong>: We must check the network
+settings. Prometheus needs to access the metrics from cAdvisor. By
+default, cAdvisor shows metrics on port 8080.</p></li>
+<li><p><strong>Prometheus Configuration</strong>: We need to create a
+<code>prometheus.yml</code> file. This file helps Prometheus know where
+to scrape metrics from cAdvisor:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">global</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scrape_interval</span><span class="kw">:</span><span class="at"> 15s</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">scrape_configs</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">job_name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;cadvisor&#39;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">static_configs</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">targets</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;&lt;YOUR_CADVISOR_IP&gt;:8080&#39;</span><span class="kw">]</span></span></code></pre></div></li>
+<li><p><strong>Grafana Datasource Configuration</strong>: Finally, we
+need to add Prometheus as a data source in Grafana. Here are the
+settings we should use:</p>
+<ul>
+<li>URL: <code>http://&lt;YOUR_PROMETHEUS_IP&gt;:9090</code></li>
+<li>Access: Server (default)</li>
+</ul></li>
+</ol>
+<p>When we set up and configure these components correctly, we can
+monitor our Docker containers using Prometheus and Grafana.</p>
+<h2 id="how-to-set-up-prometheus-for-docker-monitoring">How to Set Up
+Prometheus for Docker Monitoring?</h2>
+<p>To set up Prometheus for Docker monitoring, we can follow these
+steps:</p>
+<ol type="1">
+<li><p><strong>Create a Docker Network</strong> (this is optional but
+helps with isolation):</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network create monitoring</span></code></pre></div></li>
+<li><p><strong>Run Prometheus</strong>: First, we need to make a
+<code>prometheus.yml</code> configuration file. Here is what we should
+put in it:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">global</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scrape_interval</span><span class="kw">:</span><span class="at"> 15s</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">scrape_configs</span><span class="kw">:</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">job_name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;docker&#39;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">static_configs</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">targets</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;cadvisor:8080&#39;</span><span class="kw">]</span></span></code></pre></div>
+<p>Now, we can run the Prometheus container with this command:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="dt">\</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--name</span><span class="op">=</span>prometheus <span class="dt">\</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--network</span><span class="op">=</span>monitoring <span class="dt">\</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 9090:9090 <span class="dt">\</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-v</span> <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>/prometheus.yml:/etc/prometheus/prometheus.yml <span class="dt">\</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  prom/prometheus</span></code></pre></div></li>
+<li><p><strong>Run cAdvisor</strong> to collect Docker metrics:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="dt">\</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--name</span><span class="op">=</span>cadvisor <span class="dt">\</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--network</span><span class="op">=</span>monitoring <span class="dt">\</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 8080:8080 <span class="dt">\</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--volume</span><span class="op">=</span>/:/rootfs:ro <span class="dt">\</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--volume</span><span class="op">=</span>/var/run:/var/run:rw <span class="dt">\</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--volume</span><span class="op">=</span>/sys:/sys:ro <span class="dt">\</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--volume</span><span class="op">=</span>/var/lib/docker/:/var/lib/docker:ro <span class="dt">\</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  google/cadvisor:latest</span></code></pre></div></li>
+<li><p><strong>Access Prometheus</strong>: We should open our web
+browser and go to <code>http://localhost:9090</code>. We will see the
+Prometheus UI. There we can start to query metrics from Docker
+containers.</p></li>
+<li><p><strong>Verify the Setup</strong>: We can check if cAdvisor
+metrics are being scraped. To do this, we run this query in the
+Prometheus UI:</p>
+<pre><code>up{job=&quot;docker&quot;}</code></pre></li>
+</ol>
+<p>This setup helps us to monitor Docker containers using Prometheus
+well. For more info on Docker and how it works, we can look at articles
+like <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">What
+is Docker and Why Should You Use It?</a> and <a
+href="https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html">How
+to Install Docker on Different Operating Systems</a>.</p>
+<h2 id="how-to-configure-grafana-for-visualizing-docker-metrics">How to
+Configure Grafana for Visualizing Docker Metrics?</h2>
+<p>We can set up Grafana to see Docker metrics that Prometheus collects.
+Here are the steps to do it:</p>
+<ol type="1">
+<li><p><strong>Install Grafana:</strong> If we don’t have Grafana
+installed, we can run it using Docker:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">-p</span> 3000:3000 grafana/grafana</span></code></pre></div></li>
+<li><p><strong>Access Grafana:</strong> Open your web browser and go to
+<code>http://localhost:3000</code>. The default login info is:</p>
+<ul>
+<li><strong>Username:</strong> admin</li>
+<li><strong>Password:</strong> admin (it will ask you to change it after
+first login)</li>
+</ul></li>
+<li><p><strong>Add Prometheus as a Data Source:</strong></p>
+<ul>
+<li>Click on the gear icon (⚙️) on the left side to open the
+Configuration menu.</li>
+<li>Choose <strong>Data Sources</strong> and click on <strong>Add data
+source</strong>.</li>
+<li>Pick <strong>Prometheus</strong> from the list.</li>
+<li>In the <strong>HTTP</strong> part, set the URL to your Prometheus
+server, like <code>http://localhost:9090</code>.</li>
+<li>Click on <strong>Save &amp; Test</strong> to check if Grafana can
+connect to Prometheus.</li>
+</ul></li>
+<li><p><strong>Create a Dashboard:</strong></p>
+<ul>
+<li>Click on the “+” icon in the sidebar and choose
+<strong>Dashboard</strong>.</li>
+<li>Click on <strong>Add new panel</strong>.</li>
+</ul></li>
+<li><p><strong>Add Metrics:</strong></p>
+<ul>
+<li>In the new panel, choose <strong>Prometheus</strong> as the data
+source.</li>
+<li>In the <strong>Query</strong> section, we can enter a Prometheus
+query to show Docker metrics. For example:</li>
+</ul>
+<pre class="promql"><code>rate(container_cpu_usage_seconds_total{image!=&quot;&quot;,container_name!=&quot;POD&quot;}[5m])</code></pre>
+<p>This query shows how much CPU each container is using.</p></li>
+<li><p><strong>Configure Visualization:</strong></p>
+<ul>
+<li>Choose the kind of visualization we want (like Graph, Gauge, Table)
+from the choices.</li>
+<li>Change the settings for the visualization if we need to (like axes,
+legend, thresholds).</li>
+</ul></li>
+<li><p><strong>Save the Dashboard:</strong></p>
+<ul>
+<li>After we set up the panels and visualizations, click on the
+<strong>Save dashboard</strong> icon (diskette icon) at the top.</li>
+<li>Give a name to your dashboard and click <strong>Save</strong>.</li>
+</ul></li>
+<li><p><strong>Explore Pre-built Dashboards:</strong></p>
+<ul>
+<li>Grafana has many ready-made dashboards. We can find them in the
+<strong>Dashboard</strong> section by clicking on
+<strong>Import</strong>.</li>
+<li>We can enter the ID of popular dashboards from Grafana’s dashboard
+repository, like:
+<ul>
+<li>Docker Monitoring: 893</li>
+<li>cAdvisor Monitoring: 8935</li>
+</ul></li>
+</ul></li>
+</ol>
+<p>By following these steps, we can easily set up Grafana to see Docker
+metrics. This setup helps us watch how our Docker containers perform in
+real-time. We get useful info about resource use and other important
+metrics.</p>
+<h2 id="how-to-collect-docker-metrics-using-cadvisor">How to Collect
+Docker Metrics Using cAdvisor?</h2>
+<p>To monitor Docker containers well, cAdvisor (Container Advisor) is a
+great tool. It gives us insights into how containers use resources and
+their performance. Let’s see how we can set it up and use it to collect
+Docker metrics.</p>
+<h3 id="step-1-pull-the-cadvisor-docker-image">Step 1: Pull the cAdvisor
+Docker Image</h3>
+<p>First, we need to pull the cAdvisor image from Docker Hub:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> pull google/cadvisor:latest</span></code></pre></div>
+<h3 id="step-2-run-cadvisor-container">Step 2: Run cAdvisor
+Container</h3>
+<p>Next, we run cAdvisor in a Docker container. We should map the right
+ports and bind mount the Docker socket. This will let cAdvisor access
+Docker metrics:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="dt">\</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--name</span><span class="op">=</span>cadvisor <span class="dt">\</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--volume</span><span class="op">=</span>/:/rootfs:ro <span class="dt">\</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--volume</span><span class="op">=</span>/var/run:/var/run:rw <span class="dt">\</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--volume</span><span class="op">=</span>/sys:/sys:ro <span class="dt">\</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--volume</span><span class="op">=</span>/var/lib/docker/:/var/lib/docker:ro <span class="dt">\</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 8080:8080 <span class="dt">\</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  google/cadvisor:latest</span></code></pre></div>
+<h3 id="step-3-access-cadvisor-dashboard">Step 3: Access cAdvisor
+Dashboard</h3>
+<p>After we start cAdvisor, we can access the dashboard. Just go to
+<code>http://&lt;YOUR_HOST_IP&gt;:8080</code> in any web browser. There,
+we can see metrics like CPU usage, memory usage, network I/O, and
+filesystem usage for each running container.</p>
+<h3 id="step-4-integrate-cadvisor-with-prometheus">Step 4: Integrate
+cAdvisor with Prometheus</h3>
+<p>To collect metrics from cAdvisor using Prometheus, we need to add
+cAdvisor as a target in our Prometheus configuration file
+(<code>prometheus.yml</code>):</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">scrape_configs</span><span class="kw">:</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">job_name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;cadvisor&#39;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">static_configs</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">targets</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;&lt;YOUR_HOST_IP&gt;:8080&#39;</span><span class="kw">]</span></span></code></pre></div>
+<h3 id="step-5-restart-prometheus">Step 5: Restart Prometheus</h3>
+<p>After we update the configuration, we should restart our Prometheus
+server to make changes apply:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> restart <span class="op">&lt;</span>prometheus_container_name<span class="op">&gt;</span></span></code></pre></div>
+<h3 id="step-6-visualize-metrics-in-grafana">Step 6: Visualize Metrics
+in Grafana</h3>
+<p>Once Prometheus is collecting metrics from cAdvisor, we can see these
+metrics in Grafana. We need to add Prometheus as a data source in
+Grafana and create dashboards with the metrics we got from cAdvisor.</p>
+<p>By doing these steps, we can collect and see Docker metrics using
+cAdvisor, Prometheus, and Grafana. This helps us monitor our containers
+better.</p>
+<p>For more details on Docker monitoring, we can check this <a
+href="https://bestonlinetutorial.com/docker/how-to-monitor-docker-swarm-cluster-health.html">Docker
+Monitoring Tutorial</a>.</p>
+<h2
+id="what-are-some-useful-grafana-dashboards-for-docker-monitoring">What
+Are Some Useful Grafana Dashboards for Docker Monitoring?</h2>
+<p>We can use Grafana to monitor Docker containers. It has many
+dashboards that help us with this. Here are some good Grafana dashboards
+for Docker monitoring:</p>
+<ol type="1">
+<li><strong>Docker Overview Dashboard</strong>
+<ul>
+<li>This dashboard shows overall Docker metrics. It includes container
+status, CPU usage, memory usage, and network I/O.</li>
+<li>Dashboard ID: <code>893</code>. We can import it through Grafana’s
+dashboard settings.</li>
+</ul>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;id&quot;</span><span class="fu">:</span> <span class="dv">893</span><span class="fu">,</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Docker Overview&quot;</span><span class="fu">,</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;url&quot;</span><span class="fu">:</span> <span class="st">&quot;https://grafana.com/grafana/dashboards/893&quot;</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div></li>
+<li><strong>cAdvisor Dashboard</strong>
+<ul>
+<li>This dashboard shows detailed metrics from cAdvisor about how
+containers use resources.</li>
+<li>Dashboard ID: <code>893</code>. We can import it from the Grafana
+dashboard management page.</li>
+</ul>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;id&quot;</span><span class="fu">:</span> <span class="dv">893</span><span class="fu">,</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;cAdvisor&quot;</span><span class="fu">,</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;url&quot;</span><span class="fu">:</span> <span class="st">&quot;https://grafana.com/grafana/dashboards/893&quot;</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div></li>
+<li><strong>Docker Container Metrics</strong>
+<ul>
+<li>This dashboard monitors metrics for each container. It shows CPU,
+memory, network, and disk usage.</li>
+<li>Dashboard ID: <code>179</code>. We can easily import it via
+Grafana.</li>
+</ul>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;id&quot;</span><span class="fu">:</span> <span class="dv">179</span><span class="fu">,</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Docker Container Metrics&quot;</span><span class="fu">,</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;url&quot;</span><span class="fu">:</span> <span class="st">&quot;https://grafana.com/grafana/dashboards/179&quot;</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div></li>
+<li><strong>Docker Swarm Monitoring</strong>
+<ul>
+<li>This is a full dashboard for monitoring Docker Swarm clusters. It
+shows node states, service health, and resource usage.</li>
+<li>Dashboard ID: <code>1122</code>. We can import it.</li>
+</ul>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;id&quot;</span><span class="fu">:</span> <span class="dv">1122</span><span class="fu">,</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Docker Swarm Monitoring&quot;</span><span class="fu">,</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;url&quot;</span><span class="fu">:</span> <span class="st">&quot;https://grafana.com/grafana/dashboards/1122&quot;</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div></li>
+<li><strong>Node Exporter Full</strong>
+<ul>
+<li>This dashboard helps us monitor the host system that runs Docker
+containers and shows Docker metrics too.</li>
+<li>Dashboard ID: <code>1860</code>. We can import it using Grafana’s
+dashboard feature.</li>
+</ul>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;id&quot;</span><span class="fu">:</span> <span class="dv">1860</span><span class="fu">,</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;title&quot;</span><span class="fu">:</span> <span class="st">&quot;Node Exporter Full&quot;</span><span class="fu">,</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;url&quot;</span><span class="fu">:</span> <span class="st">&quot;https://grafana.com/grafana/dashboards/1860&quot;</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div></li>
+</ol>
+<p>To use these dashboards: - We go to Grafana, click the “+” icon, and
+select “Import”. - We enter the dashboard ID or upload the JSON file if
+we have it. - We need to set up our data sources to see the metrics.</p>
+<p>For more information about Docker and best ways to monitor it, we can
+read <a
+href="https://bestonlinetutorial.com/docker/how-to-monitor-docker-containers-with-prometheus-and-grafana.html">How
+to Monitor Docker Containers with Prometheus and Grafana</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="how-do-we-monitor-docker-containers-with-prometheus-and-grafana">1.
+How do we monitor Docker containers with Prometheus and Grafana?</h3>
+<p>To monitor Docker containers with Prometheus and Grafana, we need to
+set up Prometheus to get metrics from our Docker containers. We can use
+tools like cAdvisor to collect these metrics. Then, Prometheus can
+retrieve them. We can configure Grafana to display these metrics. This
+way, we can make dashboards that show the performance and health of our
+Docker containers.</p>
+<h3 id="what-is-cadvisor-and-how-does-it-help-in-docker-monitoring">2.
+What is cAdvisor and how does it help in Docker monitoring?</h3>
+<p>cAdvisor (Container Advisor) is a free tool that gives us information
+about how our containers are performing. It collects and shares metrics
+like CPU, memory, file system, and network usage. When we use cAdvisor
+with Prometheus, we can monitor our Docker containers better. This helps
+us see how resources are used and how performance changes over time.</p>
+<h3
+id="what-are-the-prerequisites-for-using-prometheus-and-grafana-with-docker">3.
+What are the prerequisites for using Prometheus and Grafana with
+Docker?</h3>
+<p>Before we can use Prometheus and Grafana for Docker monitoring, we
+must have Docker installed on our system. We also need to install
+Prometheus and Grafana, plus any exporters like cAdvisor. It is
+important to know some Docker commands and how to set up Prometheus and
+Grafana. This will help us see our Docker metrics clearly.</p>
+<h3 id="how-can-we-configure-grafana-to-visualize-docker-metrics">4. How
+can we configure Grafana to visualize Docker metrics?</h3>
+<p>To set up Grafana for showing Docker metrics, we must add Prometheus
+as a data source in Grafana. After that, we can create dashboards using
+queries to get metrics from Prometheus that come from Docker containers.
+Grafana gives us many ways to visualize, like graphs and charts, so we
+can show our metrics in easy to understand ways.</p>
+<h3
+id="what-are-some-useful-grafana-dashboards-for-monitoring-docker-containers">5.
+What are some useful Grafana dashboards for monitoring Docker
+containers?</h3>
+<p>There are many ready-made Grafana dashboards for monitoring Docker
+containers. These dashboards usually have panels for CPU usage, memory
+use, network traffic, and more. They give us a full view of container
+performance. We can find community dashboards on Grafana’s official site
+or GitHub. We can import and change them to fit our monitoring
+needs.</p>
+<p>For more insights into Docker and its parts, we can look at these
+resources: - <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">What
+is Docker and Why Should You Use It?</a> - <a
+href="https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html">How
+to Install Docker on Different Operating Systems</a> - <a
+href="https://bestonlinetutorial.com/docker/what-is-containerization-and-how-does-it-relate-to-docker.html">What
+is Containerization and How Does it Relate to Docker?</a></p>
+<p>These articles can help us understand Docker better. This will make
+our monitoring with Prometheus and Grafana work better too.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
