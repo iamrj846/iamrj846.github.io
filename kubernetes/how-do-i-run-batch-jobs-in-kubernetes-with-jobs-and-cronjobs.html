@@ -1,0 +1,773 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Do I Run Batch Jobs in Kubernetes with Jobs and CronJobs?</title>
+            <meta name="description" content="Learn how to run batch jobs in Kubernetes using Jobs and CronJobs. Optimize your workflows with our comprehensive guide!">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Do I Run Batch Jobs in Kubernetes with Jobs and CronJobs?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Batch jobs in Kubernetes are tasks that finish once they complete.
+They help us do things like data processing or automation in a
+containerized space. Kubernetes manages these jobs. It uses its
+orchestration skills to run tasks in a reliable and efficient way. We
+can run these tasks either one time or on a schedule.</p>
+<p>In this article, we will look at how to run batch jobs in Kubernetes
+with Jobs and CronJobs. We will talk about the main ideas behind
+Kubernetes Jobs. We will learn how to make a simple Job and how to check
+its status. We will also discuss CronJobs. These let us schedule jobs
+that run regularly. We will see real-life examples for both Jobs and
+CronJobs. We will also talk about handling job failures and share some
+best tips for running batch jobs in Kubernetes. Lastly, we will answer
+some common questions.</p>
+<ul>
+<li>How Can I Run Batch Jobs in Kubernetes Using Jobs and CronJobs?</li>
+<li>What Are Kubernetes Jobs and How Do They Work?</li>
+<li>How to Create a Simple Kubernetes Job?</li>
+<li>How to Monitor the Status of a Kubernetes Job?</li>
+<li>What Are CronJobs in Kubernetes and How to Use Them?</li>
+<li>How to Schedule Periodic Jobs with CronJobs?</li>
+<li>Real Life Use Cases for Kubernetes Jobs and CronJobs</li>
+<li>How to Manage Job Failures in Kubernetes?</li>
+<li>Best Practices for Running Batch Jobs in Kubernetes</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more reading on Kubernetes, you can visit <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">What
+is Kubernetes and How Does It Simplify Container Management?</a> and
+learn how to <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-install-minikube-for-local-kubernetes-development.html">Install
+Minikube for Local Kubernetes Development</a>.</p>
+<h2 id="what-are-kubernetes-jobs-and-how-do-they-work">What Are
+Kubernetes Jobs and How Do They Work?</h2>
+<p>Kubernetes Jobs are a part of Kubernetes. They help manage batch
+processes. These Jobs make sure a certain number of pods finish
+successfully. This is important for tasks that need to complete, like
+data processing, backups, or batch calculations.</p>
+<h3 id="key-features-of-kubernetes-jobs">Key Features of Kubernetes
+Jobs:</h3>
+<ul>
+<li><strong>Completion Guarantee</strong>: A Job makes sure that a
+certain number of pods finish successfully. If a pod fails, the Job
+controller will create new pods to replace them. It does this until the
+right number of successful completions is reached.</li>
+<li><strong>Parallel Execution</strong>: Jobs can run multiple pods at
+the same time. This helps in doing tasks faster. We can control how many
+pods run at once using the <code>completions</code> and
+<code>parallelism</code> fields.</li>
+<li><strong>One-off Tasks</strong>: Jobs are good for tasks that we do
+only once. They are different from Deployments, which are for
+applications that run for a long time.</li>
+<li><strong>Backoff Limit</strong>: We can set a limit for failed pods.
+This controls how many times we try again before saying the Job has
+failed.</li>
+</ul>
+<h3 id="how-jobs-work">How Jobs Work:</h3>
+<ol type="1">
+<li><strong>Pod Creation</strong>: When we create a Job, Kubernetes
+makes one or more pods based on what we defined in the Job
+resource.</li>
+<li><strong>Pod Completion</strong>: When a pod finishes its task and
+exits successfully, the Job counts this as completed.</li>
+<li><strong>Automatic Management</strong>: The Job controller watches
+the status of the pods. It manages their lifecycle to make sure we reach
+the specified number of successful completions.</li>
+<li><strong>Job Status</strong>: Jobs keep detailed information about
+their status. This includes how many completions were successful and how
+many failed.</li>
+</ol>
+<h3 id="example-of-a-kubernetes-job">Example of a Kubernetes Job:</h3>
+<p>Here is a simple YAML definition for a Kubernetes Job that runs a
+<code>Hello World</code> container:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hello-job</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hello</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;echo&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;Hello, Kubernetes!&#39;</span><span class="kw">]</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">backoffLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span></code></pre></div>
+<h3 id="running-the-job">Running the Job:</h3>
+<p>To create the Job in our Kubernetes cluster, we can use this
+command:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> hello-job.yaml</span></code></pre></div>
+<p>To check the status of the Job, we can run:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get jobs</span></code></pre></div>
+<p>This command will give us information about how many times the Job
+completed and how many times it failed. This helps us see how well it
+worked.</p>
+<p>Kubernetes Jobs help us process batches efficiently. They manage the
+execution and lifecycle of pods. This way, we can ensure tasks are
+completed reliably and we can monitor them well.</p>
+<h2 id="how-to-create-a-simple-kubernetes-job">How to Create a Simple
+Kubernetes Job?</h2>
+<p>To create a simple Kubernetes Job, we need to define a Job resource
+in a YAML file. This Job will run a pod to do some tasks, like
+processing data or doing batch operations. Here is how we can define and
+create a simple Job in Kubernetes.</p>
+<ol type="1">
+<li><strong>Create a YAML file for the Job</strong> (for example,
+<code>simple-job.yaml</code>):</li>
+</ol>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> simple-job</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> job-container</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;echo&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;Hello, Kubernetes Jobs!&quot;</span><span class="kw">]</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">backoffLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span></code></pre></div>
+<h3 id="explanation-of-the-yaml">Explanation of the YAML:</h3>
+<ul>
+<li><strong>apiVersion</strong>: This tells the API version for the
+batch Job.</li>
+<li><strong>kind</strong>: This shows that this resource is a Job.</li>
+<li><strong>metadata</strong>: This has information about the Job, like
+its name.</li>
+<li><strong>spec</strong>: This defines what we want the Job to be.
+<ul>
+<li><strong>template</strong>: This tells us the pod template that the
+Job will create.
+<ul>
+<li><strong>spec</strong>: This defines the details of the container.
+<ul>
+<li><strong>containers</strong>: This lists the containers to run. Here,
+it uses a simple <code>busybox</code> image.</li>
+<li><strong>command</strong>: This is the command that the container
+will run.</li>
+<li><strong>restartPolicy</strong>: Set to <code>Never</code> so the Job
+does not restart if it fails.</li>
+</ul></li>
+</ul></li>
+<li><strong>backoffLimit</strong>: This is the number of tries before we
+say the Job has failed.</li>
+</ul></li>
+</ul>
+<ol start="2" type="1">
+<li><strong>Apply the Job using kubectl</strong>:</li>
+</ol>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> simple-job.yaml</span></code></pre></div>
+<ol start="3" type="1">
+<li><strong>Check the Job status</strong>:</li>
+</ol>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get jobs</span></code></pre></div>
+<ol start="4" type="1">
+<li><strong>View the logs of the Job</strong>:</li>
+</ol>
+<p>To check the output of the Job, we need to get the pod name:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">--selector</span><span class="op">=</span>job-name=simple-job</span></code></pre></div>
+<p>Then, we can see the logs:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This way, we can create and run a simple Kubernetes Job. For more
+details and advanced setups, we should look at the official Kubernetes
+documentation.</p>
+<h2 id="how-to-monitor-the-status-of-a-kubernetes-job">How to Monitor
+the Status of a Kubernetes Job?</h2>
+<p>We can use the <code>kubectl</code> command-line tool to monitor the
+status of a Kubernetes Job. This tool helps us check the state and logs
+of the Job. Here are the steps to monitor a Kubernetes Job:</p>
+<ol type="1">
+<li><p><strong>Get Job Status</strong>: We can use this command to get
+the status of a specific Job:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get jobs <span class="op">&lt;</span>job-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command shows us the Job’s status. It tells us how many
+completions were successful and how many failed. It also shows any
+active pods.</p></li>
+<li><p><strong>Check Pods Created by the Job</strong>: Each Job creates
+Pods. To see the Pods related to the Job, we can use:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">--selector</span><span class="op">=</span>job-name=<span class="op">&lt;</span>job-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command will show us the Pods created by the Job and their
+current status.</p></li>
+<li><p><strong>View Pod Logs</strong>: If we want to check the logs of a
+specific Pod created by the Job, we use:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command shows the logs. It helps us find any issues the Job
+might have had.</p></li>
+<li><p><strong>Describe Job</strong>: For more details about the Job,
+like events and conditions, we can use:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe job <span class="op">&lt;</span>job-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command gives us insights into the Job’s execution, including
+any errors or warnings.</p></li>
+<li><p><strong>Monitor in Real-Time</strong>: If we want to see the
+status of Jobs and Pods in real time, we can combine the
+<code>watch</code> command with <code>kubectl</code>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">watch</span> kubectl get jobs</span></code></pre></div></li>
+<li><p><strong>Use Kubernetes Dashboard</strong>: If we have the
+Kubernetes Dashboard, we can visually check jobs and their statuses on
+the web interface.</p></li>
+</ol>
+<p>By following these steps, we can monitor the status of a Kubernetes
+Job well. This way, our batch jobs can run smoothly. For more
+information on Kubernetes Jobs, please check this article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-jobs-and-how-do-they-work.html">Kubernetes
+Jobs and How They Work</a>.</p>
+<h2 id="what-are-cronjobs-in-kubernetes-and-how-to-use-them">What Are
+CronJobs in Kubernetes and How to Use Them?</h2>
+<p>CronJobs in Kubernetes are a tool we use to run Jobs on a set
+schedule. They work like the cron tool in Unix/Linux systems. We can use
+them for tasks that need to happen regularly. This can include backups,
+making reports, or cleaning up files.</p>
+<h3 id="key-features-of-cronjobs">Key Features of CronJobs:</h3>
+<ul>
+<li><strong>Scheduling</strong>: We use a simple cron format to set the
+schedule.</li>
+<li><strong>Job Management</strong>: Each time a job runs, Kubernetes
+creates a Job for it.</li>
+<li><strong>History Limits</strong>: We can decide how many successful
+and failed jobs to keep for checking.</li>
+</ul>
+<h3 id="basic-cronjob-configuration">Basic CronJob Configuration:</h3>
+<p>We define a CronJob in a YAML file. Here is an example of a basic
+CronJob that runs a job every day at midnight:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronJob</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> daily-job</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0 0 * * *&quot;</span><span class="co">  # Cron schedule expression</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">jobTemplate</span><span class="kw">:</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hello</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">args</span><span class="kw">:</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> /bin/sh</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> -c</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> date; echo Hello from the Kubernetes CronJob</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span></code></pre></div>
+<h3 id="deploying-a-cronjob">Deploying a CronJob:</h3>
+<p>To make a CronJob in our Kubernetes cluster, we save the above YAML
+in a file called <code>cronjob.yaml</code>. Then we run:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> cronjob.yaml</span></code></pre></div>
+<h3 id="viewing-cronjob-status">Viewing CronJob Status:</h3>
+<p>We can check the status of our CronJob by running:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get cronjob</span></code></pre></div>
+<p>To see the jobs that the CronJob made, we use:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get jobs</span></code></pre></div>
+<h3 id="managing-cronjob-behavior">Managing CronJob Behavior:</h3>
+<p>We can control how CronJobs work with these fields: -
+<strong>successfulJobsHistoryLimit</strong>: How many successful jobs we
+want to keep. - <strong>failedJobsHistoryLimit</strong>: How many failed
+jobs we want to keep.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">successfulJobsHistoryLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">failedJobsHistoryLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<p>For more details about the CronJob setup and features, we can look at
+the official Kubernetes documentation.</p>
+<h3 id="use-cases">Use Cases:</h3>
+<ul>
+<li><strong>Database Backups</strong>: We can set regular backups for
+our databases.</li>
+<li><strong>Scheduled Reports</strong>: We can create reports at certain
+times.</li>
+<li><strong>Cleanup Tasks</strong>: We can automatically remove old
+files or logs.</li>
+</ul>
+<p>CronJobs in Kubernetes give us a strong way to handle regular tasks
+easily. They use Kubernetes’ power to manage everything. To learn more
+about managing jobs in Kubernetes, we can check this article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-run-batch-jobs-in-kubernetes-with-jobs-and-cronjobs.html">Kubernetes
+Jobs</a>.</p>
+<h2 id="how-to-schedule-periodic-jobs-with-cronjobs">How to Schedule
+Periodic Jobs with CronJobs?</h2>
+<p>Kubernetes CronJobs let us run jobs on a schedule like the Unix cron
+system. This is good for tasks like backups, report making, and sending
+notifications. Below are steps for us to create and manage CronJobs in
+Kubernetes.</p>
+<h3 id="creating-a-cronjob">Creating a CronJob</h3>
+<p>To create a CronJob, we need to write it in a YAML file. Here is an
+example of a simple CronJob that runs a job every minute:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronJob</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-cronjob</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;* * * * *&quot;</span><span class="co">  # Every minute</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">jobTemplate</span><span class="kw">:</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-job</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image:latest</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">args</span><span class="kw">:</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> /bin/sh</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> -c</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> echo &quot;Hello from the CronJob!&quot;</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span></code></pre></div>
+<h3 id="applying-the-cronjob">Applying the CronJob</h3>
+<p>We save the above config to a file named <code>cronjob.yaml</code>
+and apply it using kubectl:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> cronjob.yaml</span></code></pre></div>
+<h3 id="viewing-cronjob-status-1">Viewing CronJob Status</h3>
+<p>To check the status of our CronJob, we can use:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get cronjobs</span></code></pre></div>
+<p>To see the jobs created by the CronJob, we can run:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get jobs <span class="at">--watch</span></span></code></pre></div>
+<h3 id="checking-cronjob-logs">Checking CronJob Logs</h3>
+<p>We can see the logs of a specific job that was created by the
+CronJob:</p>
+<ol type="1">
+<li><p>First, we list jobs to find the job name:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get jobs</span></code></pre></div></li>
+<li><p>Then, we get logs for that job:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>job-name<span class="op">&gt;</span></span></code></pre></div></li>
+</ol>
+<h3 id="managing-cronjob">Managing CronJob</h3>
+<p>If we want to delete a CronJob, we can run:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> delete cronjob my-cronjob</span></code></pre></div>
+<h3 id="real-world-example-use-cases">Real-World Example Use Cases</h3>
+<ul>
+<li><strong>Data Backups</strong>: We can schedule backups of databases
+or file systems.</li>
+<li><strong>Email Notifications</strong>: We can send email reports
+regularly.</li>
+<li><strong>Data Processing</strong>: We can run ETL processes at set
+times.</li>
+</ul>
+<p>For more examples and detailed info, we can look at the Kubernetes
+documentation on <a
+href="https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/">CronJobs</a>.
+This helps us use the power of scheduling in Kubernetes well.</p>
+<p>For more on Kubernetes jobs and managing them, we can read this
+article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-run-batch-jobs-in-kubernetes-with-jobs-and-cronjobs.html">how
+to run batch jobs in Kubernetes using Jobs and CronJobs</a>.</p>
+<h2 id="real-life-use-cases-for-kubernetes-jobs-and-cronjobs">Real Life
+Use Cases for Kubernetes Jobs and CronJobs</h2>
+<p>We can use Kubernetes Jobs and CronJobs to manage tasks that need to
+run in batches. These are very helpful in real life. Here are some
+simple examples:</p>
+<ol type="1">
+<li><strong>Data Processing Pipelines</strong>:
+<ul>
+<li>We can use Jobs to run ETL tasks. This helps to process large data
+sets. For example, we can run a Job to gather logs from many
+microservices into one database.</li>
+</ul>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> log-aggregator</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> aggregator</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> log-aggregator:latest</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div></li>
+<li><strong>Background Tasks</strong>:
+<ul>
+<li>We can use Jobs for background tasks like sending emails, processing
+images, or making reports.</li>
+</ul>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> email-sender</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> send-email</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> email-sender:latest</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div></li>
+<li><strong>Batch Data Imports</strong>:
+<ul>
+<li>We can use CronJobs to import data from outside sources or APIs into
+our application regularly.</li>
+</ul>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1beta1</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronJob</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> data-import</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0 * * * *&quot;</span><span class="co">  # Every hour</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">jobTemplate</span><span class="kw">:</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> importer</span></span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">image</span><span class="kw">:</span><span class="at"> data-importer:latest</span></span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span></code></pre></div></li>
+<li><strong>Database Maintenance</strong>:
+<ul>
+<li>We can schedule CronJobs for regular database tasks like backups or
+cleaning up.</li>
+</ul>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1beta1</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronJob</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> db-backup</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0 2 * * *&quot;</span><span class="co">  # Daily at 2 AM</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">jobTemplate</span><span class="kw">:</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> backup</span></span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">image</span><span class="kw">:</span><span class="at"> db-backup:latest</span></span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span></code></pre></div></li>
+<li><strong>Testing and CI/CD Pipelines</strong>:
+<ul>
+<li>We can use Jobs to run automated tests. This is part of our CI/CD
+pipeline. It helps to check code quality before we deploy.</li>
+</ul>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-job</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test</span></span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> test-runner:latest</span></span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div></li>
+<li><strong>Scheduled Reports</strong>:
+<ul>
+<li>We can set up CronJobs to create and send reports at certain times.
+This could be weekly sales reports or checks on system health.</li>
+</ul>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1beta1</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronJob</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> weekly-report</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0 9 * * 1&quot;</span><span class="co">  # Every Monday at 9 AM</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">jobTemplate</span><span class="kw">:</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> report-generator</span></span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">image</span><span class="kw">:</span><span class="at"> report-generator:latest</span></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span></code></pre></div></li>
+<li><strong>Resource Cleanup</strong>:
+<ul>
+<li>We can schedule CronJobs to clean up resources like temporary files
+or old Docker images. This helps us save storage.</li>
+</ul></li>
+</ol>
+<p>Kubernetes Jobs and CronJobs help us run batch tasks well. They
+improve our applications and how we manage resources. For more info on
+Kubernetes, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html">why
+you should use Kubernetes for your applications</a>.</p>
+<h2 id="how-to-manage-job-failures-in-kubernetes">How to Manage Job
+Failures in Kubernetes?</h2>
+<p>Managing job failures in Kubernetes is very important. It helps us
+keep our applications reliable and stable. Kubernetes Jobs have ways to
+handle failures well. Here are some simple strategies we can use:</p>
+<ol type="1">
+<li><strong>Retry Mechanism</strong>:
+<ul>
+<li>We can set the <code>backoffLimit</code> in our Job spec. This tells
+how many times to retry before we say the Job has failed.</li>
+<li>Example:</li>
+</ul>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-job</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">backoffLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example</span></span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> example-image</span></span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div></li>
+<li><strong>Job Completion Tracking</strong>:
+<ul>
+<li>We can use the <code>ttlSecondsAfterFinished</code> field. This
+helps us clean up finished Jobs after some time. It keeps our system
+tidy.</li>
+<li>Example:</li>
+</ul>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-job</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ttlSecondsAfterFinished</span><span class="kw">:</span><span class="at"> </span><span class="dv">300</span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example</span></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> example-image</span></span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div></li>
+<li><strong>Event Monitoring</strong>:
+<ul>
+<li>We can run <code>kubectl describe job &lt;job-name&gt;</code>. This
+shows us the status and events related to the Job. It helps us find out
+why it failed.</li>
+<li>Example command:</li>
+</ul>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe job example-job</span></code></pre></div></li>
+<li><strong>Pod-Level Debugging</strong>:
+<ul>
+<li>We should check the Pods made by the Job. We can look at logs and
+exit codes to see why it failed. We can use:</li>
+</ul>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><strong>Resource Management</strong>:
+<ul>
+<li>We need to set resource requests and limits. This stops Jobs from
+failing because they do not have enough resources. We do this in the
+container spec.</li>
+<li>Example:</li>
+</ul>
+<div class="sourceCode" id="cb36"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span></code></pre></div></li>
+<li><strong>Using Readiness and Liveness Probes</strong>:
+<ul>
+<li>We can add readiness and liveness probes. These make sure the Job’s
+container is healthy before it starts working. This helps avoid early
+failures.</li>
+<li>Example:</li>
+</ul>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">readinessProbe</span><span class="kw">:</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /health</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div></li>
+<li><strong>Failure Notification</strong>:
+<ul>
+<li>We can use monitoring tools like Prometheus and Grafana. They help
+us know when a Job fails so we can act fast.</li>
+</ul></li>
+<li><strong>Job History</strong>:
+<ul>
+<li>We should keep track of Job history. We can set
+<code>successfulJobsHistoryLimit</code> and
+<code>failedJobsHistoryLimit</code>. This lets us keep records of old
+Jobs for checking later.</li>
+</ul></li>
+</ol>
+<p>By using these strategies, we can manage Job failures in Kubernetes
+better. This makes our batch processing work smoother. For more details
+about Kubernetes Jobs, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-jobs-and-how-do-they-work.html">What
+Are Kubernetes Jobs and How Do They Work?</a>.</p>
+<h2 id="best-practices-for-running-batch-jobs-in-kubernetes">Best
+Practices for Running Batch Jobs in Kubernetes</h2>
+<p>We need to follow some best practices to run batch jobs in Kubernetes
+well. This helps us with reliability, efficiency, and keeping things
+easy to maintain. Here are the main practices we should think about:</p>
+<ol type="1">
+<li><p><strong>Resource Requests and Limits</strong>: We should set
+resource requests and limits for our jobs. This makes sure they get
+enough resources. It also helps the cluster perform well. This way, we
+can schedule jobs better and avoid resource fights.</p>
+<div class="sourceCode" id="cb38"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-job</span></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example</span></span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> example-image</span></span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb38-12"><a href="#cb38-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb38-13"><a href="#cb38-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
+<span id="cb38-14"><a href="#cb38-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
+<span id="cb38-15"><a href="#cb38-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb38-16"><a href="#cb38-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb38-17"><a href="#cb38-17" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span id="cb38-18"><a href="#cb38-18" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div></li>
+<li><p><strong>Use of Backoff Limit</strong>: We need to set a backoff
+limit. This helps us control how often failed jobs retry. It stops us
+from using too many resources on jobs that keep failing.</p>
+<div class="sourceCode" id="cb39"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">backoffLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span></code></pre></div></li>
+<li><p><strong>Graceful Shutdown</strong>: We should handle graceful
+shutdowns well. This means jobs can finish their work before we stop
+them. We can do this by using signal handling in our
+application.</p></li>
+<li><p><strong>Leverage Parallelism</strong>: We can use the
+<code>parallelism</code> and <code>completions</code> options in our job
+specs. This lets us run many job instances at the same time. It helps to
+make the execution time shorter.</p>
+<div class="sourceCode" id="cb40"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div></li>
+<li><p><strong>Use of Persistent Volumes</strong>: If our batch job
+needs to save data, we should use Kubernetes Persistent Volumes (PVs) or
+Persistent Volume Claims (PVCs). This keeps our output data
+safe.</p></li>
+<li><p><strong>Job Cleanup</strong>: We need a cleanup plan for jobs
+that are done or have failed. We can use TTL (Time To Live) for finished
+jobs. This will help delete them automatically after a set time.</p>
+<div class="sourceCode" id="cb41"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> TTLAfterFinished</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ttlSecondsAfterFinished</span><span class="kw">:</span><span class="at"> </span><span class="dv">3600</span><span class="co">  # Job will be deleted after 1 hour</span></span></code></pre></div></li>
+<li><p><strong>Logging and Monitoring</strong>: We must set up logging
+and monitoring for our jobs. We can use tools like Prometheus and
+Grafana to check job metrics and see job status.</p></li>
+<li><p><strong>Error Handling</strong>: We should add strong error
+handling in our job logic. This helps us manage unexpected failures in a
+smooth way.</p></li>
+<li><p><strong>Namespace Isolation</strong>: We can use different
+namespaces for different environments or applications. This helps us
+isolate jobs and manage resources better.</p></li>
+<li><p><strong>CronJob Considerations</strong>: For jobs that run on a
+schedule, we should use CronJobs with good scheduling times. We can stop
+jobs from running at the same time by using
+<code>concurrencyPolicy</code>.</p>
+<div class="sourceCode" id="cb42"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;*/5 * * * *&quot;</span><span class="co">  # Every 5 minutes</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">concurrencyPolicy</span><span class="kw">:</span><span class="at"> Forbid</span><span class="co">  # Prevent overlapping executions</span></span></code></pre></div></li>
+</ol>
+<p>By following these best practices for running batch jobs in
+Kubernetes, we can improve the reliability and efficiency of our
+workloads. This helps us make sure everything runs smoothly in our
+Kubernetes cluster.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<p><strong>What is a Kubernetes Job?</strong><br />
+A Kubernetes Job is a tool that makes one or more pods to do a specific
+task until it finishes. It helps to make sure the task runs well by
+taking care of the pods’ life cycle and trying again if it needs to. We
+use Kubernetes Jobs for tasks that need to run in batches or for short
+time. If we want to learn more about Jobs, we can read our article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-jobs-and-how-do-they-work.html">what
+are Kubernetes Jobs and how do they work</a>.</p>
+<p><strong>How do Kubernetes CronJobs differ from Jobs?</strong><br />
+Kubernetes CronJobs are a special type of Jobs. They let us schedule
+tasks to run at certain times or intervals, like cron in Unix systems.
+While Jobs run only once, CronJobs can run tasks many times. This is
+good for things like backups or making reports. For more details, we can
+check our article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-cronjobs-in-kubernetes-and-how-to-use-them.html">what
+are CronJobs in Kubernetes and how to use them</a>.</p>
+<p><strong>How can I monitor the status of a Kubernetes
+Job?</strong><br />
+We can monitor the status of a Kubernetes Job by using
+<code>kubectl</code> commands. We can check the Job’s status and logs.
+If we run <code>kubectl get jobs</code> and
+<code>kubectl describe job &lt;job-name&gt;</code>, we can see detailed
+information about the Job’s completion and any errors. For more tips on
+monitoring, read our article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-my-kubernetes-cluster.html">how
+do I monitor my Kubernetes cluster</a>.</p>
+<p><strong>What should I do if my Kubernetes Job fails?</strong><br />
+If a Kubernetes Job fails, we can check the pod logs and event messages
+to fix the issue. We use <code>kubectl logs &lt;pod-name&gt;</code> and
+<code>kubectl describe job &lt;job-name&gt;</code> for that. We can also
+set up Job retries or change resource limits to stop failures. For more
+on handling failures, see our best practices article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-to-manage-job-failures-in-kubernetes.html">how
+do I manage job failures in Kubernetes</a>.</p>
+<p><strong>Are there best practices for running batch jobs in
+Kubernetes?</strong><br />
+Yes, there are many best practices for running batch jobs in Kubernetes.
+We should set resource requests and limits, use good naming rules, and
+have retries for failed Jobs. Also, we can use CronJobs for tasks that
+need a schedule. For a full guide, check our article on <a
+href="https://bestonlinetutorial.com/kubernetes/best-practices-for-running-batch-jobs-in-kubernetes.html">best
+practices for running batch jobs in Kubernetes</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
