@@ -1,0 +1,649 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Do I Perform Rolling Updates in Kubernetes?</title>
+            <meta name="description" content="Learn how to perform rolling updates in Kubernetes effectively. Ensure zero downtime and seamless application upgrades.">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Do I Perform Rolling Updates in Kubernetes?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Rolling updates in Kubernetes is a way to update the application in
+our Kubernetes cluster with little downtime. This method slowly changes
+the app’s instances to new versions. It makes sure that some instances
+stay available while we update. By using rolling updates, we keep our
+application running and apply updates smoothly.</p>
+<p>In this article, we will look at how to do rolling updates in
+Kubernetes. We will talk about what rolling updates are, why they
+matter, how to set up deployments, important settings, how to monitor
+updates, and what happens during the update. We will also explain how to
+go back if an update fails, real-life examples, and how to test our
+rolling update plan. Here’s what we will cover:</p>
+<ul>
+<li>How Can I Perform Rolling Updates in Kubernetes?</li>
+<li>What is a Rolling Update in Kubernetes?</li>
+<li>How to Configure a Deployment for Rolling Updates?</li>
+<li>What are the Key Parameters for Rolling Updates?</li>
+<li>How Do I Monitor Rolling Updates in Kubernetes?</li>
+<li>What Happens During a Rolling Update?</li>
+<li>How to Rollback a Failed Rolling Update?</li>
+<li>What are Real-World Use Cases for Rolling Updates in
+Kubernetes?</li>
+<li>How to Test Your Rolling Update Strategy?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more information on Kubernetes, we suggest these articles: <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">What
+is Kubernetes and How Does it Simplify Container Management?</a>, <a
+href="https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html">Why
+Should I Use Kubernetes for My Applications?</a>, and <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">What
+are Kubernetes Deployments and How Do I Use Them?</a>. These articles
+will help us better understand how to deploy and manage apps in
+Kubernetes.</p>
+<h2 id="what-is-a-rolling-update-in-kubernetes">What is a Rolling Update
+in Kubernetes?</h2>
+<p>A rolling update in Kubernetes is a way to update our applications
+without any downtime. It slowly changes the old versions of the
+application to new versions. This happens while making sure some parts
+are always running. This way, we can keep things working smoothly when
+we switch from old to new versions.</p>
+<h3 id="key-features-of-rolling-updates">Key Features of Rolling
+Updates:</h3>
+<ul>
+<li><strong>Zero Downtime:</strong> Users do not see any downtime when
+we update.</li>
+<li><strong>Gradual Replacement:</strong> We update Pods step by step.
+This way, part of the application is always available.</li>
+<li><strong>Rollback Ability:</strong> If we find a problem, Kubernetes
+can quickly go back to the last working version.</li>
+</ul>
+<h3 id="example-of-a-rolling-update-configuration">Example of a Rolling
+Update Configuration:</h3>
+<p>In our deployment YAML, we can set a rolling update strategy like
+this:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-container</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app:latest</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<h3 id="parameters-explained">Parameters Explained:</h3>
+<ul>
+<li><strong>maxUnavailable:</strong> This is the most Pods that can be
+down during the update. In our example, only one Pod can be down.</li>
+<li><strong>maxSurge:</strong> This is the most Pods that can be added
+above the number we want during the update. Here, we can add one extra
+Pod.</li>
+</ul>
+<p>For more information about Kubernetes deployments, please check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">what
+are Kubernetes deployments and how do I use them</a>.</p>
+<h2 id="how-to-configure-a-deployment-for-rolling-updates">How to
+Configure a Deployment for Rolling Updates?</h2>
+<p>To setup a deployment for rolling updates in Kubernetes, we need to
+define the deployment strategy in the YAML file. By default, Kubernetes
+uses the rolling update strategy for deployments. This way, we can
+update our application without stopping it.</p>
+<p>Here is a simple example of a deployment configuration that uses
+rolling updates:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-container</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app-image:latest</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<h3 id="key-elements-of-the-configuration">Key Elements of the
+Configuration:</h3>
+<ul>
+<li><strong>replicas</strong>: This tells how many pod replicas we want
+to run.</li>
+<li><strong>selector</strong>: This helps to find the set of pods that
+the deployment manages.</li>
+<li><strong>template</strong>: This describes the pod details, like the
+container image and ports.</li>
+<li><strong>strategy</strong>: This tells which strategy we use for
+updates.
+<ul>
+<li><strong>type</strong>: We set this to <code>RollingUpdate</code> to
+use rolling updates.</li>
+<li><strong>maxUnavailable</strong>: This is the number of pods that can
+be not available during the update. For example, it can be
+<code>1</code>.</li>
+<li><strong>maxSurge</strong>: This is the number of pods that can be
+created above the needed number during the update. For example, it can
+be <code>1</code>.</li>
+</ul></li>
+</ul>
+<h3 id="applying-the-configuration">Applying the Configuration:</h3>
+<p>We can apply the configuration with this command:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> deployment.yaml</span></code></pre></div>
+<p>To see the status of our deployment and its updates, we can use:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout status deployment/my-app</span></code></pre></div>
+<p>When we configure our deployment like this, it helps us to update
+easily with little downtime. This way, we keep our service running while
+we add new changes. For more details on Kubernetes deployments, we can
+check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">this
+article</a>.</p>
+<h2 id="what-are-the-key-parameters-for-rolling-updates">What are the
+Key Parameters for Rolling Updates?</h2>
+<p>In Kubernetes, rolling updates help us update our application without
+any downtime. We do this by slowly replacing parts of the old version
+with the new version. There are key parameters that we need to know for
+rolling updates in a Kubernetes deployment. These include:</p>
+<ul>
+<li><p><strong>maxUnavailable</strong>: This parameter tells us the most
+number of pods that can be not working during the update. We can set it
+as a specific number or a percentage. For example, if we set it to
+<code>1</code>, at least one pod must always be working.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div></li>
+<li><p><strong>maxSurge</strong>: This shows the most number of pods
+that can be made above the expected number of pods during the update.
+Like before, we can set it as a number or a percentage. For example, if
+we set it to <code>25%</code>, Kubernetes can create extra pods up to
+25% of what we want.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> 25%</span></span></code></pre></div></li>
+<li><p><strong>progressDeadlineSeconds</strong>: This parameter tells us
+how long to wait in seconds for the update to finish before saying it
+has failed. It helps make sure our deployment does not get stuck for a
+long time.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">progressDeadlineSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">600</span></span></code></pre></div></li>
+<li><p><strong>revisionHistoryLimit</strong>: This shows how many old
+Replicasets we keep for a deployment. The default is 10, but we can
+change it based on how many we need for rolling back.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">revisionHistoryLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div></li>
+<li><p><strong>minReadySeconds</strong>: This is the least number of
+seconds a new pod should be ready without any problems to be counted as
+available. This helps keep the application stable after we put out a new
+version.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">minReadySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div></li>
+</ul>
+<p>We can set these parameters in the deployment YAML file under the
+<code>spec</code> section. Here is an example of a full deployment
+configuration that uses these parameters:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-deployment</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> 25%</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> example</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> example</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-container</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> example-image:latest</span></span></code></pre></div>
+<p>By changing these key parameters for rolling updates, we can control
+how our deployments work. This helps us move between application
+versions smoothly while reducing downtime and keeping our service
+running.</p>
+<h2 id="how-do-we-monitor-rolling-updates-in-kubernetes">How Do We
+Monitor Rolling Updates in Kubernetes?</h2>
+<p>Monitoring rolling updates in Kubernetes is important. We need to
+check that deployments go well and that applications stay available.
+Here are some simple ways to monitor rolling updates:</p>
+<ol type="1">
+<li><p><strong>kubectl rollout status</strong>: This command helps us
+see the status of the deployment during a rolling update.</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout status deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Events</strong>: Kubernetes makes events that show us
+what is happening with the deployment. We can use this command to see
+events for the deployment:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get events <span class="at">--sort-by</span><span class="op">=</span><span class="st">&#39;.metadata.creationTimestamp&#39;</span></span></code></pre></div></li>
+<li><p><strong>Pod Health Checks</strong>: We must set up readiness and
+liveness probes for our applications. This way, traffic only goes to
+pods that are ready. Here is an example YAML setup:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">readinessProbe</span><span class="kw">:</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /health</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div></li>
+<li><p><strong>Logs</strong>: We can use <code>kubectl logs</code> to
+check the logs of new pods during the update. This helps us find
+problems quickly.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Metrics Server</strong>: We should deploy the Kubernetes
+Metrics Server. It helps us check how much CPU and memory our pods use
+during the update.</p></li>
+<li><p><strong>Prometheus and Grafana</strong>: We can set up Prometheus
+for monitoring and Grafana for showing data. We can make dashboards that
+show metrics like pod availability, response times, and error
+rates.</p></li>
+<li><p><strong>Deployment Strategy Configuration</strong>: In our
+deployment setup, we can set <code>maxSurge</code> and
+<code>maxUnavailable</code> values. This controls how many pods we can
+update at once. It helps us balance load and monitor updates.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div></li>
+<li><p><strong>Health Checks with Prometheus</strong>: We can use
+Prometheus to get metrics from our application’s health endpoints. This
+helps us check health during updates.</p></li>
+<li><p><strong>Visualize with KubeDash or Kiali</strong>: We can use
+tools like KubeDash or Kiali to see a graphical view of the deployment
+status and health during the update.</p></li>
+</ol>
+<p>These methods will help us monitor rolling updates in Kubernetes
+well. This way, we can make sure everything goes smoothly and find
+problems fast. For more details on setting up deployments, we can check
+<a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">this
+article on Kubernetes deployments</a>.</p>
+<h2 id="what-happens-during-a-rolling-update">What Happens During a
+Rolling Update?</h2>
+<p>During a rolling update in Kubernetes, the update happens slowly
+without stopping the application. This keeps the application available
+while we put in new versions. Here is what happens step by step:</p>
+<ol type="1">
+<li><p><strong>Update Configuration</strong>: When we put a new
+configuration, like a new container image, into a Deployment, Kubernetes
+starts the rolling update.</p></li>
+<li><p><strong>Pod Creation</strong>: Kubernetes makes new Pods with the
+updated configuration. The new Pods start while the old Pods are still
+running.</p></li>
+<li><p><strong>Readiness Check</strong>: Each new Pod needs to pass its
+readiness checks before we send traffic to it. This makes sure only
+healthy Pods handle requests.</p></li>
+<li><p><strong>Scaling Up</strong>: The number of replicas goes up for a
+short time. This way, both old and new Pods run together during the
+change.</p></li>
+<li><p><strong>Traffic Shift</strong>: After the new Pods are ready,
+Kubernetes slowly moves traffic from the old Pods to the new
+Pods.</p></li>
+<li><p><strong>Scaling Down</strong>: As more new Pods are ready, we
+stop old Pods one by one. This keeps going until all old Pods are
+replaced.</p></li>
+<li><p><strong>Completion</strong>: The rolling update finishes when all
+old Pods are gone and all new Pods are ready to take requests.</p></li>
+</ol>
+<p>We can set up the rolling update strategy in our Deployment
+specification. Here is an example of a Deployment configuration with
+rolling update settings:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app:v2</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<p>In this configuration, <code>maxUnavailable</code> means at least 2
+Pods should stay available during the update. <code>maxSurge</code> lets
+us create one extra Pod beyond the desired count. This keeps everything
+running smoothly with no downtime.</p>
+<p>Kubernetes makes it easier for us to handle rolling updates. It helps
+us deploy changes without problems. For more information on how to set
+up your Kubernetes environment for good deployments, check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-a-kubernetes-cluster-on-google-cloud-gke.html">how
+to deploy a Kubernetes cluster</a>.</p>
+<h2 id="how-to-rollback-a-failed-rolling-update">How to Rollback a
+Failed Rolling Update?</h2>
+<p>In Kubernetes, when a rolling update fails, we can easily go back to
+the last stable version of our application. We do this using the
+<code>kubectl rollout</code> command. This command helps us manage the
+history of our deployment.</p>
+<p>To rollback a failed rolling update, we follow these simple
+steps:</p>
+<ol type="1">
+<li><p><strong>Check the Deployment History</strong>: First, we need to
+look at the history of our deployment to find the revisions.</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout history deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div>
+<p>We replace <code>&lt;deployment-name&gt;</code> with the name of our
+deployment.</p></li>
+<li><p><strong>Rollback to the Previous Revision</strong>: Next, we use
+the <code>kubectl rollout undo</code> command to go back to the last
+successful version.</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout undo deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Rollback to a Specific Revision</strong>: If we want to
+rollback to a specific version, we can give the revision number.</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout undo deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> --to-revision=<span class="op">&lt;</span>revision-number<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Verify Rollback</strong>: After we rollback, we need to
+check the status of our deployment to make sure it went back
+successfully.</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout status deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Inspect the Current State</strong>: We can also describe
+the deployment to see its current state and check if the rollback was
+successful.</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div></li>
+</ol>
+<p>With these commands, we can easily manage and rollback failed rolling
+updates in Kubernetes. This way, our applications stay stable and run
+well. For more about managing Kubernetes deployments, check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">what
+are Kubernetes deployments and how do I use them</a>.</p>
+<h2
+id="what-are-real-world-use-cases-for-rolling-updates-in-kubernetes">What
+are Real-World Use Cases for Rolling Updates in Kubernetes?</h2>
+<p>Rolling updates in Kubernetes is a important way to deploy
+applications. It helps to keep the application running without any
+downtime. Here are some real-world examples:</p>
+<ol type="1">
+<li><p><strong>Microservices Architecture</strong>: In a microservices
+setup, we can update services one by one. With rolling updates, our team
+can deploy updates to some services without affecting the whole
+application. This is great for our continuous delivery process.</p></li>
+<li><p><strong>Web Applications</strong>: For web applications that need
+to be always available, rolling updates let us do updates step by step.
+This lowers the chance of downtime. It makes sure users can always
+access the application, even when we are updating it.</p></li>
+<li><p><strong>A/B Testing</strong>: We can use rolling updates for A/B
+testing. This means we can show different versions of an application to
+different groups of users. It helps us compare performance and user
+experience before we fully launch a new version.</p></li>
+<li><p><strong>Feature Flags</strong>: When we want to add new features,
+we can use rolling updates with feature flags. This way, we can control
+which users see the new features. It allows us to test safely in live
+environments without affecting everyone at once.</p></li>
+<li><p><strong>Security Patches</strong>: If there is a security
+problem, rolling updates let us quickly apply patches across all nodes.
+This keeps our services running. It is very important for compliance and
+managing risks in enterprise applications.</p></li>
+<li><p><strong>Gradual Rollout of Major Changes</strong>: For
+applications that are changing a lot, rolling updates allow us to deploy
+changes slowly. This helps us watch how the changes affect users. We can
+fix problems early before they affect many users.</p></li>
+<li><p><strong>Cloud-Native Applications</strong>: Many cloud-native
+applications use Kubernetes. Rolling updates make sure new container
+images are deployed without downtime. This fits well with the
+cloud-native ideas of being strong and able to grow.</p></li>
+<li><p><strong>Legacy Application Modernization</strong>: When we
+modernize old applications, rolling updates let us make changes step by
+step. Our team can slowly move parts to microservices. This way, the old
+system can still work while we make changes.</p></li>
+</ol>
+<p>To use these examples well, we need to set up our Kubernetes
+deployments for rolling updates. Here is a sample deployment
+configuration:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-container</span></span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app-image:latest</span></span></code></pre></div>
+<p>This configuration sets a rolling update strategy. It allows one pod
+to be down during updates. Also, it lets us create one extra pod beyond
+the number we want. This keeps our application available.</p>
+<p>For more information on Kubernetes deployments, you can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">what
+are Kubernetes deployments and how do I use them</a>.</p>
+<h2 id="how-to-test-your-rolling-update-strategy">How to Test Your
+Rolling Update Strategy?</h2>
+<p>Testing our rolling update strategy in Kubernetes is very important.
+It helps us make sure our application updates without downtime. Here are
+some simple steps and methods to test our rolling update strategy:</p>
+<ol type="1">
+<li><strong>Simulate Updates in a Staging Environment</strong>:
+<ul>
+<li>Before we update the production, we should make a staging
+environment that looks like our production setup. We can deploy our
+application and simulate rolling updates.<br />
+</li>
+<li>We use the same Kubernetes settings, like Deployments and
+Services.</li>
+</ul></li>
+<li><strong>Use <code>kubectl</code> to Apply Updates</strong>:
+<ul>
+<li><p>We can update the container image version in our Deployment file.
+For example:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-container</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app:2.0</span><span class="co">  # Updated image version</span></span></code></pre></div></li>
+<li><p>Then we apply the update using:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> deployment.yaml</span></code></pre></div></li>
+</ul></li>
+<li><strong>Monitor the Update Process</strong>:
+<ul>
+<li><p>We can use <code>kubectl rollout status</code> to see how the
+rolling update is going:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout status deployment/my-app</span></code></pre></div></li>
+</ul></li>
+<li><strong>Check Application Health</strong>:
+<ul>
+<li>We need to make sure that readiness and liveness probes are set up
+right. This checks our application’s health. It helps to confirm that
+new pods are ready before we send traffic to them.</li>
+</ul></li>
+<li><strong>Load Testing</strong>:
+<ul>
+<li>We should do load testing while the rolling update happens. This
+shows us how the application acts under real traffic. We can use tools
+like JMeter or Locust for this.</li>
+</ul></li>
+<li><strong>Rollback Testing</strong>:
+<ul>
+<li><p>We can check the rollback by deploying a bad image or setting. We
+need to see if we can quickly go back to the last good version:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout undo deployment/my-app</span></code></pre></div></li>
+</ul></li>
+<li><strong>Logging and Metrics</strong>:
+<ul>
+<li>We should set up logging and monitoring tools like Prometheus and
+Grafana. They help us collect data during the rolling update. We need to
+check logs to find errors or performance problems.</li>
+</ul></li>
+<li><strong>User Acceptance Testing (UAT)</strong>:
+<ul>
+<li>We can ask users to test the application after the update. This
+helps us get feedback on how it works and performs.</li>
+</ul></li>
+</ol>
+<p>By following these steps, we can make sure our rolling update
+strategy is strong and reduces risks when we deploy. For more details
+about Kubernetes deployments, we can check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">Kubernetes
+Deployments</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-a-rolling-update-in-kubernetes-1">What is a Rolling
+Update in Kubernetes?</h3>
+<p>A rolling update in Kubernetes helps us update applications without
+stopping them. We can update Pods step by step with new images or
+settings. Kubernetes makes sure part of our application stays available
+while we update. This method is important for keeping our service
+running during updates. That’s why many Kubernetes users like to use
+rolling updates for managing upgrades.</p>
+<h3 id="how-do-i-configure-a-deployment-for-rolling-updates">How do I
+configure a Deployment for Rolling Updates?</h3>
+<p>To set up a Kubernetes Deployment for rolling updates, we need to
+change the <code>strategy</code> field in our Deployment YAML file. By
+default, Kubernetes uses a RollingUpdate strategy. We can add settings
+like <code>maxUnavailable</code> and <code>maxSurge</code> to decide how
+many Pods we update at the same time. For example:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<p>This setup helps us keep problems to a minimum during the rolling
+update.</p>
+<h3 id="how-can-i-monitor-rolling-updates-in-kubernetes">How can I
+monitor Rolling Updates in Kubernetes?</h3>
+<p>We can monitor rolling updates in Kubernetes using tools like
+<code>kubectl</code> or dashboards like Kubernetes Dashboard or
+Prometheus. To check the status of our Deployment, we can run
+<code>kubectl rollout status deployment/&lt;deployment-name&gt;</code>.
+This command gives us live updates on how our rolling update is going
+and helps us find any problems that might happen during the update.</p>
+<h3 id="what-happens-if-a-rolling-update-fails">What happens if a
+Rolling Update fails?</h3>
+<p>If a rolling update fails, Kubernetes stops the update to avoid more
+problems. We can check the status of our Deployment by using
+<code>kubectl get deployment</code> to see what is happening. If needed,
+we can go back to the previous version with the command
+<code>kubectl rollout undo deployment/&lt;deployment-name&gt;</code>.
+This way, our application stays stable.</p>
+<h3 id="how-do-i-test-my-rolling-update-strategy-in-kubernetes">How do I
+test my Rolling Update strategy in Kubernetes?</h3>
+<p>We can test our rolling update strategy in Kubernetes by using a
+staging environment that looks like our production setup. We can try a
+deployment with a test version of our application. During the update, we
+should watch performance metrics and user experience to make sure
+everything works well. For more detailed information, we can use tools
+like Prometheus to check the health of our application during the
+update.</p>
+<p>For more details on Kubernetes concepts and best practices, we can
+read articles like <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html"><strong>What
+are Kubernetes Deployments and How Do I Use Them?</strong></a> or <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-scale-applications-using-kubernetes-deployments.html"><strong>How
+Do I Scale Applications Using Kubernetes Deployments?</strong></a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

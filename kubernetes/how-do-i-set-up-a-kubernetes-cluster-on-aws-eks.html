@@ -1,0 +1,639 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Do I Set Up a Kubernetes Cluster on AWS EKS?</title>
+            <meta name="description" content="Learn how to set up a Kubernetes cluster on AWS EKS with our step-by-step guide. Simplify your cloud deployment today!">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Do I Set Up a Kubernetes Cluster on AWS EKS?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Kubernetes is an open-source platform. It helps us automate
+deployment, scaling, and managing containerized apps. AWS EKS, or
+Elastic Kubernetes Service, is a managed service. It allows us to run
+Kubernetes on AWS easily. We don’t need to install or operate our own
+Kubernetes control plane or nodes.</p>
+<p>In this article, we will show how to set up a Kubernetes cluster on
+AWS EKS step by step. We will cover what we need before starting, how to
+create a cluster using AWS CLI, how to configure kubectl for EKS access,
+how to deploy our first application, how to scale the EKS cluster, and
+how to monitor and manage it. We will also talk about security best
+practices and common use cases for Kubernetes on AWS EKS. This guide
+will help us use AWS EKS for our containerized apps.</p>
+<ul>
+<li>How to Set Up a Kubernetes Cluster on AWS EKS Step by Step?</li>
+<li>What Prerequisites Do I Need for AWS EKS Setup?</li>
+<li>How Do I Create an EKS Cluster Using AWS CLI?</li>
+<li>How Do I Configure kubectl for EKS Access?</li>
+<li>How Do I Deploy My First Application on EKS?</li>
+<li>What Are Common Use Cases for Kubernetes on AWS EKS?</li>
+<li>How Do I Scale My EKS Cluster?</li>
+<li>How to Monitor and Manage Your EKS Cluster?</li>
+<li>What Are Security Best Practices for AWS EKS?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>If we want to learn the basics of Kubernetes, we can check our
+article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">what
+is Kubernetes and how it simplifies container management</a>. Also, if
+we think about using Kubernetes for our apps, we should read our
+insights on <a
+href="https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html">why
+you should use Kubernetes for your applications</a>.</p>
+<h2 id="what-prerequisites-do-we-need-for-aws-eks-setup">What
+Prerequisites Do We Need for AWS EKS Setup?</h2>
+<p>To set up an Amazon EKS (Elastic Kubernetes Service) cluster, we need
+to have these prerequisites ready:</p>
+<ol type="1">
+<li><p><strong>AWS Account</strong>: We have to create an AWS account if
+we do not have one. This is important to access the AWS Management
+Console and use EKS.</p></li>
+<li><p><strong>AWS CLI</strong>: We should install the AWS Command Line
+Interface (CLI). This helps us manage our AWS services. We can follow
+the installation guide <a
+href="https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html">here</a>.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check installation</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> <span class="at">--version</span></span></code></pre></div></li>
+<li><p><strong>kubectl</strong>: We need to install
+<code>kubectl</code>. This is the tool to talk with Kubernetes clusters.
+For how to install it, we can look at the official documentation <a
+href="https://kubernetes.io/docs/tasks/tools/install-kubectl/">here</a>.</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check installation</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> version <span class="at">--client</span></span></code></pre></div></li>
+<li><p><strong>AWS IAM Authenticator</strong>: We need this tool for
+Kubernetes to work with AWS. We can install it like this:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># On macOS</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">brew</span> install aws-iam-authenticator</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># On Linux</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-o</span> aws-iam-authenticator https://s3.us-west-2.amazonaws.com/amazon-eks/1.18.9/2019-12-01/bin/linux/amd64/aws-iam-authenticator</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x ./aws-iam-authenticator</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> mv ./aws-iam-authenticator /usr/local/bin</span></code></pre></div></li>
+<li><p><strong>IAM Permissions</strong>: We must check that our AWS IAM
+user has permissions to create and manage EKS clusters. A policy like
+this is needed:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Version&quot;</span><span class="fu">:</span> <span class="st">&quot;2012-10-17&quot;</span><span class="fu">,</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Statement&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;Effect&quot;</span><span class="fu">:</span> <span class="st">&quot;Allow&quot;</span><span class="fu">,</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;Action&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;eks:*&quot;</span><span class="ot">,</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;ec2:*&quot;</span><span class="ot">,</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;iam:*&quot;</span><span class="ot">,</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;cloudformation:*&quot;</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>      <span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;Resource&quot;</span><span class="fu">:</span> <span class="st">&quot;*&quot;</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="ot">]</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div></li>
+<li><p><strong>VPC Configuration</strong>: We need a VPC for our EKS
+cluster. The VPC must have the right subnets (public and private) and
+route tables set up correctly.</p></li>
+<li><p><strong>Node Group</strong>: We should prepare a node group
+setup. This will tell us which EC2 instances will be the worker nodes in
+our EKS cluster.</p></li>
+</ol>
+<p>When we make sure we have these prerequisites, we will be ready to
+set up a Kubernetes cluster on AWS EKS. For more information about
+Kubernetes, we can read this article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">what
+are the key components of a Kubernetes cluster</a>.</p>
+<h2 id="how-do-we-create-an-eks-cluster-using-aws-cli">How Do We Create
+an EKS Cluster Using AWS CLI?</h2>
+<p>We can create an Amazon EKS cluster using the AWS CLI by following
+these simple steps.</p>
+<ol type="1">
+<li><p><strong>Install the AWS CLI</strong>: First, we need to make sure
+we have the AWS CLI installed. We also need to configure it with the
+right permissions. You can find the installation guide <a
+href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html">here</a>.</p></li>
+<li><p><strong>Create an IAM Role for EKS</strong>: Next, we create a
+role that has the permissions for EKS to manage resources.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> iam create-role <span class="at">--role-name</span> eks-cluster-role <span class="at">--assume-role-policy-document</span> file://eks-trust-policy.json</span></code></pre></div>
+<p>The <code>eks-trust-policy.json</code> file should look like
+this:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Version&quot;</span><span class="fu">:</span> <span class="st">&quot;2012-10-17&quot;</span><span class="fu">,</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;Statement&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;Effect&quot;</span><span class="fu">:</span> <span class="st">&quot;Allow&quot;</span><span class="fu">,</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;Principal&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;Service&quot;</span><span class="fu">:</span> <span class="st">&quot;eks.amazonaws.com&quot;</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      <span class="fu">},</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;Action&quot;</span><span class="fu">:</span> <span class="st">&quot;sts:AssumeRole&quot;</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>  <span class="ot">]</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div></li>
+<li><p><strong>Attach Policies to the Role</strong>: Now we attach the
+necessary policies to the role.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> iam attach-role-policy <span class="at">--role-name</span> eks-cluster-role <span class="at">--policy-arn</span> arn:aws:iam::aws:policy/AmazonEKSClusterPolicy</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> iam attach-role-policy <span class="at">--role-name</span> eks-cluster-role <span class="at">--policy-arn</span> arn:aws:iam::aws:policy/AmazonEKSVPCResourceController</span></code></pre></div></li>
+<li><p><strong>Create a VPC</strong>: We can create a VPC with public
+and private subnets. Or we can use an existing VPC.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> cloudformation create-stack <span class="at">--region</span> <span class="op">&lt;</span>region<span class="op">&gt;</span> --stack-name eks-vpc <span class="at">--template-url</span> https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.0/2019-09-01/amazon-eks-vpc.yaml</span></code></pre></div></li>
+<li><p><strong>Create the EKS Cluster</strong>: Now we create the EKS
+cluster.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> eks create-cluster <span class="at">--name</span> <span class="op">&lt;</span>cluster-name<span class="op">&gt;</span> --role-arn arn:aws:iam::<span class="op">&lt;</span>account-id<span class="op">&gt;</span>:role/eks-cluster-role <span class="at">--resources-vpc-config</span> subnetIds=<span class="op">&lt;</span>subnet-id-1<span class="op">&gt;</span>,<span class="op">&lt;</span>subnet-id-2<span class="op">&gt;</span>,securityGroupIds=<span class="op">&lt;</span>security-group-id<span class="op">&gt;</span></span></code></pre></div>
+<p>We need to replace <code>&lt;cluster-name&gt;</code>,
+<code>&lt;account-id&gt;</code>, <code>&lt;subnet-id-1&gt;</code>,
+<code>&lt;subnet-id-2&gt;</code>, and
+<code>&lt;security-group-id&gt;</code> with our real values.</p></li>
+<li><p><strong>Check Cluster Status</strong>: We can check the status of
+our cluster.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> eks describe-cluster <span class="at">--name</span> <span class="op">&lt;</span>cluster-name<span class="op">&gt;</span> --query <span class="st">&quot;cluster.status&quot;</span></span></code></pre></div>
+<p>We should wait until the status shows <code>ACTIVE</code>.</p></li>
+<li><p><strong>Update kubeconfig</strong>: Finally, we update the
+<code>kubeconfig</code> to use the EKS cluster.</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> eks update-kubeconfig <span class="at">--name</span> <span class="op">&lt;</span>cluster-name<span class="op">&gt;</span></span></code></pre></div></li>
+</ol>
+<p>This way, we can set up our EKS cluster using the AWS CLI. If we want
+more information on Kubernetes and its benefits, we can read about <a
+href="https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html">why
+we should use Kubernetes for our applications</a>.</p>
+<h2 id="how-do-i-configure-kubectl-for-eks-access">How Do I Configure
+kubectl for EKS Access?</h2>
+<p>To set up <code>kubectl</code> for your EKS cluster, we can follow
+these simple steps.</p>
+<ol type="1">
+<li><p><strong>Install AWS CLI</strong>: First, we need to have the AWS
+CLI installed. It should be set up with access to our AWS account.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> <span class="at">--version</span></span></code></pre></div>
+<p>If we don’t have it, we can download it from the <a
+href="https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html">AWS
+CLI installation page</a>.</p></li>
+<li><p><strong>Install kubectl</strong>: Next, we need
+<code>kubectl</code> installed. We can get it from the official
+Kubernetes website.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-LO</span> <span class="st">&quot;https://storage.googleapis.com/kubernetes-release/release/</span><span class="va">$(</span><span class="ex">curl</span> <span class="at">-s</span> https://storage.googleapis.com/kubernetes-release/release/stable.txt<span class="va">)</span><span class="st">/bin/linux/amd64/kubectl&quot;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x ./kubectl</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> mv ./kubectl /usr/local/bin/kubectl</span></code></pre></div></li>
+<li><p><strong>Update kubeconfig</strong>: Now, we use the AWS CLI to
+update our kubeconfig file with the EKS cluster details. We should
+replace <code>your-cluster-name</code> and <code>your-region</code> with
+our actual cluster name and region.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> eks <span class="at">--region</span> your-region update-kubeconfig <span class="at">--name</span> your-cluster-name</span></code></pre></div></li>
+<li><p><strong>Verify Configuration</strong>: It’s good to check if
+<code>kubectl</code> is set up right. We want to see if it can talk to
+our EKS cluster.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get svc</span></code></pre></div>
+<p>This command should show us the services that run in our EKS
+cluster.</p></li>
+<li><p><strong>Set Context</strong>: If we have more than one context in
+our kubeconfig, we need to set the one we want for our EKS cluster.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> config use-context arn:aws:eks:your-region:your-account-id:cluster/your-cluster-name</span></code></pre></div></li>
+</ol>
+<p>By doing these steps, we will configure <code>kubectl</code> to
+access our EKS cluster. This setup helps us manage our Kubernetes
+resources on AWS EKS. If we want to learn more about Kubernetes, we can
+check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">what
+are the key components of a Kubernetes cluster</a>.</p>
+<h2 id="how-do-we-deploy-our-first-application-on-eks">How Do We Deploy
+Our First Application on EKS?</h2>
+<p>To deploy our first application on AWS EKS, we can follow these
+simple steps:</p>
+<ol type="1">
+<li><p><strong>Create a Deployment YAML File</strong>: This file tells
+about our application. It includes the container image and how many
+copies we want. Here is an example for a basic NGINX deployment:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:latest</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div></li>
+<li><p><strong>Apply the Deployment</strong>: We use
+<code>kubectl</code> to create the deployment in our EKS cluster.</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> nginx-deployment.yaml</span></code></pre></div></li>
+<li><p><strong>Expose the Deployment</strong>: We need to make a service
+to expose our application.</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx-service</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> LoadBalancer</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-nginx</span></span></code></pre></div>
+<p>Now we apply the service config:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> nginx-service.yaml</span></code></pre></div></li>
+<li><p><strong>Get the Service URL</strong>: After a little bit, we can
+get the external IP address to access our application.</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get services</span></code></pre></div></li>
+<li><p><strong>Verify Deployment</strong>: We can check the status of
+our pods and services.</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get svc</span></code></pre></div></li>
+</ol>
+<p>Now our application should be running on AWS EKS. We can access it
+using the LoadBalancer’s external IP. If we want to learn more about
+Kubernetes components, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">this
+article on key components of a Kubernetes cluster</a>.</p>
+<h2 id="what-are-common-use-cases-for-kubernetes-on-aws-eks">What Are
+Common Use Cases for Kubernetes on AWS EKS?</h2>
+<p>We see that many people use Kubernetes on AWS EKS (Elastic Kubernetes
+Service) for different tasks. It is popular because it can grow easily
+and lets us manage our apps well. Here are some common use cases:</p>
+<ol type="1">
+<li><strong>Microservices Architecture</strong>:
+<ul>
+<li>We can deploy apps as microservices. This lets us scale and manage
+them separately. EKS helps us to run many microservices together. This
+makes development faster and operations smoother.</li>
+</ul></li>
+<li><strong>Continuous Integration and Continuous Deployment
+(CI/CD)</strong>:
+<ul>
+<li>EKS works well with CI/CD tools like Jenkins, GitLab CI, and AWS
+CodePipeline. This helps us to test and deploy our apps
+automatically.</li>
+</ul></li>
+<li><strong>Multi-Cloud and Hybrid Deployments</strong>:
+<ul>
+<li>We can run Kubernetes clusters on EKS while using other cloud
+services or on-premises systems. This helps us to use a mix of
+clouds.</li>
+</ul></li>
+<li><strong>Big Data Processing</strong>:
+<ul>
+<li>EKS can handle big data apps using tools like Apache Spark or
+Hadoop. It gives us good scaling and resource management.</li>
+</ul></li>
+<li><strong>Machine Learning Workloads</strong>:
+<ul>
+<li>EKS supports machine learning tools like TensorFlow and PyTorch.
+This makes it easy for data scientists to run training jobs and deploy
+models.</li>
+</ul></li>
+<li><strong>Serverless Applications</strong>:
+<ul>
+<li>We can use Kubernetes with AWS Lambda to create apps that run on
+events. This helps us build serverless applications that only run when
+needed.</li>
+</ul></li>
+<li><strong>Web Applications</strong>:
+<ul>
+<li>We can deploy web apps that can scale automatically. It helps to
+balance the load when traffic changes.</li>
+</ul></li>
+<li><strong>API Management</strong>:
+<ul>
+<li>We can manage APIs by putting API gateways on EKS. This lets us
+monitor, secure, and scale our API services well.</li>
+</ul></li>
+<li><strong>Development and Testing Environments</strong>:
+<ul>
+<li>We can quickly set up and take down dev and testing environments
+using EKS. This gives developers the resources they need without extra
+costs.</li>
+</ul></li>
+<li><strong>Disaster Recovery</strong>:
+<ul>
+<li>EKS can help in disaster recovery. It can back up and restore app
+workloads in different AWS regions.</li>
+</ul></li>
+</ol>
+<p>Using Kubernetes on AWS EKS gives us tools to deploy and manage apps
+at a large scale. This helps us keep our services available and strong.
+For more details on Kubernetes and its features, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">what
+Kubernetes is and how it simplifies container management</a>.</p>
+<h2 id="how-do-we-scale-our-eks-cluster">How Do We Scale Our EKS
+Cluster?</h2>
+<p>Scaling an Amazon EKS (Elastic Kubernetes Service) cluster is easy.
+We can do this by changing the number of nodes in our node group or by
+using Kubernetes tools like Horizontal Pod Autoscaler. Here are the
+steps to help us scale our EKS cluster well.</p>
+<h3 id="scaling-node-groups">Scaling Node Groups</h3>
+<p>To change the number of nodes in our EKS cluster, we can use the AWS
+Management Console or AWS CLI. Let’s see how we do it with AWS CLI:</p>
+<ol type="1">
+<li><p><strong>List our node groups</strong>:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> eks list-nodegroups <span class="at">--cluster-name</span> your-cluster-name</span></code></pre></div></li>
+<li><p><strong>Update the desired capacity</strong> of the node
+group:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> eks update-nodegroup-config <span class="at">--cluster-name</span> your-cluster-name <span class="at">--nodegroup-name</span> your-node-group-name <span class="at">--scaling-config</span> desiredSize=new-desired-size</span></code></pre></div></li>
+</ol>
+<h3 id="horizontal-pod-autoscaler-hpa">Horizontal Pod Autoscaler
+(HPA)</h3>
+<p>We can automatically change the number of pods in our deployments
+based on CPU usage or other metrics by setting up a Horizontal Pod
+Autoscaler.</p>
+<ol type="1">
+<li><p><strong>Check if Metrics Server is installed</strong>: First, we
+need to install the Metrics Server if we have not done it yet:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml</span></code></pre></div></li>
+<li><p><strong>Create the HPA resource</strong>: Here is an example of
+how we create an HPA for a deployment:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> autoscale deployment your-deployment-name <span class="at">--cpu-percent</span><span class="op">=</span>50 <span class="at">--min</span><span class="op">=</span>1 <span class="at">--max</span><span class="op">=</span>10</span></code></pre></div></li>
+</ol>
+<h3 id="cluster-autoscaler">Cluster Autoscaler</h3>
+<p>For more efficiency, we can turn on the Cluster Autoscaler. It will
+change the size of the EKS node group when pods cannot schedule because
+of not enough resources.</p>
+<ol type="1">
+<li><p><strong>Install Cluster Autoscaler</strong>: We should follow the
+official instructions to install it for our setup.</p></li>
+<li><p><strong>Set up IAM roles</strong>: We need to make sure our node
+group has the right IAM roles and permissions so the Cluster Autoscaler
+can manage scaling.</p></li>
+</ol>
+<h3 id="manual-pod-scaling">Manual Pod Scaling</h3>
+<p>If we need to scale right away, we can manually change our
+deployments using:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> scale deployment your-deployment-name <span class="at">--replicas</span><span class="op">=</span>new-replica-count</span></code></pre></div>
+<p>By using these methods, we can manage the scaling of our EKS cluster
+to meet our application needs. For more details on the main parts of a
+Kubernetes cluster, we can check this <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">article</a>.</p>
+<h2 id="how-to-monitor-and-manage-your-eks-cluster">How to Monitor and
+Manage Your EKS Cluster?</h2>
+<p>We need to monitor and manage our Kubernetes cluster on AWS EKS. This
+is important to keep our application working well and being reliable.
+Here are the main tools and steps we can use for good monitoring and
+management:</p>
+<ol type="1">
+<li><p><strong>AWS CloudWatch</strong>: We can use Amazon CloudWatch to
+gather and watch the metrics from our EKS cluster. We can set alarms to
+alert us if there are any problems.</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> cloudwatch put-metric-alarm <span class="at">--alarm-name</span> <span class="st">&quot;HighCPUUtilization&quot;</span> <span class="dt">\</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>--metric-name <span class="st">&quot;CPUUtilization&quot;</span> <span class="at">--namespace</span> <span class="st">&quot;AWS/EKS&quot;</span> <span class="dt">\</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>--statistic <span class="st">&quot;Average&quot;</span> <span class="at">--period</span> 300 <span class="at">--threshold</span> 80 <span class="dt">\</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>--comparison-operator <span class="st">&quot;GreaterThanThreshold&quot;</span> <span class="at">--evaluation-periods</span> 1 <span class="dt">\</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>--alarm-actions <span class="op">&lt;</span>SNS_TOPIC_ARN<span class="op">&gt;</span> --dimensions <span class="st">&quot;ClusterName=&lt;YOUR_EKS_CLUSTER_NAME&gt;&quot;</span></span></code></pre></div></li>
+<li><p><strong>kubectl top</strong>: We can use <code>kubectl</code> to
+check how much resources our nodes and pods are using.</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> top nodes</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> top pods <span class="at">--all-namespaces</span></span></code></pre></div></li>
+<li><p><strong>Kubernetes Dashboard</strong>: We can deploy the
+Kubernetes Dashboard. It gives us a visual view of our cluster’s health
+and resource use.</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://raw.githubusercontent.com/kubernetes/dashboard/v2.5.1/aio/deploy/recommended.yaml</span></code></pre></div></li>
+<li><p><strong>Prometheus and Grafana</strong>: We can set up Prometheus
+to collect metrics and Grafana to show them. This setup gives us strong
+monitoring abilities.</p>
+<ul>
+<li>We install Prometheus using Helm:</li>
+</ul>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> repo add prometheus-community https://prometheus-community.github.io/helm-charts</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> repo update</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> install prometheus prometheus-community/prometheus</span></code></pre></div>
+<ul>
+<li>We install Grafana using Helm:</li>
+</ul>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> install grafana grafana/grafana</span></code></pre></div></li>
+<li><p><strong>AWS EKS Best Practices</strong>: We should follow AWS
+best practices for managing EKS. This includes updating our clusters
+regularly and managing node groups. We also need to use IAM roles for
+service accounts for better security.</p></li>
+<li><p><strong>Logging</strong>: We can turn on logging for our EKS
+cluster with Amazon CloudWatch Logs. This helps us capture logs from the
+Kubernetes control plane.</p>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> eks update-cluster-config <span class="at">--name</span> <span class="op">&lt;</span>YOUR_EKS_CLUSTER_NAME<span class="op">&gt;</span> --logging <span class="st">&#39;{&quot;clusterLogging&quot;:[{&quot;types&quot;:[&quot;api&quot;,&quot;audit&quot;,&quot;authenticator&quot;,&quot;scheduler&quot;,&quot;controllerManager&quot;],&quot;enabled&quot;:true}]}&#39;</span></span></code></pre></div></li>
+<li><p><strong>Health Checks</strong>: We must add liveness and
+readiness probes in our apps. This makes sure they run smoothly and are
+ready to take traffic.</p>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app-image</span></span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb34-17"><a href="#cb34-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb34-18"><a href="#cb34-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">readinessProbe</span><span class="kw">:</span></span>
+<span id="cb34-19"><a href="#cb34-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb34-20"><a href="#cb34-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /ready</span></span>
+<span id="cb34-21"><a href="#cb34-21" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb34-22"><a href="#cb34-22" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb34-23"><a href="#cb34-23" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div></li>
+</ol>
+<p>With these tools and steps, we can monitor and manage our EKS cluster
+well. This helps keep our applications running great. For more about
+managing Kubernetes, we can read about the <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">key
+components of a Kubernetes cluster</a>.</p>
+<h2 id="what-are-security-best-practices-for-aws-eks">What Are Security
+Best Practices for AWS EKS?</h2>
+<p>To make our AWS EKS (Elastic Kubernetes Service) cluster safe, we
+should follow these best practices:</p>
+<ol type="1">
+<li><p><strong>Use IAM Roles for Service Accounts (IRSA)</strong>: We
+can assign permissions to Kubernetes service accounts. This way, we
+reduce the need for sensitive AWS credentials in pod specs.</p>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service-account</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">eks.amazonaws.com/role-arn</span><span class="kw">:</span><span class="at"> arn:aws:iam::account-id:role/role-name</span></span></code></pre></div></li>
+<li><p><strong>Control Access with RBAC</strong>: We should use
+Role-Based Access Control (RBAC) to limit access to Kubernetes
+resources. This is based on user roles.</p>
+<div class="sourceCode" id="cb36"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-role</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">]</span></span></code></pre></div></li>
+<li><p><strong>Network Policies</strong>: We need to set up network
+policies to manage how pods talk to each other. This helps us allow
+traffic only to the services we need.</p>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> allow-app</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> myapp</span></span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">policyTypes</span><span class="kw">:</span></span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Ingress</span></span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">from</span><span class="kw">:</span></span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">role</span><span class="kw">:</span><span class="at"> frontend</span></span></code></pre></div></li>
+<li><p><strong>Use Private EKS Clusters</strong>: We should make our EKS
+cluster private. This limits outside access. It also keeps the control
+plane safe from the internet.</p></li>
+<li><p><strong>Enable Encryption</strong>: We have to use AWS Key
+Management Service (KMS) to encrypt important data when it is stored and
+when it moves. We also need to enable encryption for etcd and S3
+buckets.</p></li>
+<li><p><strong>Regularly Update Kubernetes</strong>: We must keep our
+EKS cluster and nodes updated. This way, we can get the latest
+Kubernetes versions with security fixes and new features.</p></li>
+<li><p><strong>Audit Logs</strong>: We should turn on Kubernetes audit
+logging. This helps us watch API calls and changes in our EKS
+environment. We can use AWS CloudTrail for checking AWS service
+calls.</p></li>
+<li><p><strong>Limit Node Access</strong>: We need to use security
+groups to limit access to the worker nodes. This means allowing only the
+ports and protocols we need.</p></li>
+<li><p><strong>Implement Pod Security Standards</strong>: We can use Pod
+Security Policies or OPA Gatekeeper to make sure we follow security
+rules on pods. For example, we should not allow privileged
+containers.</p></li>
+<li><p><strong>Scan Container Images</strong>: We should check container
+images for issues before we deploy them. We can use tools like Amazon
+ECR, Aqua, or Twistlock.</p></li>
+</ol>
+<p>For more details on Kubernetes security practices, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">what
+are the key components of a Kubernetes cluster</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-aws-eks-and-why-should-we-use-it-for-kubernetes">What is
+AWS EKS and why should we use it for Kubernetes?</h3>
+<p>AWS Elastic Kubernetes Service (EKS) is a service that helps us set
+up and manage Kubernetes clusters on Amazon Web Services. With AWS EKS,
+we can easily scale our applications, get updates automatically, and
+ensure high availability. This lets us focus more on building our
+applications. For more details, we can check our article on <a
+href="https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html">Why
+Should I Use Kubernetes for My Applications?</a>.</p>
+<h3 id="how-do-we-determine-the-right-size-for-our-eks-cluster">How do
+we determine the right size for our EKS cluster?</h3>
+<p>To find the right size for our Kubernetes cluster on AWS EKS, we need
+to look at what our application needs. We should think about things like
+CPU and memory. It is good to start with a few nodes and then add more
+if we need them. AWS gives us tools to track and monitor our resources.
+This helps us make better choices about scaling. For more information on
+scaling, we can read our article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">What
+Are the Key Components of a Kubernetes Cluster?</a>.</p>
+<h3 id="what-are-the-common-components-of-an-eks-cluster">What are the
+common components of an EKS cluster?</h3>
+<p>An EKS cluster has a few important parts. These are the control
+plane, worker nodes, and the Amazon VPC for networking. The control
+plane takes care of scheduling and API requests. Worker nodes run our
+containerized applications. Knowing these parts is important for
+managing our Kubernetes cluster well. We can learn more in our article
+on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">What
+Are the Key Components of a Kubernetes Cluster?</a>.</p>
+<h3 id="how-does-kubernetes-on-aws-eks-differ-from-docker-swarm">How
+does Kubernetes on AWS EKS differ from Docker Swarm?</h3>
+<p>Kubernetes on AWS EKS is a strong tool that gives us features like
+auto-scaling, self-healing, and rolling updates. These features are not
+in Docker Swarm. Docker Swarm is easier to set up and manage. But
+Kubernetes gives us more options and is better for complex applications.
+For a deeper look, we can read our article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-differ-from-docker-swarm.html">How
+Does Kubernetes Differ from Docker Swarm?</a>.</p>
+<h3 id="do-we-need-to-install-any-software-to-use-aws-eks">Do we need to
+install any software to use AWS EKS?</h3>
+<p>To manage our EKS cluster, we need to install the AWS Command Line
+Interface (CLI) and <code>kubectl</code>. These tools help us work with
+AWS services and manage our Kubernetes cluster easily. For local work,
+we might want to set up Minikube. We can find how to do this in our
+article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-install-minikube-for-local-kubernetes-development.html">How
+Do I Install Minikube for Local Kubernetes Development?</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

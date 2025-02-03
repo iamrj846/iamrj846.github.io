@@ -1,0 +1,499 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Do I Roll Back Deployments in Kubernetes?</title>
+            <meta name="description" content="Learn how to effectively roll back deployments in Kubernetes with our step-by-step guide. Ensure smooth application updates!">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Do I Roll Back Deployments in Kubernetes?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Rolling back deployments in Kubernetes means going back to an earlier
+version of an app or service. We do this when the current version has
+problems or does not work like we want. This ability is very important
+for keeping our apps stable and available. It helps us fix issues
+quickly by returning to a version that we know works well.</p>
+<p>In this article, we will talk about different parts of rolling back
+deployments in Kubernetes. You will learn how to roll back deployments
+effectively. We will also see why rollbacks are important. We will check
+the current deployment status and go through the steps to roll back a
+deployment. We will learn how to roll back to a specific version. We
+will use <code>kubectl</code> for rollbacks. We will discuss real-life
+examples for rollbacks. We will also see how to automate rollbacks and
+what to think about before we do a rollback.</p>
+<ul>
+<li>How Can I Effectively Roll Back Deployments in Kubernetes?</li>
+<li>What is the Importance of Rollbacks in Kubernetes?</li>
+<li>How to Check the Current Deployment Status?</li>
+<li>What are the Steps to Roll Back a Deployment?</li>
+<li>How Do I Roll Back to a Specific Revision?</li>
+<li>How to Use kubectl for Rollbacks?</li>
+<li>What are Real Life Use Cases for Rollbacks in Kubernetes?</li>
+<li>How to Automate Rollbacks in Kubernetes?</li>
+<li>What to Consider Before Rolling Back a Deployment?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more info about Kubernetes and what it can do, you might like
+these articles: <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">What
+is Kubernetes and How Does It Simplify Container Management?</a>, <a
+href="https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html">Why
+Should I Use Kubernetes for My Applications?</a>, and <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-perform-rolling-updates-in-kubernetes.html">How
+Do I Perform Rolling Updates in Kubernetes?</a>.</p>
+<h2 id="what-is-the-importance-of-rollbacks-in-kubernetes">What is the
+Importance of Rollbacks in Kubernetes?</h2>
+<p>Rollbacks in Kubernetes are very important for keeping our
+applications stable and reliable when we deploy them. We can highlight
+the importance of rollbacks in a few points.</p>
+<ul>
+<li><p><strong>Error Mitigation</strong>: If a new version of our
+application has bugs or runs slow, rollbacks help us go back to the last
+stable version fast. This way, we can reduce downtime.</p></li>
+<li><p><strong>Continuous Deployment Support</strong>: In a CI/CD
+pipeline, being able to roll back helps us deploy often without hurting
+user experience. It gives us a safety net.</p></li>
+<li><p><strong>Testing and Validation</strong>: Rollbacks help with A/B
+testing or gradual rollouts. We can check new features in production and
+easily change back if needed.</p></li>
+<li><p><strong>Version Control</strong>: Kubernetes keeps a record of
+our deployments. This lets us track changes and go back to any old
+version. It helps us manage our application better.</p></li>
+<li><p><strong>Operational Resilience</strong>: When we use rollbacks in
+our deployment plans, we make our operations stronger. This helps us
+handle issues quickly without big service breaks.</p></li>
+</ul>
+<p>We need to understand why rollbacks matter in Kubernetes if we want
+to create strong deployment plans. For more details on Kubernetes
+deployments, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">what
+are Kubernetes deployments and how do I use them</a>.</p>
+<h2 id="how-to-check-the-current-deployment-status">How to Check the
+Current Deployment Status?</h2>
+<p>We can check the current deployment status in Kubernetes using the
+<code>kubectl</code> command-line tool. This tool helps us run different
+commands to see the state of our deployments, pods, and other
+resources.</p>
+<h3 id="check-deployment-status">Check Deployment Status</h3>
+<p>We use this command to get the status of a specific deployment:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get deployment <span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div>
+<p>We need to replace <code>&lt;deployment-name&gt;</code> with our
+deployment name. We also replace <code>&lt;namespace&gt;</code> with the
+correct namespace if we are not using the default one.</p>
+<h3 id="detailed-information">Detailed Information</h3>
+<p>If we want more details about the deployment, like the number of
+replicas, available replicas, and conditions, we can use:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe deployment <span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div>
+<h3 id="check-pods-status">Check Pods Status</h3>
+<p>To see the status of the pods that are linked to a deployment, we can
+use:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-l</span> app=<span class="op">&lt;</span>app-label<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div>
+<p>Here, we replace <code>&lt;app-label&gt;</code> with the label we use
+in our deployment to find the pods.</p>
+<h3 id="monitoring-rollout-status">Monitoring Rollout Status</h3>
+<p>To check the rollout status of a deployment, we can use:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout status deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div>
+<p>This command gives us real-time updates on the deployment’s rollout
+status. It can help us see if there are any problems during the
+deployment process.</p>
+<h3 id="additional-resources">Additional Resources</h3>
+<p>For more information on managing deployments, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">Kubernetes
+Deployments</a>.</p>
+<h2 id="what-are-the-steps-to-roll-back-a-deployment">What are the Steps
+to Roll Back a Deployment?</h2>
+<p>Rolling back a deployment in Kubernetes is a simple task. It means
+going back to a previous version of your application. Here are the steps
+to easily roll back a deployment:</p>
+<ol type="1">
+<li><p><strong>Identify the Deployment</strong>: First, we need to find
+the name of the deployment we want to roll back. We can list all
+deployments in a namespace like this:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get deployments <span class="at">-n</span> <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Check Revision History</strong>: Kubernetes saves a
+history of changes for each deployment. To see the revision history, we
+use this command:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout history deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div>
+<p>This shows us a list of revisions and their change reasons.</p></li>
+<li><p><strong>Roll Back to the Previous Revision</strong>: To go back
+to the last successful deployment, we run:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout undo deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Roll Back to a Specific Revision</strong>: If we want to
+go back to a certain revision, we can do this:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout undo deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> --to-revision=<span class="op">&lt;</span>revision-number<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Verify the Rollback</strong>: After we roll back, it is
+good to check the status of the deployment. This helps us confirm it was
+successful:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout status deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Check the Current Deployment Status</strong>: To see the
+current state of all replicas and if they are ready, we run:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get deployment <span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div></li>
+</ol>
+<p>These steps help us manage our deployments in Kubernetes easily. We
+can quickly go back to stable versions when we need to. For more details
+about deployment concepts, look at <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">What
+are Kubernetes Deployments and How Do I Use Them?</a>.</p>
+<h2 id="how-do-we-roll-back-to-a-specific-revision">How Do We Roll Back
+to a Specific Revision?</h2>
+<p>To roll back to a specific revision in Kubernetes, we can use the
+<code>kubectl rollout undo</code> command. This command helps us go back
+to a previous state of our deployment. It is important when we have
+problems with the latest deployment.</p>
+<h3 id="checking-available-revisions">Checking Available Revisions</h3>
+<p>Before we roll back, we may want to see the revisions available for
+our deployment. We can use this command:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout history deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command will show us all revisions of the deployment we
+specify.</p>
+<h3 id="rolling-back-to-a-specific-revision">Rolling Back to a Specific
+Revision</h3>
+<p>To roll back to a specific revision, we can use this command:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout undo deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> --to-revision=<span class="op">&lt;</span>revision-number<span class="op">&gt;</span></span></code></pre></div>
+<p>We need to replace <code>&lt;deployment-name&gt;</code> with the name
+of our deployment. Also, we should replace
+<code>&lt;revision-number&gt;</code> with the revision number we
+want.</p>
+<h3 id="example">Example</h3>
+<p>For example, if we want to roll back a deployment called
+<code>my-app</code> to revision 2, the command will be:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout undo deployment/my-app <span class="at">--to-revision</span><span class="op">=</span>2</span></code></pre></div>
+<h3 id="verifying-the-rollback">Verifying the Rollback</h3>
+<p>After we roll back, we can check the status of our deployment to make
+sure it went back successfully:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout status deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div>
+<p>These steps help us manage our deployments in Kubernetes. It lets us
+switch back to stable versions when needed. For more information about
+Kubernetes deployments, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">What
+are Kubernetes Deployments and How Do I Use Them?</a>.</p>
+<h2 id="how-to-use-kubectl-for-rollbacks">How to Use kubectl for
+Rollbacks?</h2>
+<p>To roll back deployments in Kubernetes with <code>kubectl</code>, we
+can use the built-in commands for managing deployment versions.</p>
+<ol type="1">
+<li><p><strong>Viewing Deployment History</strong>: Before we roll back,
+we should check the deployment’s history. This helps us see which
+version we want to go back to.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout history deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command shows all versions linked to the deployment we
+picked.</p></li>
+<li><p><strong>Rolling Back to the Previous Revision</strong>: If we
+want to go back to the last version, we can use:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout undo deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command will take the deployment back to its last working
+state.</p></li>
+<li><p><strong>Rolling Back to a Specific Revision</strong>: If we need
+to go back to a certain version, we need to say the version number:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout undo deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> --to-revision=<span class="op">&lt;</span>revision-number<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Checking Rollback Status</strong>: After we roll back, it
+is important to check the status of the deployment:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout status deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Verifying Current Deployment</strong>: To make sure the
+deployment is how we expect it after rolling back, we can use:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get deployment <span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Additional Useful Commands</strong>:</p>
+<ul>
+<li>To see more details about the deployment, like the current state and
+how many replicas we have, we can use:</li>
+</ul>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe deployment <span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div></li>
+</ol>
+<p>With these <code>kubectl</code> commands, we can manage rollbacks in
+Kubernetes well. This helps keep our applications stable and reliable
+when we change deployments. For more info on Kubernetes deployments,
+check this article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">what
+are Kubernetes deployments and how do I use them</a>.</p>
+<h2 id="what-are-real-life-use-cases-for-rollbacks-in-kubernetes">What
+are Real Life Use Cases for Rollbacks in Kubernetes?</h2>
+<p>Rollbacks in Kubernetes are very important. They help keep our
+applications reliable and stable. Here are some real-life examples where
+rollbacks are needed:</p>
+<ol type="1">
+<li><p><strong>Failed Deployments</strong>: Sometimes, we deploy a new
+version of an app and it fails because of bugs or performance problems.
+In this case, we need to go back to the last stable version. For
+example:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout undo deployment/my-app</span></code></pre></div></li>
+<li><p><strong>Performance Issues</strong>: After we update, users may
+say the app is slow or has more errors. We might need to return to the
+last good version.</p></li>
+<li><p><strong>Configuration Errors</strong>: If an update changes
+settings and causes strange behavior, we can roll back to the last good
+settings to fix the service quickly.</p></li>
+<li><p><strong>A/B Testing</strong>: When we test two versions of an app
+(A/B testing), if version B does not work well, we can go back to
+version A without any downtime.</p></li>
+<li><p><strong>Security Vulnerabilities</strong>: If a new version has
+security problems, we can go back to the old version to reduce risks
+while we find a fix.</p></li>
+<li><p><strong>Dependency Issues</strong>: If our deployment needs other
+services that change, it might fail. Rolling back helps us stay
+compatible with the earlier versions of those services.</p></li>
+<li><p><strong>User Feedback</strong>: Right after we deploy, if users
+tell us about big issues, we can roll back to keep them happy.</p></li>
+<li><p><strong>Resource Limits</strong>: If the new version uses too
+many resources and makes the service worse, rolling back can help us get
+the performance back.</p></li>
+<li><p><strong>Infrastructure Changes</strong>: Changes in the
+underlying infrastructure can make apps behave oddly. A rollback can
+take us back to the version that worked well before.</p></li>
+<li><p><strong>Canary Deployments</strong>: In a canary deployment, if
+the new version fails in the small test group, we can roll it back
+without hurting all users.</p></li>
+</ol>
+<p>These examples show why rollback strategies are important for
+managing applications in Kubernetes. For more details on handling
+deployments, check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-perform-rolling-updates-in-kubernetes.html">how
+to perform rolling updates in Kubernetes</a>.</p>
+<h2 id="how-to-automate-rollbacks-in-kubernetes">How to Automate
+Rollbacks in Kubernetes?</h2>
+<p>Automating rollbacks in Kubernetes helps us make the deployment
+process easier and makes our systems more reliable. Here are some easy
+ways to do this:</p>
+<ol type="1">
+<li><p><strong>Using Kubernetes Probes</strong>: We can use readiness
+and liveness probes to find any failures in our application. If a pod
+does not pass the health checks, Kubernetes will roll back to the last
+stable version.</p>
+<p>Here is a simple setup for a liveness probe:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-deployment</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-container</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> example-image:latest</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div></li>
+<li><p><strong>CI/CD Integration</strong>: We can connect Kubernetes
+rollbacks to our Continuous Integration/Continuous Deployment (CI/CD)
+pipeline. Tools like Jenkins, GitLab CI, and ArgoCD help automate
+deployments and rollbacks. They do this based on whether the last
+deployment was successful or not.</p>
+<p>For example, in a Jenkins pipeline, we can add rollback steps if the
+deployment fails:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Deploy&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    steps <span class="op">{</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>        script <span class="op">{</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>            <span class="cf">try</span> <span class="op">{</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                sh <span class="st">&#39;kubectl apply -f deployment.yaml&#39;</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span> <span class="cf">catch</span> <span class="op">(</span><span class="bu">Exception</span> e<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>                sh <span class="st">&#39;kubectl rollout undo deployment/example-deployment&#39;</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>GitOps Approach</strong>: We can use a GitOps method to
+allow rollbacks based on version control. If something goes wrong with a
+deployment, we just go back in the Git repository. Then, a tool like
+ArgoCD or Flux can apply the last stable version by itself.</p></li>
+<li><p><strong>Kubernetes Operators</strong>: We can make a custom
+Kubernetes operator that watches our deployments. This operator can
+start rollbacks automatically if it sees certain issues, like high error
+rates or low performance.</p></li>
+<li><p><strong>Monitoring and Alerting</strong>: We should use
+monitoring tools like Prometheus and Grafana to check application
+performance. We can set up alerts that start rollbacks if we hit certain
+limits. This helps us respond quickly to problems.</p></li>
+<li><p><strong>Helm Rollbacks</strong>: If we use Helm to manage our
+Kubernetes applications, we can easily do rollbacks with Helm commands.
+We just need to give the release name and the revision number to go back
+to a previous version:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> rollback my-release 1</span></code></pre></div></li>
+</ol>
+<p>By using these methods, we can automate rollbacks in Kubernetes. This
+will help our application be more resilient and reduce downtime. For
+more details on Kubernetes deployments, you can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">what
+are Kubernetes deployments and how do I use them</a>.</p>
+<h2 id="what-to-consider-before-rolling-back-a-deployment">What to
+Consider Before Rolling Back a Deployment?</h2>
+<p>Before we roll back a deployment in Kubernetes, we need to think
+about some important things. This helps us make sure the rollback goes
+well.</p>
+<ol type="1">
+<li><strong>Impact Analysis</strong>:
+<ul>
+<li>We should look at how the current deployment affects users and
+services. If there are big problems, we need to decide if we should roll
+back right away.</li>
+</ul></li>
+<li><strong>Investigate the Cause</strong>:
+<ul>
+<li>We need to find out why the deployment failed or has issues. This
+might mean checking logs or looking at metrics to see what went
+wrong.</li>
+</ul></li>
+<li><strong>State of the Application</strong>:
+<ul>
+<li>We must check if the application is ready for a rollback. We need to
+think if there is new data or changes that we might lose.</li>
+</ul></li>
+<li><strong>Revision History</strong>:
+<ul>
+<li><p>We can look at the deployment’s revision history with this
+command:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout history deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Configuration Changes</strong>:
+<ul>
+<li>We must make sure if there were any configuration changes, like
+environment variables or secrets, in the bad deployment that we need to
+think about for the rollback.</li>
+</ul></li>
+<li><strong>Testing</strong>:
+<ul>
+<li>If we can, we should test the old version in a staging environment.
+This helps us see if it works right before we roll back.</li>
+</ul></li>
+<li><strong>Downtime and User Experience</strong>:
+<ul>
+<li>We should think about any downtime or problems for users. If we can,
+we should plan to roll back during off-peak hours to reduce the
+impact.</li>
+</ul></li>
+<li><strong>Rollout Status Check</strong>:
+<ul>
+<li><p>We need to check the current rollout status to help us make a
+good choice:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> rollout status deployment/<span class="op">&lt;</span>deployment-name<span class="op">&gt;</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Backup and Recovery</strong>:
+<ul>
+<li>We should have backups ready in case the rollback does not work or
+if new problems happen.</li>
+</ul></li>
+<li><strong>Documentation and Communication</strong>:
+<ul>
+<li>We need to write down the problems we had and talk with our team
+about the rollback plan. This way, everyone knows what to do.</li>
+</ul></li>
+</ol>
+<p>By thinking about these things, we can plan our rollback in
+Kubernetes better. This helps reduce risks and keeps services running.
+For more info about Kubernetes deployments, check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">what
+are Kubernetes deployments and how do I use them</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-a-rollback-in-kubernetes">What is a rollback in
+Kubernetes?</h3>
+<p>A rollback in Kubernetes means going back to a previous stable
+version after we find problems with a newer version. This is very
+important for keeping our applications steady and reducing downtime.
+With Kubernetes’ built-in tools, we can easily roll back deployments.
+This helps our applications stay reliable and work well, even when
+updates cause issues.</p>
+<h3 id="how-do-i-know-which-revision-to-roll-back-to">How do I know
+which revision to roll back to?</h3>
+<p>To find out which revision to roll back to in Kubernetes, we can
+check the deployment history with the command
+<code>kubectl rollout history deployment/&lt;deployment-name&gt;</code>.
+This command shows all the revisions and their change reasons. By
+looking at this history, we can see the last stable version to go back
+to. This way, we can make sure our application’s performance gets
+better.</p>
+<h3
+id="can-i-roll-back-a-deployment-in-kubernetes-using-a-specific-configuration">Can
+I roll back a deployment in Kubernetes using a specific
+configuration?</h3>
+<p>Yes, we can roll back a deployment in Kubernetes with a specific
+configuration by giving the revision number. We use the command
+<code>kubectl rollout undo deployment/&lt;deployment-name&gt; --to-revision=&lt;revision-number&gt;</code>.
+This helps us go back to a certain state of our application. We do this
+based on the settings that were active at that revision. It gives us
+good control over our deployments.</p>
+<h3 id="what-happens-to-the-current-pods-during-a-rollback">What happens
+to the current pods during a rollback?</h3>
+<p>During a rollback in Kubernetes, the current pods get replaced slowly
+with the pods from the last stable version. Kubernetes takes care of
+this to reduce downtime and keep our application open. The system will
+stop the old pods and make new ones that match the rolled-back
+deployment. This helps keep everything running smoothly for users.</p>
+<h3 id="how-can-i-automate-rollbacks-in-kubernetes">How can I automate
+rollbacks in Kubernetes?</h3>
+<p>We can automate rollbacks in Kubernetes by using monitoring tools.
+These tools can spot failures and start rollbacks based on conditions we
+set. For example, tools like Argo Rollouts or Kubernetes’ own features,
+combined with CI/CD pipelines, can help automate the rollback process.
+This makes sure our applications go back to a stable state quickly
+without needing us to do it manually. It makes everything work better
+during deployments.</p>
+<p>For more details about Kubernetes rollouts and deployments, you can
+read our article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">Kubernetes
+Deployments and Their Usage</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
