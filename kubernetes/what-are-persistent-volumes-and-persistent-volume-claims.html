@@ -1,0 +1,681 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>What are Persistent Volumes and Persistent Volume Claims?</title>
+            <meta name="description" content="Discover the essentials of Persistent Volumes and Persistent Volume Claims in Kubernetes. Learn how they manage data storage efficiently!">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">What are Persistent Volumes and Persistent Volume Claims?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <h3
+id="persistent-volumes-and-persistent-volume-claims-in-kubernetes">Persistent
+Volumes and Persistent Volume Claims in Kubernetes</h3>
+<p>Persistent Volumes (PVs) and Persistent Volume Claims (PVCs) are
+important parts of Kubernetes. They help us manage storage resources. A
+Persistent Volume is a storage piece in the cluster. Someone like an
+admin sets it up or it gets set up automatically using Storage Classes.
+A Persistent Volume Claim is a request for storage by a user. It is like
+how pods ask for resources like CPU and memory. PVCs hide the details of
+the storage technology. This way, developers can say what storage they
+need without knowing how it works under the hood.</p>
+<p>In this article, we will look at the basic ideas of Persistent
+Volumes and Persistent Volume Claims in Kubernetes. We will see how they
+work, their main parts, and how to create them. We will also talk about
+common storage backends, how to connect PVCs to PVs, real-life examples,
+and tips for fixing common problems. Here’s what we will talk about:</p>
+<ul>
+<li>What are Persistent Volumes and Persistent Volume Claims in
+Kubernetes</li>
+<li>How do Persistent Volumes and Persistent Volume Claims work</li>
+<li>What are the key parts of Persistent Volumes and Claims</li>
+<li>How to create a Persistent Volume in Kubernetes</li>
+<li>How to create a Persistent Volume Claim in Kubernetes</li>
+<li>What are the common storage backends for Persistent Volumes</li>
+<li>How to connect Persistent Volume Claims to Persistent Volumes</li>
+<li>What are real life examples for Persistent Volumes and Claims</li>
+<li>How to fix issues with Persistent Volumes and Persistent Volume
+Claims</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more information about Kubernetes and its parts, we can read
+about <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">Kubernetes
+Pods</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">Kubernetes
+Volumes</a>.</p>
+<h2 id="how-do-persistent-volumes-and-persistent-volume-claims-work">How
+do Persistent Volumes and Persistent Volume Claims work?</h2>
+<p>In Kubernetes, <strong>Persistent Volumes (PV)</strong> and
+<strong>Persistent Volume Claims (PVC)</strong> work together. They help
+us manage storage and keep data safe across pod lifecycles.</p>
+<ul>
+<li><p><strong>Persistent Volume (PV)</strong>: A PV is a storage
+resource in the cluster. An administrator makes it or it can be made
+automatically using Storage Classes. It shows a piece of storage in the
+cluster that pods can use.</p></li>
+<li><p><strong>Persistent Volume Claim (PVC)</strong>: A PVC is a
+request for storage from a user. It hides the details of the storage and
+lets users ask for specific amounts and types of storage without knowing
+much about the underlying system.</p></li>
+</ul>
+<h3 id="binding-process">Binding Process</h3>
+<ol type="1">
+<li><p><strong>Claim Creation</strong>: When we create a PVC, Kubernetes
+looks for a matching PV. It checks if the PV can meet the request for
+size and access modes.</p></li>
+<li><p><strong>Binding</strong>: If Kubernetes finds a suitable PV, it
+binds the PVC to that PV. This binding is one-to-one. Once we bind a PVC
+to a PV, we cannot bind it to another PVC.</p></li>
+<li><p><strong>Usage</strong>: After binding, the PV is available to the
+pod that uses the PVC. The pod can then read from and write to the PV as
+we specified in the PVC.</p></li>
+</ol>
+<h3 id="access-modes">Access Modes</h3>
+<ul>
+<li><strong>ReadWriteOnce</strong>: The volume can be mounted as
+read-write by one node.</li>
+<li><strong>ReadOnlyMany</strong>: The volume can be mounted as
+read-only by many nodes.</li>
+<li><strong>ReadWriteMany</strong>: The volume can be mounted as
+read-write by many nodes.</li>
+</ul>
+<h3 id="example-yaml-definitions">Example YAML Definitions</h3>
+<p><strong>Persistent Volume (PV)</strong>:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pv</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /mnt/data</span></span></code></pre></div>
+<p><strong>Persistent Volume Claim (PVC)</strong>:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pvc</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span></code></pre></div>
+<p>Once we create the PVC, Kubernetes will bind it to the right PV
+automatically. When we define a pod to use the PVC, it can access the
+storage easily.</p>
+<p>For more information about how Kubernetes deals with storage, you can
+check other resources like <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">What
+are Kubernetes Volumes and How Do I Persist Data?</a>.</p>
+<h2
+id="what-are-the-key-components-of-persistent-volumes-and-claims">What
+are the key components of Persistent Volumes and Claims?</h2>
+<p>In Kubernetes, we have Persistent Volumes (PVs) and Persistent Volume
+Claims (PVCs). They are important for managing storage for
+applications.</p>
+<h3 id="key-components-of-persistent-volumes-pvs">Key Components of
+Persistent Volumes (PVs)</h3>
+<ul>
+<li><strong>Persistent Volume (PV)</strong>: This is a storage resource
+in a cluster. An administrator makes it available. It helps us manage
+storage separately from the Pod lifecycle.</li>
+<li><strong>Capacity</strong>: This tells us how much storage the PV
+has. It is measured in bytes.</li>
+<li><strong>Access Modes</strong>: These show how we can use the volume.
+Common access modes are:
+<ul>
+<li><code>ReadWriteOnce</code>: Only one node can use the volume for
+reading and writing.</li>
+<li><code>ReadOnlyMany</code>: Many nodes can read the volume but cannot
+write to it.</li>
+<li><code>ReadWriteMany</code>: Many nodes can read and write to the
+volume.</li>
+</ul></li>
+<li><strong>Reclaim Policy</strong>: This explains what happens to the
+PV when we release it. Options are:
+<ul>
+<li><code>Retain</code>: The PV stays and we can take it back
+manually.</li>
+<li><code>Delete</code>: The PV and its storage will go away
+automatically.</li>
+<li><code>Recycle</code>: The PV will be cleaned and ready for new
+claims.</li>
+</ul></li>
+<li><strong>Storage Class</strong>: This tells us what type of storage
+we use (like SSD or HDD) and how we create the PV.</li>
+<li><strong>Status</strong>: This shows the current state of the PV
+(like Available, Bound, Released, or Failed).</li>
+</ul>
+<h3 id="key-components-of-persistent-volume-claims-pvcs">Key Components
+of Persistent Volume Claims (PVCs)</h3>
+<ul>
+<li><strong>Persistent Volume Claim (PVC)</strong>: This is what a user
+requests for storage. It lets users ask for specific storage needs
+without knowing the details of the storage system.</li>
+<li><strong>Requested Storage</strong>: This is how much storage the PVC
+asks for, measured in bytes.</li>
+<li><strong>Access Modes</strong>: Like PVs, PVCs show how we can access
+the storage.</li>
+<li><strong>Selector</strong>: This is an optional part. It helps PVCs
+choose compatible PVs based on labels.</li>
+<li><strong>Binding</strong>: This is when a PVC finds and connects to a
+PV that fits its needs for storage size and access methods.</li>
+</ul>
+<p>By learning about these key parts of Persistent Volumes and Claims,
+we can manage storage better in a Kubernetes setup. For more details on
+Kubernetes storage ideas, check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">Kubernetes
+Volumes</a>.</p>
+<h2 id="how-to-create-a-persistent-volume-in-kubernetes">How to create a
+Persistent Volume in Kubernetes?</h2>
+<p>To create a Persistent Volume (PV) in Kubernetes, we need to define a
+YAML file. This file will show the storage details and access types.
+Here is a simple example to create a Persistent Volume using NFS
+storage.</p>
+<h3 id="example-yaml-for-persistent-volume">Example YAML for Persistent
+Volume</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-persistent-volume</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">nfs</span><span class="kw">:</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /path/to/nfs/share</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">server</span><span class="kw">:</span><span class="at"> nfs-server.example.com</span></span></code></pre></div>
+<h3 id="key-parts-of-the-pv-configuration">Key Parts of the PV
+Configuration</h3>
+<ul>
+<li><strong>apiVersion</strong>: This shows the API version.</li>
+<li><strong>kind</strong>: This tells us the type of object, which is
+<code>PersistentVolume</code>.</li>
+<li><strong>metadata</strong>: This has the name and some other
+details.</li>
+<li><strong>spec</strong>: This describes what we want the PV to be
+like.
+<ul>
+<li><strong>capacity</strong>: This shows how much storage (like
+10Gi).</li>
+<li><strong>accessModes</strong>: This tells us how we can use the
+volume (like <code>ReadWriteMany</code>, <code>ReadWriteOnce</code>,
+<code>ReadOnlyMany</code>).</li>
+<li><strong>nfs</strong>: This shows the NFS details (path and
+server).</li>
+</ul></li>
+</ul>
+<h3 id="creating-the-persistent-volume">Creating the Persistent
+Volume</h3>
+<p>To create the Persistent Volume in our Kubernetes cluster, we run
+this command:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> my-persistent-volume.yaml</span></code></pre></div>
+<p>This command will make the Persistent Volume as we wrote in the YAML
+file. We can check if it is created by using:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pv</span></code></pre></div>
+<p>This command will show all Persistent Volumes, including the one we
+just made. If we want more details, we can use:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pv my-persistent-volume</span></code></pre></div>
+<p>We can also check this article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">what
+are Kubernetes volumes and how do I persist data</a> to learn more about
+storage options in Kubernetes.</p>
+<h2 id="how-to-create-a-persistent-volume-claim-in-kubernetes">How to
+create a Persistent Volume Claim in Kubernetes?</h2>
+<p>To create a Persistent Volume Claim (PVC) in Kubernetes, we need to
+set the storage needs in a YAML file. The PVC will ask for storage from
+the available Persistent Volumes (PVs) in the cluster.</p>
+<p>Here is a simple example of a PVC definition:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pvc</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span></code></pre></div>
+<h3 id="key-components-of-the-pvc-definition">Key Components of the PVC
+Definition:</h3>
+<ul>
+<li><strong>apiVersion</strong>: This shows the version of the
+Kubernetes API we use.</li>
+<li><strong>kind</strong>: This tells the type of resource, which is
+<code>PersistentVolumeClaim</code>.</li>
+<li><strong>metadata</strong>: This has the name and labels of the
+PVC.</li>
+<li><strong>spec</strong>: This describes the features we want for the
+PVC.
+<ul>
+<li><strong>accessModes</strong>: This shows how we can access the
+volume (like <code>ReadWriteOnce</code>, <code>ReadOnlyMany</code>,
+<code>ReadWriteMany</code>).</li>
+<li><strong>resources</strong>: This defines how much storage we need
+(like <code>5Gi</code>).</li>
+</ul></li>
+</ul>
+<h3 id="creating-the-pvc">Creating the PVC</h3>
+<p>To create the PVC, we use the <code>kubectl</code> command to apply
+the YAML file:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> my-pvc.yaml</span></code></pre></div>
+<h3 id="verifying-the-pvc">Verifying the PVC</h3>
+<p>We can check the status of the PVC by running:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pvc</span></code></pre></div>
+<p>This command will show us the list of PVCs and their status. The
+status should be <code>Bound</code> if it found and connected to a good
+Persistent Volume.</p>
+<p>For more details on using Persistent Volumes and Claims, we can look
+at the article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">Kubernetes
+Volumes</a>.</p>
+<h2
+id="what-are-the-common-storage-backends-for-persistent-volumes">What
+are the common storage backends for Persistent Volumes?</h2>
+<p>In Kubernetes, we can use different types of storage for Persistent
+Volumes (PVs). These storage options give us the needed resources. We
+can group these storage backends into three main types: cloud provider
+storage, network file systems, and local storage. Here are some common
+storage backends for Persistent Volumes:</p>
+<ol type="1">
+<li><p><strong>Cloud Provider Storage</strong>:</p>
+<ul>
+<li><strong>AWS EBS (Elastic Block Store)</strong>: This gives block
+storage for AWS EC2 instances.</li>
+<li><strong>GCP Persistent Disk</strong>: This offers block storage for
+Google Cloud Platform instances.</li>
+<li><strong>Azure Disk Storage</strong>: This provides block storage for
+Azure Virtual Machines.</li>
+</ul>
+<p>Here is an example PV configuration for AWS EBS:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pv</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">awsElasticBlockStore</span><span class="kw">:</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumeID</span><span class="kw">:</span><span class="at"> aws://us-west-2a/vol-xxxxxxxx</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">fsType</span><span class="kw">:</span><span class="at"> ext4</span></span></code></pre></div></li>
+<li><p><strong>Network File Systems</strong>:</p>
+<ul>
+<li><strong>NFS (Network File System)</strong>: This lets many clients
+share storage over a network.</li>
+<li><strong>CephFS</strong>: This is a distributed file system that
+scales well and is reliable.</li>
+<li><strong>GlusterFS</strong>: This is a scalable network filesystem
+good for data-heavy tasks.</li>
+</ul>
+<p>Here is an example PV configuration for NFS:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nfs-pv</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">nfs</span><span class="kw">:</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /path/to/nfs</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">server</span><span class="kw">:</span><span class="at"> nfs-server.example.com</span></span></code></pre></div></li>
+<li><p><strong>Local Storage</strong>:</p>
+<ul>
+<li><strong>HostPath</strong>: This uses a file or directory on the
+node’s filesystem.</li>
+<li><strong>Local Persistent Volumes</strong>: This allows us to use
+local storage of a node. It makes sure that the pods using it can be
+scheduled to that node.</li>
+</ul>
+<p>Here is an example PV configuration for Local Storage:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-local-pv</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /mnt/data</span></span></code></pre></div></li>
+<li><p><strong>Container Storage Interface (CSI)</strong>:</p>
+<ul>
+<li>CSI gives a standard way to connect different storage solutions.
+This helps Kubernetes work with many storage backends like:
+<ul>
+<li>Portworx</li>
+<li>OpenEBS</li>
+<li>Rook/Ceph</li>
+</ul></li>
+</ul></li>
+</ol>
+<p>By using these storage backends, we can have flexible and scalable
+storage options for our applications. This helps keep our data safe even
+when pods restart or move to different nodes. For more details on
+Kubernetes volumes, you can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">this
+article</a>.</p>
+<h2 id="how-to-bind-persistent-volume-claims-to-persistent-volumes">How
+to bind Persistent Volume Claims to Persistent Volumes?</h2>
+<p>Binding Persistent Volume Claims (PVCs) to Persistent Volumes (PVs)
+in Kubernetes is important for managing storage for our applications.
+The binding process helps a PVC find a suitable PV. This can happen
+either directly or after some setup.</p>
+<h3 id="steps-to-bind-pvcs-to-pvs">Steps to Bind PVCs to PVs:</h3>
+<ol type="1">
+<li><p><strong>Define a Persistent Volume (PV)</strong>: We need to
+create a PV with the right storage size, access modes, and storage
+class. Here is an example:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pv</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /mnt/data</span></span></code></pre></div></li>
+<li><p><strong>Define a Persistent Volume Claim (PVC)</strong>: Next, we
+create a PVC that asks for the storage we need:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pvc</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span></code></pre></div></li>
+<li><p><strong>Automatic Binding</strong>: When we create the PVC,
+Kubernetes will automatically connect it to a matching PV. This happens
+if the PV’s details meet the PVC’s needs.</p></li>
+<li><p><strong>Check Binding Status</strong>: After we create the PVC,
+we can check if it is connected to a PV by running:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pvc my-pvc</span></code></pre></div>
+<p>The result will show the status as <code>Bound</code> if the
+connection worked.</p></li>
+<li><p><strong>Manual Binding (Optional)</strong>: If we want to connect
+a PVC to a specific PV, we can add a <code>volumeName</code> field in
+the PVC:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pvc</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumeName</span><span class="kw">:</span><span class="at"> my-pv</span></span></code></pre></div></li>
+<li><p><strong>Storage Classes</strong>: If we use storage classes, we
+must make sure the PVC points to the right storage class. This can help
+create PVs automatically:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> my-storage-class</span></span></code></pre></div></li>
+<li><p><strong>Verify Bindings</strong>: We can use these commands to
+check the binding between PVCs and PVs:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pv</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pvc</span></code></pre></div>
+<p>This will show the connected PVs with their PVCs.</p></li>
+</ol>
+<p>By following these steps, we can bind Persistent Volume Claims to
+Persistent Volumes in our Kubernetes cluster. For more details on
+Kubernetes Volumes, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">What
+are Kubernetes Volumes and how do I persist data?</a>.</p>
+<h2
+id="what-are-real-life-use-cases-for-persistent-volumes-and-claims">What
+are real life use cases for Persistent Volumes and Claims?</h2>
+<p>Persistent Volumes (PVs) and Persistent Volume Claims (PVCs) in
+Kubernetes give us important storage options for stateful apps. We can
+see some real-life use cases below:</p>
+<ol type="1">
+<li><p><strong>Databases</strong>: Apps like PostgreSQL, MySQL, or
+MongoDB need storage that stays even if the database pod is deleted or
+restarted. We can use PVs to keep the data safe.</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-pv</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /data/mysql</span></span></code></pre></div></li>
+<li><p><strong>Content Management Systems (CMS)</strong>: Apps like
+WordPress keep media and content that we want to save between pod
+restarts. We can use PVCs to ask for storage for the CMS.</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wordpress-pvc</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span></code></pre></div></li>
+<li><p><strong>Log Storage</strong>: Apps that make logs can use storage
+to keep logs for checking or following rules. This helps us not lose log
+data during pod events.</p></li>
+<li><p><strong>Machine Learning Models</strong>: ML tasks often need
+storage for datasets and trained models. We can use PVs to store big
+datasets and model files even after a pod goes away.</p></li>
+<li><p><strong>Backup Solutions</strong>: We can use Persistent Volumes
+to keep backup data for apps. This helps us make sure backups are safe
+and can be used when we need recovery.</p></li>
+<li><p><strong>File Storage</strong>: Apps that need shared file
+storage, like Nextcloud, can use PVs to keep shared files. This way,
+multiple pods can access them.</p></li>
+<li><p><strong>Legacy Applications</strong>: Moving old apps to
+Kubernetes often needs storage to keep working like before.</p></li>
+<li><p><strong>Microservices with State</strong>: Some microservices
+keep their own state. They need storage to keep data across different
+instances or pods.</p></li>
+</ol>
+<p>Using PVs and PVCs helps Kubernetes manage storage in a smart way.
+This makes sure our apps have the resources they need to work well. If
+we want to learn more about Kubernetes storage, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">what
+are Kubernetes volumes and how do I persist data</a>.</p>
+<h2
+id="how-to-troubleshoot-persistent-volume-and-persistent-volume-claim-issues">How
+to troubleshoot Persistent Volume and Persistent Volume Claim
+issues?</h2>
+<p>When we work with Persistent Volumes (PVs) and Persistent Volume
+Claims (PVCs) in Kubernetes, we can face problems. These problems can
+stop our applications from working as they should. Here are some simple
+steps and commands we can use to find and fix these issues.</p>
+<ol type="1">
+<li><p><strong>Check PVC and PV Status:</strong> First, we need to make
+sure the PVC is connected to a PV. We should also check their
+statuses.</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pvc</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pv</span></code></pre></div>
+<p>Look at the <code>STATUS</code> column. We want to see that the PVC
+is in the <code>Bound</code> state.</p></li>
+<li><p><strong>Inspect Events:</strong> Next, we check for events
+related to the PVC and PV. This can help us find any warning or error
+messages.</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pvc <span class="op">&lt;</span>pvc-name<span class="op">&gt;</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pv <span class="op">&lt;</span>pv-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Verify Storage Class:</strong> We should also check if
+the PVC is using the right Storage Class. We need to make sure this
+Storage Class is available.</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get sc</span></code></pre></div></li>
+<li><p><strong>Check Node Affinity:</strong> It is important to verify
+that the PV is not node-affine or limited to specific nodes. These nodes
+might not be available.</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pv <span class="op">&lt;</span>pv-name<span class="op">&gt;</span> -o yaml</span></code></pre></div></li>
+<li><p><strong>Review Pod Events:</strong> If a pod cannot mount the
+PVC, we check the pod events for more details.</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Inspect Volume Mounts:</strong> We need to make sure the
+volume is correctly mounted in the pod specification. Here is an example
+of a pod spec:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-pod</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-container</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /data</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-persistent-storage</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-persistent-storage</span></span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> &lt;pvc-name&gt;</span></span></code></pre></div></li>
+<li><p><strong>Storage Backend Issues:</strong> If we are using cloud
+providers, we should check the cloud console. We need to look at the
+storage backend like AWS EBS or GCP Persistent Disk. This helps us
+ensure the volume is available and working well.</p></li>
+<li><p><strong>Check for Quotas:</strong> We must check if any resource
+quotas in our namespace are stopping us from creating or binding
+PVCs.</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get resourcequota</span></code></pre></div></li>
+<li><p><strong>Pod Security Policies:</strong> If we use Pod Security
+Policies, we should confirm that the policies allow the required volume
+actions.</p></li>
+<li><p><strong>Logs:</strong> Finally, we can check the logs of the
+important controller parts, like the PV provisioner, for any errors.
+<code>bash     kubectl logs &lt;controller-pod-name&gt;</code></p></li>
+</ol>
+<p>By using these troubleshooting steps, we can find and fix issues with
+Persistent Volumes and Persistent Volume Claims. For more detailed help
+on managing Kubernetes resources, we can read about <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">Kubernetes
+Volumes</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="what-is-the-difference-between-persistent-volumes-and-persistent-volume-claims-in-kubernetes">1.
+What is the difference between Persistent Volumes and Persistent Volume
+Claims in Kubernetes?</h3>
+<p>We have Persistent Volumes (PVs) and Persistent Volume Claims (PVCs)
+in Kubernetes. They help us manage storage. A Persistent Volume is
+storage in the cluster. An administrator or Storage Classes can create
+it. A Persistent Volume Claim is a request from a user for storage. It
+connects to a suitable PV. Understanding how these work together is
+important for managing storage in Kubernetes.</p>
+<h3 id="how-does-kubernetes-handle-storage-for-stateful-applications">2.
+How does Kubernetes handle storage for Stateful applications?</h3>
+<p>Kubernetes gives a strong storage system for Stateful applications
+using PVs and PVCs. Stateful applications need stable storage. They can
+use PVCs to ask for specific storage. Kubernetes makes sure that the PVs
+are available and linked to the right PVCs. This helps stateful
+applications keep their data consistent and available. We can learn more
+about <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">Kubernetes
+Volumes</a> for better understanding.</p>
+<h3 id="can-i-resize-a-persistent-volume-claim-in-kubernetes">3. Can I
+resize a Persistent Volume Claim in Kubernetes?</h3>
+<p>Yes we can resize a Persistent Volume Claim in Kubernetes. But the
+storage class must allow volume expansion. We need to change the PVC’s
+spec to ask for a bigger storage size. Then Kubernetes will take care of
+the resizing. Just make sure that our application can handle this change
+without stopping.</p>
+<h3
+id="what-are-the-best-practices-for-using-persistent-volumes-in-kubernetes">4.
+What are the best practices for using Persistent Volumes in
+Kubernetes?</h3>
+<p>To use Persistent Volumes well in Kubernetes, we should follow some
+best practices. First, we should always pick the right Storage Classes.
+Second, we need to make sure our PVs and PVCs have matching access
+modes. Also, we should back up our data often. Lastly, we should check
+the performance of our storage to avoid slowdowns in our applications.
+For more on Kubernetes storage, we can read about <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-common-storage-backends-for-persistent-volumes.html">common
+storage backends</a>.</p>
+<h3
+id="how-can-i-troubleshoot-persistent-volume-and-persistent-volume-claim-issues">5.
+How can I troubleshoot Persistent Volume and Persistent Volume Claim
+issues?</h3>
+<p>To troubleshoot Persistent Volumes and Persistent Volume Claims, we
+should check the status of both using <code>kubectl</code>. We can use
+commands like <code>kubectl get pv</code> and
+<code>kubectl get pvc</code> to find out about binding issues or status
+problems. Also, looking at events and logs can help us see what might be
+wrong. Knowing how to manage these resources is very important for
+keeping our applications stable in Kubernetes.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

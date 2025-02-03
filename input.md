@@ -1,662 +1,646 @@
-Kubernetes volumes are ways to store data that last longer than the life of individual containers in a Kubernetes cluster. They are different from regular temporary storage. Kubernetes volumes help us keep our data safe. This helps us build better applications that can recover from problems without losing important data. We can use these volumes with different storage systems. This way, applications can get and save their data safely.
+Kubernetes DaemonSets are a useful tool in Kubernetes. They make sure that a certain pod runs on all or some of the nodes in a cluster. Each node can have one DaemonSet pod running. This is great for tasks that must happen on every node, like collecting logs or running monitoring agents. This feature helps us manage resources well. It also means important services are always ready on the nodes we need them.
 
-In this article, we will talk about the basics of Kubernetes volumes and why they are important for keeping data. We will look at how Kubernetes volumes work, the types that are available, and how we can create persistent volumes and persistent volume claims. We will also show some real-life examples of using these volumes. We will share tips for managing data in stateful applications and answer common questions about Kubernetes volumes.
+In this article, we will talk about the main points of Kubernetes DaemonSets. We will look at how they work, their benefits, and when to use them. We will show how to create DaemonSets with code examples. We will also check out real-life examples. Plus, we will go over how to manage and update DaemonSets, some common problems and how to fix them, and the best ways to use DaemonSets in our Kubernetes setup.
 
-- What are Kubernetes Volumes and How Do I Persist Data in Your Applications?
-- Why Do We Need Kubernetes Volumes?
-- How Do Kubernetes Volumes Work?
-- What Types of Kubernetes Volumes Exist?
-- How to Create a Persistent Volume in Kubernetes?
-- How to Use Persistent Volume Claims in Kubernetes?
-- Real Life Use Cases for Kubernetes Volumes
-- How to Manage Data Persistence in Stateful Applications?
-- Best Practices for Using Kubernetes Volumes
+- What are Kubernetes DaemonSets and When Should I Use Them? Explained
+- How do DaemonSets Work in Kubernetes?
+- What are the Benefits of Using DaemonSets?
+- When Should You Use a DaemonSet?
+- How to Create a Kubernetes DaemonSet with Code Examples?
+- Real Life Use Cases for Kubernetes DaemonSets
+- How to Manage and Update DaemonSets?
+- Common Challenges with DaemonSets and Their Solutions
+- Best Practices for Using DaemonSets in Kubernetes
 - Frequently Asked Questions
 
-If you want to learn more about Kubernetes and container management, you can check out [What is Kubernetes and How Does it Simplify Container Management?](https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html) and [Why Should I Use Kubernetes for My Applications?](https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html).
+## How do DaemonSets Work in Kubernetes?
 
-## Why Do We Need Kubernetes Volumes?
+Kubernetes DaemonSets make sure that a copy of a Pod runs on all or some of the nodes in a cluster. When we add a new node to the cluster, the DaemonSet will automatically put the right Pod on that node. If we remove a node, the Pods that the DaemonSet managed on that node will also get deleted.
 
-Kubernetes volumes are very important for keeping data safe in container apps. Unlike temporary storage, which goes away when containers stop, Kubernetes volumes let data stay even when the container goes. Here are the main reasons why we need Kubernetes volumes:
+### Key Characteristics of DaemonSets:
 
-1. **Data Persistence**: Volumes make sure that data from apps stays available. This happens even if the pod restarts or changes. This is very important for apps like databases that need constant access to data.
+- **Node Affinity**: We can set up DaemonSets to run on certain nodes by using node selectors or affinity rules.
+- **Pod Lifecycle**: The life of Pods controlled by DaemonSets connects closely with the nodes. These Pods get created, updated, and deleted automatically when nodes are added or taken away.
+- **Multiple DaemonSets**: We can have more than one DaemonSet in a single cluster. Each one can manage different Pods for different tasks.
 
-2. **Decoupling Storage from Pods**: Kubernetes separates storage from pods. This helps us manage data better. We can share volumes between different pods, which makes it easier for them to work together.
+### Example of a DaemonSet Manifest:
 
-3. **Support for Multiple Storage Backends**: Kubernetes works with different types of volumes. This includes cloud storage like AWS EBS and Google Persistent Disk, network file systems like NFS, and local storage. This gives teams the chance to pick the best storage for their needs.
-
-4. **Backup and Recovery**: With volumes, it is simple to set up backup and recovery plans. We can back up data in volumes separately from the app. This way, we keep important data safe.
-
-5. **Data Sharing**: Volumes make it easy to share data between pods. Many pods can use the same volume. This is key for apps that need to share data.
-
-6. **Dynamic Provisioning**: Kubernetes lets us create storage when we need it through Persistent Volume Claims (PVCs). This means developers can ask for storage without needing to do it manually.
-
-7. **Stateful Applications**: Kubernetes volumes are very important for stateful apps. This includes databases and messaging systems where it is key to keep state across different instances.
-
-8. **Separation of Concerns**: With volumes, teams can focus on building their apps. They don’t have to worry about how data is stored. This leads to better and faster work.
-
-In short, Kubernetes volumes are a key part of keeping data safe and managing storage in cloud-native apps. They offer persistence, flexibility, and efficiency. This makes them very important for developing modern apps in Kubernetes. If you want to learn more about how Kubernetes helps with container management, check this [article](https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html).
-
-## How Do Kubernetes Volumes Work?
-
-Kubernetes volumes help us manage storage that lasts in a container environment. Unlike temporary storage, which only works when a pod runs, volumes keep data even after a pod is gone. When we delete a pod, we can still access the data in the volume with new pods.
-
-### Volume Lifecycle
-
-1. **Creation**: We create a volume in a Kubernetes cluster by adding it in the pod spec or making it as a separate Persistent Volume (PV).
-2. **Mounting**: We attach the volume to the container in the pod. This lets the application read and write to the volume.
-3. **Data Persistence**: Data we write to the volume stays there until we delete the volume. This happens even if the pod using it stops.
-4. **Unmounting**: When we delete or move the pod, Kubernetes unmounts the volume. But the data stays safe in the storage.
-
-### Volume Types
-
-Kubernetes supports many types of volumes, like:
-
-- **emptyDir**: A temporary space for a pod that lasts while the pod runs.
-- **hostPath**: This mounts a file or folder from the host node’s filesystem into a pod.
-- **PersistentVolume (PV)**: A storage piece in the cluster made by an admin or set up automatically using Storage Classes.
-- **PersistentVolumeClaim (PVC)**: A user’s request for storage. It connects to a PV.
-- **nfs, cephfs, and others**: These are networked file systems. They let multiple pods use the same data.
-
-### Access Modes
-
-Volumes can be accessed in different ways based on their access modes:
-
-- **ReadWriteOnce**: The volume can be used as read-write by one node.
-- **ReadOnlyMany**: The volume can be used as read-only by many nodes.
-- **ReadWriteMany**: The volume can be used as read-write by many nodes.
-
-### Example: Using a Volume in a Pod
-
-Here is a simple example of a pod that uses a persistent volume:
+Here is a simple YAML setup for a DaemonSet that runs a logging agent on each node:
 
 ```yaml
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: DaemonSet
 metadata:
-  name: mypod
+  name: logging-agent
+  namespace: kube-system
 spec:
-  containers:
-  - name: myapp
-    image: myapp:latest
-    volumeMounts:
-    - mountPath: /data
-      name: myvolume
-  volumes:
-  - name: myvolume
-    persistentVolumeClaim:
-      claimName: my-pvc
+  selector:
+    matchLabels:
+      name: logging-agent
+  template:
+    metadata:
+      labels:
+        name: logging-agent
+    spec:
+      containers:
+      - name: logging-agent
+        image: logging-agent:latest
+        ports:
+        - containerPort: 8080
 ```
 
-In this example, the `myapp` container uses a persistent volume from the `my-pvc` claim at the `/data` path.
+### How to Create a DaemonSet:
 
-Kubernetes volumes help us keep our data safe for applications. They make sure that data is available no matter what happens to the pods. For more details on Kubernetes storage, check [How to Create a Persistent Volume in Kubernetes](https://bestonlinetutorial.com/kubernetes/how-to-create-a-persistent-volume-in-kubernetes).
+To create the DaemonSet, we save the above YAML into a file named `daemonset.yaml` and run:
 
-## What Types of Kubernetes Volumes Exist?
+```bash
+kubectl apply -f daemonset.yaml
+```
 
-Kubernetes has many types of volumes. They help with data storage and management. Each type has its own use and features. This lets us pick the best option for our app needs.
+This command will deploy the DaemonSet. It makes sure that the logging agent Pod runs on all nodes in the cluster. We can check the status of the DaemonSet with:
 
-1. **emptyDir**:  
-   - This volume starts when we assign a Pod to a Node. It stays as long as the Pod runs on that Node. 
-   - We use it for temporary storage. The data will be lost when we remove the Pod.
+```bash
+kubectl get daemonsets -n kube-system
+```
 
-   ```yaml
-   apiVersion: v1
-   kind: Pod
-   metadata:
-     name: mypod
-   spec:
-     containers:
-     - name: mycontainer
-       image: myimage
-       volumeMounts:
-       - mountPath: /data
-         name: myemptydir
-     volumes:
-     - name: myemptydir
-       emptyDir: {}
-   ```
+DaemonSets are really useful for running background services. These services need to be on every node. Examples are monitoring agents, log collectors, or network proxies.
 
-2. **hostPath**:  
-   - This mounts a file or folder from the host node's filesystem into our Pod. 
-   - It is good for local storage. But it can be risky because of possible data problems.
+## What are the Benefits of Using DaemonSets?
 
-   ```yaml
-   apiVersion: v1
-   kind: Pod
-   metadata:
-     name: mypod
-   spec:
-     containers:
-     - name: mycontainer
-       image: myimage
-       volumeMounts:
-       - mountPath: /data
-         name: myhostpath
-     volumes:
-     - name: myhostpath
-       hostPath:
-         path: /data/on/host
-   ```
+Kubernetes DaemonSets have many benefits. They help us manage containerized applications in a cluster better. Here are the main advantages:
 
-3. **persistentVolumeClaim (PVC)**:  
-   - This creates storage based on how much we ask for. 
-   - It is linked to PersistentVolumes (PV). Administrators manage these.
+1. **Uniform Deployment**: DaemonSets make sure that a specific pod runs on all or some nodes in a cluster. This gives us uniformity for tasks like logging, monitoring, and instrumentation.
 
-   ```yaml
-   apiVersion: v1
-   kind: PersistentVolumeClaim
-   metadata:
-     name: mypvc
-   spec:
-     accessModes:
-       - ReadWriteOnce
-     resources:
-       requests:
-         storage: 1Gi
-   ```
+2. **Resource Optimization**: They help us use resources well. We can run necessary services only where we need them. For example, on nodes with certain hardware or setups.
 
-4. **nfs**:  
-   - This lets us share files among many Pods. 
-   - We need to set up an NFS server for it to work.
+3. **Simplified Management**: DaemonSets automatically deploy and manage pods on every node. This makes it easier for us to handle services that need to run on all nodes. We do not have to intervene manually as much.
 
-   ```yaml
-   apiVersion: v1
-   kind: Pod
-   metadata:
-     name: mypod
-   spec:
-     containers:
-     - name: mycontainer
-       image: myimage
-       volumeMounts:
-       - mountPath: /mnt/nfs
-         name: mynfs
-     volumes:
-     - name: mynfs
-       nfs:
-         server: nfs-server.example.com
-         path: /path/to/share
-   ```
+4. **Support for Node-Specific Functions**: We can use DaemonSets for functions that are specific to nodes. For instance, running a storage daemon like Ceph or GlusterFS, network plugins, or monitoring agents that fit each node's resources.
 
-5. **awsElasticBlockStore**:  
-   - This gives us storage using Amazon EBS volumes. 
-   - We need to specify the volume ID and how we want to access it.
+5. **Dynamic Scaling**: When we add new nodes to the cluster, DaemonSets automatically deploy the right pods on those nodes. We do not need to set up anything extra. This helps us scale easily.
 
-   ```yaml
-   apiVersion: v1
-   kind: Pod
-   metadata:
-     name: mypod
-   spec:
-     containers:
-     - name: mycontainer
-       image: myimage
-       volumeMounts:
-       - mountPath: /mnt/ebs
-         name: myebs
-     volumes:
-     - name: myebs
-       awsElasticBlockStore:
-         volumeID: aws://us-east-1a/vol-12345678
-         fsType: ext4
-   ```
+6. **Failover and Resilience**: If a node goes down, the DaemonSet makes sure the pod gets rescheduled on another available node. This improves the resilience and availability of important services.
 
-6. **gcePersistentDisk**:  
-   - This uses Google Cloud Persistent Disk for storage that lasts. 
-   - We need to create the disk in Google Cloud first.
+7. **Consistent Configuration**: DaemonSets keep the same configurations across all nodes. This helps us avoid configuration drift and makes troubleshooting easier.
 
-   ```yaml
-   apiVersion: v1
-   kind: Pod
-   metadata:
-     name: mypod
-   spec:
-     containers:
-     - name: mycontainer
-       image: myimage
-       volumeMounts:
-       - mountPath: /mnt/gce
-         name: mygce
-     volumes:
-     - name: mygce
-       gcePersistentDisk:
-         pdName: my-gce-pd
-         fsType: ext4
-   ```
+8. **Integration with Other Kubernetes Features**: DaemonSets work well with Kubernetes features like labels and selectors. This lets us deploy and manage based on the characteristics of the nodes.
 
-7. **azureDisk**:  
-   - This gives us access to Azure Disk storage. 
-   - We need to know the Azure resource group and disk name.
-
-   ```yaml
-   apiVersion: v1
-   kind: Pod
-   metadata:
-     name: mypod
-   spec:
-     containers:
-     - name: mycontainer
-       image: myimage
-       volumeMounts:
-       - mountPath: /mnt/azure
-         name: myazure
-     volumes:
-     - name: myazure
-       azureDisk:
-         diskName: myazuredisk
-         diskURI: /subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Compute/disks/{disk-name}
-         fsType: ext4
-   ```
-
-8. **configMap**:  
-   - This is for configuration data. We can mount it as a file or environment variable. 
-   - It is good for storing non-sensitive configuration.
-
-   ```yaml
-   apiVersion: v1
-   kind: ConfigMap
-   metadata:
-     name: my-config
-   data:
-     config.properties: |
-       key1=value1
-       key2=value2
-   ```
-
-9. **secret**:  
-   - This is like ConfigMaps but for sensitive data. 
-   - The data is base64 encoded.
-
-   ```yaml
-   apiVersion: v1
-   kind: Secret
-   metadata:
-     name: mysecret
-   type: Opaque
-   data:
-     username: dXNlcm5hbWU=
-     password: cGFzc3dvcmQ=
-   ```
-
-Choosing the right type of Kubernetes volume is very important for good data management in our apps. We should use these volume types based on what our app needs and what our infrastructure can do. For more info on how to deploy apps and manage Kubernetes resources, check out [What are Kubernetes Pods and How Do I Work With Them?](https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html).
-
-## How to Create a Persistent Volume in Kubernetes?
-
-We can create a Persistent Volume (PV) in Kubernetes by defining a resource. This resource allows data to stay even after individual pods end. A Persistent Volume is storage in the cluster. An administrator can set it up or it can be created automatically with Storage Classes. Let us see how to create a Persistent Volume in Kubernetes.
-
-### Step 1: Define the Persistent Volume
-
-We can define a Persistent Volume using a YAML file. Here is an example of a PV configuration that uses NFS for storage:
+Here is an example of a DaemonSet YAML configuration for a logging agent:
 
 ```yaml
-apiVersion: v1
-kind: PersistentVolume
+apiVersion: apps/v1
+kind: DaemonSet
 metadata:
-  name: my-pv
+  name: fluentd
 spec:
-  capacity:
-    storage: 10Gi
-  accessModes:
-    - ReadWriteOnce
-  nfs:
-    path: /path/to/nfs
-    server: nfs-server.example.com
+  selector:
+    matchLabels:
+      name: fluentd
+  template:
+    metadata:
+      labels:
+        name: fluentd
+    spec:
+      containers:
+      - name: fluentd
+        image: fluent/fluentd:v1.12-1
+        env:
+        - name: FLUENTD_CONFIG
+          value: "fluentd.conf"
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdocker
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdocker
+        hostPath:
+          path: /var/lib/docker/containers
 ```
 
-### Step 2: Apply the Configuration
+By using DaemonSets, we can improve our Kubernetes deployments. They help us make sure important services run the same way on all nodes. We also optimize how we use resources and make management easier. For more details on Kubernetes concepts, you can check [what are Kubernetes Pods](https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html).
 
-After we make our PV in a YAML file (for example, `pv.yaml`), we can create the Persistent Volume by applying the configuration:
+## When Should We Use a DaemonSet?
 
-```bash
-kubectl apply -f pv.yaml
-```
+We use DaemonSets in Kubernetes to make sure that a specific pod runs on all or some nodes. Here are some times when we should think about using a DaemonSet:
 
-### Step 3: Verify the Persistent Volume
+- **Node-Level Agents**: We can deploy agents that need to run on every node. This includes monitoring agents like Prometheus and Fluentd or log collectors.
 
-To check if the Persistent Volume is created correctly, we can use this command:
+- **Networking Services**: We can use DaemonSets for network services. These are things like CNI plugins. They need to be on every node to help with traffic routing.
 
-```bash
-kubectl get pv
-```
+- **Storage Management**: We can run storage daemons that need to access the node's filesystem. This includes CSI drivers for persistent storage.
 
-This command will show a list of Persistent Volumes and their statuses.
+- **System Utilities**: We can set up system-level utilities that need to run on all nodes. For example, node exporters help with collecting metrics.
 
-### Step 4: Configure Storage Class (Optional)
+- **Specialized Workloads**: We can use DaemonSets for workloads that need special hardware or settings. This is important for things like GPU workloads.
 
-If we want to create Persistent Volumes automatically, we can define a Storage Class. Here is an example of a simple Storage Class:
+### Example Use Case
+
+To deploy a DaemonSet that runs a logging agent on all nodes, we can use the following YAML configuration:
 
 ```yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
+apiVersion: apps/v1
+kind: DaemonSet
 metadata:
-  name: my-storage-class
-provisioner: k8s.io/minikube-hostpath
-```
-
-### Step 5: Use the Persistent Volume
-
-After we create the Persistent Volume, we can use it with a Persistent Volume Claim (PVC). This will connect storage to pods.
-
-For more information on using Persistent Volumes, we can check [how to use Persistent Volume Claims in Kubernetes](https://bestonlinetutorial.com/kubernetes/how-to-use-persistent-volume-claims-in-kubernetes.html).
-
-This process helps our applications save data safely across pod restarts and problems by using Kubernetes Volumes well.
-
-## How to Use Persistent Volume Claims in Kubernetes?
-
-In Kubernetes, we have Persistent Volume Claims (PVCs). These are requests for storage. They help us ask for and manage storage resources easily. PVCs let us claim a Persistent Volume (PV) that is already set up in the cluster.
-
-### Creating a Persistent Volume Claim
-
-To use a PVC, we start by defining it in a YAML file. Here is an example of a PVC:
-
-```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: my-pvc
+  name: fluentd
+  namespace: kube-system
 spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi
+  selector:
+    matchLabels:
+      name: fluentd
+  template:
+    metadata:
+      labels:
+        name: fluentd
+    spec:
+      containers:
+      - name: fluentd
+        image: fluent/fluentd-kubernetes-daemonset:v1.8.2-debian-1.0
+        env:
+        - name: FLUENTD_CONF
+          value: "fluentd-kubernetes.conf"
+        volumeMounts:
+        - name: varlog
+          mountPath: /var/log
+        - name: varlibdocker
+          mountPath: /var/lib/docker/containers
+          readOnly: true
+      volumes:
+      - name: varlog
+        hostPath:
+          path: /var/log
+      - name: varlibdocker
+        hostPath:
+          path: /var/lib/docker/containers
 ```
 
-- **accessModes**: This shows how we can mount the volume. Common options are:
-  - `ReadWriteOnce`: One node can mount the volume as read-write.
-  - `ReadOnlyMany`: Many nodes can mount the volume as read-only.
-  - `ReadWriteMany`: Many nodes can mount the volume as read-write.
-  
-- **resources.requests.storage**: This is the amount of storage we are asking for.
+Using DaemonSets is good for making sure that needed functions are always there in our Kubernetes cluster. For more details on Kubernetes components, we can check [what are the key components of a Kubernetes cluster](https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html).
 
-### Applying the PVC
+## How to Create a Kubernetes DaemonSet with Code Examples?
 
-To create the PVC in our Kubernetes cluster, we apply the YAML file using `kubectl`:
+We can create a Kubernetes DaemonSet by defining it in a YAML file. Then we apply it using `kubectl`. A DaemonSet makes sure that a specific pod runs on all or some nodes in a Kubernetes cluster. Here are the steps and code examples for creating a DaemonSet.
 
-```bash
-kubectl apply -f my-pvc.yaml
-```
+### Step 1: Define the DaemonSet
 
-### Using the PVC in a Pod
-
-After we create the PVC, we can use it in a Pod definition. Here is an example:
+First, we need to create a YAML file. We can name it `daemonset.yaml`. Here is a simple configuration:
 
 ```yaml
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: DaemonSet
 metadata:
-  name: my-pod
+  name: my-daemonset
+  labels:
+    app: my-app
 spec:
-  containers:
-    - name: my-container
-      image: my-image
-      volumeMounts:
-        - mountPath: "/data"
-          name: my-storage
-  volumes:
-    - name: my-storage
-      persistentVolumeClaim:
-        claimName: my-pvc
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-container
+        image: my-image:latest
+        ports:
+        - containerPort: 80
 ```
 
-In this Pod definition:
-- The `volumeMounts` shows where we will mount the volume inside the container (`/data`).
-- The `volumes` connects the PVC (`my-pvc`) to the Pod.
+### Step 2: Apply the DaemonSet
 
-### Checking PVC Status
-
-We can check the status of the PVC by using:
+Next, we use the `kubectl apply` command to create the DaemonSet in our Kubernetes cluster:
 
 ```bash
-kubectl get pvc
+kubectl apply -f daemonset.yaml
 ```
 
-This command will show us if the PVC is linked to a PV and what its status is.
+### Step 3: Verify the DaemonSet
 
-### Deleting a PVC
-
-If we want to delete a PVC, we use this command:
+After we apply it, we can check if the DaemonSet is running well:
 
 ```bash
-kubectl delete pvc my-pvc
+kubectl get daemonsets
 ```
 
-This will remove the claim. Depending on the Reclaim Policy of the PV, it might also delete the storage.
+This command will show us the status of our DaemonSet. It will tell us how many pods are scheduled and running on the nodes.
 
-Using Persistent Volume Claims in Kubernetes helps us manage data for our applications easily. For more details on Kubernetes storage, we can look at articles on [Kubernetes Volumes](https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data/) and [Kubernetes Stateful Applications](https://bestonlinetutorial.com/kubernetes/how-to-manage-data-persistence-in-stateful-applications/).
+### Step 4: Update the DaemonSet
 
-## Real Life Use Cases for Kubernetes Volumes
+If we want to update the DaemonSet, we just change the YAML file and apply it again:
 
-Kubernetes volumes are very important for keeping data safe in cloud-native apps. Here are some real-life examples of how we can use Kubernetes volumes well:
+```bash
+kubectl apply -f daemonset.yaml
+```
 
-1. **Database Storage**: When we use databases like PostgreSQL or MySQL in Kubernetes, we need storage that lasts. This is important so we can keep our data even if the pod restarts. We can create a Persistent Volume (PV) and connect it to a StatefulSet. This way, our data stays safe.
+Kubernetes will take care of updating the pods managed by the DaemonSet.
 
-   Example YAML for a Persistent Volume:
-   ```yaml
-   apiVersion: v1
-   kind: PersistentVolume
-   metadata:
-     name: mysql-pv
-   spec:
-     capacity:
-       storage: 5Gi
-     accessModes:
-       - ReadWriteOnce
-     hostPath:
-       path: /mnt/data
-   ```
+### Step 5: Delete the DaemonSet
 
-2. **User Uploaded Files**: Apps that let users upload files, like images or documents, need a persistent volume to keep these files. With a Persistent Volume Claim (PVC), the app can use storage that stays even when the pod changes.
+If we need to remove the DaemonSet, we can use this command:
 
-   Example YAML for a PVC:
-   ```yaml
-   apiVersion: v1
-   kind: PersistentVolumeClaim
-   metadata:
-     name: user-upload-pvc
-   spec:
-     accessModes:
-       - ReadWriteOnce
-     resources:
-       requests:
-         storage: 10Gi
-   ```
+```bash
+kubectl delete daemonset my-daemonset
+```
 
-3. **Shared Configuration and Logs**: Apps can share settings files or logs using a shared volume. We can use a ConfigMap as a volume. This allows many pods to get the same settings.
+This command will clean up the DaemonSet and any pods that are linked to it.
 
-   Example YAML for using ConfigMap as a volume:
-   ```yaml
-   apiVersion: v1
-   kind: Pod
-   metadata:
-     name: app-pod
-   spec:
-     containers:
-     - name: app-container
-       image: myapp:latest
-       volumeMounts:
-       - name: config-volume
-         mountPath: /etc/config
-     volumes:
-     - name: config-volume
-       configMap:
-         name: my-config
-   ```
+For more information on deploying apps in Kubernetes, we can check [How do I deploy a simple web application on Kubernetes?](https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-a-simple-web-application-on-kubernetes.html).
 
-4. **Backup and Restore**: Kubernetes volumes help us make backup plans by saving data to storage that lasts. We can use tools like Velero to back up PVs and restore them. This helps keep our data safe.
+## Real Life Use Cases for Kubernetes DaemonSets
 
-5. **Data Processing Pipelines**: In machine learning or data work, we can keep temporary data in volumes. This lets our data stay through different steps of processing. It makes it easier to fix problems or redo steps.
+Kubernetes DaemonSets are useful in many real-life situations. They make sure that certain tasks run on every node in a cluster or on some of the nodes. Here are some common ways we can use DaemonSets:
 
-6. **Multi-Container Applications**: When we run apps with several containers that need to share data, Kubernetes volumes help them read and write to the same storage.
-
-7. **Legacy Application Migration**: When we move old apps to Kubernetes, we can use persistent volumes to keep the old data safe and reachable during and after the move.
-
-By using Kubernetes volumes in these ways, we can keep our data safe and sound in our apps. This is very important for modern cloud-native systems. For more about Kubernetes and its parts, check out [what are the key components of a Kubernetes cluster](https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html).
-
-## How to Manage Data Persistence in Stateful Applications?
-
-Managing data storage in stateful applications in Kubernetes is important. We need to use Persistent Volumes (PVs) and Persistent Volume Claims (PVCs). Stateful apps need stable storage that keeps data even when pods restart or get moved.
-
-1. **Use StatefulSets**: We should use StatefulSets to deploy our stateful apps. StatefulSets help manage the deployment and scaling of pods. They make sure each pod has its own identity and stable storage.
-
-   Here is an example of a StatefulSet setup:
+1. **Logging Agents**:  
+   We can deploy logging agents like Fluentd or Logstash on every node. This helps us collect logs from all applications. No matter where the pods run, we still capture all logs.
 
    ```yaml
    apiVersion: apps/v1
-   kind: StatefulSet
+   kind: DaemonSet
    metadata:
-     name: my-stateful-app
+     name: fluentd
    spec:
-     serviceName: "my-service"
-     replicas: 3
      selector:
        matchLabels:
-         app: my-stateful-app
+         name: fluentd
      template:
        metadata:
          labels:
-           app: my-stateful-app
+           name: fluentd
        spec:
          containers:
-         - name: my-container
-           image: my-image
-           volumeMounts:
-           - name: my-volume
-             mountPath: /data
-     volumeClaimTemplates:
-     - metadata:
-         name: my-volume
-       spec:
-         accessModes: [ "ReadWriteOnce" ]
-         resources:
-           requests:
-             storage: 1Gi
+         - name: fluentd
+           image: fluent/fluentd-kubernetes-daemonset
+           env:
+           - name: FLUENT_ELASTICSEARCH_HOST
+             value: "elasticsearch.default.svc.cluster.local"
    ```
 
-2. **Persistent Volume Claims**: We need to use PVCs in our StatefulSet. PVCs ask for storage from the infrastructure. Each pod in the StatefulSet gets its own PVC. This keeps data safe during pod restarts.
-
-3. **Storage Classes**: We should define storage classes for automatic storage setup. This lets Kubernetes create PVs automatically based on the storage class we define.
-
-   Here is an example of a Storage Class setup:
+2. **Monitoring Tools**:  
+   We can use tools like Prometheus Node Exporter as a DaemonSet. This helps us gather metrics from each node. It gives us a good view of the cluster's health and how we use resources.
 
    ```yaml
-   apiVersion: storage.k8s.io/v1
-   kind: StorageClass
+   apiVersion: apps/v1
+   kind: DaemonSet
    metadata:
-     name: my-storage-class
-   provisioner: kubernetes.io/aws-ebs
-   parameters:
-     type: gp2
-     fsType: ext4
+     name: node-exporter
+   spec:
+     selector:
+       matchLabels:
+         app: node-exporter
+     template:
+       metadata:
+         labels:
+           app: node-exporter
+       spec:
+         containers:
+         - name: node-exporter
+           image: prom/node-exporter
+           ports:
+           - containerPort: 9100
    ```
 
-4. **Data Backup**: We need to have a backup plan for our data. Tools like Velero can help us back up PVs and restore them when we need.
+3. **Network Proxies**:  
+   We can deploy a network proxy like Envoy or Linkerd as a DaemonSet. This helps us manage traffic. It also helps us enforce rules and use service mesh features on all nodes.
 
-5. **Monitoring and Scaling**: We should use monitoring tools to check how our storage performs. We can scale our storage when the app needs more space.
+4. **Storage Daemon**:  
+   For storage solutions like Ceph or GlusterFS, DaemonSets let storage daemons run on every node. This helps us manage data well and keep backups.
 
-6. **Handling Failures**: We need to design our app to handle storage failures well. We should add retry logic and use Kubernetes features like PodDisruptionBudgets to keep our app available.
+5. **Security Agents**:  
+   We can deploy security agents on every node. These agents help with compliance checks or for intrusion detection systems (IDS). They make sure our security rules apply to the whole cluster.
 
-By following these tips for managing data storage in stateful applications, we can make sure our apps have reliable storage. For more information about Kubernetes concepts, check out [what are Kubernetes Pods](https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html).
+6. **Custom Node Services**:  
+   If we have services that need to run on every node, like a health check service, we can use DaemonSets. They help us meet these needs without doing it manually.
 
-## Best Practices for Using Kubernetes Volumes
+7. **Configuration Management**:  
+   We can use tools like Puppet or Chef with DaemonSets. This makes sure configuration management agents run on all nodes. It helps us keep things the same across different environments.
 
-When we work with Kubernetes volumes, it is good to follow some best practices. This helps keep our data safe, improves performance, and makes it easier to manage. Here are some important tips for using Kubernetes volumes in our applications:
+8. **Resource Monitoring and Management**:  
+   DaemonSets can also help us deploy tools for monitoring resource usage. They help us manage node settings based on load or other measures.
 
-1. **Use Persistent Volumes (PV) and Persistent Volume Claims (PVC):**
-   - We should always use Persistent Volumes and Persistent Volume Claims for applications that need to keep data. This helps us separate the storage lifecycle from the pod lifecycle.
-   - Here is an example of a Persistent Volume definition:
-     ```yaml
-     apiVersion: v1
-     kind: PersistentVolume
-     metadata:
-       name: my-pv
-     spec:
-       capacity:
-         storage: 10Gi
-       accessModes:
-         - ReadWriteOnce
-       hostPath:
-         path: /data
-     ```
+By using Kubernetes DaemonSets in these ways, we can make sure that important services run well in our clusters. This improves monitoring, security, and overall management of our Kubernetes environments.
 
-2. **Select the Right Volume Type:**
-   - We need to choose the right volume type based on what we need. Some options are `NFS`, `hostPath`, `awsElasticBlockStore`, and `gcePersistentDisk`.
-   - Here is an example of a PVC for a specific storage class:
-     ```yaml
-     apiVersion: v1
-     kind: PersistentVolumeClaim
-     metadata:
-       name: my-pvc
-     spec:
-       accessModes:
-         - ReadWriteOnce
-       resources:
-         requests:
-           storage: 5Gi
-       storageClassName: standard
-     ```
+## How to Manage and Update DaemonSets?
 
-3. **Implement Backup and Restore Strategies:**
-   - We should back up our Persistent Volumes regularly. This helps prevent data loss. We can use tools like Velero or other backup options for Kubernetes.
+Managing and updating Kubernetes DaemonSets need some simple commands and ways to keep our workloads healthy and updated on all nodes. Here is how we can manage and update DaemonSets in our Kubernetes setup.
 
-4. **Monitor Volume Performance:**
-   - It is important to keep an eye on volume performance metrics. Metrics like IOPS and latency are useful. We can use tools like Prometheus and Grafana to see and get alerts about performance problems.
+### Viewing DaemonSets
 
-5. **Secure Your Data:**
-   - We must make sure that sensitive data is safe. Using Kubernetes Secrets helps us store sensitive information. We also need to set up the right access controls.
+To see all DaemonSets in our cluster, we use this command:
 
-6. **Use ReadOnly Volumes When Possible:**
-   - If an application only needs to read data, we can mount the volume as read-only. This helps improve security and stops accidental changes to the data.
+```bash
+kubectl get daemonsets --all-namespaces
+```
 
-7. **Avoid Using `hostPath` in Production:**
-   - Using `hostPath` volumes can create a strong link between pods and nodes. This makes our application less flexible. It is better to use cloud-native storage options in production.
+### Updating a DaemonSet
 
-8. **Clean Up Unused Volumes:**
-   - We should check our Persistent Volumes and Claims regularly. It is important to remove any unused or orphaned volumes. This helps save resources.
+To update a DaemonSet, we can either edit it directly or apply a new setup. For example, to change the image version of our DaemonSet:
 
-9. **Label and Annotate Volumes:**
-   - We can use labels and annotations on our Persistent Volumes and Claims. This helps us manage and organize them better. It also aids in filtering and picking resources.
+1. **Edit the DaemonSet:**
 
-10. **Test Your Volume Configuration:**
-    - Before we put things in production, we should test our volume setup in a staging environment. This makes sure it meets our application’s needs.
+   ```bash
+   kubectl edit daemonset <daemonset-name> -n <namespace>
+   ```
 
-By following these best practices for Kubernetes volumes, we can make our applications stronger, faster, and safer. If we want to know more about managing Kubernetes resources, we can check [this article](https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html).
+   In the editor, we change the image version under the container details.
+
+2. **Apply the new setup:**
+
+   If we have a YAML file with the new changes, we apply it using:
+
+   ```bash
+   kubectl apply -f <daemonset-file>.yaml
+   ```
+
+### Rolling Updates
+
+Kubernetes updates by making new pods with the new setup and slowly stopping the old pods. We can control the update plan in the DaemonSet setup:
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: example-daemonset
+spec:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  ...
+```
+
+### Checking DaemonSet Status
+
+To see the status of a DaemonSet, including how many pods we want and how many we have, we use:
+
+```bash
+kubectl describe daemonset <daemonset-name> -n <namespace>
+```
+
+### Deleting a DaemonSet
+
+If we need to remove a DaemonSet, we run:
+
+```bash
+kubectl delete daemonset <daemonset-name> -n <namespace>
+```
+
+### Monitoring DaemonSet Pods
+
+To check the health of the pods made by the DaemonSet, we use:
+
+```bash
+kubectl get pods -l name=<daemonset-label> -n <namespace>
+```
+
+This command will show all pods linked with the DaemonSet based on the label we give.
+
+### Managing Configurations
+
+We can manage the settings for DaemonSets using ConfigMaps or Secrets. If we update the ConfigMap or Secret, the DaemonSet will pick up the changes if we set it up right.
+
+### Resources and Limits
+
+To avoid issues with resources, we define resource requests and limits in the DaemonSet setup:
+
+```yaml
+resources:
+  requests:
+    memory: "64Mi"
+    cpu: "250m"
+  limits:
+    memory: "128Mi"
+    cpu: "500m"
+```
+
+By using these methods, we can manage and update Kubernetes DaemonSets well. This helps our containerized applications run smoothly on all nodes in our cluster. For more tips about Kubernetes management, we can read about [Kubernetes Deployments](https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html).
+
+## Common Challenges with DaemonSets and Their Solutions
+
+Kubernetes DaemonSets are strong tools. But they have some challenges. We need to understand these challenges and find solutions to manage them well.
+
+### 1. Resource Consumption
+
+**Challenge:** DaemonSets run a copy of a pod on each node. This can use up a lot of resources, especially in big clusters.
+
+**Solution:** 
+- We can set resource limits and requests in the DaemonSet spec to control how much resources we use. 
+- We should use node selectors to limit DaemonSets to specific nodes that have enough resources.
+
+```yaml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: my-daemonset
+spec:
+  selector:
+    matchLabels:
+      name: my-daemon
+  template:
+    metadata:
+      labels:
+        name: my-daemon
+    spec:
+      containers:
+      - name: my-daemon
+        image: my-daemon-image
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+```
+
+### 2. Pod Disruption
+
+**Challenge:** DaemonSet pods can get disrupted during node upgrades or maintenance. This can hurt system functionality.
+
+**Solution:** 
+- We can use PodDisruptionBudgets to control how many pods can be disrupted at one time.
+- It is important that our DaemonSet pods have readiness and liveness probes set up to check their health.
+
+```yaml
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: my-daemon-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      name: my-daemon
+```
+
+### 3. Lack of Update Flexibility
+
+**Challenge:** Updating DaemonSets is not as flexible as updating Deployments. This can cause downtime or configuration issues.
+
+**Solution:** 
+- We can use the `RollingUpdate` strategy in our DaemonSet config to make sure updates happen slowly and without downtime.
+
+```yaml
+spec:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+```
+
+### 4. Complexity in Networking
+
+**Challenge:** Networking can get complicated. DaemonSets may need extra setup for communication across nodes.
+
+**Solution:** 
+- We can use Kubernetes Network Policies to manage traffic to and from DaemonSet pods.
+- It is good to make sure our DaemonSet listens on the right ports and uses service discovery.
+
+### 5. Logs and Monitoring
+
+**Challenge:** Centralized logging and monitoring can be hard when DaemonSets run on many nodes.
+
+**Solution:** 
+- We can set up a centralized logging system like Fluentd or ELK Stack. This will help us collect logs from all DaemonSet pods.
+- We should use monitoring tools like Prometheus to get the right metrics from DaemonSet pods. This will help us monitor health and performance.
+
+### 6. Node Affinity
+
+**Challenge:** Sometimes, we want to run DaemonSets only on certain types of nodes, like high-memory nodes.
+
+**Solution:** 
+- We can use node affinity rules in the DaemonSet spec to target certain nodes based on their labels.
+
+```yaml
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-type
+                    operator: In
+                    values:
+                      - high-memory
+```
+
+By solving these common challenges with smart strategies and setups, we can manage Kubernetes DaemonSets well. This helps us keep a stable and efficient cluster environment.
+
+## Best Practices for Using DaemonSets in Kubernetes
+
+When we use DaemonSets in Kubernetes, it is good to follow best practices. This helps us make sure they work well. Here are some key practices to think about:
+
+1. **Limit Resource Requests and Limits**: We should always set resource requests and limits for DaemonSet pods. This stops resource fights between nodes.
+
+   ```yaml
+   apiVersion: apps/v1
+   kind: DaemonSet
+   metadata:
+     name: example-daemonset
+   spec:
+     selector:
+       matchLabels:
+         app: example
+     template:
+       metadata:
+         labels:
+           app: example
+       spec:
+         containers:
+         - name: example-container
+           image: example-image
+           resources:
+             requests:
+               memory: "64Mi"
+               cpu: "250m"
+             limits:
+               memory: "128Mi"
+               cpu: "500m"
+   ```
+
+2. **Use Node Selectors**: If we want our DaemonSet to run on certain nodes only, we can use node selectors or node affinity. This helps control where pods go.
+
+   ```yaml
+   spec:
+     template:
+       spec:
+         nodeSelector:
+           disktype: ssd
+   ```
+
+3. **Implement Tolerations**: We can use tolerations if we need the DaemonSet pods to run on nodes with taints. This is important for running DaemonSets on special nodes.
+
+   ```yaml
+   spec:
+     template:
+       spec:
+         tolerations:
+         - key: "dedicated"
+           operator: "Equal"
+           value: "premium"
+           effect: "NoSchedule"
+   ```
+
+4. **Configure Pod Disruption Budgets**: To keep things running during planned disruptions (like when we maintain nodes), we should set up Pod Disruption Budgets (PDBs).
+
+   ```yaml
+   apiVersion: policy/v1beta1
+   kind: PodDisruptionBudget
+   metadata:
+     name: example-pdb
+   spec:
+     minAvailable: 1
+     selector:
+       matchLabels:
+         app: example
+   ```
+
+5. **Monitor DaemonSet Health**: We need to check the health and performance of our DaemonSets often. Tools like Prometheus and Grafana can help us with this.
+
+6. **Use Rolling Updates**: When we want to update a DaemonSet, we should think about using the `RollingUpdate` strategy. This gives us less disruption.
+
+   ```yaml
+   spec:
+     updateStrategy:
+       type: RollingUpdate
+       rollingUpdate:
+         maxUnavailable: 1
+   ```
+
+7. **Avoid Overusing DaemonSets**: We should only use DaemonSets for jobs that really need to run on every node. For jobs that can be handled by Deployments, we should use Deployments instead.
+
+8. **Limit DaemonSet Scope**: We want to keep DaemonSet settings simple. Complicated settings can cause problems and make fixing issues harder.
+
+9. **Cleanup Unused DaemonSets**: We should regularly check and take away any DaemonSets we do not need anymore. This helps our cluster stay clean and run better.
+
+10. **Test in Staging**: Before we put DaemonSets in production, we must test them well in a staging area. This helps us find any problems.
+
+By following these best practices for DaemonSets in Kubernetes, we can make our applications more reliable and perform better. For more tips on Kubernetes best practices, we can learn about [Kubernetes security best practices](https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-security-best-practices.html).
 
 ## Frequently Asked Questions
 
-### What are Kubernetes Volumes?
+### What is a Kubernetes DaemonSet?
 
-Kubernetes Volumes are important for storing data safely for applications in Kubernetes. They are different from temporary storage that goes away when a pod stops. Kubernetes Volumes let us keep data even after pods finish. It is important to know how Kubernetes Volumes work. This helps keep our data consistent in applications.
+A Kubernetes DaemonSet is a tool that makes sure a specific pod runs on all or some nodes in a Kubernetes cluster. This is helpful for running system services like log collectors, monitoring agents, or network proxies. DaemonSets help us manage these services well. They automatically handle where the pods go. This means we can always have the needed services running.
 
-### How do I create a Persistent Volume in Kubernetes?
+### How do DaemonSets differ from Deployments in Kubernetes?
 
-To make a Persistent Volume (PV) in Kubernetes, we need to set up a YAML file. This file tells the system about the volume's details like how much space it has and how we can use it. Here is a simple example of what this YAML file looks like:
+DaemonSets and Deployments both help us manage pods in Kubernetes, but they do different things. A Deployment is for managing a group of the same pods. We usually use it for scaling applications and doing updates. On the other hand, a DaemonSet makes sure one pod runs on each chosen node. This is good for services that need to run on specific nodes. If you want to know more about Kubernetes deployments, check our article on [what are Kubernetes deployments and how do I use them](https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html).
 
-```yaml
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: my-pv
-spec:
-  capacity:
-    storage: 1Gi
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: /data
-```
+### Can I update a DaemonSet in Kubernetes?
 
-This setup will create a PV. Our applications can use this PV to keep data.
+Yes, we can update a Kubernetes DaemonSet using the `kubectl` command tool. We can change things in the DaemonSet’s details, like the container image or resource requests. Kubernetes will take care of updating the pods across the nodes. If you need a detailed guide on how to update in Kubernetes, read our article on [how do I perform rolling updates in Kubernetes](https://bestonlinetutorial.com/kubernetes/how-do-i-perform-rolling-updates-in-kubernetes.html).
 
-### What is the difference between Persistent Volume and Persistent Volume Claim in Kubernetes?
+### What are the common use cases for Kubernetes DaemonSets?
 
-In Kubernetes, a Persistent Volume (PV) is storage in the cluster. An administrator sets it up or it can be made automatically using Storage Classes. A Persistent Volume Claim (PVC) is a request for storage by a user. It connects the PV and pods. This way, users can use the storage that the PV provides.
+People often use Kubernetes DaemonSets to run monitoring agents, log collectors, and network proxies on every node in the cluster. They are also good for applications that need services or tasks that are specific to each node. For example, we can run security software or manage features from cloud providers. To learn more about how we use them in real life, see our section on [real-life use cases for Kubernetes DaemonSets](#real-life-use-cases-for-kubernetes-daemonsets).
 
-### How can I manage data persistence in stateful applications using Kubernetes Volumes? 
+### How do I troubleshoot issues with DaemonSets in Kubernetes?
 
-To manage data persistence in stateful applications, we can use Kubernetes Volumes with StatefulSets and Persistent Volume Claims. StatefulSets help keep our pods with the same identity and storage throughout their use. Each pod in a StatefulSet can have its own PVC. This gives each pod its own storage that will stay even if the pod restarts.
-
-### What are the best practices for using Kubernetes Volumes?
-
-When we use Kubernetes Volumes, we should follow some best practices. We need to set the access modes correctly. It is good to use Storage Classes to create storage automatically. Also, we should check how much volume we use regularly. Don’t forget to backup data and think about using labels to keep our volumes organized. For more details on Kubernetes best practices, look at our article on [why you should use Kubernetes for your applications](https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html).
+To troubleshoot Kubernetes DaemonSets, we can use `kubectl` commands to check the DaemonSet and its pods. We look for problems in pod logs, events, and resource use. We can use tools like `kubectl describe daemonset <name>` to get detailed info about how the DaemonSet is doing. If you want a complete way to troubleshoot Kubernetes deployments, see our article on [how do I troubleshoot issues in my Kubernetes deployments](https://bestonlinetutorial.com/kubernetes/how-do-i-troubleshoot-issues-in-my-kubernetes-deployments.html).

@@ -1,0 +1,676 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Do I Autosale My Applications with Horizontal Pod Autoscaler (HPA)?</title>
+            <meta name="description" content="Learn how to efficiently autoscale your applications using Horizontal Pod Autoscaler (HPA) in Kubernetes. Boost performance now!">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Do I Autosale My Applications with Horizontal Pod Autoscaler (HPA)?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>The Horizontal Pod Autoscaler (HPA) is a useful feature in
+Kubernetes. It helps to change the number of pod replicas in a
+deployment, stateful set, or replica set. This change happens based on
+how much CPU we use or other chosen metrics. With HPA, Kubernetes can
+make applications grow or shrink based on the load. This helps us use
+resources better and improves application performance.</p>
+<p>In this article, we will look at how to use autoscaling for our
+applications with the Horizontal Pod Autoscaler (HPA). We will discuss
+important things like enabling autoscaling, how HPA works, what we need
+to set it up, how to configure resource requests and limits for pods,
+how to create the HPA resource, which metrics we can use for
+autoscaling, how to check HPA performance, real examples, fixing common
+problems, and answering questions about HPA.</p>
+<ul>
+<li>How Can I Enable Autoscaling for My Applications Using Horizontal
+Pod Autoscaler (HPA)?</li>
+<li>What Is Horizontal Pod Autoscaler HPA and How Does It Work?</li>
+<li>What Are the Prerequisites for Setting Up HPA?</li>
+<li>How Do I Configure Resource Requests and Limits for My Pods?</li>
+<li>How Do I Create a Horizontal Pod Autoscaler Resource?</li>
+<li>What Metrics Can I Use for Autoscaling with HPA?</li>
+<li>How Do I Monitor HPA Performance and Scaling Events?</li>
+<li>What Are Real-Life Use Cases for Horizontal Pod Autoscaler HPA?</li>
+<li>How Do I Troubleshoot Common HPA Issues?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>If we want to learn more about Kubernetes and its parts, we can read
+articles like <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">What
+is Kubernetes and How Does It Simplify Container Management?</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html">Why
+Should I Use Kubernetes for My Applications?</a>.</p>
+<h2 id="what-is-horizontal-pod-autoscaler-hpa-and-how-does-it-work">What
+Is Horizontal Pod Autoscaler HPA and How Does It Work?</h2>
+<p>The Horizontal Pod Autoscaler (HPA) is a part of Kubernetes. It helps
+to change the number of pod replicas in a deployment, stateful set, or
+replication controller. It does this based on CPU usage or other
+important metrics. HPA helps our applications to grow easily. It makes
+sure we use resources well and improves performance when the load
+changes.</p>
+<h3 id="how-hpa-works">How HPA Works:</h3>
+<ul>
+<li><strong>Metrics Collection</strong>: HPA collects metrics from the
+Kubernetes Metrics Server. This server gathers data on how much
+resources the pods are using.</li>
+<li><strong>Scaling Decisions</strong>: HPA looks at the current metrics
+and compares them with the target metrics set in the HPA config. It
+figures out how many replicas we need based on the set limits.</li>
+<li><strong>Dynamic Scaling</strong>: HPA changes the number of replicas
+for the target resource. For instance, if CPU usage goes over a set
+limit, HPA adds more pod replicas.</li>
+</ul>
+<h3 id="example-hpa-configuration">Example HPA Configuration:</h3>
+<p>Here is a simple YAML config to create an HPA for a deployment called
+<code>my-deployment</code>. It scales based on CPU usage:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling/v2beta2</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> HorizontalPodAutoscaler</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-deployment-hpa</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scaleTargetRef</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-deployment</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">resource</span><span class="kw">:</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span></code></pre></div>
+<h3 id="key-points">Key Points:</h3>
+<ul>
+<li><strong>Resource Metrics</strong>: HPA can scale using different
+resource metrics like CPU and memory.</li>
+<li><strong>Custom Metrics</strong>: HPA also works with custom metrics.
+This means we can scale based on specific performance measures of our
+application.</li>
+<li><strong>Integration</strong>: HPA works well with Kubernetes. It is
+easy to use in our current deployments.</li>
+</ul>
+<p>For more information about Kubernetes and its parts, you can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">what
+are the key components of a Kubernetes cluster</a>.</p>
+<h2 id="what-are-the-prerequisites-for-setting-up-hpa">What Are the
+Prerequisites for Setting Up HPA?</h2>
+<p>To set up the Horizontal Pod Autoscaler (HPA) in Kubernetes, we need
+to meet some requirements.</p>
+<ol type="1">
+<li><p><strong>Kubernetes Cluster</strong>: First, we must have a
+running Kubernetes cluster. We can create a cluster using services like
+<a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-set-up-a-kubernetes-cluster-on-aws-eks.html">AWS
+EKS</a>, <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-a-kubernetes-cluster-on-google-cloud-gke.html">Google
+GKE</a>, or <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-create-a-kubernetes-cluster-on-azure-aks.html">Azure
+AKS</a>.</p></li>
+<li><p><strong>Metrics Server</strong>: Next, we need to install the
+Metrics Server in our cluster. It gives resource metrics to HPA. We can
+deploy it with this command:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml</span></code></pre></div></li>
+<li><p><strong>Resource Requests and Limits</strong>: Our pods have to
+define resource requests and limits for CPU and memory. Here is an
+example of a Deployment YAML with resource specs:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app-image:latest</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;256Mi&quot;</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span></code></pre></div></li>
+<li><p><strong>Kubernetes Version</strong>: We need to check that we are
+using a Kubernetes version that supports HPA. It should be v1.6 or
+later.</p></li>
+<li><p><strong>API Access</strong>: Lastly, we must make sure our
+Kubernetes user has the right permissions. This usually means using
+Role-Based Access Control (RBAC) to create and manage HPA
+resources.</p></li>
+</ol>
+<p>When we meet these requirements, we can set up and use the Horizontal
+Pod Autoscaler. It helps us manage the scaling needs of our
+application.</p>
+<h2 id="how-do-i-configure-resource-requests-and-limits-for-my-pods">How
+Do I Configure Resource Requests and Limits for My Pods?</h2>
+<p>We need to configure resource requests and limits for our pods. This
+is important for managing resources in Kubernetes. Resource requests
+tell the minimum CPU and memory a pod needs. Limits show the maximum
+resources a pod can use. This helps with scheduling and stops resource
+fighting.</p>
+<p>To set resource requests and limits in a Kubernetes deployment, we
+can write them in the pod specification under the <code>resources</code>
+field. Here’s an example of how we can define resource requests and
+limits in a YAML file:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image:latest</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;256Mi&quot;</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span></code></pre></div>
+<h3 id="key-points-to-note">Key Points to Note:</h3>
+<ul>
+<li><strong>Requests</strong>: This is the amount of resources
+Kubernetes will promise for the container.</li>
+<li><strong>Limits</strong>: This is the maximum resources that the
+container can use. If a container goes over the limit, it might get
+slowed down or stopped.</li>
+</ul>
+<h3 id="best-practices">Best Practices:</h3>
+<ul>
+<li>We should set requests to a number that shows the average use.</li>
+<li>We should set limits to a number that stops single pods from using
+too many resources.</li>
+<li>We need to watch resource use and change requests and limits when
+needed.</li>
+</ul>
+<p>For more info on Kubernetes resources, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">What
+Are Kubernetes Pods and How Do I Work With Them?</a>.</p>
+<h2 id="how-do-i-create-a-horizontal-pod-autoscaler-resource">How Do I
+Create a Horizontal Pod Autoscaler Resource?</h2>
+<p>To create a Horizontal Pod Autoscaler (HPA) resource in Kubernetes,
+we can use the <code>kubectl</code> command-line tool or write it in a
+YAML file. The HPA helps to automatically change the number of pods in a
+deployment or replica set. It does this based on CPU usage or other
+important metrics.</p>
+<h3 id="step-1-define-hpa-in-a-yaml-file">Step 1: Define HPA in a YAML
+File</h3>
+<p>We can create an HPA resource by writing it in a YAML file. Here is
+an example of a YAML configuration for an HPA. This HPA scales a
+deployment called <code>my-app</code> based on CPU usage.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling/v2beta2</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> HorizontalPodAutoscaler</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-hpa</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scaleTargetRef</span><span class="kw">:</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">resource</span><span class="kw">:</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span></code></pre></div>
+<h3 id="step-2-apply-the-hpa-resource">Step 2: Apply the HPA
+Resource</h3>
+<p>After we define the HPA in a YAML file (like <code>hpa.yaml</code>),
+we apply it using this command:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> hpa.yaml</span></code></pre></div>
+<h3 id="step-3-verify-hpa-creation">Step 3: Verify HPA Creation</h3>
+<p>To check if the HPA resource is created and working, we can use:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get hpa</span></code></pre></div>
+<p>This command will show all HPA resources. It includes the current and
+desired number of pods based on the metrics.</p>
+<h3 id="step-4-monitor-hpa-status">Step 4: Monitor HPA Status</h3>
+<p>We can check the status of the HPA resource by using:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe hpa my-app-hpa</span></code></pre></div>
+<p>This will give us more details about the scaling events, the metrics
+used, and the current status of the HPA.</p>
+<h3 id="additional-notes">Additional Notes</h3>
+<ul>
+<li>We need to make sure the metrics server is installed in our cluster.
+The HPA needs it to get metrics data.</li>
+<li>We can change the <code>minReplicas</code>,
+<code>maxReplicas</code>, and <code>averageUtilization</code> values
+based on what our application needs.</li>
+<li>The HPA can also work with custom metrics or external metrics if we
+need that.</li>
+</ul>
+<p>For more information about Kubernetes and how to manage our
+applications, we can check this article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-use-kubernetes-deployments-and-how-do-i-use-them.html">Kubernetes
+deployments</a>.</p>
+<h2 id="what-metrics-can-we-use-for-autoscaling-with-hpa">What Metrics
+Can We Use for Autoscaling with HPA?</h2>
+<p>When we set up the Horizontal Pod Autoscaler (HPA) in Kubernetes, we
+can use different metrics for autoscaling our applications. Some common
+metrics are:</p>
+<ol type="1">
+<li><strong>CPU Utilization</strong>:
+<ul>
+<li><p>HPA can change the number of pods based on average CPU
+use.</p></li>
+<li><p>Here is an example configuration in YAML:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling/v2beta2</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> HorizontalPodAutoscaler</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-hpa</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scaleTargetRef</span><span class="kw">:</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">resource</span><span class="kw">:</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Memory Utilization</strong>:
+<ul>
+<li><p>HPA can also scale based on memory use.</p></li>
+<li><p>Here is another example:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resource</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Custom Metrics</strong>:
+<ul>
+<li><p>We can create custom metrics using Kubernetes’ metrics
+API.</p></li>
+<li><p>Here is an example for a custom metric:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Pods</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">pods</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metric</span><span class="kw">:</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> http_requests</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> AverageValue</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">averageValue</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>External Metrics</strong>:
+<ul>
+<li><p>HPA can also scale based on metrics from outside systems like
+Prometheus or other tools.</p></li>
+<li><p>Example configuration:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> External</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">external</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metric</span><span class="kw">:</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> queue_length</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> AverageValue</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">averageValue</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Object Metrics</strong>:
+<ul>
+<li><p>This lets us scale based on metrics from other Kubernetes
+objects. For example, we can use the number of requests to a
+service.</p></li>
+<li><p>Example configuration:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Object</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">object</span><span class="kw">:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metric</span><span class="kw">:</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> request_count</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">describedObject</span><span class="kw">:</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> AverageValue</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">averageValue</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span></code></pre></div></li>
+</ul></li>
+</ol>
+<p>We need to make sure that our Kubernetes cluster has the right
+metrics server or custom metrics provider. This is important for these
+metrics to work for autoscaling. For more details on how to set up
+autoscaling in Kubernetes, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">this
+guide</a>.</p>
+<h2 id="how-do-we-monitor-hpa-performance-and-scaling-events">How Do We
+Monitor HPA Performance and Scaling Events?</h2>
+<p>To monitor Horizontal Pod Autoscaler (HPA) performance and scaling
+events in Kubernetes, we can use some tools and commands. They help us
+understand how our applications work under load.</p>
+<h3 id="kubernetes-metrics-server">1. Kubernetes Metrics Server</h3>
+<p>First, we need to have the Metrics Server in our cluster. The HPA
+needs it to get metrics about how we use resources.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml</span></code></pre></div>
+<h3 id="hpa-status">2. HPA Status</h3>
+<p>To see the status of the HPA and how it scales our pods, we can use
+this command:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get hpa</span></code></pre></div>
+<p>This command shows us the current state. It includes the desired and
+current number of replicas and metrics about resource usage.</p>
+<h3 id="events">3. Events</h3>
+<p>We should check the events for HPA scaling actions using:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe hpa <span class="op">&lt;</span>hpa-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command gives us detailed info about the scaling decisions. It
+tells us why it scaled up or down.</p>
+<h3 id="logs">4. Logs</h3>
+<p>We can check the logs of the HPA controller to find issues or
+understand its choices better. First, we find the HPA controller
+pod:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-n</span> kube-system <span class="at">-l</span> k8s-app=kube-controller-manager</span></code></pre></div>
+<p>Then, we get the logs:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>controller-manager-pod-name<span class="op">&gt;</span> -n kube-system</span></code></pre></div>
+<h3 id="prometheus-and-grafana">5. Prometheus and Grafana</h3>
+<p>Using Prometheus and Grafana for monitoring is a good idea. We can
+set up Prometheus to gather metrics and use Grafana to see HPA
+performance over time.</p>
+<ul>
+<li><p><strong>Prometheus Setup</strong>: We can follow the <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-my-kubernetes-cluster.html">official
+guide</a> to install and configure Prometheus in our cluster.</p></li>
+<li><p><strong>Grafana</strong>: We can use Grafana to make dashboards.
+These dashboards can show metrics like CPU and memory usage and track
+scaling events.</p></li>
+</ul>
+<h3 id="custom-metrics">6. Custom Metrics</h3>
+<p>If we use custom metrics for autoscaling, we need to make sure our
+application shows these metrics. The HPA must be set to use them. We can
+monitor these metrics with Prometheus or similar tools.</p>
+<h3 id="alerts">7. Alerts</h3>
+<p>We should set up alerts through Prometheus Alertmanager or other
+monitoring tools. This helps us know about scaling events or when limits
+are crossed. It helps us respond fast to unexpected issues.</p>
+<p>By using these methods, we can monitor the performance of the
+Horizontal Pod Autoscaler (HPA) and scaling events of our applications.
+This helps us use resources well in our Kubernetes cluster.</p>
+<h2
+id="what-are-real-life-use-cases-for-horizontal-pod-autoscaler-hpa">What
+Are Real-Life Use Cases for Horizontal Pod Autoscaler HPA?</h2>
+<p>The Horizontal Pod Autoscaler (HPA) is a useful tool in Kubernetes.
+It changes the number of pod replicas based on what we see in metrics.
+Here are some real-life examples where HPA works well:</p>
+<ol type="1">
+<li><p><strong>Web Applications</strong>: When applications have
+changing web traffic, HPA helps keep performance steady. It can increase
+the number of pods when traffic is high and decrease them when traffic
+is low. For instance, an e-commerce site can handle big traffic jumps
+during sales events easily.</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling/v2beta2</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> HorizontalPodAutoscaler</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web-app-hpa</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scaleTargetRef</span><span class="kw">:</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web-app</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">resource</span><span class="kw">:</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">70</span></span></code></pre></div></li>
+<li><p><strong>Batch Processing</strong>: For batch jobs, HPA can change
+the number of pods based on how many jobs are in the queue. For example,
+a data processing app can grow when there are many jobs waiting. It can
+shrink when jobs are done.</p></li>
+<li><p><strong>Microservices Architecture</strong>: In microservices,
+each service may have different loads. HPA can be set for each service.
+This way, resources go where they are needed, like scaling a payment
+service when many transactions happen.</p></li>
+<li><p><strong>API Services</strong>: APIs that have changing request
+rates can use HPA. For example, a mobile app’s backend API can grow when
+users are active. It can shrink during quiet times. This keeps the
+service responsive and uses resources wisely.</p></li>
+<li><p><strong>Machine Learning Workloads</strong>: Apps that run
+machine learning can use HPA to control the number of pods based on
+requests. When the model is making predictions, HPA can add more
+replicas to manage high demand.</p></li>
+<li><p><strong>Event-Driven Applications</strong>: Apps that work with
+events, like message queues, can use HPA. It can scale based on how many
+messages are waiting. For example, a messaging service can grow when
+there are many messages to process. It can shrink when the queue is
+empty.</p></li>
+<li><p><strong>Real-Time Analytics</strong>: For apps that analyze
+real-time data, HPA can change resources based on how much data comes
+in. This helps match processing power with incoming data without wasting
+resources.</p></li>
+</ol>
+<p>Using HPA in these cases can help improve application performance. It
+can also ensure high availability and use resources better. For more
+information on how to set up HPA, check our guide on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-autoscale-my-applications-with-horizontal-pod-autoscaler-hpa.html">how
+to enable autoscaling for your applications</a>.</p>
+<h2 id="how-do-we-troubleshoot-common-hpa-issues">How Do We Troubleshoot
+Common HPA Issues?</h2>
+<p>When we use Horizontal Pod Autoscaler (HPA), we can face some common
+problems that affect how our applications work. Here is how we can
+troubleshoot them:</p>
+<ol type="1">
+<li><strong>HPA Not Scaling</strong>:
+<ul>
+<li><p>First, check if we set up the HPA correctly:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get hpa</span></code></pre></div></li>
+<li><p>Next, make sure the metrics server is running and we can access
+it:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-n</span> kube-system</span></code></pre></div></li>
+<li><p>We should also verify that we set the resource requests and
+limits in our pod specs.</p></li>
+</ul></li>
+<li><strong>Metrics Server Issues</strong>:
+<ul>
+<li><p>We need to check if the metrics server is installed. If it is
+not, we can install it:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml</span></code></pre></div></li>
+<li><p>Then, check for any errors in the metrics server logs:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="at">-n</span> kube-system <span class="op">&lt;</span>metrics-server-pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Incorrect Resource Requests and Limits</strong>:
+<ul>
+<li><p>We should double-check the resource requests and limits in our
+deployment:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200m&quot;</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1Gi&quot;</span></span></code></pre></div></li>
+<li><p>Make sure they are set right so HPA can work well.</p></li>
+</ul></li>
+<li><strong>HPA Not Responding to Load</strong>:
+<ul>
+<li><p>We need to look at the current metrics being reported:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe hpa <span class="op">&lt;</span>hpa-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p>Check if the metrics we set are being met and if the scaling
+threshold makes sense.</p></li>
+</ul></li>
+<li><strong>Scaling Too Aggressively or Not at All</strong>:
+<ul>
+<li><p>Review the HPA setup for the scaling rules:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">behavior</span><span class="kw">:</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scaleUp</span><span class="kw">:</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stabilizationWindowSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">policies</span><span class="kw">:</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Pods</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scaleDown</span><span class="kw">:</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">stabilizationWindowSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">policies</span><span class="kw">:</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Pods</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span></code></pre></div></li>
+<li><p>We can adjust these rules to match our application’s load
+better.</p></li>
+</ul></li>
+<li><strong>Logs Review</strong>:
+<ul>
+<li><p>Check the logs of the pod being scaled to see if there are any
+errors:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p>Look for errors that are specific to our application that may
+stop the pod from scaling.</p></li>
+</ul></li>
+<li><strong>Kubernetes Events</strong>:
+<ul>
+<li><p>We should check the events in the namespace for any related
+issues:</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get events <span class="at">--sort-by</span><span class="op">=</span><span class="st">&#39;.metadata.creationTimestamp&#39;</span></span></code></pre></div></li>
+</ul></li>
+</ol>
+<p>By doing these steps, we can troubleshoot and fix common problems
+with Horizontal Pod Autoscaler (HPA) in Kubernetes. For more learning on
+autoscaling and best practices, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-scale-applications-using-kubernetes-deployments.html">how
+to scale applications using Kubernetes deployments</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-the-horizontal-pod-autoscaler-hpa-in-kubernetes">What is
+the Horizontal Pod Autoscaler (HPA) in Kubernetes?</h3>
+<p>We can say that the Horizontal Pod Autoscaler (HPA) is a useful tool
+in Kubernetes. It helps to change the number of pod copies in a
+deployment. It does this based on how much CPU is used or other chosen
+metrics. By using HPA, we keep our applications running well even when
+the load changes. This makes it very important for workloads that change
+often. To learn more about Kubernetes and what it includes, check out
+this resource on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">key
+components of a Kubernetes cluster</a>.</p>
+<h3
+id="how-do-i-set-up-the-horizontal-pod-autoscaler-for-my-application">How
+do I set up the Horizontal Pod Autoscaler for my application?</h3>
+<p>To set up the Horizontal Pod Autoscaler, we need to define resource
+requests and limits in our pod settings. Then we create an HPA resource.
+Also, we need to say which metrics we want to use for scaling. You can
+run this command to create the HPA:</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> autoscale deployment <span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> --min=<span class="op">&lt;</span>min-replicas<span class="op">&gt;</span> --max=<span class="op">&lt;</span>max-replicas<span class="op">&gt;</span> --cpu-percent=<span class="op">&lt;</span>target-cpu<span class="op">&gt;</span></span></code></pre></div>
+<p>If you want a full guide on scaling applications, look at our article
+on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-scale-applications-using-kubernetes-deployments.html">how
+to scale applications using Kubernetes deployments</a>.</p>
+<h3 id="what-metrics-can-i-use-for-autoscaling-with-hpa">What metrics
+can I use for autoscaling with HPA?</h3>
+<p>HPA mostly uses CPU and memory usage to decide on scaling. But it can
+also use custom metrics with the Kubernetes Metrics Server or other
+metrics providers. This gives us the chance to adjust autoscaling to fit
+our apps needs better. This helps to improve performance and use of
+resources. For more about monitoring, check our article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-my-kubernetes-cluster.html">how
+to monitor my Kubernetes cluster</a>.</p>
+<h3 id="what-common-issues-might-i-face-when-using-hpa">What common
+issues might I face when using HPA?</h3>
+<p>Some common problems with the Horizontal Pod Autoscaler are wrong
+resource requests and limits, not having metrics, or not enough
+permissions for the HPA controller. It is very important to make sure
+that our pods have the right resource settings and that the metrics
+server works well. For tips on fixing problems, you can read our article
+on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-troubleshoot-issues-in-my-kubernetes-deployments.html">how
+to troubleshoot issues in my Kubernetes deployments</a>.</p>
+<h3
+id="how-can-i-monitor-the-performance-of-the-horizontal-pod-autoscaler">How
+can I monitor the performance of the Horizontal Pod Autoscaler?</h3>
+<p>We can check HPA performance by using Kubernetes metrics and logs.
+Tools like Prometheus and Grafana give us information about scaling
+events and resource use over time. Also, the Kubernetes dashboard can
+show HPA metrics. This helps us see how our application’s scaling works.
+For more detailed monitoring tips, look at our guide on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-implement-logging-in-kubernetes.html">implementing
+logging in Kubernetes</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

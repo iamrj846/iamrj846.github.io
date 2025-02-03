@@ -1,0 +1,723 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Do I Deploy a Multi-Container Application on Kubernetes?</title>
+            <meta name="description" content="Learn how to deploy a multi-container application on Kubernetes with step-by-step guidance and best practices for success.">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Do I Deploy a Multi-Container Application on Kubernetes?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Deploying a multi-container application on Kubernetes means we make
+several containers work together in a Kubernetes cluster. This method
+helps us build applications that use the best parts of different
+services. This way, we improve how flexible and scalable our
+applications are. Kubernetes gives us the tools we need to handle the
+deployment, scaling, and running of these applications in a good
+way.</p>
+<p>In this article, we will look at how to deploy multi-container
+applications on Kubernetes. First, we will explain what multi-container
+applications are and how they are built. Then, we will talk about how to
+design them well and use Docker Compose for deployment. We will also
+list the important Kubernetes resources we need. We will show how to
+create a Kubernetes deployment, how to manage communication between
+containers, and how to scale our applications. By the end, we will share
+real-world examples and answer common questions about multi-container
+deployments.</p>
+<ul>
+<li>How Can I Deploy a Multi-Container Application on Kubernetes?</li>
+<li>What Are Multi-Container Applications in Kubernetes?</li>
+<li>How Do I Design a Multi-Container Application Architecture?</li>
+<li>How Can I Use Docker Compose for Kubernetes Deployment?</li>
+<li>What Kubernetes Resources Do I Need for Multi-Container
+Deployments?</li>
+<li>How Do I Create a Kubernetes Deployment for Multi-Container
+Applications?</li>
+<li>How Can I Manage Inter-Container Communication in Kubernetes?</li>
+<li>What Are Real-World Use Cases for Multi-Container Applications on
+Kubernetes?</li>
+<li>How Do I Scale a Multi-Container Application on Kubernetes?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2 id="what-are-multi-container-applications-in-kubernetes">What Are
+Multi-Container Applications in Kubernetes?</h2>
+<p>Multi-container applications in Kubernetes are applications that have
+many containers working together. These containers give the full
+functionality of the app. Each container runs a specific service or part
+of the application. This setup helps us have more modularity and
+scalability. By using multiple containers, we can isolate services,
+manage dependencies, and improve fault tolerance.</p>
+<h3 id="characteristics-of-multi-container-applications">Characteristics
+of Multi-Container Applications:</h3>
+<ul>
+<li><strong>Microservices Architecture</strong>: Each container can be a
+microservice. They talk to each other over the network.</li>
+<li><strong>Shared Resources</strong>: Containers can share things like
+volumes. This helps them keep data or share configuration settings.</li>
+<li><strong>Inter-Container Communication</strong>: Containers in a pod
+can talk to each other using localhost. Containers in different pods use
+service names to communicate.</li>
+<li><strong>Scalability</strong>: We can scale individual containers up
+or down based on demand. This makes resource management more
+efficient.</li>
+</ul>
+<h3 id="example-of-a-multi-container-application">Example of a
+Multi-Container Application:</h3>
+<p>Think about a web application with a frontend service, a backend API,
+and a database. We can run these parts as separate containers:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> multi-container-app</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> multi-container-app</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> multi-container-app</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> frontend</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> frontend-image:latest</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> backend</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> backend-image:latest</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">3000</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> database</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> database-image:latest</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">5432</span></span></code></pre></div>
+<p>In this example, we manage three containers. They are a frontend, a
+backend, and a database. Each container has its own job but they all
+work together as one application.</p>
+<p>To learn more about Kubernetes and how it connects to multi-container
+applications, we can read <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">What
+Are Kubernetes Pods and How Do I Work with Them?</a>.</p>
+<h2 id="how-do-we-design-a-multi-container-application-architecture">How
+Do We Design a Multi-Container Application Architecture?</h2>
+<p>Designing a multi-container application architecture on Kubernetes
+needs careful planning. We must think about how different parts of the
+app work together, how to scale, and how to manage resources. Here are
+some important points to think about:</p>
+<ol type="1">
+<li><p><strong>Identify Components</strong>: Let’s break down the app
+into microservices or parts. Each part should be able to be developed,
+deployed, and scaled by itself. Each service has its own job.</p></li>
+<li><p><strong>Use Kubernetes Pods</strong>: We should group containers
+that need to share resources or talk to each other often into one
+Kubernetes Pod. Pods are the basic units we can deploy in
+Kubernetes.</p></li>
+<li><p><strong>Define Communication</strong>: We can use service
+discovery tools that Kubernetes provides. Each pod can talk to others
+using their service names. It’s good to create internal services for
+communication between microservices.</p></li>
+<li><p><strong>Configuration Management</strong>: We can use ConfigMaps
+and Secrets to manage configuration and sensitive data outside of
+container images. This makes our application more flexible and
+safer.</p></li>
+<li><p><strong>Data Persistence</strong>: We need to think about how to
+manage stateful data. Let’s use Persistent Volumes (PVs) and Persistent
+Volume Claims (PVCs) to keep data for stateful applications.</p></li>
+<li><p><strong>Resource Allocation</strong>: We should define resource
+requests and limits for each container. This helps us use resources well
+and avoid problems with resource sharing.</p></li>
+<li><p><strong>Scaling Strategy</strong>: We need to plan how to scale
+based on expected load. We can use Horizontal Pod Autoscaler (HPA) to
+automatically change the number of pod replicas based on CPU usage or
+other metrics.</p></li>
+<li><p><strong>Networking</strong>: We can use Kubernetes networking
+rules. We can use ClusterIP services for internal communication and
+NodePort or LoadBalancer services to show apps to the outside.</p></li>
+<li><p><strong>Monitoring and Logging</strong>: We should set up
+centralized logging and monitoring tools like Prometheus and Grafana.
+This helps us check the performance and health of our multi-container
+application.</p></li>
+<li><p><strong>CI/CD Integration</strong>: We need to design our
+architecture to support continuous integration and continuous deployment
+(CI/CD). This helps us test and deploy new features
+automatically.</p></li>
+</ol>
+<p>Here’s a simple example of a Kubernetes Pod configuration for a
+multi-container application:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> multi-container-app</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> frontend</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-frontend-image:latest</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> backend</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-backend-image:latest</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">5000</span></span></code></pre></div>
+<p>This configuration shows a Pod with two containers: a frontend and a
+backend. They can work together in one deployment unit.</p>
+<p>For more information on Kubernetes components, we can read <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">what
+are Kubernetes pods and how do I work with them</a>. This will help us
+understand how to use pods in our architecture.</p>
+<h2 id="how-can-we-use-docker-compose-for-kubernetes-deployment">How Can
+We Use Docker Compose for Kubernetes Deployment?</h2>
+<p>Docker Compose helps us to define and run multi-container
+applications using a simple YAML file. When we want to deploy on
+Kubernetes, we can change our Docker Compose settings into Kubernetes
+resources with tools like Kompose.</p>
+<h3 id="step-1-create-a-docker-compose-file">Step 1: Create a Docker
+Compose File</h3>
+<p>First, we need to build our multi-container application with a
+<code>docker-compose.yml</code> file. Here is an example:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">web</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;80:80&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myapp:latest</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> DATABASE_URL=mysql://db:3306</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">db</span><span class="kw">:</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> MYSQL_ROOT_PASSWORD=root</span></span></code></pre></div>
+<h3 id="step-2-install-kompose">Step 2: Install Kompose</h3>
+<p>Next, we need to install Kompose to change the Docker Compose file
+into Kubernetes files. We can download it from the <a
+href="https://github.com/kubernetes/kompose">Kompose GitHub
+repository</a>.</p>
+<h3 id="step-3-convert-docker-compose-to-kubernetes-yaml">Step 3:
+Convert Docker Compose to Kubernetes YAML</h3>
+<p>Now we can run this command to change the
+<code>docker-compose.yml</code> to Kubernetes YAML files:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kompose</span> convert</span></code></pre></div>
+<p>This command will make several <code>.yaml</code> files for each
+service we have in our Compose file.</p>
+<h3 id="step-4-deploy-to-kubernetes">Step 4: Deploy to Kubernetes</h3>
+<p>We use <code>kubectl</code> to apply the Kubernetes files we
+made:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> .</span></code></pre></div>
+<p>This command will deploy all the Kubernetes resources that were
+created from our Docker Compose configuration.</p>
+<h3 id="step-5-verify-deployment">Step 5: Verify Deployment</h3>
+<p>We check the status of our deployment with these commands:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get services</span></code></pre></div>
+<p>These commands will show us the running pods and services in our
+Kubernetes cluster. This will confirm that our multi-container
+application has been deployed successfully.</p>
+<p>For more details on Kubernetes deployments, we can look at the
+article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-a-simple-web-application-on-kubernetes.html">how
+to deploy a simple web application on Kubernetes</a>.</p>
+<h2
+id="what-kubernetes-resources-do-we-need-for-multi-container-deployments">What
+Kubernetes Resources Do We Need for Multi-Container Deployments?</h2>
+<p>To deploy a multi-container application on Kubernetes, we need to
+know the different resources that Kubernetes gives us. These resources
+help us manage, scale, and connect our application parts. Below are the
+main Kubernetes resources we need for multi-container deployments:</p>
+<ol type="1">
+<li><p><strong>Pods</strong>: These are the smallest units we can deploy
+in Kubernetes. A Pod can hold one or more containers. Multi-container
+apps usually run in one Pod to share resources and talk to each
+other.</p>
+<p>Example Pod definition:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> multi-container-pod</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-container</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myapp:latest</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sidecar-container</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysidecar:latest</span></span></code></pre></div></li>
+<li><p><strong>Deployments</strong>: These are higher-level tools that
+help us manage Pods. Deployments let us update Pods and ReplicaSets in a
+clear way to keep the state we want.</p>
+<p>Example Deployment definition:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-multi-container-app</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> myapp</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> myapp</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-container</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myapp:latest</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sidecar-container</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysidecar:latest</span></span></code></pre></div></li>
+<li><p><strong>Services</strong>: Services help us access Pods and let
+them talk to each other. We can also use Services to make our
+multi-container app available to outside traffic.</p>
+<p>Example Service definition:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myapp-service</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> myapp</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div></li>
+<li><p><strong>ConfigMaps</strong>: These store non-sensitive settings
+in key-value pairs. We can use them to send configuration settings to
+our containers.</p>
+<p>Example ConfigMap definition:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myapp-config</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span><span class="kw">:</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">APP_ENV</span><span class="kw">:</span><span class="at"> production</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">APP_LOG_LEVEL</span><span class="kw">:</span><span class="at"> debug</span></span></code></pre></div></li>
+<li><p><strong>Secrets</strong>: These are like ConfigMaps but for
+sensitive information, such as passwords and tokens.</p>
+<p>Example Secret definition:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Secret</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myapp-secret</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="fu">type</span><span class="kw">:</span><span class="at"> Opaque</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span><span class="kw">:</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">password</span><span class="kw">:</span><span class="at"> dGVzdHBhc3N3b3Jk</span></span></code></pre></div></li>
+<li><p><strong>Volumes</strong>: These are storage options that can be
+shared among containers in a Pod. They help us keep data safe.</p>
+<p>Example Volume definition:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> multi-container-pod</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-container</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myapp:latest</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /data</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-volume</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sidecar-container</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysidecar:latest</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /data</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-volume</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-volume</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">emptyDir</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div></li>
+</ol>
+<p>These resources help us manage and deploy multi-container
+applications on Kubernetes. For more information on Kubernetes
+resources, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">Kubernetes
+Pods</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">Kubernetes
+Deployments</a>.</p>
+<h2
+id="how-do-we-create-a-kubernetes-deployment-for-multi-container-applications">How
+Do We Create a Kubernetes Deployment for Multi-Container
+Applications?</h2>
+<p>To create a Kubernetes deployment for multi-container applications,
+we need to define a Deployment resource in YAML. This resource tells
+Kubernetes about the containers, their settings, and how to manage them.
+We include things like container images, ports, environment variables,
+and resource limits.</p>
+<p>Here is a sample YAML configuration for a Deployment with two
+containers:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> multi-container-app</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> multi-container-app</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> multi-container-app</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-container</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myapp:latest</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> APP_ENV</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;production&quot;</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sidecar-container</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysidecar:latest</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">9090</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> SIDE_ENV</span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;production&quot;</span></span></code></pre></div>
+<h3 id="key-elements-explained">Key Elements Explained:</h3>
+<ul>
+<li><strong>apiVersion</strong>: This tells the API version for the
+deployment.</li>
+<li><strong>kind</strong>: This means we are making a Deployment
+resource.</li>
+<li><strong>metadata</strong>: This has information about the deployment
+like the name.</li>
+<li><strong>spec</strong>: This shows the desired state for the
+deployment.
+<ul>
+<li><strong>replicas</strong>: This is the number of pod replicas we
+want.</li>
+<li><strong>selector</strong>: This helps us find the Pods that this
+Deployment manages.</li>
+<li><strong>template</strong>: This is the template for the Pods, with
+metadata and spec for containers.
+<ul>
+<li><strong>containers</strong>: This is the list of containers we want
+to run in the Pod.
+<ul>
+<li><strong>name</strong>: This is the name of the container.</li>
+<li><strong>image</strong>: This is the Docker image for the
+container.</li>
+<li><strong>ports</strong>: This shows the ports that the container will
+use.</li>
+<li><strong>env</strong>: This is for the environment variables for the
+container.</li>
+</ul></li>
+</ul></li>
+</ul></li>
+</ul>
+<h3 id="creating-the-deployment">Creating the Deployment:</h3>
+<p>To create the deployment, we save the YAML configuration to a file.
+We can call it <code>multi-container-app-deployment.yaml</code>. Then we
+run this command:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> multi-container-app-deployment.yaml</span></code></pre></div>
+<p>This command will create a Deployment. It will manage Pods that have
+the multi-container application we specified. For more details on
+managing deployments, we can check the <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">Kubernetes
+Deployments</a> page.</p>
+<h2
+id="how-can-we-manage-inter-container-communication-in-kubernetes">How
+Can We Manage Inter-Container Communication in Kubernetes?</h2>
+<p>In Kubernetes, we manage inter-container communication by using some
+key ideas and tools. The main tools we use are <strong>Pods</strong>,
+<strong>Services</strong>, and <strong>Network Policies</strong>.</p>
+<h3 id="using-pods-for-communication">Using Pods for Communication</h3>
+<p>Containers that are in the same Pod can talk to each other. They use
+<code>localhost</code> and the port where the app is running. For
+example, if we have two containers in a Pod, one is a web server and the
+other is a database, they can communicate like this:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://localhost:<span class="op">&lt;</span>port<span class="op">&gt;</span></span></code></pre></div>
+<h3 id="services-for-inter-pod-communication">Services for Inter-Pod
+Communication</h3>
+<p>When containers are in different Pods, we usually use
+<strong>Services</strong> for communication. A Service gives a stable
+endpoint with an IP address and DNS name. This helps Pods communicate
+without needing to know the specific IP addresses of each Pod.</p>
+<p>Here’s an example of how we define a Service:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div>
+<p>Containers in other Pods can reach this service by using:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://my-service:80</span></code></pre></div>
+<h3 id="network-policies-for-security">Network Policies for
+Security</h3>
+<p>To control communication security between Pods, we can use
+<strong>Network Policies</strong>. These policies manage the flow of
+traffic based on labels and namespaces. Here is an example of a Network
+Policy that lets traffic only from a specific namespace:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> allow-specific-traffic</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">role</span><span class="kw">:</span><span class="at"> db</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">from</span><span class="kw">:</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">role</span><span class="kw">:</span><span class="at"> frontend</span></span></code></pre></div>
+<p>This policy allows only Pods with the label
+<code>role: frontend</code> to talk to Pods with the label
+<code>role: db</code>.</p>
+<h3 id="dns-for-service-discovery">DNS for Service Discovery</h3>
+<p>Kubernetes also has built-in DNS for service discovery. Each Service
+gets a DNS entry. This makes it easy for other Pods to find it. For
+example, a Service named <code>my-service</code> can be accessed using
+<code>my-service.default.svc.cluster.local</code>.</p>
+<h3 id="conclusion">Conclusion</h3>
+<p>By using Pods for local communication, Services for communication
+between Pods, and Network Policies for security, we can manage
+inter-container communication in Kubernetes effectively. For more
+details on Pods and Services, check the links <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">What
+Are Kubernetes Pods and How Do I Work With Them?</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-services-and-how-do-they-expose-applications.html">What
+Are Kubernetes Services and How Do They Expose Applications?</a>.</p>
+<h2
+id="what-are-real-world-use-cases-for-multi-container-applications-on-kubernetes">What
+Are Real-World Use Cases for Multi-Container Applications on
+Kubernetes?</h2>
+<p>We see that many people use multi-container applications on
+Kubernetes. They are popular because they are flexible and can scale
+well. Let’s look at some real-world examples that show why
+multi-container setups are helpful in Kubernetes.</p>
+<ol type="1">
+<li><p><strong>Microservices Architecture</strong>: Many companies use
+microservices to split big applications into smaller services. Each
+service can be made, deployed, and scaled on its own. This helps speed
+up development and improves error management. For example, an e-commerce
+site might have different services for user login, product list, and
+payment.</p></li>
+<li><p><strong>Data Processing Pipelines</strong>: We can use
+multi-container setups for data processing. Different containers can
+handle different steps in the process. For example, one container can
+take in data, another can process it, and a third can save the results
+in a database. This method is common in analytics tools and real-time
+data systems.</p></li>
+<li><p><strong>Web Applications with Frontend and Backend</strong>: A
+typical example is a web application with the frontend and backend in
+different containers. The frontend may be a React or Angular app in one
+container, while the backend could be a REST API in another container.
+This makes it easier to scale and deploy each part separately.</p></li>
+<li><p><strong>Machine Learning Workflows</strong>: Machine learning
+apps often have many parts, like preparing data, training models, and
+making predictions. Each part can run in its own container. This lets
+teams update models or data steps without messing up other parts of the
+app.</p></li>
+<li><p><strong>CI/CD Pipelines</strong>: We can use multi-container
+setups for Continuous Integration and Continuous Deployment. Each stage
+of the pipeline can be in its own container. For example, one container
+builds the app, another runs tests, and a third one deploys the app to a
+test or live environment.</p></li>
+<li><p><strong>Hybrid Applications</strong>: Some apps need different
+runtimes or languages, like Java, Python, or Node.js. Multi-container
+setups help here because each part can run in the container that fits it
+best. Developers can use the right tools for each part of the
+app.</p></li>
+<li><p><strong>Legacy Application Modernization</strong>: Companies that
+want to update old applications can break them down into multi-container
+apps. They can wrap old services in containers and run them on
+Kubernetes. This way, they can move slowly and make gradual
+improvements.</p></li>
+<li><p><strong>Event-Driven Architectures</strong>: Multi-container apps
+can react to events from message brokers or event streams. Each
+container can take care of specific events, handle them, and trigger
+more actions. This helps create scalable and responsive
+applications.</p></li>
+<li><p><strong>Development and Testing Environments</strong>: Developers
+can make multi-container setups that look like the production
+environment for testing. This helps check changes better and makes sure
+the app works as it should before going live.</p></li>
+<li><p><strong>Game Development</strong>: Online multiplayer games often
+need different services like game state management, player login, and
+matchmaking. Each of these can run in its own container. This way, we
+can scale or update them without ruining the gaming experience.</p></li>
+</ol>
+<p>These examples show how flexible multi-container applications on
+Kubernetes can be. They help organizations build scalable and efficient
+systems that fit modern needs. For more insights into Kubernetes
+architecture, check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">What
+Are Kubernetes Pods and How Do I Work With Them?</a>.</p>
+<h2 id="how-do-we-scale-a-multi-container-application-on-kubernetes">How
+Do We Scale a Multi-Container Application on Kubernetes?</h2>
+<p>Scaling a multi-container application on Kubernetes means changing
+how many pod replicas we have based on what we need. We can do this in
+two ways. First, we can manually set the number of replicas. Second, we
+can let Kubernetes automatically change the number of replicas based on
+resource use.</p>
+<h3 id="manual-scaling">Manual Scaling</h3>
+<p>To scale a deployment by hand, we can use the
+<code>kubectl scale</code> command. For example, if we want to scale a
+deployment called <code>my-app</code> to have 5 replicas, we type:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> scale deployment my-app <span class="at">--replicas</span><span class="op">=</span>5</span></code></pre></div>
+<p>We can check if the scaling worked by looking at the status of the
+deployment:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get deployments</span></code></pre></div>
+<h3 id="automatic-scaling">Automatic Scaling</h3>
+<p>Kubernetes has a tool called the Horizontal Pod Autoscaler (HPA).
+This tool helps us automatically change the number of pod replicas based
+on CPU use or other selected measures.</p>
+<ol type="1">
+<li><p><strong>Install Metrics Server</strong>: First, we need to make
+sure the Metrics Server is running in our cluster. This server collects
+resource data.</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml</span></code></pre></div></li>
+<li><p><strong>Create HPA</strong>: Next, we can create an HPA for our
+deployment using this command:</p></li>
+</ol>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> autoscale deployment my-app <span class="at">--min</span><span class="op">=</span>2 <span class="at">--max</span><span class="op">=</span>10 <span class="at">--cpu-percent</span><span class="op">=</span>50</span></code></pre></div>
+<p>This command sets the HPA to keep between 2 and 10 replicas. It aims
+for 50% CPU use.</p>
+<ol start="3" type="1">
+<li><strong>Check HPA Status</strong>: To see how the HPA is doing, we
+can use:</li>
+</ol>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get hpa</span></code></pre></div>
+<h3 id="best-practices-for-scaling">Best Practices for Scaling</h3>
+<ul>
+<li><strong>Resource Requests and Limits</strong>: We should always say
+what resources our deployments need. This helps Kubernetes to make
+better decisions about scaling.</li>
+</ul>
+<p>Here is an example of how we can set this in our deployment YAML:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1Gi&quot;</span></span></code></pre></div>
+<ul>
+<li><strong>Graceful Shutdown</strong>: We need to make sure our pods
+can shut down nicely. This way, they can stop without losing any
+data.</li>
+</ul>
+<p>If you want more details on scaling applications, you can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-scale-applications-using-kubernetes-deployments.html">this
+article on how to scale applications using Kubernetes
+deployments</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-a-multi-container-application-in-kubernetes">1. What is
+a multi-container application in Kubernetes?</h3>
+<p>A multi-container application in Kubernetes has many Docker
+containers. They work together to give a complete service. Each
+container does a specific task, like running a web server or a database.
+Kubernetes helps these containers to talk to each other and grow based
+on need. To know more about how Kubernetes helps with container
+management, you can read this <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">article
+on Kubernetes</a>.</p>
+<h3 id="how-do-i-manage-inter-container-communication-in-kubernetes">2.
+How do I manage inter-container communication in Kubernetes?</h3>
+<p>Managing how containers talk in Kubernetes is very important for
+multi-container applications. We can do this using Kubernetes Services.
+They give stable IP addresses and DNS names for our pods. We can also
+use environment variables or config files to help with communication. If
+you want to understand more about Kubernetes services, check this <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-services-and-how-do-they-expose-applications.html">Kubernetes
+Services guide</a>.</p>
+<h3
+id="what-are-the-best-practices-for-scaling-a-multi-container-application-in-kubernetes">3.
+What are the best practices for scaling a multi-container application in
+Kubernetes?</h3>
+<p>When we want to scale a multi-container application in Kubernetes, we
+should use horizontal pod autoscalers. They can change the number of pod
+copies based on performance data. We also need to set our resource
+requests and limits correctly to make things work better. For more tips
+on scaling, look at this <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-scale-applications-using-kubernetes-deployments.html">Kubernetes
+scaling guide</a>.</p>
+<h3 id="how-can-i-use-docker-compose-for-kubernetes-deployment">4. How
+can I use Docker Compose for Kubernetes deployment?</h3>
+<p>We can use Docker Compose to set up our multi-container application.
+Then, we can turn it into Kubernetes manifests with tools like Kompose.
+This makes it easier to move from local work to Kubernetes deployment.
+To learn more about Docker Compose and Kubernetes, read this <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-a-simple-web-application-on-kubernetes.html">guide
+on using Docker Compose with Kubernetes</a>.</p>
+<h3
+id="what-kubernetes-resources-do-i-need-for-deploying-multi-container-applications">5.
+What Kubernetes resources do I need for deploying multi-container
+applications?</h3>
+<p>For deploying multi-container applications on Kubernetes, we usually
+need Deployments, Services, and Persistent Volumes. Deployments take
+care of the application’s lifecycle. Services help with communication.
+Persistent Volumes are for data storage. Knowing these resources helps
+us deploy better. If you want to learn more about Kubernetes
+deployments, visit this <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">Kubernetes
+deployments overview</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

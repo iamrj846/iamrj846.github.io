@@ -33,3 +33,15 @@ function loadHead() {
 }
 
 document.addEventListener("DOMContentLoaded", loadHead);
+
+$(document).ready(function() {
+    $('.job-card a').click(function (event) {
+        event.preventDefault();
+        console.log('Clicked job card link');
+        // Example: window.open($(this).attr('href'), '_blank'); 
+    });
+
+    $('.job-card button').click(function () {
+        console.log('Clicked job card button');
+    });
+});
