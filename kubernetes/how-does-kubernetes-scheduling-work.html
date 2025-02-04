@@ -1,0 +1,788 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Does Kubernetes Scheduling Work?</title>
+            <meta name="description" content="Discover how Kubernetes scheduling works, optimizing resource allocation and workload management for efficient container orchestration.">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Does Kubernetes Scheduling Work?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Kubernetes scheduling is how the Kubernetes control plane puts Pods
+to nodes in a cluster. Pods are the smallest units we can deploy in
+Kubernetes. The Kubernetes Scheduler makes choices on where to run these
+Pods. It looks at many things. This includes resource availability,
+rules, and user policies. This way, we can use resources well and keep
+applications running smoothly in Kubernetes.</p>
+<p>In this article, we will look closely at Kubernetes scheduling. We
+will see how it works, the main parts involved, and how the Scheduler
+makes its decisions. We will talk about things like node selectors,
+affinities, taints, tolerations, Pod priority, and preemption. We will
+also discuss custom schedulers, real-life examples, and how to monitor
+and fix scheduling problems in Kubernetes.</p>
+<ul>
+<li>How is Kubernetes Scheduling Done?</li>
+<li>What Are the Main Parts of Kubernetes Scheduling?</li>
+<li>How Does the Scheduler Choose Where to Place Pods?</li>
+<li>What Are Node Selectors and Node Affinity in Kubernetes
+Scheduling?</li>
+<li>How Do Taints and Tolerations Work in Kubernetes Scheduling?</li>
+<li>What Are Pod Priority and Preemption in Kubernetes Scheduling?</li>
+<li>How to Use Custom Schedulers in Kubernetes?</li>
+<li>Real World Examples of Kubernetes Scheduling</li>
+<li>How to Monitor and Fix Kubernetes Scheduling?</li>
+<li>Common Questions</li>
+</ul>
+<p>For more information on Kubernetes, you can check these articles: <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">What
+is Kubernetes and How Does it Simplify Container Management?</a>, <a
+href="https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html">Why
+Should I Use Kubernetes for My Applications?</a>, and <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">What
+Are the Key Components of a Kubernetes Cluster?</a>.</p>
+<h2 id="what-are-the-key-components-of-kubernetes-scheduling">What Are
+the Key Components of Kubernetes Scheduling?</h2>
+<p>Kubernetes scheduling is very important. It helps to assign pods to
+nodes. There are key parts in Kubernetes scheduling. They include:</p>
+<ol type="1">
+<li><strong>Kubernetes Scheduler</strong>:
+<ul>
+<li>This is the main part that picks suitable nodes for new pods. It
+looks at resource needs, rules, and policies.</li>
+<li>It runs as part of the control plane. We can also change it with
+custom scheduling rules.</li>
+</ul></li>
+<li><strong>Pods</strong>:
+<ul>
+<li>These are the smallest units we can deploy. A pod can hold one or
+more containers. Each pod has its own resource needs like CPU and
+memory. These needs affect how we schedule.</li>
+</ul></li>
+<li><strong>Nodes</strong>:
+<ul>
+<li>These are physical or virtual machines that run the pods. Each node
+tells how many resources it has. The scheduler uses this info to decide
+where to place pods.</li>
+</ul></li>
+<li><strong>Kubelet</strong>:
+<ul>
+<li>This is an agent on each node. It manages the pods and makes sure
+they run correctly. It also tells the scheduler about the resources
+available on the node.</li>
+</ul></li>
+<li><strong>API Server</strong>:
+<ul>
+<li>This is the main part of the Kubernetes control plane. It shows the
+Kubernetes API. The scheduler uses the API server to get info about
+nodes and pods.</li>
+</ul></li>
+<li><strong>Resource Requests and Limits</strong>:
+<ul>
+<li>Each pod can say how many resources it needs as requests and how
+many it can use as limits. The scheduler uses this to see which nodes
+fit.</li>
+</ul></li>
+<li><strong>Node Conditions</strong>:
+<ul>
+<li>This shows the status of nodes like Ready or NotReady. The scheduler
+checks this to only schedule pods on healthy nodes.</li>
+</ul></li>
+<li><strong>Scheduling Policies</strong>:
+<ul>
+<li>These are rules that say how to make scheduling choices. This
+includes affinity rules, taints, and tolerations.</li>
+</ul></li>
+<li><strong>Scheduler Extender</strong>:
+<ul>
+<li>This lets us use custom scheduling rules with the default scheduler.
+It helps us add more constraints and needs.</li>
+</ul></li>
+<li><strong>Priority and Preemption</strong>:
+<ul>
+<li>This helps us decide which pods to schedule first. It also allows
+higher priority pods to push out lower priority ones if needed.</li>
+</ul></li>
+</ol>
+<p>These parts work together. They help to use resources well and manage
+containerized applications in a Kubernetes cluster. Knowing these key
+parts of Kubernetes scheduling is important for successful application
+deployment and resource management.</p>
+<p>For more details about Kubernetes parts, you can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">this
+article on the key components of a Kubernetes cluster</a>.</p>
+<h2 id="how-does-the-scheduler-decide-where-to-place-pods">How Does the
+Scheduler Decide Where to Place Pods?</h2>
+<p>Kubernetes scheduling is very important. It decides the best place
+for pods in a cluster. The Kubernetes Scheduler picks the right nodes
+for pod deployment based on different rules.</p>
+<h3 id="scheduling-process">Scheduling Process</h3>
+<ol type="1">
+<li><strong>Filtering</strong>: The scheduler first filters out nodes
+that do not meet the pod’s needs. This is based on:
+<ul>
+<li>Available resources like CPU and memory.</li>
+<li>Node selectors, affinity, and anti-affinity rules.</li>
+<li>Taints and tolerations.</li>
+</ul></li>
+<li><strong>Scoring</strong>: After filtering, the scheduler scores the
+leftover nodes based on different factors, such as:
+<ul>
+<li>How much resources are used.</li>
+<li>How close they are to other pods to reduce latency.</li>
+<li>Custom scoring functions from scheduling plugins.</li>
+</ul></li>
+<li><strong>Binding</strong>: The scheduler then picks the node with the
+highest score and binds the pod to that node. It updates the pod’s spec
+with the node name.</li>
+</ol>
+<h3 id="example-configuration">Example Configuration</h3>
+<p>Here is a simple example of a pod specification with node
+selectors:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">disktype</span><span class="kw">:</span><span class="at"> ssd</span></span></code></pre></div>
+<h3 id="scheduling-policies">Scheduling Policies</h3>
+<p>Kubernetes lets us define scheduling policies using the
+<code>kube-scheduler</code>. These policies can include: -
+<strong>Default scheduling</strong>: The normal way of scheduling. -
+<strong>Custom schedulers</strong>: Made for special needs.</p>
+<h3 id="custom-scheduler-example">Custom Scheduler Example</h3>
+<p>To use a custom scheduler, we can label our pods and mention the
+scheduler name:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-custom-scheduled-pod</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">custom-scheduler</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> my-custom-scheduler</span></span></code></pre></div>
+<p>We can make the custom scheduler as a separate service. This service
+listens to the Kubernetes API for pods that need scheduling and makes
+decisions based on its own logic.</p>
+<p>In summary, Kubernetes scheduling is a smart process. It filters,
+scores, and binds to make sure pods are placed well based on set rules
+and policies. For more details on implementing Kubernetes scheduling, we
+can check articles like <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">What
+Are the Key Components of a Kubernetes Cluster</a>.</p>
+<h2
+id="what-are-node-selectors-and-node-affinity-in-kubernetes-scheduling">What
+Are Node Selectors and Node Affinity in Kubernetes Scheduling?</h2>
+<p>Node selectors and node affinity are important tools in Kubernetes
+scheduling. They help us decide which nodes can run specific pods based
+on labels and rules.</p>
+<h3 id="node-selectors">Node Selectors</h3>
+<p>Node selectors let us limit a pod to run only on certain nodes. We do
+this by using key-value pairs in the pod’s specification. This is done
+with the <code>nodeSelector</code> field.</p>
+<p><strong>Example:</strong></p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pod</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">disktype</span><span class="kw">:</span><span class="at"> ssd</span></span></code></pre></div>
+<p>In this example, the pod <code>my-pod</code> will only run on nodes
+that have the label <code>disktype=ssd</code>.</p>
+<h3 id="node-affinity">Node Affinity</h3>
+<p>Node affinity is a way to specify node selection criteria in a more
+detailed way. It is part of the pod’s affinity and anti-affinity rules.
+This allows for more complex scheduling needs using logical
+operators.</p>
+<p>We can split node affinity into two types:</p>
+<ol type="1">
+<li><strong>RequiredDuringSchedulingIgnoredDuringExecution</strong>:
+Nodes must meet the criteria for the pod to be scheduled.</li>
+<li><strong>PreferredDuringSchedulingIgnoredDuringExecution</strong>:
+The scheduler will try to place the pod on nodes that meet the criteria,
+but it is not necessary.</li>
+</ol>
+<p><strong>Example of Required Node Affinity:</strong></p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pod</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="at"> disktype</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> ssd</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> hdd</span></span></code></pre></div>
+<p><strong>Example of Preferred Node Affinity:</strong></p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pod</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">preferredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">preference</span><span class="kw">:</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="at"> zone</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> us-west-1</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> us-west-2</span></span></code></pre></div>
+<p>In these examples, the first pod can only run on nodes with
+<code>disktype</code> labels of <code>ssd</code> or <code>hdd</code>.
+The second pod prefers to run in <code>us-west-1</code> or
+<code>us-west-2</code> zones, but it can be scheduled in other places if
+those zones are not free.</p>
+<p>Node selectors and node affinity give us more control in Kubernetes
+scheduling. They help us make smart choices based on node features. This
+way, we can use resources better and improve application
+performance.</p>
+<h2 id="how-do-taints-and-tolerations-work-in-kubernetes-scheduling">How
+Do Taints and Tolerations Work in Kubernetes Scheduling?</h2>
+<p>In Kubernetes, we use taints and tolerations to manage where pods can
+run on nodes. Taints go on nodes, and tolerations go on pods. This helps
+us control where pods can be placed based on the condition of the
+nodes.</p>
+<h3 id="taints">Taints</h3>
+<p>When we put a taint on a node, it stops pods from running there
+unless they have a matching toleration. Taints have three parts:</p>
+<ul>
+<li><strong>Key</strong>: This is a label for the taint.</li>
+<li><strong>Value</strong>: This is an extra string that gives more
+info. It is optional.</li>
+<li><strong>Effect</strong>: This tells what happens to the pod if it
+does not tolerate the taint. The effects can be:
+<ul>
+<li><code>NoSchedule</code>: Pods without the toleration cannot run on
+the node.</li>
+<li><code>PreferNoSchedule</code>: Kubernetes will try to keep pods
+without the toleration off the node, but it might not work.</li>
+<li><code>NoExecute</code>: Pods without the toleration will be removed
+from the node.</li>
+</ul></li>
+</ul>
+<p>We can add a taint to a node with this command:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> taint nodes <span class="op">&lt;</span>node-name<span class="op">&gt;</span> key=value:NoSchedule</span></code></pre></div>
+<h3 id="tolerations">Tolerations</h3>
+<p>Tolerations let pods run on nodes that have matching taints. We
+define a toleration in the pod specification. It shows which taints the
+pod can tolerate. A toleration looks like this:</p>
+<ul>
+<li><strong>Key</strong>: The taint key that the pod tolerates.</li>
+<li><strong>Operator</strong>: This shows how the toleration works (like
+<code>Equal</code>, <code>Exists</code>).</li>
+<li><strong>Value</strong>: The taint value that the pod tolerates
+(optional).</li>
+<li><strong>Effect</strong>: The effect of the taint that the pod
+tolerates (optional).</li>
+</ul>
+<p>Here is an example of a pod specification with a toleration:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mypod</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">tolerations</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;key&quot;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Equal&quot;</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;value&quot;</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoSchedule&quot;</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mycontainer</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myimage</span></span></code></pre></div>
+<h3 id="use-cases">Use Cases</h3>
+<ul>
+<li><strong>Dedicated Nodes</strong>: We can use taints to keep nodes
+for specific tasks (like GPU tasks).</li>
+<li><strong>Resource Isolation</strong>: Taints and tolerations help
+keep system parts separate from user tasks to keep things stable.</li>
+<li><strong>Maintenance</strong>: We can put taints on nodes during
+maintenance. This stops new pods from being scheduled but lets old ones
+keep running.</li>
+</ul>
+<p>By using taints and tolerations in Kubernetes scheduling, we can
+better manage resources and place pods where they are needed for our
+applications.</p>
+<p>For more information on Kubernetes features, we can check this
+article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">Kubernetes
+key components</a>.</p>
+<h2
+id="what-are-pod-priority-and-preemption-in-kubernetes-scheduling">What
+Are Pod Priority and Preemption in Kubernetes Scheduling?</h2>
+<p>Pod Priority and Preemption are tools in Kubernetes. They help us
+manage resources and schedule Pods based on how important they are. This
+way, important applications can stay available even when resources are
+low.</p>
+<h3 id="pod-priority">Pod Priority</h3>
+<p>Pod Priority is a feature that gives a priority value to Pods. This
+value helps us see which Pods should be scheduled first. A higher
+priority means the Pod is more important. Priority values go from 0 to
+32767. Higher numbers mean higher priority.</p>
+<p>To set Pod Priority, we need to create a <code>PriorityClass</code>
+resource. Here is an example of how we can create a
+<code>PriorityClass</code>:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> high-priority</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">10000</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="fu">globalDefault</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;This priority class is for high priority Pods.&quot;</span></span></code></pre></div>
+<p>After we create a <code>PriorityClass</code>, we can give it to a Pod
+like this:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-high-priority-pod</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">priorityClassName</span><span class="kw">:</span><span class="at"> high-priority</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span></code></pre></div>
+<h3 id="pod-preemption">Pod Preemption</h3>
+<p>Preemption happens when a Pod with higher priority gets scheduled. If
+there are not enough resources on the nodes, Kubernetes will remove
+lower-priority Pods. This makes space for the higher-priority Pods.</p>
+<p>When a Pod gets preempted, Kubernetes will stop the lower-priority
+Pods. This way, the scheduler can give resources to the higher-priority
+Pod. Preemption helps critical workloads get the resources they need. It
+might disturb less important workloads, but that is okay.</p>
+<h3 id="important-considerations">Important Considerations</h3>
+<ul>
+<li><strong>Preemption Policy</strong>: We can control how preemption
+works using the <code>preemptionPolicy</code> field in Pod specs. By
+default, it will preempt if needed. But we can set it to
+<code>Never</code> if we don’t want the Pod to remove others.</li>
+</ul>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-no-preempt-pod</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">priorityClassName</span><span class="kw">:</span><span class="at"> low-priority</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">preemptionPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span></code></pre></div>
+<ul>
+<li><strong>Fairness in Scheduling</strong>: Pod Priority and Preemption
+are strong tools. But we need to use them carefully. If we are not
+careful, lower-priority Pods might starve. Balancing priorities and
+resources is very important for a healthy cluster.</li>
+</ul>
+<p>By using Pod Priority and Preemption, we can make sure important
+applications get the resources they need. This helps make the Kubernetes
+environment more reliable. For more details about Kubernetes scheduling,
+we can check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-scheduling-work.html">Kubernetes
+Scheduling Overview</a>.</p>
+<h2 id="how-to-use-custom-schedulers-in-kubernetes">How to Use Custom
+Schedulers in Kubernetes?</h2>
+<p>Kubernetes lets us use custom schedulers along with its default one.
+This helps us create special scheduling rules for different workloads.
+We can follow these steps to make and use a custom scheduler:</p>
+<ol type="1">
+<li><p><strong>Implement the Custom Scheduler</strong>: We need to write
+a custom scheduling method as a separate app. This app will talk to the
+Kubernetes API. It helps us watch for pods that don’t have a node and
+assigns them based on our rules.</p>
+<p>Here is a simple example in Go:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> main</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;fmt&quot;</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/api/core/v1&quot;</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/client-go/kubernetes&quot;</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/client-go/tools/clientcmd&quot;</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/kubernetes/pkg/scheduler&quot;</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    kubeconfig <span class="op">:=</span> <span class="st">&quot;/path/to/kubeconfig&quot;</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    config<span class="op">,</span> err <span class="op">:=</span> clientcmd<span class="op">.</span>BuildConfigFromFlags<span class="op">(</span><span class="st">&quot;&quot;</span><span class="op">,</span> kubeconfig<span class="op">)</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>        <span class="bu">panic</span><span class="op">(</span>err<span class="op">)</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>    clientset<span class="op">,</span> err <span class="op">:=</span> kubernetes<span class="op">.</span>NewForConfig<span class="op">(</span>config<span class="op">)</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>        <span class="bu">panic</span><span class="op">(</span>err<span class="op">)</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>    <span class="co">// We add our custom scheduling logic here</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>    <span class="co">// For example, we can watch pods and assign them to nodes</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Configure the Scheduler</strong>: We create a
+<code>Scheduler</code> resource in Kubernetes. This resource tells how
+the scheduling should work and what settings to use.</p>
+<p>Example configuration:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Scheduler</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> custom-scheduler</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co">  # We define our custom scheduling rules here</span></span></code></pre></div></li>
+<li><p><strong>Deploy the Custom Scheduler</strong>: We have to deploy
+our custom scheduler with our Kubernetes cluster. We can run it as a
+Deployment or a StatefulSet.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> custom-scheduler</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> custom-scheduler</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> custom-scheduler</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> custom-scheduler</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> your-custom-scheduler-image</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;./your-custom-scheduler&quot;</span><span class="kw">]</span></span></code></pre></div></li>
+<li><p><strong>Assign Pods to the Custom Scheduler</strong>: We can use
+the <code>schedulerName</code> field in our pod settings to send certain
+pods to our custom scheduler.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pod</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> custom-scheduler</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span></code></pre></div></li>
+<li><p><strong>Monitor and Debug</strong>: We can use
+<code>kubectl logs</code> to see logs for our custom scheduler. This
+helps us check if it works well.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="at">-l</span> app=custom-scheduler</span></code></pre></div></li>
+</ol>
+<p>This way, we can take advantage of Kubernetes by making a scheduler
+that fits our needs. It can be for performance, resource limits, or
+special business rules. For more details on Kubernetes scheduling ideas,
+see <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">What
+Are the Key Components of Kubernetes Scheduling?</a>.</p>
+<h2 id="real-world-use-cases-of-kubernetes-scheduling">Real World Use
+Cases of Kubernetes Scheduling</h2>
+<p>Kubernetes scheduling is very important. It helps us use resources
+well and improve application performance in many real situations. Here
+are some real-world examples of how we can use Kubernetes
+scheduling.</p>
+<ol type="1">
+<li><p><strong>Multi-Tenant Environments</strong>: In companies where
+many teams run applications, Kubernetes scheduling helps us set resource
+limits. We can use <strong>Resource Requests and Limits</strong> to make
+sure no single application takes all the resources. This keeps
+performance steady for all services.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-pod</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-container</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> example-image</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span></code></pre></div></li>
+<li><p><strong>High Performance Computing (HPC)</strong>: For tasks that
+need a lot of computing power, like machine learning models, Kubernetes
+can schedule pods on nodes with special hardware like GPUs. We can do
+this using <strong>node affinity</strong> and
+<strong>labels</strong>.</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hpc-pod</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="at"> gpu</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> nvidia</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hpc-container</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> hpc-image</span></span></code></pre></div></li>
+<li><p><strong>Batch Processing Jobs</strong>: Kubernetes can handle
+batch jobs that need scheduling based on how many resources we have.
+With <strong>CronJobs</strong>, it can run jobs automatically on a set
+schedule.</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronJob</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> batch-job</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;*/5 * * * *&quot;</span><span class="co"> # Every 5 minutes</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">jobTemplate</span><span class="kw">:</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> batch-container</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">image</span><span class="kw">:</span><span class="at"> batch-image</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span></code></pre></div></li>
+<li><p><strong>Disaster Recovery</strong>: Kubernetes scheduling helps
+us stay strong in case of problems. It lets us place pods on different
+nodes in different clusters. This is very helpful in setups with many
+clusters. It helps us avoid having a single point of failure.</p></li>
+<li><p><strong>Dynamic Resource Allocation</strong>: In places where
+resource needs change a lot, Kubernetes scheduling can change resource
+use automatically. We can use the <strong>Horizontal Pod Autoscaler
+(HPA)</strong> based on CPU or memory use.</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling/v2beta2</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> HorizontalPodAutoscaler</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-hpa</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scaleTargetRef</span><span class="kw">:</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-deployment</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">resource</span><span class="kw">:</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span></code></pre></div></li>
+<li><p><strong>Edge Computing</strong>: In edge computing, Kubernetes
+scheduling can place applications close to where data comes from. We can
+use <strong>Node selectors</strong> and <strong>affinity rules</strong>
+to run workloads on the right edge nodes that have what we
+need.</p></li>
+<li><p><strong>Service-Level Agreements (SLAs)</strong>: Companies can
+use Kubernetes scheduling to keep SLAs by using <strong>Pod Priority and
+Preemption</strong>. We can give important applications a higher
+priority. This way, they get the resources they need even when there are
+many demands.</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> high-priority</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000000</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="fu">globalDefault</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;This priority class should be used for high-priority pods.&quot;</span></span></code></pre></div></li>
+</ol>
+<p>These examples show how flexible and strong Kubernetes scheduling is.
+It helps us manage workloads well in many types of industries and
+applications. For more information on Kubernetes and its parts, you can
+check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">what
+are the key components of a Kubernetes cluster</a>.</p>
+<h2 id="how-to-monitor-and-troubleshoot-kubernetes-scheduling">How to
+Monitor and Troubleshoot Kubernetes Scheduling?</h2>
+<p>We need to monitor and troubleshoot Kubernetes scheduling. This is
+important for using resources well and making sure that pods get
+scheduled right. We can use different tools and methods for this.</p>
+<h3 id="monitoring-tools">Monitoring Tools</h3>
+<ol type="1">
+<li><p><strong>Kubernetes Dashboard</strong>: This gives us a web UI to
+see the status of our cluster. We can check pod scheduling info
+here.</p></li>
+<li><p><strong>kubectl</strong>: This command-line tool helps us check
+the status of pods and events about scheduling.</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">--all-namespaces</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Prometheus and Grafana</strong>: We can use Prometheus to
+gather metrics about scheduling. Then we use Grafana to show these
+metrics. We can also set alerts based on them.</p></li>
+</ol>
+<h3 id="events-and-logs">Events and Logs</h3>
+<ul>
+<li>Kubernetes sends out events that help us understand scheduling
+problems. We can use this command to see events:
+<code>bash  kubectl get events --sort-by='.metadata.creationTimestamp'</code></li>
+<li>We should check the logs of the scheduler for any errors:
+<code>bash  kubectl logs -n kube-system kube-scheduler-&lt;scheduler-name&gt;</code></li>
+</ul>
+<h3 id="troubleshooting-steps">Troubleshooting Steps</h3>
+<ol type="1">
+<li><p><strong>Check Pod Conditions</strong>: We need to see if the pods
+are pending because of unmet scheduling needs.</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-o</span> wide</span></code></pre></div></li>
+<li><p><strong>Review Node Resources</strong>: We must check if nodes
+have enough resources like CPU and memory for new pods.</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe nodes</span></code></pre></div></li>
+<li><p><strong>Examine Node Selectors and Affinity</strong>: We should
+confirm that node selectors and affinity rules are set right for
+pods:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="at"> &lt;label-key&gt;</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> &lt;label-value&gt;</span></span></code></pre></div></li>
+</ol>
+<h3 id="common-issues">Common Issues</h3>
+<ul>
+<li><strong>Taints and Tolerations</strong>: We must make sure that pods
+have the right tolerations for any taints on nodes. We can check node
+taints with:
+<code>bash  kubectl describe nodes | grep Taints</code></li>
+<li><strong>Pod Priority and Preemption</strong>: We need to check if
+pod priority settings are stopping lower priority pods from getting
+scheduled.</li>
+</ul>
+<h3 id="additional-resources">Additional Resources</h3>
+<p>For more detailed monitoring setups and advanced configurations, we
+can look at these resources:</p>
+<ul>
+<li><a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-my-kubernetes-cluster.html">How
+do I monitor my Kubernetes cluster?</a></li>
+<li><a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-troubleshoot-issues-in-my-kubernetes-deployments.html">How
+do I troubleshoot issues in my Kubernetes deployments?</a></li>
+</ul>
+<p>By using these tools and methods, we can make sure we monitor and
+troubleshoot Kubernetes scheduling well. This leads to better cluster
+performance and reliability.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-kubernetes-scheduling-and-why-is-it-important">1. What
+is Kubernetes scheduling and why is it important?</h3>
+<p>Kubernetes scheduling is how the Kubernetes scheduler decides where
+to run your pods in a cluster. It is very important for using resources
+well. It also helps keep apps running smoothly and manages workloads. If
+we understand how Kubernetes scheduling works, we can do better when we
+deploy our apps and improve how our cluster works.</p>
+<h3 id="how-does-the-kubernetes-scheduler-make-decisions">2. How does
+the Kubernetes scheduler make decisions?</h3>
+<p>The Kubernetes scheduler makes choices based on many things. These
+include resource requests, limits, affinity and anti-affinity rules,
+taints and tolerations, and the state of the cluster. Each of these
+helps the scheduler find the best node for a pod. This way, the pod can
+run well. We can learn more about scheduling in our article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-scheduling-work.html">how
+Kubernetes scheduling works</a>.</p>
+<h3 id="what-are-node-selectors-and-how-do-they-affect-scheduling">3.
+What are node selectors and how do they affect scheduling?</h3>
+<p>Node selectors in Kubernetes are labels we put on nodes. They help us
+choose specific nodes for pod deployment. This makes it easy to ensure
+pods run on nodes that fit certain needs. These needs can be things like
+hardware skills or where the node is located. We need to understand node
+selectors to manage resources and schedule effectively in
+Kubernetes.</p>
+<h3 id="how-do-taints-and-tolerations-influence-pod-placement">4. How do
+taints and tolerations influence pod placement?</h3>
+<p>Taints and tolerations are tools in Kubernetes. They help control
+which pods can go on certain nodes. We apply taints to nodes. This stops
+pods from being scheduled there unless they can tolerate the taint. This
+gives us more control over where pods go. It helps make sure the right
+workloads run on the right nodes. To learn more, check our article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-taints-and-tolerations-work-in-kubernetes-scheduling.html">taints
+and tolerations in Kubernetes</a>.</p>
+<h3 id="can-i-create-a-custom-scheduler-in-kubernetes">5. Can I create a
+custom scheduler in Kubernetes?</h3>
+<p>Yes, we can create custom schedulers in Kubernetes for special needs.
+Custom schedulers can have their own rules for scheduling. This helps
+fit our application better. This flexibility can help with resource use
+and workload management. It can make our experience with Kubernetes more
+suited to us. For more details on how to create custom schedulers, look
+at our guide on <a
+href="https://bestonlinetutorial.com/kubernetes/how-to-use-custom-schedulers-in-kubernetes.html">using
+custom schedulers in Kubernetes</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

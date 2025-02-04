@@ -1,0 +1,712 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>What is the Purpose of the Kubernetes kubelet?</title>
+            <meta name="description" content="Discover the role of the Kubernetes kubelet in managing containerized applications and ensuring optimal performance.">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">What is the Purpose of the Kubernetes kubelet?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>The Kubernetes kubelet is a very important part of the Kubernetes
+system. It runs on each node in a Kubernetes cluster. Its main job is to
+manage the pods. It makes sure that the pods run as they should. The
+kubelet also talks to the Kubernetes control plane. This helps keep
+everything in the cluster as it should be.</p>
+<p>In this article, we will look at different parts of the Kubernetes
+kubelet. We will cover its role, how it interacts with the API server,
+its main tasks, how it manages pods, the health checks it does, how it
+ensures compliance, real-life examples, configuration options, common
+problems, and frequently asked questions about the kubelet.</p>
+<ul>
+<li>What is the Role of the Kubernetes kubelet?</li>
+<li>How Does the Kubernetes kubelet Interact with the API Server?</li>
+<li>What Are the Key Responsibilities of the Kubernetes kubelet?</li>
+<li>How Does the Kubernetes kubelet Manage Pods?</li>
+<li>What Are the Health Checks Handled by the Kubernetes kubelet?</li>
+<li>How Does the Kubernetes kubelet Ensure Node Compliance?</li>
+<li>What Are Real-Life Examples of Kubernetes kubelet in Action?</li>
+<li>How Can You Configure the Kubernetes kubelet?</li>
+<li>What Are Common Issues with the Kubernetes kubelet?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>To learn more about Kubernetes, we can check helpful links like <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">What
+is Kubernetes and How Does it Simplify Container Management?</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">What
+are the Key Components of a Kubernetes Cluster?</a>.</p>
+<h2
+id="how-does-the-kubernetes-kubelet-interact-with-the-api-server">How
+Does the Kubernetes kubelet Interact with the API Server?</h2>
+<p>The Kubernetes kubelet talks with the API server to manage the state
+of pods on its node. It does this by making several simple API calls.
+These calls help it to report the status of the node and the pods
+running on it. It also gets instructions from the control plane. Here
+are the main interactions:</p>
+<ol type="1">
+<li><p><strong>Node Registration</strong>: When a kubelet starts, it
+registers the node with the API server. It sends a POST request to
+<code>/api/v1/nodes</code> with information about the node. This
+includes its name, capacity, and conditions.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;v1&quot;</span><span class="fu">,</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;Node&quot;</span><span class="fu">,</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;metadata&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;node-name&quot;</span><span class="fu">,</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;labels&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;example-label&quot;</span><span class="fu">:</span> <span class="st">&quot;example-value&quot;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;spec&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;unschedulable&quot;</span><span class="fu">:</span> <span class="kw">false</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;conditions&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>      <span class="fu">{</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;Ready&quot;</span><span class="fu">,</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="st">&quot;True&quot;</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>      <span class="fu">}</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    <span class="ot">]</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div></li>
+<li><p><strong>Pod Management</strong>: The kubelet watches for changes
+to the pods assigned to its node. It does this by making GET requests to
+the API server. It uses the watch feature to get updates about pod
+status in real-time.</p></li>
+<li><p><strong>Status Updates</strong>: The kubelet sends the status of
+the pods back to the API server. It does this often using PUT requests
+to <code>/api/v1/pods/{pod-name}/{namespace}</code>. This includes info
+about resource use and health checks.</p></li>
+<li><p><strong>Handling Pod Creation and Deletion</strong>: When a new
+pod gets scheduled on the node, the kubelet gets a notice from the API
+server. It then creates the necessary containers. When a pod gets
+deleted, the kubelet cleans up the resources linked to it.</p></li>
+<li><p><strong>ConfigMaps and Secrets</strong>: The</p></li>
+</ol>
+<h2
+id="what-are-the-key-responsibilities-of-the-kubernetes-kubelet">What
+Are the Key Responsibilities of the Kubernetes kubelet?</h2>
+<p>The Kubernetes kubelet is an important part of the Kubernetes system.
+It mainly manages the lifecycle of pods on a node. Here are the main
+things it does:</p>
+<ol type="1">
+<li><p><strong>Pod Management</strong>: The kubelet makes sure that the
+right pods are running and healthy. It talks to the Kubernetes API
+server to find out what the pods should be like and keeps that state on
+the node.</p></li>
+<li><p><strong>Container Management</strong>: The kubelet takes care of
+the containers in those pods. It uses container runtimes like Docker or
+containerd to start, stop, and check the containers.</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-pod</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-container</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span></code></pre></div></li>
+<li><p><strong>Health Checks</strong>: It does liveness and readiness
+checks to see if the containers are healthy. If a container fails a
+health check, the kubelet can restart it based on set rules.</p>
+<p>Here is an example of a liveness check:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">livenessProbe</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div></li>
+<li><p><strong>Resource Monitoring</strong>: The kubelet checks how much
+resources like CPU and memory the containers use. It sends this info
+back to the Kubernetes API server.</p></li>
+<li><p><strong>Node Communication</strong>: It talks to the Kubernetes
+API server to report the status of the node and the pods that run on it.
+This helps the control plane have up-to-date information.</p></li>
+<li><p><strong>Managing Node Compliance</strong>: The kubelet makes sure
+that the node meets the pod specifications, like resource requests and
+limits.</p></li>
+<li><p><strong>Executing Pod Spec</strong>: It is in charge of running
+the pod specifications that the user defined. It makes sure they match
+the desired state given in the Kubernetes API.</p></li>
+<li><p><strong>Handling Node Shutdown</strong>: The kubelet manages node
+shutdowns carefully. It cordons the node and evicts the pods when
+needed.</p></li>
+<li><p><strong>Logging and Events</strong>: The kubelet keeps logs of
+events related to the pod lifecycle and changes in resources. This can
+help with debugging and monitoring.</p></li>
+<li><p><strong>Configuration Management</strong>: It applies settings
+from ConfigMaps and Secrets to the running pods and containers.</p></li>
+</ol>
+<p>These tasks are very important for keeping the health, scalability,
+and performance of applications that run on Kubernetes. For more details
+about Kubernetes components, you can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">this
+article on key components of a Kubernetes cluster</a>.</p>
+<h2 id="how-does-the-kubernetes-kubelet-manage-pods">How Does the
+Kubernetes kubelet Manage Pods?</h2>
+<p>The Kubernetes kubelet is a key part that helps us manage Pods on a
+node. It makes sure the containers in each Pod run like they should. If
+they don’t, it takes action.</p>
+<h3 id="pod-lifecycle-management">Pod Lifecycle Management</h3>
+<p>The kubelet helps with several things in Pod lifecycle
+management:</p>
+<ul>
+<li><p><strong>Pod Creation</strong>: The kubelet listens for Pod
+details from the API server. It makes sure the containers in the Pod
+details are created and started.</p></li>
+<li><p><strong>Monitoring</strong>: The kubelet keeps checking the state
+of the Pods on its node. It uses health checks and the container runtime
+for this.</p></li>
+<li><p><strong>Restarting Containers</strong>: If a container in a Pod
+crashes or stops for any reason, the kubelet restarts it automatically.
+This is based on the restart rule in the Pod details, like Always,
+OnFailure, or Never.</p></li>
+</ul>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pod</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image:latest</span></span></code></pre></div>
+<h3 id="pod-status-updates">Pod Status Updates</h3>
+<p>The kubelet tells the API server about the status of Pods. This
+includes:</p>
+<ul>
+<li><strong>Running</strong>: The Pod and all its containers are
+running.</li>
+<li><strong>Pending</strong>: The Pod is accepted but some containers
+have not started yet.</li>
+<li><strong>Succeeded</strong>: All containers in the Pod have finished
+successfully.</li>
+<li><strong>Failed</strong>: All containers in the Pod have exited with
+an error.</li>
+</ul>
+<p>These status updates are very important for the Kubernetes control
+plane. They help it decide about scheduling and scaling.</p>
+<h3 id="handling-pod-networking-and-storage">Handling Pod Networking and
+Storage</h3>
+<p>The kubelet manages network and storage for Pods:</p>
+<ul>
+<li><p><strong>Networking</strong>: It sets up the network space for
+each Pod. This way, containers can talk to each other and to outside
+services.</p></li>
+<li><p><strong>Volume Management</strong>: The kubelet mounts volumes
+into the Pods as stated in their details. This helps keep data safe and
+accessible.</p></li>
+</ul>
+<h3 id="communication-with-container-runtime">Communication with
+Container Runtime</h3>
+<p>The kubelet talks to the container runtime, like Docker or
+containerd. It manages the lifecycle of containers. It sends commands to
+start, stop, and check on containers.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example command to start a container</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--name</span> my-container my-image:latest</span></code></pre></div>
+<h3 id="health-checks-and-readiness-probes">Health Checks and Readiness
+Probes</h3>
+<p>The kubelet does health checks on containers using liveness and
+readiness probes:</p>
+<ul>
+<li><p><strong>Liveness Probes</strong>: These check if a container is
+running. If it fails, the kubelet restarts the container.</p></li>
+<li><p><strong>Readiness Probes</strong>: These check if a container is
+ready to take traffic. If it fails, the kubelet removes the Pod from the
+service endpoints until it is ready again.</p></li>
+</ul>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">livenessProbe</span><span class="kw">:</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="fu">readinessProbe</span><span class="kw">:</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /ready</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<h3 id="pod-eviction-and-rescheduling">Pod Eviction and
+Rescheduling</h3>
+<p>If a node gets unhealthy or runs low on resources, the kubelet can
+evict Pods. This tells the Kubernetes scheduler to move them to healthy
+nodes.</p>
+<p>The kubelet plays an important role in managing Pods. It helps keep
+the applications in a Kubernetes cluster running the way we want. It
+makes sure Pods are started, checked, and taken care of during their
+whole lifecycle. For more details about Pods, check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">what
+are Kubernetes Pods and how do I work with them</a>.</p>
+<h2
+id="what-are-the-health-checks-handled-by-the-kubernetes-kubelet">What
+Are the Health Checks Handled by the Kubernetes kubelet?</h2>
+<p>The Kubernetes kubelet manages the health of pods on a node. It does
+this with two main health checks. These are <strong>liveness
+probes</strong> and <strong>readiness probes</strong>. These checks help
+us ensure that applications run well and can handle traffic as
+needed.</p>
+<h3 id="liveness-probes">Liveness Probes</h3>
+<p>Liveness probes check if a container is running. If the liveness
+probe fails, the kubelet will stop the container. Then, it will restart
+the container based on its restart policy.</p>
+<p><strong>Example of a liveness probe in a Pod
+specification:</strong></p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image:latest</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<h3 id="readiness-probes">Readiness Probes</h3>
+<p>Readiness probes show if a container is ready to accept traffic. If a
+readiness probe fails, the endpoints controller will remove the Pod’s
+endpoint from the Service. This stops any traffic from going to it until
+it passes the probe again.</p>
+<p><strong>Example of a readiness probe in a Pod
+specification:</strong></p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image:latest</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">readinessProbe</span><span class="kw">:</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">exec</span><span class="kw">:</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">command</span><span class="kw">:</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> cat</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> /tmp/healthy</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<h3 id="additional-configuration-options">Additional Configuration
+Options</h3>
+<p>We can set up both liveness and readiness probes using different
+methods:</p>
+<ul>
+<li><strong>HTTP GET</strong>: The kubelet sends an HTTP GET request to
+the path and port we specify.</li>
+<li><strong>TCP Socket</strong>: The kubelet tries to connect to the
+port using TCP.</li>
+<li><strong>Exec Command</strong>: We can run a command inside the
+container.</li>
+</ul>
+<h3 id="configuration-parameters">Configuration Parameters</h3>
+<p>Here are some important parameters for the probes:</p>
+<ul>
+<li><code>initialDelaySeconds</code>: This is the time to wait before
+the first probe run.</li>
+<li><code>timeoutSeconds</code>: This is how long we wait for a probe to
+finish. If it takes too long, we consider it a fail.</li>
+<li><code>periodSeconds</code>: This is how often we run the probe.</li>
+<li><code>successThreshold</code>: This is the minimum number of
+successful probes we need after a fail.</li>
+<li><code>failureThreshold</code>: This is the minimum number of failed
+probes before we mark it as failed.</li>
+</ul>
+<p>These health checks are very important for keeping our applications
+reliable and available in a Kubernetes cluster. For more details, please
+check the official Kubernetes documentation on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">health
+checks</a>.</p>
+<h2 id="how-does-the-kubernetes-kubelet-ensure-node-compliance">How Does
+the Kubernetes kubelet Ensure Node Compliance?</h2>
+<p>The Kubernetes kubelet helps keep nodes compliant in many ways. It
+mainly watches the state of the node and the containers running on it.
+Compliance means that the node works as we want, according to the pod
+specifications. The kubelet also manages the lifecycle of those
+pods.</p>
+<ol type="1">
+<li><p><strong>Health Checks</strong>: The kubelet checks if
+applications in containers are healthy. It does this with liveness and
+readiness probes. If a container fails a health check, the kubelet can
+restart it. This helps keep the node in the right state.</p>
+<p>Here is an example of a readiness probe configuration in a pod
+specification:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">readinessProbe</span><span class="kw">:</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div></li>
+<li><p><strong>Node Conditions</strong>: The kubelet tells the
+Kubernetes API server about the node conditions. For example, it reports
+if the node is Ready or if there is MemoryPressure or DiskPressure. This
+information helps check if the node is healthy and follows the resource
+rules.</p></li>
+<li><p><strong>Pod Management</strong>: The kubelet always checks the
+state of the pods on its node. If a pod goes down or is not in the right
+state, the kubelet takes action. It can restart the pod or recreate it
+based on what the deployment says.</p></li>
+<li><p><strong>Resource Limits</strong>: The kubelet makes sure that the
+resource limits, like CPU and memory, in the pod specifications are
+followed. It ensures that containers do not use more resources than they
+should. This helps keep everything in line with resource management
+rules.</p>
+<p>Here is an example of resource limits in a pod specification:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span></code></pre></div></li>
+<li><p><strong>Node Labels and Taints</strong>: The kubelet uses node
+labels and taints to help with compliance. Taints stop pods from being
+scheduled on nodes unless they can handle those taints. This helps
+follow specific rules for deployments.</p></li>
+<li><p><strong>Configuration Management</strong>: The kubelet can read
+configuration files from ConfigMaps and Secrets. This helps ensure that
+applications in the pods follow the needed configurations.</p></li>
+<li><p><strong>Metrics and Logging</strong>: The kubelet shows metrics
+about the node and pods. We can collect and watch these metrics with
+tools like Prometheus. This monitoring helps us keep compliance with
+operational standards.</p></li>
+</ol>
+<p>By using these methods, the Kubernetes kubelet plays an important
+role in making sure that nodes in a Kubernetes cluster stay compliant
+with the rules and the desired state of applications. For more details
+on Kubernetes components and their functions, you can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">What
+are the Key Components of a Kubernetes Cluster</a>.</p>
+<h2
+id="what-are-real-life-examples-of-kubernetes-kubelet-in-action">What
+Are Real-Life Examples of Kubernetes kubelet in Action?</h2>
+<p>The Kubernetes kubelet is very important for managing pods in a
+Kubernetes cluster. Here are some simple examples of how kubelet works
+in real life:</p>
+<ol type="1">
+<li><p><strong>Pod Management</strong>: When we want to deploy a pod,
+the kubelet starts the container as we define in the pod spec. For
+example, if we want to deploy an nginx web server, the kubelet pulls the
+nginx image and runs it.</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-pod</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:latest</span></span></code></pre></div></li>
+<li><p><strong>Health Monitoring</strong>: The kubelet checks the health
+of containers in the pods all the time. If a container fails a health
+check, kubelet can restart it. For example, if a pod has a liveness
+probe, kubelet restarts the container if the probe fails.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">livenessProbe</span><span class="kw">:</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /health</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div></li>
+<li><p><strong>Resource Management</strong>: Kubelet makes sure the
+resource limits and requests in the pod specs are followed. If a pod
+uses too much memory, kubelet will stop the container so other pods on
+the node do not get affected.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span></code></pre></div></li>
+<li><p><strong>Node Monitoring and Reporting</strong>: Kubelet always
+checks the node’s health and resource use. It sends this data back to
+the Kubernetes API server. This helps in scheduling new pods and
+deciding about node scaling.</p></li>
+<li><p><strong>Volume Management</strong>: Kubelet makes sure that the
+persistent volumes in the pod specs are mounted in the containers. When
+we create a pod, kubelet mounts the volumes so containers can access
+needed data.</p></li>
+<li><p><strong>Taints and Tolerations</strong>: In clusters with many
+users, kubelet can set node taints. This lets some pods tolerate these
+taints. For example, a node can be tainted to accept only certain
+workloads. Kubelet will manage which pods can run on that node.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tolerations</span><span class="kw">:</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-key&quot;</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Equal&quot;</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-value&quot;</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoSchedule&quot;</span></span></code></pre></div></li>
+<li><p><strong>DaemonSets</strong>: Kubelet manages DaemonSets. This
+makes sure a specific pod runs on all or some nodes in the cluster. This
+is helpful for logging and monitoring tools that need to run on every
+node.</p></li>
+<li><p><strong>Custom Resource Definitions (CRDs)</strong>: When we use
+CRDs, kubelet can manage custom resources by using the logic from the
+custom controller. This allows us to create more complex
+applications.</p></li>
+</ol>
+<p>These examples show the key roles of the Kubernetes kubelet. It helps
+keep applications running well in a Kubernetes environment. For more
+about Kubernetes components, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">what
+are the key components of a Kubernetes cluster</a>.</p>
+<h2 id="how-can-we-configure-the-kubernetes-kubelet">How Can We
+Configure the Kubernetes Kubelet?</h2>
+<p>Configuring the Kubernetes kubelet is very important for managing
+nodes and pods well. We can configure the kubelet in different ways.
+This includes using command-line flags, configuration files, and
+environment variables.</p>
+<h3 id="command-line-flags">Command-Line Flags</h3>
+<p>We can set up the kubelet with command-line flags when we start the
+kubelet service. Here are some flags we often use:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubelet</span> <span class="dt">\</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--kubeconfig</span><span class="op">=</span>/etc/kubernetes/kubelet.conf <span class="dt">\</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--pod-infra-container-image</span><span class="op">=</span>k8s.gcr.io/pause:3.5 <span class="dt">\</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cgroup-driver</span><span class="op">=</span>systemd <span class="dt">\</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--max-pods</span><span class="op">=</span>110 <span class="dt">\</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--v</span><span class="op">=</span>2</span></code></pre></div>
+<h3 id="configuration-file">Configuration File</h3>
+<p>Another way is to use a configuration file in YAML format. This file
+tells many things about how the kubelet should behave. A sample
+configuration file looks like this:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">staticPodPath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/manifests&quot;</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">authentication</span><span class="kw">:</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">x509</span><span class="kw">:</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">clientCAFile</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/pki/ca.crt&quot;</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="fu">authorization</span><span class="kw">:</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> Webhook</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cgroupDriver</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;systemd&quot;</span></span></code></pre></div>
+<h3 id="environment-variables">Environment Variables</h3>
+<p>We can also set some environment variables to configure the kubelet.
+For example:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">KUBELET_KUBE_CONFIG_PATH</span><span class="op">=</span>/etc/kubernetes/kubelet.conf</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">KUBELET_POD_INFA_CONTAINER_IMAGE</span><span class="op">=</span>k8s.gcr.io/pause:3.5</span></code></pre></div>
+<h3 id="configuring-systemd-service">Configuring Systemd Service</h3>
+<p>If we use systemd to manage the kubelet service, we can change the
+kubelet’s service file. This file is located at
+<code>/etc/systemd/system/kubelet.service</code>. We can add or change
+the <code>ExecStart</code> line to include flags or point to a
+configuration file.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[Service]</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="dt">ExecStart</span><span class="ot">=</span><span class="st">/usr/bin/kubelet \</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="dt">  --kubeconfig</span><span class="ot">=</span><span class="st">/etc/kubernetes/kubelet.conf \</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="dt">  --config</span><span class="ot">=</span><span class="st">/var/lib/kubelet/config.yaml</span></span></code></pre></div>
+<h3 id="restarting-the-kubelet">Restarting the Kubelet</h3>
+<p>After we make any changes, we need to restart the kubelet. This will
+apply the new configuration:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl daemon-reload</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart kubelet</span></code></pre></div>
+<h3 id="validation">Validation</h3>
+<p>To check our kubelet configuration, we can look at the logs:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">journalctl</span> <span class="at">-u</span> kubelet <span class="at">-f</span></span></code></pre></div>
+<p>This helps us to make sure that the kubelet is running with the right
+configuration. It also helps us to fix any problems that come up after
+we change the configuration.</p>
+<h2 id="what-are-common-issues-with-the-kubernetes-kubelet">What Are
+Common Issues with the Kubernetes kubelet?</h2>
+<p>The Kubernetes kubelet is an important part of a Kubernetes cluster.
+It helps manage pods and makes sure they work well. But sometimes, we
+can face some common problems with the kubelet. These problems can
+affect how the whole Kubernetes cluster works.</p>
+<ol type="1">
+<li><strong>Pod Scheduling Failures</strong>:
+<ul>
+<li><p>The kubelet might not schedule pods if the node does not have
+enough resources like CPU or memory.</p></li>
+<li><p>We might see an error message like this:</p>
+<pre><code>Error: FailedScheduling: 0/3 nodes are available: 3 Insufficient cpu.</code></pre></li>
+</ul></li>
+<li><strong>Container Restart Loop</strong>:
+<ul>
+<li><p>Containers may keep restarting because of wrong settings or when
+they reach resource limits.</p></li>
+<li><p>We can check logs using:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Kubelet Crash Loop</strong>:
+<ul>
+<li><p>The kubelet can crash due to memory leaks or wrong
+settings.</p></li>
+<li><p>We should monitor kubelet logs:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">journalctl</span> <span class="at">-u</span> kubelet</span></code></pre></div></li>
+</ul></li>
+<li><strong>Node Not Ready</strong>:
+<ul>
+<li><p>A node can go into a “NotReady” state. This can happen because of
+network issues or kubelet setting problems.</p></li>
+<li><p>We can check the node status:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get nodes</span></code></pre></div></li>
+</ul></li>
+<li><strong>Health Check Failures</strong>:
+<ul>
+<li><p>Liveness or readiness probes might fail. This can make the
+kubelet restart containers.</p></li>
+<li><p>We should review probe settings in the pod spec:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">livenessProbe</span><span class="kw">:</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Permissions Issues</strong>:
+<ul>
+<li>If the kubelet does not have enough permissions to access what it
+needs, it can cause failures.</li>
+<li>We must make sure the kubelet has the right service account and role
+bindings.</li>
+</ul></li>
+<li><strong>Configuration Errors</strong>:
+<ul>
+<li><p>Wrong settings in kubelet flags can cause strange
+behavior.</p></li>
+<li><p>Here is an example of a configuration file
+(<code>kubelet-config.yaml</code>):</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">authentication</span><span class="kw">:</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">anonymous</span><span class="kw">:</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Version Mismatches</strong>:
+<ul>
+<li>Running a kubelet version that does not match the API server can
+cause problems in communication.</li>
+<li>We should check the version compatibility for Kubernetes
+components.</li>
+</ul></li>
+<li><strong>Resource Limits</strong>:
+<ul>
+<li><p>The kubelet might not apply resource limits correctly if we do
+not define them in the pod spec. This can lead to resource
+conflicts.</p></li>
+<li><p>Here is an example of resource limits in a pod spec:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Networking Issues</strong>:</li>
+</ol>
+<ul>
+<li>The kubelet can have network problems that stop it from talking to
+the API server or other nodes.</li>
+<li>We need to check network settings and connectivity with tools like
+<code>ping</code> or <code>curl</code>.</li>
+</ul>
+<p>By knowing and fixing these common issues with the Kubernetes
+kubelet, we can help make operations smoother and more reliable in our
+Kubernetes clusters. For more details on Kubernetes parts, we can look
+at the article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">what
+are the key components of a Kubernetes cluster</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-the-kubernetes-kubelet">What is the Kubernetes
+kubelet?</h3>
+<p>The Kubernetes kubelet is a key part that runs on every node in a
+Kubernetes cluster. Its main job is to make sure that containers are
+running as the Kubernetes API says. It talks with the API server to get
+instructions. Then it sends back the status of the containers and nodes.
+This helps to manage workloads in a Kubernetes environment.</p>
+<h3 id="how-does-the-kubelet-manage-pods">How does the kubelet manage
+pods?</h3>
+<p>The Kubernetes kubelet manages pods by keeping an eye on their
+health, lifecycle, and resource use. It keeps the state of the pods as
+defined in the cluster’s specs. This means it makes sure they are
+running. If they fail, it restarts them. It also scales them based on
+the rules set. This self-healing feature is very important for keeping
+applications reliable in Kubernetes.</p>
+<h3 id="what-health-checks-does-the-kubelet-perform">What health checks
+does the kubelet perform?</h3>
+<p>The kubelet does two main health checks: <strong>liveness
+probes</strong> and <strong>readiness probes</strong>. Liveness probes
+check if a container is still running. Readiness probes check if a
+container is ready to accept traffic. These checks help to make sure
+that only healthy containers serve requests. This keeps the overall
+stability and performance of applications in Kubernetes.</p>
+<h3 id="how-does-the-kubelet-ensure-node-compliance">How does the
+kubelet ensure node compliance?</h3>
+<p>The Kubernetes kubelet makes sure nodes follow the rules by
+constantly checking the node’s health. It applies any needed settings or
+rules from the cluster. It enforces resource limits, manages secrets,
+and follows security rules. This ensures that each node works according
+to the desired specs and standards set by the cluster admins.</p>
+<h3 id="what-are-common-issues-with-the-kubelet">What are common issues
+with the kubelet?</h3>
+<p>Common problems with the Kubernetes kubelet are resource limits,
+wrong settings, and communication issues with the API server. Errors can
+happen from not enough CPU or memory, wrong pod specs, or network
+problems. These can cause pod failures or lower performance. Regular
+monitoring and logging can help us fix these kubelet-related issues.</p>
+<p>For more info on Kubernetes parts and how they work together, we can
+check articles like <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">What
+Are the Key Components of a Kubernetes Cluster</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-differ-from-docker-swarm.html">How
+Does Kubernetes Differ from Docker Swarm</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
