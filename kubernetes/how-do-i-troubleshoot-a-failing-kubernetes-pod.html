@@ -1,0 +1,651 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Do I Troubleshoot a Failing Kubernetes Pod?</title>
+            <meta name="description" content="Discover effective troubleshooting tips for failing Kubernetes pods to enhance your cluster's performance and reliability.">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Do I Troubleshoot a Failing Kubernetes Pod?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Troubleshooting a failing Kubernetes pod means we need to find and
+fix problems that make the pod not work right or crash. A pod is the
+smallest unit we can deploy in Kubernetes. It can hold one or more
+containers, along with networking and storage resources. When a pod
+fails, it can hurt how the application works. So, troubleshooting is
+very important to keep our Kubernetes environment healthy.</p>
+<p>In this article, we will look at different ways and good practices
+for troubleshooting a failing Kubernetes pod. We will talk about how to
+diagnose pod issues. We will also find common reasons why pods fail. We
+will check pod status and logs. Also, we will look at events related to
+the pod. We will discuss resource limits and requests too. We will learn
+how to use <code>kubectl</code> to check pod configuration. Finally, we
+will see real-life examples of pod troubleshooting. We will also find
+out how to spot networking issues that affect our pod and answer some
+common questions.</p>
+<ul>
+<li>How Can We Effectively Troubleshoot a Failing Kubernetes Pod?</li>
+<li>What Are Common Causes of Pod Failures?</li>
+<li>How Do We Check Pod Status and Logs?</li>
+<li>What Commands Should We Use to Diagnose Pod Issues?</li>
+<li>How Can We Examine Events Related to Our Pod?</li>
+<li>What Are Best Practices for Resource Limits and Requests?</li>
+<li>How Do We Use kubectl to Inspect Pod Configuration?</li>
+<li>What Real Life Use Cases Show Pod Troubleshooting?</li>
+<li>How Can We Identify Networking Issues Affecting Our Pod?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more reading about Kubernetes and its parts, we can look at these
+articles: - <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">What
+Are Kubernetes Pods and How Do We Work With Them?</a> - <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-troubleshoot-issues-in-my-kubernetes-deployments.html">How
+Do We Troubleshoot Issues in Our Kubernetes Deployments?</a> - <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">What
+Are the Key Components of a Kubernetes Cluster?</a></p>
+<h2 id="what-are-the-common-causes-of-pod-failures">What Are the Common
+Causes of Pod Failures?</h2>
+<p>Pod failures in Kubernetes can happen for many reasons. Here are some
+common causes we can look at:</p>
+<ol type="1">
+<li><p><strong>Application Crashes</strong>: The application inside the
+pod can crash. This can happen because of unhandled errors. We should
+check the application logs for any stack traces or error
+messages.</p></li>
+<li><p><strong>Resource Constraints</strong>: Pods can fail if they use
+too many resources like CPU and memory. If we do not have enough
+resources, we might see OOMKilled (Out of Memory) or CPU
+throttling.</p></li>
+<li><p><strong>Readiness and Liveness Probe Failures</strong>: If the
+probes we set up fail, Kubernetes might restart or stop the pod. We need
+to make sure the probes are set up right and that the application
+responds as it should.</p></li>
+<li><p><strong>Configuration Errors</strong>: If we set environment
+variables, secrets, or config maps wrong, it can cause failures. We
+should check that all configurations are correct and can be
+accessed.</p></li>
+<li><p><strong>Image Issues</strong>: If the container image is broken
+or missing, the pod will not start. We must check the image name and
+tag. Also, we should make sure the image is in the right container
+registry.</p></li>
+<li><p><strong>Networking Issues</strong>: Problems with the cluster
+network can stop pods from talking to other services or resources. We
+need to check network policies and service settings.</p></li>
+<li><p><strong>Node Failures</strong>: If the node where the pod runs
+fails or cannot be reached, the pod will not be available. We should
+keep an eye on node health and availability.</p></li>
+<li><p><strong>Persistent Volume Issues</strong>: If a pod needs
+persistent storage that is not available, it can fail to start. This may
+happen because of a misconfiguration or if the storage backend is
+down.</p></li>
+<li><p><strong>Resource Quotas</strong>: If we go over the resource
+limits set in the namespace, pods may not be scheduled or may fail. We
+should check the resource quotas and limits for the namespace.</p></li>
+<li><p><strong>Pod Disruption</strong>: If we manually stop pods or if
+automated processes do this, it can cause failures. We need to watch for
+disruptions from deployments or other admin actions.</p></li>
+</ol>
+<p>To fix these issues, we must review pod events and logs. We can use
+<code>kubectl</code> commands to get insights into the pod’s status and
+see what is wrong.</p>
+<h2 id="how-do-i-check-pod-status-and-logs">How Do I Check Pod Status
+and Logs?</h2>
+<p>To check the status of a Kubernetes Pod, we can use the
+<code>kubectl get pods</code> command. This command shows a list of all
+Pods and their current statuses.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods</span></code></pre></div>
+<p>If we want to see detailed information about one specific Pod, we can
+use:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command will show us:</p>
+<ul>
+<li>Pod conditions</li>
+<li>Events</li>
+<li>Container statuses</li>
+</ul>
+<p>For looking at logs of a Pod that is failing, we use this
+command:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>If the Pod has more than one container, we need to specify the
+container name like this:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -c <span class="op">&lt;</span>container-name<span class="op">&gt;</span></span></code></pre></div>
+<p>If the Pod has crashed or is in a previous state, we can get the logs
+from the stopped containers using:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> --previous</span></code></pre></div>
+<p>To see real-time logs, we can use the <code>-f</code> (follow)
+option:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="at">-f</span> <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>These commands help us troubleshoot Kubernetes Pods. They give us
+important information about the Pod’s state and any problems the
+application may have. For more information on Kubernetes Pods and how to
+manage them, we can read <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">what
+are Kubernetes Pods and how do I work with them</a>.</p>
+<h2 id="what-commands-should-we-use-to-diagnose-pod-issues">What
+Commands Should We Use to Diagnose Pod Issues?</h2>
+<p>When we want to find problems with Kubernetes pods, we can use many
+<code>kubectl</code> commands. These commands help us get information
+about the pod’s status, logs, and events. This information is very
+important for fixing issues. Here are the main commands we should
+use:</p>
+<ol type="1">
+<li><p><strong>Check Pod Status</strong></p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods</span></code></pre></div>
+<p>This command shows all pods in the current namespace and their
+status. We need to look for statuses like <code>Running</code>,
+<code>Pending</code>, <code>CrashLoopBackOff</code>, or
+<code>Error</code>.</p></li>
+<li><p><strong>Describe a Specific Pod</strong></p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command gives us detailed information about a specific pod. We
+can see events, conditions, and resource usage. We need to replace
+<code>&lt;pod-name&gt;</code> with the real name of the pod.</p></li>
+<li><p><strong>Fetch Pod Logs</strong></p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>We use this command to get logs from the pod. If the pod has more
+than one container, we should also specify the container name:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -c <span class="op">&lt;</span>container-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>View Previous Pod Logs</strong></p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> --previous</span></code></pre></div>
+<p>This command shows logs from a container that was stopped before in
+the specified pod. This is helpful to debug crashes.</p></li>
+<li><p><strong>Check Events in the Namespace</strong></p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get events</span></code></pre></div>
+<p>This command lists events for all resources in the namespace. It can
+help us understand what went wrong when creating or running
+pods.</p></li>
+<li><p><strong>Check Resource Usage</strong></p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> top pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command shows the resource usage like CPU and memory for the
+specified pod. It helps us see if we are using too much
+resources.</p></li>
+<li><p><strong>Exec into a Pod</strong></p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> exec <span class="at">-it</span> <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -- /bin/sh</span></code></pre></div>
+<p>This command lets us open a shell inside the running pod. We can do
+diagnostics directly in the container.</p></li>
+<li><p><strong>Get Pod Events for a Specific Pod</strong></p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get events <span class="at">--field-selector</span> involvedObject.name=<span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command filters events that are only about our pod. It helps us
+understand the problems during its lifecycle.</p></li>
+</ol>
+<p>By using these commands, we can check and fix pod issues in our
+Kubernetes environment. We can collect the information we need to solve
+them properly. For more details on troubleshooting Kubernetes
+deployments, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-troubleshoot-issues-in-my-kubernetes-deployments.html">this
+article</a>.</p>
+<h2 id="how-can-we-examine-events-related-to-our-pod">How Can We Examine
+Events Related to Our Pod?</h2>
+<p>When we want to fix a failing Kubernetes pod, it is very important to
+check the events related to it. Kubernetes events give us information
+about the changes and problems our pods face. We can use the
+<code>kubectl</code> command-line tool to get these events.</p>
+<h3 id="checking-events-for-a-specific-pod">Checking Events for a
+Specific Pod</h3>
+<p>We can use this command to get detailed information about events for
+a specific pod:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div>
+<p>This command shows a full description of the pod. It includes its
+events at the bottom. We need to replace <code>&lt;pod-name&gt;</code>
+with the name of our pod and <code>&lt;namespace&gt;</code> with the
+right namespace. If we do not specify a namespace, it will use the
+default one.</p>
+<h3 id="viewing-all-events-in-a-namespace">Viewing All Events in a
+Namespace</h3>
+<p>If we want to see all events in a specific namespace, we can run this
+command:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get events <span class="at">-n</span> <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div>
+<p>This will list all events in the chosen namespace. It helps us find
+any problems that may not be only about one pod.</p>
+<h3 id="filtering-events-by-type">Filtering Events by Type</h3>
+<p>We can filter events by their type, like Warning or Normal, by using
+this command:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get events <span class="at">-n</span> <span class="op">&lt;</span>namespace<span class="op">&gt;</span> --field-selector type=Warning</span></code></pre></div>
+<p>This command helps us focus on important events that could show
+problems with our pods.</p>
+<h3 id="describing-events-for-more-context">Describing Events for More
+Context</h3>
+<p>If we want to see events for a certain resource, we can describe it.
+For example, to see events for a deployment, we can use:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe deployment <span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div>
+<p>This gives us more context about the deployment’s pods and any events
+that affect them.</p>
+<h3 id="using-jsonpath-for-specific-event-queries">Using JSONPath for
+Specific Event Queries</h3>
+<p>For more advanced filtering, we can use JSONPath to get specific
+details of events:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get events <span class="at">-n</span> <span class="op">&lt;</span>namespace<span class="op">&gt;</span> -o jsonpath=<span class="st">&#39;{.items[?(@.involvedObject.name==&quot;&lt;pod-name&gt;&quot;)]}&#39;</span></span></code></pre></div>
+<p>This command will return events that are specifically related to the
+pod we target.</p>
+<p>By using these commands, we can check events related to our pods in
+Kubernetes. This helps us understand and fix any issues. For more
+information on troubleshooting Kubernetes resources, we can check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-troubleshoot-issues-in-my-kubernetes-deployments.html">how
+to troubleshoot issues in my Kubernetes deployments</a>.</p>
+<h2
+id="what-are-the-best-practices-for-resource-limits-and-requests">What
+Are the Best Practices for Resource Limits and Requests?</h2>
+<p>When we manage Kubernetes pods, we need to set the right resource
+limits and requests. This helps us optimize performance and keep things
+stable. Here are some best practices we can follow:</p>
+<ol type="1">
+<li><p><strong>Understand Requests and Limits</strong>:</p>
+<ul>
+<li><strong>Requests</strong>: This is the minimum resources a pod needs
+to work. Kubernetes uses this number to schedule the pods.</li>
+<li><strong>Limits</strong>: This is the maximum resources a pod can
+use. If a pod goes over this limit, it may get slowed down or
+stopped.</li>
+</ul></li>
+<li><p><strong>Set Requests and Limits</strong>: We should always set
+both requests and limits for CPU and memory. This helps avoid resource
+issues and makes sure the pods have enough resources to run well. For
+example:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;256Mi&quot;</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span></code></pre></div></li>
+<li><p><strong>Analyze Resource Usage</strong>: We need to check the
+real resource usage of our pods. We can use tools like Prometheus,
+Grafana, or Kubernetes Metrics Server. This helps us change requests and
+limits based on what we see.</p></li>
+<li><p><strong>Use Vertical Pod Autoscaler (VPA)</strong>: We can use
+the Vertical Pod Autoscaler. It helps us change resource requests and
+limits automatically based on how we use them. This keeps performance
+good without us doing it manually.</p></li>
+<li><p><strong>Set Resource Quotas</strong>: We should set resource
+quotas at the namespace level. This stops one application from using too
+many resources. It helps share resources fairly among apps.</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceQuota</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-quota</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hard</span><span class="kw">:</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests.cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4&quot;</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests.memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;8Gi&quot;</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">limits.cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;8&quot;</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">limits.memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;16Gi&quot;</span></span></code></pre></div></li>
+<li><p><strong>Use Default Resource Requests and Limits</strong>: We can
+set default requests and limits in the namespace with LimitRange
+objects. This makes sure every pod in the namespace follows a basic
+setup.</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> LimitRange</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> limits</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">default</span><span class="kw">:</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100m&quot;</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">defaultRequest</span><span class="kw">:</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100m&quot;</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Container</span></span></code></pre></div></li>
+<li><p><strong>Test and Iterate</strong>: We should keep testing our
+resource setups. We can use load testing to find problems and change
+requests and limits based on how things perform.</p></li>
+<li><p><strong>Avoid Over-Provisioning</strong>: It can be tempting to
+set high limits for better performance. But over-provisioning can waste
+resources and cost more. We need to find a balance.</p></li>
+<li><p><strong>Consider Horizontal Pod Autoscaler (HPA)</strong>: For
+apps with changing workloads, we can use HPA with resource requests and
+limits. This helps automatically scale pods based on CPU or memory
+use.</p></li>
+</ol>
+<p>By following these best practices for resource limits and requests in
+Kubernetes, we can manage resources better, improve app performance, and
+keep the system stable. For more details on managing resources, check
+out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-resource-limits-and-requests-in-kubernetes.html">How
+Do I Manage Resource Limits and Requests in Kubernetes?</a>.</p>
+<h2 id="how-do-i-use-kubectl-to-inspect-pod-configuration">How Do I Use
+kubectl to Inspect Pod Configuration?</h2>
+<p>To check the configuration of a Kubernetes pod, we can use the
+<code>kubectl</code> command-line tool. This tool helps us get detailed
+information about the pod’s settings, status, and other deployment
+details. Here are the key commands and how to use them:</p>
+<ol type="1">
+<li><p><strong>Get Pod Information:</strong> To get basic info about a
+specific pod, we can use this command:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span> -o yaml</span></code></pre></div>
+<p>Change <code>&lt;pod-name&gt;</code> to the name of your pod and
+<code>&lt;namespace&gt;</code> to the right namespace. The
+<code>-o yaml</code> option shows the pod’s configuration in YAML
+format.</p></li>
+<li><p><strong>Describe Pod:</strong> If we want a more detailed view,
+including events linked with the pod, we use:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div>
+<p>This command gives us a lot of details about the pod, like its
+current status, container images, resource requests, and
+events.</p></li>
+<li><p><strong>List All Pods:</strong> To see all pods in a certain
+namespace, we can run:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-n</span> <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Check Pod Configuration Files:</strong> If we have the
+pod specifications saved in YAML files, we can look at them directly
+with:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> <span class="op">&lt;</span>pod-spec-file<span class="op">&gt;</span>.yaml</span></code></pre></div></li>
+<li><p><strong>Inspect Environment Variables:</strong> To see the
+environment variables set for our pod containers, we add this to our
+describe command:</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span> -o jsonpath=<span class="st">&#39;{.spec.containers[*].env}&#39;</span></span></code></pre></div></li>
+<li><p><strong>View Resource Requests and Limits:</strong> To check the
+resource requests and limits for our pod, we use:</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span> -o jsonpath=<span class="st">&#39;{.spec.containers[*].resources}&#39;</span></span></code></pre></div></li>
+<li><p><strong>Check Pod Annotations and Labels:</strong> To see
+annotations and labels for our pod, we run:</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span> -o jsonpath=<span class="st">&#39;{.metadata.annotations}&#39;</span></span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span> -o jsonpath=<span class="st">&#39;{.metadata.labels}&#39;</span></span></code></pre></div></li>
+</ol>
+<p>These commands give us important insights into pod configurations.
+They are very helpful for troubleshooting and managing our Kubernetes
+applications. For more details on Kubernetes pods, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">What
+Are Kubernetes Pods and How Do I Work with Them?</a>.</p>
+<h2 id="what-real-life-use-cases-show-pod-troubleshooting">What Real
+Life Use Cases Show Pod Troubleshooting?</h2>
+<p>In real life, we might face many problems with Kubernetes pods. Each
+problem needs different actions. Here are some common cases that show
+how we can troubleshoot pods:</p>
+<ol type="1">
+<li><strong>Application Crash Looping</strong>:
+<ul>
+<li><p><strong>Scenario</strong>: A pod keeps crashing because of
+application errors.<br />
+</p></li>
+<li><p><strong>Action</strong>: We check the pod logs using:</p>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Resolution</strong>: We look at the logs for stack traces
+or error messages. Then, we fix the code issues and redeploy.</p></li>
+</ul></li>
+<li><strong>Insufficient Resources</strong>:
+<ul>
+<li><p><strong>Scenario</strong>: A pod gets evicted or does not start
+because it needs more resources.<br />
+</p></li>
+<li><p><strong>Action</strong>: We check the resource requests and
+limits:</p>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Resolution</strong>: We change the resource requests and
+limits in the deployment settings to give enough resources.</p></li>
+</ul></li>
+<li><strong>Networking Issues</strong>:
+<ul>
+<li><p><strong>Scenario</strong>: A pod cannot talk to another service
+or pod.<br />
+</p></li>
+<li><p><strong>Action</strong>: We check network policies or service
+settings:</p>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get networkpolicy  </span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get svc  </span></code></pre></div></li>
+<li><p><strong>Resolution</strong>: We update the NetworkPolicy to allow
+traffic or make sure the service settings are right.</p></li>
+</ul></li>
+<li><strong>Image Pull Errors</strong>:
+<ul>
+<li><p><strong>Scenario</strong>: A pod does not start because it cannot
+pull the container image.<br />
+</p></li>
+<li><p><strong>Action</strong>: We check the pod events for image pull
+errors:</p>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Resolution</strong>: We make sure the image name is
+correct and provide any needed credentials through image pull
+secrets.</p></li>
+</ul></li>
+<li><strong>Configuration Issues</strong>:
+<ul>
+<li><p><strong>Scenario</strong>: A pod fails due to wrong settings in
+ConfigMaps or Secrets.<br />
+</p></li>
+<li><p><strong>Action</strong>: We check the ConfigMap or Secret
+used:</p>
+<div class="sourceCode" id="cb36"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get configmap <span class="op">&lt;</span>configmap-name<span class="op">&gt;</span> -o yaml  </span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get secret <span class="op">&lt;</span>secret-name<span class="op">&gt;</span> -o yaml  </span></code></pre></div></li>
+<li><p><strong>Resolution</strong>: We check the settings and make sure
+the pod uses the right ConfigMap or Secret.</p></li>
+</ul></li>
+<li><strong>Pod Not Ready</strong>:
+<ul>
+<li><p><strong>Scenario</strong>: A pod is in ‘Pending’ or ‘Not Ready’
+state.<br />
+</p></li>
+<li><p><strong>Action</strong>: We check the pod status and events:</p>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span>  </span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span>  </span></code></pre></div></li>
+<li><p><strong>Resolution</strong>: We look at the events for scheduling
+problems or readiness probe failures. Then we adjust the deployment if
+needed.</p></li>
+</ul></li>
+<li><strong>Persistent Volume Issues</strong>:
+<ul>
+<li><p><strong>Scenario</strong>: A pod cannot mount a persistent
+volume.<br />
+</p></li>
+<li><p><strong>Action</strong>: We check the PersistentVolumeClaim
+(PVC):</p>
+<div class="sourceCode" id="cb38"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pvc <span class="op">&lt;</span>pvc-name<span class="op">&gt;</span> -o yaml  </span></code></pre></div></li>
+<li><p><strong>Resolution</strong>: We make sure the PVC is connected to
+a PersistentVolume and the access modes match.</p></li>
+</ul></li>
+<li><strong>Dependency Failures</strong>:
+<ul>
+<li><p><strong>Scenario</strong>: A pod fails because it relies on
+another service that is down.<br />
+</p></li>
+<li><p><strong>Action</strong>: We check the status of dependent
+services:</p>
+<div class="sourceCode" id="cb39"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-n</span> <span class="op">&lt;</span>namespace<span class="op">&gt;</span>  </span></code></pre></div></li>
+<li><p><strong>Resolution</strong>: We fix the dependent service and get
+it running again.</p></li>
+</ul></li>
+</ol>
+<p>These examples show how important it is to find and fix pod problems
+in Kubernetes. If we want more help with troubleshooting Kubernetes
+deployments, we can look at this article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-troubleshoot-issues-in-my-kubernetes-deployments.html">troubleshooting
+issues in Kubernetes deployments</a>.</p>
+<h2 id="how-can-we-identify-networking-issues-affecting-our-pod">How Can
+We Identify Networking Issues Affecting Our Pod?</h2>
+<p>To find networking issues affecting our Kubernetes Pod, we can follow
+these steps:</p>
+<ol type="1">
+<li><p><strong>Check Pod Status</strong>: We can use the
+<code>kubectl get pods</code> command to see the status of our Pods. We
+should look for any Pods that are in a <code>Pending</code>,
+<code>CrashLoopBackOff</code>, or <code>Error</code> state. These states
+might mean there are networking problems.</p>
+<div class="sourceCode" id="cb40"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-o</span> wide</span></code></pre></div></li>
+<li><p><strong>Inspect Pod Logs</strong>: We need to check the logs of
+the Pod. This helps us see if there are any error messages about network
+connection.</p>
+<div class="sourceCode" id="cb41"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Verify Service Configuration</strong>: We have to make
+sure our service is set up right and points to the correct Pods. We can
+use this command to describe the service:</p>
+<div class="sourceCode" id="cb42"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe svc <span class="op">&lt;</span>service-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Test Connectivity</strong>: We can use
+<code>kubectl exec</code> to open a shell in the running Pod. From
+there, we can test connection to other services or Pods. For example, to
+ping another Pod:</p>
+<div class="sourceCode" id="cb43"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> exec <span class="at">-it</span> <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -- /bin/sh</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ping</span> <span class="op">&lt;</span>other-pod-ip<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Check Network Policies</strong>: If we have network
+policies, we must check if they allow traffic to and from the Pods. We
+can list all network policies in the namespace:</p>
+<div class="sourceCode" id="cb44"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get networkpolicies</span></code></pre></div></li>
+<li><p><strong>Review Node Network Settings</strong>: We should check
+the network settings of the nodes where our Pods run. We need to make
+sure the network interfaces are up and the right ports are
+open.</p></li>
+<li><p><strong>DNS Resolution</strong>: We have to check that DNS is
+working correctly in our cluster. We can look at the CoreDNS logs for
+any errors:</p>
+<div class="sourceCode" id="cb45"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="at">-n</span> kube-system <span class="at">-l</span> k8s-app=kube-dns</span></code></pre></div></li>
+<li><p><strong>Cluster Network Add-ons</strong>: If we are using a
+network plugin like Calico, Flannel, or Weave, we must ensure it is set
+up right and running. We can check the status of the Pods in the
+<code>kube-system</code> namespace that are related to the network
+add-ons.</p>
+<div class="sourceCode" id="cb46"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-n</span> kube-system</span></code></pre></div></li>
+<li><p><strong>Network Troubleshooting Tools</strong>: We can use tools
+like <code>kubectl port-forward</code>, <code>curl</code>, or
+<code>telnet</code> to test connection between Pods and services
+directly. For example:</p>
+<div class="sourceCode" id="cb47"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> port-forward svc/<span class="op">&lt;</span>service-name<span class="op">&gt;</span> <span class="op">&lt;</span>local-port<span class="op">&gt;</span>:<span class="op">&lt;</span>service-port<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Check for IP Address Conflicts</strong>: We must ensure
+there are no IP address conflicts in our network setup. These conflicts
+could cause connection issues.</p></li>
+</ol>
+<p>By following these steps, we can find and fix networking issues
+affecting our Kubernetes Pods. For more information about managing
+Kubernetes Pods, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">What
+Are Kubernetes Pods and How Do I Work With Them?</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-are-the-most-common-reasons-for-kubernetes-pod-failures">1.
+What are the most common reasons for Kubernetes pod failures?</h3>
+<p>Kubernetes pod can fail for many reasons. Some common reasons are not
+having enough resources, wrong settings, and problems in the
+application. For example, a pod may use too much resource, have the
+wrong container images, or face network issues. Also, things like node
+failures or not having enough storage can make the pod crash. Knowing
+these common reasons can help us fix a failing Kubernetes pod
+better.</p>
+<h3 id="how-can-i-check-the-logs-of-a-failing-kubernetes-pod">2. How can
+I check the logs of a failing Kubernetes pod?</h3>
+<p>We can check the logs of a failing Kubernetes pod by using the
+<code>kubectl logs</code> command. This command lets us see the logs of
+a pod and its containers. For example, to check logs for a pod named
+<code>my-pod</code>, we run:</p>
+<div class="sourceCode" id="cb48"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs my-pod</span></code></pre></div>
+<p>If the pod has more than one container, we need to tell which
+container with the <code>-c</code> flag. This helps us find out what is
+wrong with the pod.</p>
+<h3 id="how-do-i-inspect-the-status-of-a-kubernetes-pod">3. How do I
+inspect the status of a Kubernetes pod?</h3>
+<p>To see the status of a Kubernetes pod, we can use the
+<code>kubectl get pods</code> command. This command lists all pods and
+their statuses. We run:</p>
+<div class="sourceCode" id="cb49"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods</span></code></pre></div>
+<p>It will show the status of each pod like Running, Pending, or
+CrashLoopBackOff. For more details about a specific pod, we can use:</p>
+<div class="sourceCode" id="cb50"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command gives us more information about events and conditions
+that affect the pod.</p>
+<h3 id="what-tools-can-i-use-to-troubleshoot-kubernetes-pod-issues">4.
+What tools can I use to troubleshoot Kubernetes pod issues?</h3>
+<p>To fix issues with Kubernetes pods, we can use many tools. We can use
+<code>kubectl</code>, Helm for managing applications, and monitoring
+tools like Prometheus and Grafana. Also, tools like ELK Stack
+(Elasticsearch, Logstash, Kibana) are good for log analysis. For more
+details about Kubernetes resources, we can check our article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-a-kubernetes-application-with-prometheus-and-grafana.html">monitoring
+a Kubernetes application with Prometheus and Grafana</a>.</p>
+<h3
+id="how-can-i-identify-and-resolve-networking-issues-in-my-kubernetes-cluster">5.
+How can I identify and resolve networking issues in my Kubernetes
+cluster?</h3>
+<p>To find networking issues in a Kubernetes cluster, we need to check
+if pods can connect and look at service settings. We can use commands
+like <code>kubectl exec</code> to run network checks inside a pod. Also,
+we should check service endpoints and make sure network policies are
+correct. For more information about Kubernetes networking, we can read
+our article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-networking-work.html">how
+does Kubernetes networking work</a>.</p>
+<p>By looking at these frequently asked questions, we can understand
+better how to troubleshoot a failing Kubernetes pod.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

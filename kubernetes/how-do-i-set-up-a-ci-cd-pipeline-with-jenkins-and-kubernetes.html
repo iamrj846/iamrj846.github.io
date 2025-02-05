@@ -1,0 +1,909 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Do I Set Up a CI/CD Pipeline with Jenkins and Kubernetes?</title>
+            <meta name="description" content="Learn how to set up a CI/CD pipeline with Jenkins and Kubernetes to streamline your development process and enhance productivity.">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Do I Set Up a CI/CD Pipeline with Jenkins and Kubernetes?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Setting up a Continuous Integration/Continuous Deployment (CI/CD)
+pipeline with Jenkins and Kubernetes helps us automate code changes,
+testing, and application deployment. A CI/CD pipeline makes software
+development easier. It lets us deliver features and fix bugs faster
+while keeping high quality.</p>
+<p>In this article, we will look at the steps to create a CI/CD pipeline
+with Jenkins on Kubernetes. We will talk about what we need before we
+set up Jenkins and Kubernetes. Then, we will go through the installation
+process for Jenkins. After that, we will see how to configure Jenkins to
+work with Kubernetes. We will also make a Jenkins pipeline. We will
+discuss how to use Docker images in our Jenkins pipeline. We will share
+some real-life examples of using Jenkins and Kubernetes CI/CD pipelines.
+We will also cover how to monitor and troubleshoot our pipeline.
+Finally, we will talk about securing our setup and answer some common
+questions.</p>
+<ul>
+<li>How Can I Create a CI/CD Pipeline Using Jenkins and Kubernetes?</li>
+<li>What Are the Prerequisites for Setting Up Jenkins and
+Kubernetes?</li>
+<li>How Do I Install Jenkins on Kubernetes?</li>
+<li>What Is the Configuration Needed for Jenkins to Work with
+Kubernetes?</li>
+<li>How Do I Create a Jenkins Pipeline for CI/CD?</li>
+<li>How Can I Use Docker Images in My Jenkins Pipeline?</li>
+<li>What Are Real Life Use Cases for Jenkins and Kubernetes CI/CD
+Pipelines?</li>
+<li>How Do I Monitor and Troubleshoot My CI/CD Pipeline?</li>
+<li>How Can I Secure My Jenkins and Kubernetes Setup?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>This guide will help us use the power of Jenkins and Kubernetes to
+improve our software development process. If we want to learn more about
+Kubernetes basics, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">this
+article</a>.</p>
+<h2
+id="what-are-the-prerequisites-for-setting-up-jenkins-and-kubernetes">What
+Are the Prerequisites for Setting Up Jenkins and Kubernetes?</h2>
+<p>To set up a CI/CD pipeline with Jenkins and Kubernetes, we need to
+meet some requirements:</p>
+<ol type="1">
+<li><strong>Kubernetes Cluster</strong>:
+<ul>
+<li>We need a working Kubernetes cluster. We can set up a cluster using
+Minikube for local work or use a cloud service like AWS EKS, Google GKE,
+or Azure AKS for production.</li>
+</ul></li>
+<li><strong>Jenkins Installation</strong>:
+<ul>
+<li>We have to install Jenkins on our Kubernetes cluster. We can use
+Helm for easy installation or use Kubernetes manifests to deploy.</li>
+</ul></li>
+<li><strong>Docker</strong>:
+<ul>
+<li>We must make sure Docker is installed on the machine where Jenkins
+runs. Jenkins will build Docker images during the CI/CD process.</li>
+</ul></li>
+<li><strong>kubectl</strong>:
+<ul>
+<li>We need to install <code>kubectl</code>, which is a command-line
+tool for talking to our Kubernetes cluster. It must be set up to connect
+with our cluster.</li>
+</ul></li>
+<li><strong>Jenkins Plugins</strong>:
+<ul>
+<li>We have to install some important Jenkins plugins, such as:
+<ul>
+<li>Kubernetes Plugin</li>
+<li>Docker Pipeline</li>
+<li>GitHub or Bitbucket Integration if we use version control</li>
+</ul></li>
+</ul></li>
+<li><strong>Service Account and Role-Based Access Control
+(RBAC)</strong>:
+<ul>
+<li><p>We should create a Kubernetes service account for Jenkins. This
+account needs the right permissions to work with the Kubernetes
+API.</p></li>
+<li><p>Here is an example YAML for the service account and role
+binding:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> jenkins</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> jenkins</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> jenkins</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="fu">roleRef</span><span class="kw">:</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cluster-admin</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">subjects</span><span class="kw">:</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> jenkins</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> jenkins</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Persistent Storage</strong>:
+<ul>
+<li>We need to set up persistent storage for Jenkins. This storage keeps
+build artifacts and settings. We can use Kubernetes Persistent Volumes
+and Persistent Volume Claims.</li>
+</ul></li>
+<li><strong>Networking Configuration</strong>:
+<ul>
+<li>We must make sure that the Kubernetes services can talk to Jenkins.
+Depending on our setup, we may need to configure network policies or
+methods for service exposure like LoadBalancer, NodePort, or
+Ingress.</li>
+</ul></li>
+<li><strong>CI/CD Workflow Definition</strong>:
+<ul>
+<li>We have to define the CI/CD workflow. This includes steps like
+build, test, and deployment. It is important to know what our
+application needs.</li>
+</ul></li>
+<li><strong>Access to Git Repository</strong>:
+<ul>
+<li>Jenkins needs access to the source code repository, like GitHub or
+Bitbucket. We have to set up the right credentials in Jenkins to access
+the repository.</li>
+</ul></li>
+</ol>
+<p>These requirements will help us successfully set up and run Jenkins
+in a Kubernetes environment. This will let us automate our CI/CD
+pipeline. For more details on setting up a Kubernetes cluster, we can
+check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-set-up-a-kubernetes-cluster-on-aws-eks.html">how
+do I set up a Kubernetes cluster on AWS EKS</a>.</p>
+<h2 id="how-do-i-install-jenkins-on-kubernetes">How Do I Install Jenkins
+on Kubernetes?</h2>
+<p>We can install Jenkins on Kubernetes using Helm. Helm helps us to
+manage packages for Kubernetes. It makes the setup easier. Here are the
+steps to install Jenkins.</p>
+<h3 id="prerequisites">Prerequisites</h3>
+<ul>
+<li>We need a running Kubernetes cluster. This can be local or in the
+cloud.</li>
+<li>We also need to install Helm on our local machine.</li>
+</ul>
+<h3 id="step-1-add-the-jenkins-helm-chart-repository">Step 1: Add the
+Jenkins Helm Chart Repository</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> repo add jenkins https://charts.jenkins.io</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> repo update</span></code></pre></div>
+<h3 id="step-2-create-a-namespace-for-jenkins">Step 2: Create a
+Namespace for Jenkins</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> create namespace jenkins</span></code></pre></div>
+<h3 id="step-3-install-jenkins-using-helm">Step 3: Install Jenkins using
+Helm</h3>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> install jenkins jenkins/jenkins <span class="at">--namespace</span> jenkins <span class="at">--set</span> controller.adminPassword=admin</span></code></pre></div>
+<p>This command will install Jenkins with the basic settings. It sets
+the admin password to ‘admin’. We can change the installation later by
+adding more settings.</p>
+<h3 id="step-4-access-jenkins">Step 4: Access Jenkins</h3>
+<p>To find the Jenkins URL and access the UI, we can use the
+command:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get svc <span class="at">--namespace</span> jenkins</span></code></pre></div>
+<p>We should look for the service type <code>LoadBalancer</code> or
+<code>NodePort</code>. We need to write down the external IP or port. If
+we use <code>LoadBalancer</code>, we may have to wait for the external
+IP to show up.</p>
+<h3 id="step-5-retrieve-the-admin-password">Step 5: Retrieve the Admin
+Password</h3>
+<p>To get the admin password, we use:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get secret <span class="at">--namespace</span> jenkins jenkins <span class="at">-o</span> jsonpath=<span class="st">&quot;{.data.admin-password}&quot;</span> <span class="kw">|</span> <span class="fu">base64</span> <span class="at">--decode</span></span></code></pre></div>
+<h3 id="step-6-login-to-jenkins">Step 6: Login to Jenkins</h3>
+<p>Now we can open our browser and go to the Jenkins URL. We will use
+the username ‘admin’ and the password we got in the last step to log
+in.</p>
+<p>If we want more detailed instructions about using Helm for
+Kubernetes, we can check the <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-helm-and-how-does-it-help-with-kubernetes-deployments.html">Helm
+documentation</a>.</p>
+<h2
+id="what-is-the-configuration-needed-for-jenkins-to-work-with-kubernetes">What
+Is the Configuration Needed for Jenkins to Work with Kubernetes?</h2>
+<p>To make Jenkins work well with Kubernetes, we need to set up some
+important parts.</p>
+<ol type="1">
+<li><p><strong>Install the Kubernetes Plugin for Jenkins</strong>:</p>
+<ul>
+<li>Go to <code>Manage Jenkins</code> then
+<code>Manage Plugins</code>.</li>
+<li>In the <code>Available</code> tab, search for
+<code>Kubernetes</code>.</li>
+<li>We install the plugin and restart Jenkins.</li>
+</ul></li>
+<li><p><strong>Configure Kubernetes Cloud in Jenkins</strong>:</p>
+<ul>
+<li>We go to <code>Manage Jenkins</code> then
+<code>Configure System</code>.</li>
+<li>Find the <code>Cloud</code> section and click on
+<code>Add a new cloud</code>.</li>
+<li>Choose <code>Kubernetes</code>.</li>
+<li>Fill in these details:
+<ul>
+<li><strong>Kubernetes URL</strong>: This is the URL of your Kubernetes
+API server (for example,
+<code>https://&lt;k8s-api-server&gt;:6443</code>).</li>
+<li><strong>Kubernetes Namespace</strong>: This is the namespace where
+Jenkins will run pods (for example, <code>jenkins</code>).</li>
+<li><strong>Credentials</strong>: We add Kubernetes credentials (token
+or certificate) so Jenkins can log in to the Kubernetes API.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Set Pod Template</strong>:</p>
+<ul>
+<li>In the same Kubernetes settings, we define a pod template by
+clicking on <code>Add Pod Template</code>.</li>
+<li>We set up the pod template with these:
+<ul>
+<li><strong>Name</strong>: This is a unique name for the pod
+template.</li>
+<li><strong>Labels</strong>: We define labels to identify the pod
+template.</li>
+<li><strong>Containers</strong>: We add containers that Jenkins will use
+for builds. For example, a container with a Docker image for our build
+environment.</li>
+</ul></li>
+</ul>
+<p>Here is an example YAML for a pod template:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">jenkins</span><span class="kw">:</span><span class="at"> slave</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> jnlp</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> jenkins/jnlp-slave:latest</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;$(JENKINS_SECRET)&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;$(JENKINS_NAME)&#39;</span><span class="kw">]</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> docker</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> docker:latest</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sleep&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;infinity&#39;</span><span class="kw">]</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">tty</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div></li>
+<li><p><strong>Configure Jenkins Job</strong>:</p>
+<ul>
+<li>We create a new job or change an existing one.</li>
+<li>In the job settings, under <code>Build Environment</code>, we check
+<code>Use Kubernetes Pod Templates</code>.</li>
+<li>We choose the pod template we set up before.</li>
+</ul></li>
+<li><p><strong>Set Up Jenkins Agent</strong>:</p>
+<ul>
+<li>We need to check that the Jenkins master can talk to the Kubernetes
+cluster.</li>
+<li>We also verify that our Jenkins agent pods can be scheduled and have
+enough resources.</li>
+</ul></li>
+<li><p><strong>Networking Configuration</strong>:</p>
+<ul>
+<li>We must make sure that the Kubernetes cluster allows Jenkins to
+communicate on the right ports (usually port 8080 for Jenkins UI).</li>
+</ul></li>
+<li><p><strong>Security Settings</strong>:</p>
+<ul>
+<li>If we use RBAC, we need to check that the service account Jenkins
+uses can create, delete, and manage pods.</li>
+</ul></li>
+</ol>
+<p>After we set up these things, Jenkins will use Kubernetes for making
+build agents. This helps us to have efficient and scalable CI/CD
+pipelines. For more reading about setting up a CI/CD pipeline with
+Kubernetes, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-set-up-ci-cd-pipelines-for-kubernetes.html">this
+article</a>.</p>
+<h2 id="how-do-i-create-a-jenkins-pipeline-for-cicd">How Do I Create a
+Jenkins Pipeline for CI/CD?</h2>
+<p>We can create a Jenkins pipeline for CI/CD by using a Jenkinsfile. We
+store this file in our version control system. The pipeline has a clear
+structure. We can use either a declarative or scripted style to show the
+stages and steps in our CI/CD process.</p>
+<h3 id="sample-jenkinsfile">Sample Jenkinsfile</h3>
+<p>Here is a simple example of a declarative Jenkins pipeline:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    agent any</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Build&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>                echo <span class="st">&#39;Building the application...&#39;</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                sh <span class="st">&#39;mvn clean package&#39;</span> <span class="co">// This is for Maven projects</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Test&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>                echo <span class="st">&#39;Testing the application...&#39;</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>                sh <span class="st">&#39;mvn test&#39;</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Deploy&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>                echo <span class="st">&#39;Deploying to Kubernetes...&#39;</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>                sh <span class="st">&#39;kubectl apply -f deployment.yaml&#39;</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>    post <span class="op">{</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>        success <span class="op">{</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>            echo <span class="st">&#39;Pipeline completed successfully!&#39;</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>        failure <span class="op">{</span></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>            echo <span class="st">&#39;Pipeline failed.&#39;</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="steps-to-create-your-jenkins-pipeline">Steps to Create Your
+Jenkins Pipeline</h3>
+<ol type="1">
+<li><p><strong>Install Jenkins</strong>: First, we need to make sure
+Jenkins is installed and running. You can look at the guide on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-install-jenkins-on-kubernetes.html">How
+Do I Install Jenkins on Kubernetes?</a> for steps to install.</p></li>
+<li><p><strong>Create a New Item</strong>: In the Jenkins dashboard, we
+click on “New Item”. Enter a name for our pipeline and choose “Pipeline”
+as the project type.</p></li>
+<li><p><strong>Configure the Pipeline</strong>:</p>
+<ul>
+<li>On the pipeline configuration page, scroll to the “Pipeline”
+section.</li>
+<li>If we use a version control system, we should choose “Pipeline
+script from SCM”. We need to put our repository URL and
+credentials.</li>
+<li>If we do not use SCM, we can paste the Jenkinsfile content in the
+“Pipeline Script” section.</li>
+</ul></li>
+<li><p><strong>Save and Build</strong>: We click “Save” to keep the
+pipeline settings. We can start the pipeline by clicking “Build Now” in
+the pipeline view.</p></li>
+<li><p><strong>Monitor the Pipeline</strong>: We can check the console
+output of each build. This helps us see the progress and fix any
+problems.</p></li>
+</ol>
+<h3 id="using-docker-images">Using Docker Images</h3>
+<p>If our application uses Docker images, we can add Docker commands in
+our pipeline steps. For example:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Build Docker Image&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    steps <span class="op">{</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>        script <span class="op">{</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>            docker<span class="op">.</span><span class="fu">build</span><span class="op">(</span><span class="st">&#39;myapp:latest&#39;</span><span class="op">)</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>This command builds a Docker image called <code>myapp:latest</code>
+during the build stage.</p>
+<p>By setting up our CI/CD pipeline in Jenkins, we can automate the
+build, test, and deploy processes easily. This helps us improve our
+development work. To learn more about using Kubernetes with Jenkins,
+check the guide on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-set-up-ci-cd-pipelines-for-kubernetes.html">How
+Do I Set Up CI/CD Pipelines for Kubernetes?</a>.</p>
+<h2 id="how-can-i-use-docker-images-in-my-jenkins-pipeline">How Can I
+Use Docker Images in My Jenkins Pipeline?</h2>
+<p>To use Docker images in our Jenkins pipeline, we need to make sure
+Jenkins can access Docker and run Docker commands. Here are the steps
+and code to help us set this up.</p>
+<h3 id="prerequisites-1">Prerequisites</h3>
+<ol type="1">
+<li><strong>Jenkins Server</strong>: We need a working Jenkins
+instance.</li>
+<li><strong>Docker Installed</strong>: We must have Docker installed on
+the same server where Jenkins runs.</li>
+<li><strong>Jenkins Docker Plugin</strong>: We should install the Docker
+Pipeline and Docker plugins in Jenkins.</li>
+</ol>
+<h3 id="configuring-jenkins-to-use-docker">Configuring Jenkins to Use
+Docker</h3>
+<ol type="1">
+<li><p><strong>Install Docker on Jenkins Server</strong>:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get update</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install docker.io</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> usermod <span class="at">-aG</span> docker jenkins</span></code></pre></div></li>
+<li><p><strong>Restart Jenkins</strong> to make the group changes
+work:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart jenkins</span></code></pre></div></li>
+<li><p><strong>Check Docker Access</strong>: We log into Jenkins and run
+a test command in the Pipeline console:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> version</span></code></pre></div></li>
+</ol>
+<h3 id="using-docker-in-a-jenkins-pipeline">Using Docker in a Jenkins
+Pipeline</h3>
+<p>We can define a Jenkins pipeline that uses Docker images like
+this:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    agent <span class="op">{</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>        docker <span class="op">{</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>            image <span class="st">&#39;maven:3.6.3-jdk-11&#39;</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>            args <span class="st">&#39;-v /root/.m2:/root/.m2&#39;</span> <span class="co">// Mount Maven local repository</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Build&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>                sh <span class="st">&#39;mvn clean package&#39;</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Test&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>                sh <span class="st">&#39;mvn test&#39;</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="building-custom-docker-images">Building Custom Docker
+Images</h3>
+<p>If we want to build a custom Docker image in our Jenkins pipeline, we
+can use this code:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    agent any</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Build Docker Image&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>                script <span class="op">{</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>                    docker<span class="op">.</span><span class="fu">build</span><span class="op">(</span><span class="st">&quot;my-image:</span><span class="ss">${</span>env<span class="op">.</span>BUILD_ID<span class="ss">}</span><span class="st">&quot;</span><span class="op">)</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Run Container&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                script <span class="op">{</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                    docker<span class="op">.</span><span class="fu">image</span><span class="op">(</span><span class="st">&quot;my-image:</span><span class="ss">${</span>env<span class="op">.</span>BUILD_ID<span class="ss">}</span><span class="st">&quot;</span><span class="op">).</span><span class="fu">inside</span> <span class="op">{</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                        sh <span class="st">&#39;run-your-application-command&#39;</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                    <span class="op">}</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="pushing-docker-images-to-a-registry">Pushing Docker Images to a
+Registry</h3>
+<p>To push the built image to a Docker registry like Docker Hub, we add
+this:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    agent any</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Build Docker Image&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>                script <span class="op">{</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>                    <span class="dt">def</span> customImage <span class="op">=</span> docker<span class="op">.</span><span class="fu">build</span><span class="op">(</span><span class="st">&quot;my-image:</span><span class="ss">${</span>env<span class="op">.</span>BUILD_ID<span class="ss">}</span><span class="st">&quot;</span><span class="op">)</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>                    customImage<span class="op">.</span><span class="fu">push</span><span class="op">(</span><span class="st">&quot;latest&quot;</span><span class="op">)</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="conclusion">Conclusion</h3>
+<p>Using Docker images in our Jenkins pipeline helps us have consistent
+and repeatable builds. We can use different Docker images for different
+stages of our CI/CD process. This improves our development workflow. For
+more advanced use, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-set-up-ci-cd-pipelines-for-kubernetes.html">how
+to set up CI/CD pipelines for Kubernetes</a> to connect our Jenkins
+pipelines with Kubernetes deployments.</p>
+<h2
+id="what-are-real-life-use-cases-for-jenkins-and-kubernetes-cicd-pipelines">What
+Are Real Life Use Cases for Jenkins and Kubernetes CI/CD Pipelines?</h2>
+<p>We often see Jenkins and Kubernetes in modern DevOps. They help us
+automate software delivery and deployment. Here are some real-life
+examples showing how Jenkins and Kubernetes work well together for CI/CD
+pipelines:</p>
+<ol type="1">
+<li><p><strong>Microservices Deployment</strong>:<br />
+Companies that use microservices can make Jenkins automate the build and
+test steps for each microservice. Kubernetes helps to manage the
+orchestration, scaling, and networking between these services.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-microservice</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-microservice</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-microservice</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-microservice</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-repo/my-microservice:latest</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div></li>
+<li><p><strong>Continuous Integration for Web
+Applications</strong>:<br />
+We can set up Jenkins to start builds when we change code. It can run
+tests and package the application. Then, Kubernetes can automatically
+deploy the latest build to a staging area for more checks.</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    agent any</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Build&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                sh <span class="st">&#39;mvn clean package&#39;</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Deploy&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>                <span class="fu">kubernetesDeploy</span><span class="op">(</span>configs<span class="op">:</span> <span class="st">&#39;k8s/deployment.yaml&#39;</span><span class="op">,</span> kubeconfigId<span class="op">:</span> <span class="st">&#39;kubeconfig&#39;</span><span class="op">)</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Automated Testing</strong>:<br />
+We can use Jenkins to run tests in separate Kubernetes pods. This way,
+each test has the same environment. It helps us avoid the “it works on
+my machine” issue.</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-job</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-repo/my-app-tests:latest</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div></li>
+<li><p><strong>Canary Deployments</strong>:<br />
+With Jenkins and Kubernetes, we can do canary deployments. This means we
+slowly give new features to a small group of users before going all out.
+Jenkins can help us promote the canary version based on user feedback
+and how well it performs.</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-canary</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">version</span><span class="kw">:</span><span class="at"> canary</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">version</span><span class="kw">:</span><span class="at"> canary</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-repo/my-app:canary</span></span></code></pre></div></li>
+<li><p><strong>Scaling Applications</strong>:<br />
+We can connect Jenkins with Kubernetes’ Horizontal Pod Autoscaler. This
+helps to change the number of running pods based on how many users are
+active. It keeps our application running well during busy times.</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling/v2beta2</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> HorizontalPodAutoscaler</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-hpa</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scaleTargetRef</span><span class="kw">:</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">resource</span><span class="kw">:</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div></li>
+<li><p><strong>Dev/Test Environments</strong>:<br />
+With Jenkins, we can create Kubernetes clusters for development and
+testing. This helps us work faster. Developers can make and remove
+environments whenever they need, based on Jenkins job options.</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    agent any</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Setup Environment&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>                script <span class="op">{</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>                    <span class="co">// Command to create a Kubernetes namespace</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>                    sh <span class="st">&#39;kubectl create namespace dev-environment&#39;</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Deploy&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>                <span class="fu">kubernetesDeploy</span><span class="op">(</span>configs<span class="op">:</span> <span class="st">&#39;k8s/dev-deployment.yaml&#39;</span><span class="op">,</span> kubeconfigId<span class="op">:</span> <span class="st">&#39;kubeconfig&#39;</span><span class="op">)</span></span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+</ol>
+<p>These examples show how we can use Jenkins and Kubernetes together
+for better CI/CD pipelines. This helps us deploy faster and keep our
+applications reliable. For more tips on setting up CI/CD pipelines for
+Kubernetes, check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-set-up-ci-cd-pipelines-for-kubernetes.html">this
+article</a>.</p>
+<h2 id="how-do-i-monitor-and-troubleshoot-my-cicd-pipeline">How Do I
+Monitor and Troubleshoot My CI/CD Pipeline?</h2>
+<p>We want to make sure that our CI/CD pipeline with Jenkins and
+Kubernetes works well. We can use different tools and methods to do
+this. Here are some easy steps and tools we can use:</p>
+<h3 id="monitoring-tools">Monitoring Tools</h3>
+<ol type="1">
+<li><strong>Jenkins Monitoring Plugins</strong>:
+<ul>
+<li>We can use the <strong>Monitoring</strong> plugin for Jenkins to
+check how our builds are performing.</li>
+<li>The <strong>Build Monitor</strong> plugin shows us a clear view of
+the build status.</li>
+</ul>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Example Jenkins pipeline snippet to monitor build time</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    agent any </span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Build&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>                script <span class="op">{</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>                    <span class="dt">def</span> startTime <span class="op">=</span> <span class="bu">System</span><span class="op">.</span><span class="fu">currentTimeMillis</span><span class="op">()</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>                    <span class="co">// Build steps</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>                    <span class="dt">def</span> duration <span class="op">=</span> <span class="bu">System</span><span class="op">.</span><span class="fu">currentTimeMillis</span><span class="op">()</span> <span class="op">-</span> startTime</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>                    echo <span class="st">&quot;Build completed in </span><span class="ss">${</span>duration<span class="ss">}</span><span class="st"> ms&quot;</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><strong>Kubernetes Monitoring</strong>:
+<ul>
+<li>We can use tools like <strong>Prometheus</strong> and
+<strong>Grafana</strong> to watch our Kubernetes clusters.</li>
+<li>Deploy the <strong>Kube-state-metrics</strong> to see how our
+Kubernetes resources are doing.</li>
+</ul></li>
+<li><strong>Log Management</strong>:
+<ul>
+<li>We can use the <strong>ELK Stack</strong> (Elasticsearch, Logstash,
+Kibana) to gather and show logs.</li>
+<li>Fluentd can help us collect logs from different places.</li>
+</ul></li>
+</ol>
+<h3 id="troubleshooting-steps">Troubleshooting Steps</h3>
+<ol type="1">
+<li><strong>Jenkins Build Logs</strong>:
+<ul>
+<li>We should check build logs in Jenkins for any errors or
+warnings.</li>
+<li>The <strong>Blue Ocean</strong> interface is nice for looking at
+logs easily.</li>
+</ul></li>
+<li><strong>Kubernetes Pod Logs</strong>:
+<ul>
+<li>We can get logs from a specific pod using kubectl:</li>
+</ul>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><strong>Check Pod Status</strong>:
+<ul>
+<li>We should check if our pods are working right:</li>
+</ul>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods</span></code></pre></div></li>
+<li><strong>Describe Resources</strong>:
+<ul>
+<li>Use the <code>kubectl describe</code> command to get more info about
+a resource:</li>
+</ul>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><strong>Resource Usage Monitoring</strong>:
+<ul>
+<li>We can check resource usage of our pods with
+<code>kubectl top</code>:</li>
+</ul>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> top pods</span></code></pre></div></li>
+</ol>
+<h3 id="alerts-and-notifications">Alerts and Notifications</h3>
+<ol type="1">
+<li><strong>Alerting</strong>:
+<ul>
+<li>We can set up alerts in Prometheus to tell us if builds fail or if
+resource use is too high.</li>
+<li>We can connect with Slack or email for quick alerts.</li>
+</ul></li>
+<li><strong>Jenkins Notifications</strong>:
+<ul>
+<li>We can set Jenkins to send us messages if a build fails by email or
+chat tools.</li>
+</ul></li>
+</ol>
+<h3 id="common-issues-and-solutions">Common Issues and Solutions</h3>
+<ul>
+<li><strong>Build Failures</strong>: We should look for dependency
+problems or wrong environment settings.</li>
+<li><strong>Slow Builds</strong>: We can make our pipeline faster and
+use caching.</li>
+<li><strong>Kubernetes Deployment Issues</strong>: We need to check
+service settings and make sure all dependencies are there.</li>
+</ul>
+<p>By using these monitoring and troubleshooting steps, we can keep our
+CI/CD pipeline using Jenkins and Kubernetes healthy. If we want to learn
+more about setting up CI/CD pipelines in Kubernetes, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-set-up-ci-cd-pipelines-for-kubernetes.html">this
+article on setting up CI/CD pipelines for Kubernetes</a>.</p>
+<h2 id="how-can-we-secure-our-jenkins-and-kubernetes-setup">How Can We
+Secure Our Jenkins and Kubernetes Setup?</h2>
+<p>Securing Jenkins and Kubernetes is very important. It helps keep our
+CI/CD pipeline safe from threats and unauthorized access. Here are some
+simple steps we can take to improve security.</p>
+<h3 id="securing-jenkins">Securing Jenkins</h3>
+<ol type="1">
+<li><p><strong>Use HTTPS</strong>: We should set up Jenkins to run over
+HTTPS. This will encrypt our data while it moves.</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a># Example Jenkins configuration <span class="cf">for</span> HTTPS</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>httpsPort <span class="op">=</span> <span class="dv">8443</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>keyStore <span class="op">=</span> <span class="st">&quot;/path/to/keystore.jks&quot;</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>keyStorePassword <span class="op">=</span> <span class="st">&quot;yourKeystorePassword&quot;</span></span></code></pre></div></li>
+<li><p><strong>Enable Authentication</strong>: We need to set up
+security realms and ways to control access in Jenkins.</p>
+<ul>
+<li>We can use LDAP or Active Directory for user login.</li>
+<li>We should use Matrix-based security to limit who can access jobs and
+settings.</li>
+</ul></li>
+<li><p><strong>Regular Updates</strong>: We must keep Jenkins and its
+plugins updated. This helps protect against security issues.</p></li>
+<li><p><strong>Disable Unused Plugins</strong>: We need to remove any
+plugins we do not use. They might create security risks.</p></li>
+<li><p><strong>Use Jenkins Credentials Plugin</strong>: We can store
+secrets safely. It is better to avoid hardcoding sensitive information
+in our pipeline scripts.</p></li>
+</ol>
+<h3 id="securing-kubernetes">Securing Kubernetes</h3>
+<ol type="1">
+<li><p><strong>Role-Based Access Control (RBAC)</strong>: We should use
+RBAC. It controls permissions based on user roles.</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example RBAC configuration</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-role</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">]</span></span></code></pre></div></li>
+<li><p><strong>Network Policies</strong>: We can define network
+policies. They help control traffic between pods.</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example Network Policy</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> allow-same-namespace</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">policyTypes</span><span class="kw">:</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> Ingress</span></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">from</span><span class="kw">:</span></span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">podSelector</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div></li>
+<li><p><strong>Secrets Management</strong>: We should use Kubernetes
+Secrets for sensitive data. We must avoid plain text in our
+configurations.</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Creating a secret</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> create secret generic my-secret <span class="at">--from-literal</span><span class="op">=</span>password=supersecret</span></code></pre></div></li>
+<li><p><strong>Audit Logging</strong>: We need to turn on audit logging.
+This helps us watch access and changes in our Kubernetes
+cluster.</p></li>
+<li><p><strong>Limit Resource Usage</strong>: We should set limits for
+resources in our pods. This helps prevent attacks that use up all
+resources.</p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span></code></pre></div></li>
+<li><p><strong>Regular Security Scans</strong>: We can use tools like
+Trivy or Aqua Security. They help us scan our container images for
+security issues.</p></li>
+</ol>
+<p>By following these security tips, we can make our Jenkins and
+Kubernetes setup much safer. This will reduce the chance of breaches and
+keep our CI/CD pipeline strong. For more information on keeping our
+Kubernetes environment safe, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-security-best-practices.html">Kubernetes
+Security Best Practices</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-a-cicd-pipeline-in-jenkins-and-kubernetes">1. What is a
+CI/CD pipeline in Jenkins and Kubernetes?</h3>
+<p>A CI/CD pipeline is a collection of automated steps. It helps with
+continuous integration and continuous delivery of software. In Jenkins,
+we can create CI/CD pipelines. These pipelines help us automate
+building, testing, and deploying applications on Kubernetes. This
+connection allows us to quickly deliver updates and new features. This
+way, we can ensure better quality and faster release times.</p>
+<h3 id="how-do-i-connect-jenkins-to-my-kubernetes-cluster">2. How do I
+connect Jenkins to my Kubernetes cluster?</h3>
+<p>To connect Jenkins to our Kubernetes cluster, we need to set up the
+Kubernetes plugin in Jenkins. We have to add our Kubernetes cluster
+details in the Jenkins settings. It is important that the Jenkins server
+has the right permissions to talk to the Kubernetes API. For a
+step-by-step guide, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-set-up-ci-cd-pipelines-for-kubernetes.html">this
+article</a>.</p>
+<h3 id="can-i-use-docker-images-in-my-jenkins-cicd-pipeline">3. Can I
+use Docker images in my Jenkins CI/CD pipeline?</h3>
+<p>Yes, we can use Docker images in our Jenkins CI/CD pipeline. We can
+choose Docker images in our Jenkinsfile to create containers for
+different steps of our pipeline. These steps include building, testing,
+and deploying applications on Kubernetes. This gives us more flexibility
+and helps with the efficiency of our CI/CD processes.</p>
+<h3
+id="what-are-some-best-practices-for-securing-jenkins-and-kubernetes">4.
+What are some best practices for securing Jenkins and Kubernetes?</h3>
+<p>To secure our Jenkins and Kubernetes, we should use role-based access
+control (RBAC). We also need to keep our software updated to the latest
+versions. Using secret management tools is important to protect
+sensitive data. Moreover, we can use network policies to limit
+communication between pods. For more details on security practices, we
+can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-security-best-practices.html">this
+guide</a>.</p>
+<h3 id="how-can-i-monitor-my-cicd-pipeline-in-jenkins-and-kubernetes">5.
+How can I monitor my CI/CD pipeline in Jenkins and Kubernetes?</h3>
+<p>We can monitor our CI/CD pipeline by integrating tools like
+Prometheus and Grafana with our Jenkins and Kubernetes setup. These
+tools give us real-time metrics and alerts. They help us keep an eye on
+the performance of our CI/CD processes. For more information on cluster
+monitoring, we can visit <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-my-kubernetes-cluster.html">this
+resource</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

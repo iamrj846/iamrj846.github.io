@@ -1,0 +1,646 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Do I Use Vertical Pod Autoscaler (VPA) to Optimize Resource Usage?</title>
+            <meta name="description" content="Discover how to optimize resource usage with Vertical Pod Autoscaler (VPA) in Kubernetes. Boost efficiency and performance now!">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Do I Use Vertical Pod Autoscaler (VPA) to Optimize Resource Usage?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Vertical Pod Autoscaler (VPA) is a tool for Kubernetes. It helps to
+change the resource requests and limits for containers in our pods. This
+happens based on how much resources they actually use. VPA looks at past
+performance data. It can suggest and apply the best resource settings.
+This helps our applications to run well. It also keeps workloads
+balanced and uses resources smartly. We do not need to change these
+settings by hand.</p>
+<p>In this article, we will look at different parts of using the
+Vertical Pod Autoscaler. We will see how to set up VPA. We will learn
+how to configure it for our deployments. We will also check how to
+monitor its suggestions. Plus, we will talk about how to connect it with
+Horizontal Pod Autoscaler (HPA). We will explore real examples of using
+VPA. We will fix common problems and answer questions about this useful
+tool.</p>
+<ul>
+<li>How Can I Use Vertical Pod Autoscaler (VPA) to Optimize Resource
+Usage?</li>
+<li>What is Vertical Pod Autoscaler (VPA) and How Does it Work?</li>
+<li>How to Install Vertical Pod Autoscaler (VPA) on Your Cluster?</li>
+<li>How to Configure VPA for Your Deployment?</li>
+<li>What are the Different Modes of VPA and When to Use Each?</li>
+<li>How to Monitor VPA Recommendations and Adjustments?</li>
+<li>How to Integrate VPA with Horizontal Pod Autoscaler (HPA)?</li>
+<li>What are Real Life Use Cases for Vertical Pod Autoscaler (VPA)?</li>
+<li>How to Troubleshoot Common VPA Issues?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more reading about Kubernetes and its features, we can check
+these articles: <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">What
+is Kubernetes and How Does it Simplify Container Management?</a>, <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-optimize-resource-usage-with-vertical-pod-autoscaler-vpa.html">How
+Do I Use Kubernetes to Optimize Resource Usage?</a>, and <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-autosale-my-applications-with-horizontal-pod-autoscaler-hpa.html">How
+Do I Scale My Applications with Horizontal Pod Autoscaler
+(HPA)?</a>.</p>
+<h2 id="what-is-vertical-pod-autoscaler-vpa-and-how-does-it-work">What
+is Vertical Pod Autoscaler (VPA) and How Does it Work?</h2>
+<p>The Vertical Pod Autoscaler (VPA) is a part of Kubernetes. It changes
+the CPU and memory requests for your pods automatically. It does this by
+using data from past usage. VPA helps us use resources better. It makes
+sure our applications have the right amount of resources. This way, we
+avoid giving too much or too little.</p>
+<h3 id="how-vpa-works">How VPA Works</h3>
+<ol type="1">
+<li><p><strong>Metrics Collection</strong>: VPA gets metrics from the
+Kubernetes API and the Metrics Server. It looks at how much resources
+containers use in real time.</p></li>
+<li><p><strong>Recommendation Generation</strong>: After getting the
+metrics, VPA makes suggestions for each pod. These suggestions include
+the CPU and memory requests we should use.</p></li>
+<li><p><strong>Update Strategies</strong>: VPA can apply suggestions in
+different ways:</p>
+<ul>
+<li><strong>Auto</strong>: It automatically changes the resource
+requests for the pods.</li>
+<li><strong>Off</strong>: It gives suggestions but does not apply
+them.</li>
+<li><strong>Initial</strong>: It applies suggestions only when the pods
+are created.</li>
+</ul></li>
+<li><p><strong>Integration</strong>: VPA can work alone or with
+Horizontal Pod Autoscaler (HPA). HPA changes the number of pod copies
+based on how much resources they use.</p></li>
+</ol>
+<h3 id="example-configuration">Example Configuration</h3>
+<p>To set up VPA, we need to create a <code>VerticalPodAutoscaler</code>
+resource. Here is an example YAML configuration:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling.k8s.io/v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> VerticalPodAutoscaler</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-vpa</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">targetRef</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">updatePolicy</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">updateMode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Auto&quot;</span></span></code></pre></div>
+<p>This configuration is for a deployment called <code>my-app</code>. It
+allows automatic updates to the resource requests based on usage.</p>
+<p>For more info on using resources better, look at <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-optimize-resource-usage-with-vertical-pod-autoscaler-vpa.html">how
+to optimize resource usage with Vertical Pod Autoscaler (VPA)</a>.</p>
+<h2 id="how-to-install-vertical-pod-autoscaler-vpa-on-your-cluster">How
+to Install Vertical Pod Autoscaler (VPA) on Your Cluster?</h2>
+<p>To install the Vertical Pod Autoscaler (VPA) on our Kubernetes
+cluster, we can follow these steps:</p>
+<ol type="1">
+<li><p><strong>Prerequisites</strong>:</p>
+<ul>
+<li>We need to make sure our Kubernetes cluster is running version 1.12
+or newer.</li>
+<li>We should install <code>kubectl</code> and make sure it can access
+our cluster.</li>
+</ul></li>
+<li><p><strong>Install VPA using Kubernetes manifests</strong>: We can
+deploy VPA by using the official manifests from the Kubernetes VPA
+project. We run this command to install the needed parts:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes/autoscaler/releases/download/v0.10.0/vpa-0.10.0.yaml</span></code></pre></div></li>
+<li><p><strong>Verify Installation</strong>: After we install, we check
+if the VPA parts are running:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-n</span> kube-system <span class="kw">|</span> <span class="fu">grep</span> vpa</span></code></pre></div></li>
+<li><p><strong>Configure VPA</strong>: We create a VPA object for our
+deployment. Here is a simple YAML setup for VPA:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling.k8s.io/v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> VerticalPodAutoscaler</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-vpa</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">targetRef</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">updatePolicy</span><span class="kw">:</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">updateMode</span><span class="kw">:</span><span class="at"> Auto</span></span></code></pre></div>
+<p>We apply this setup with:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> my-app-vpa.yaml</span></code></pre></div></li>
+<li><p><strong>Check VPA Status</strong>: To see the status and
+suggestions from VPA, we can use this command:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe vpa my-app-vpa</span></code></pre></div></li>
+<li><p><strong>Integration with Metrics Server</strong>: We need to make
+sure the Kubernetes Metrics Server is running in our cluster. VPA needs
+metrics to give suggestions. If it is not installed, we can run this
+command:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml</span></code></pre></div></li>
+</ol>
+<p>By doing these steps, we can install and set up the Vertical Pod
+Autoscaler on our cluster. This helps to use resources better. For more
+details on integration and optimization, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-optimize-resource-usage-with-vertical-pod-autoscaler-vpa.html">how
+to optimize resource usage with Vertical Pod Autoscaler (VPA)</a>.</p>
+<h2 id="how-to-configure-vpa-for-your-deployment">How to Configure VPA
+for Your Deployment?</h2>
+<p>To set up the Vertical Pod Autoscaler (VPA) for our deployment in
+Kubernetes, we can follow these steps:</p>
+<ol type="1">
+<li><p><strong>Install VPA</strong>: First, we need to make sure VPA is
+installed on our Kubernetes cluster. We can install it with this
+command:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://raw.githubusercontent.com/kubernetes/autoscaler/master/vertical-pod-autoscaler/deploy/vpa-rc.yaml</span></code></pre></div></li>
+<li><p><strong>Create a VPA Custom Resource</strong>: Next, we need to
+create a VPA custom resource for our specific deployment. Here is a
+simple YAML config:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling.k8s.io/v1</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> VerticalPodAutoscaler</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-vpa</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">targetRef</span><span class="kw">:</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">updatePolicy</span><span class="kw">:</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">updateMode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Auto&quot;</span><span class="co">  # Options: &quot;Off&quot;, &quot;Auto&quot;, &quot;Initial&quot;</span></span></code></pre></div></li>
+<li><p><strong>Apply the VPA Configuration</strong>:</p>
+<p>We save the above YAML in a file called <code>vpa.yaml</code>. Then
+we apply it like this:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> vpa.yaml</span></code></pre></div></li>
+<li><p><strong>Monitor VPA Recommendations</strong>: To check VPA
+recommendations, we can run:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get vpa my-app-vpa <span class="at">-o</span> yaml</span></code></pre></div>
+<p>This command will show us the suggested resource requests and limits
+for the pods.</p></li>
+<li><p><strong>Adjust Resource Requests in Deployment</strong>: If we
+want to use the recommendations from VPA, we need to update our
+deployment with the new resource requests. For example:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app-image</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span><span class="co">  # Change based on VPA recommendations</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;256Mi&quot;</span><span class="co">  # Change based on VPA recommendations</span></span></code></pre></div></li>
+<li><p><strong>Apply Updated Deployment</strong>:</p>
+<p>We save our updated deployment config in a file called
+<code>deployment.yaml</code> and apply it:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> deployment.yaml</span></code></pre></div></li>
+<li><p><strong>Verify Changes</strong>: To make sure VPA is working
+well, we can check the resource requests of our pods:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-o</span><span class="op">=</span>jsonpath=<span class="st">&#39;{.items[*].spec.containers[*].resources}&#39;</span></span></code></pre></div></li>
+</ol>
+<p>By following these steps, we can set up the Vertical Pod Autoscaler
+(VPA) for our deployment. This helps us use resources better in our
+Kubernetes cluster. For more info about VPA, we can check this article:
+<a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-optimize-resource-usage-with-vertical-pod-autoscaler-vpa.html">How
+Do I Optimize Resource Usage with Vertical Pod Autoscaler
+(VPA)?</a>.</p>
+<h2 id="what-are-the-different-modes-of-vpa-and-when-to-use-each">What
+are the Different Modes of VPA and When to Use Each?</h2>
+<p>The Vertical Pod Autoscaler (VPA) works in three modes:
+<strong>Off</strong>, <strong>Auto</strong>, and
+<strong>Initial</strong>. Each mode shows how VPA interacts with the
+Kubernetes cluster and manages resource requests for pods.</p>
+<h3 id="off-mode">1. Off Mode</h3>
+<ul>
+<li><strong>Description</strong>: In this mode, VPA does not change any
+resource requests or limits. It only collects data and gives
+suggestions.</li>
+<li><strong>Use Case</strong>: This mode is good for monitoring and
+testing. It does not change anything in current deployments. We can use
+this mode during the first setup or in environments that are not for
+production.</li>
+</ul>
+<h3 id="auto-mode">2. Auto Mode</h3>
+<ul>
+<li><strong>Description</strong>: VPA changes the resource requests and
+limits of the pods based on what it sees being used. It makes changes
+when pods update or restart.</li>
+<li><strong>Use Case</strong>: This mode is great for production
+workloads where we need to optimize resources. We should use this mode
+when we want VPA to make scaling decisions on its own based on past
+usage data. It helps us avoid using too many or too few resources, which
+makes resource use better.</li>
+</ul>
+<h3 id="initial-mode">3. Initial Mode</h3>
+<ul>
+<li><strong>Description</strong>: VPA sets resource requests and limits
+only when a pod is new. It does not change the pods that are already
+running.</li>
+<li><strong>Use Case</strong>: This mode is best for applications where
+we want to set the starting resource requests based on suggestions. We
+do not want ongoing changes. It is good for stable workloads where we
+know the resource needs from the beginning.</li>
+</ul>
+<h3 id="example-configuration-1">Example Configuration</h3>
+<p>Here’s an example of how we can set VPA modes in a YAML file:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling.k8s.io/v1</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> VerticalPodAutoscaler</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myapp-vpa</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">targetRef</span><span class="kw">:</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myapp</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">updatePolicy</span><span class="kw">:</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">updateMode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Auto&quot;</span><span class="co"> # Change to &quot;Off&quot; or &quot;Initial&quot; when we need</span></span></code></pre></div>
+<p>Choosing the right mode depends on what we need and how we operate.
+We should think about how stable our application is, our resource
+management plan, and if we want VPA to adjust resources automatically or
+if we want to do it ourselves. For more details about managing
+resources, check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-resource-limits-and-requests-in-kubernetes.html">how
+to manage resource limits and requests in Kubernetes</a>.</p>
+<h2 id="how-to-monitor-vpa-recommendations-and-adjustments">How to
+Monitor VPA Recommendations and Adjustments?</h2>
+<p>To monitor Vertical Pod Autoscaler (VPA) recommendations and changes,
+we can use some Kubernetes tools and commands. The VPA gives us
+information about resource use and tells us how to set resource requests
+and limits for our pods.</p>
+<ol type="1">
+<li><p><strong>Check VPA Status</strong>: We can see the status of VPA
+resources by running this command:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get vpa</span></code></pre></div></li>
+<li><p><strong>Describe VPA</strong>: To get more details about a
+specific VPA, like recommendations, we use:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe vpa <span class="op">&lt;</span>vpa-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>VPA Recommendations</strong>: The output from the
+<code>describe</code> command shows us the current usage and the
+recommended resource requests and limits. We should look for the
+<code>recommendation</code> field:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">recommendation</span><span class="kw">:</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containerRecommendations</span><span class="kw">:</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> &lt;container-name&gt;</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">lowerBound</span><span class="kw">:</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> &lt;lower-cpu-limit&gt;</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> &lt;lower-memory-limit&gt;</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> &lt;target-cpu-recommendation&gt;</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> &lt;target-memory-recommendation&gt;</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">upperBound</span><span class="kw">:</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> &lt;upper-cpu-limit&gt;</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> &lt;upper-memory-limit&gt;</span></span></code></pre></div></li>
+<li><p><strong>Using Metrics Server</strong>: We need to have the
+Metrics Server installed. It gives resource usage details to VPA. We can
+install it by running:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml</span></code></pre></div></li>
+<li><p><strong>View Pod Resource Usage</strong>: We can check the
+resource usage of our pods with:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> top pods</span></code></pre></div></li>
+<li><p><strong>Logs for VPA</strong>: To see logs related to the VPA
+controller, we use:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="at">-l</span> app=vpa-controller</span></code></pre></div></li>
+<li><p><strong>Monitor with Prometheus</strong>: If we use Prometheus
+for monitoring, we can set it up to scrape metrics from the VPA metrics
+endpoint. This helps us to see trends over time.</p></li>
+<li><p><strong>Grafana Dashboards</strong>: If we have Grafana set up,
+we can make dashboards to show VPA recommendations and pod resource
+usage metrics over time.</p></li>
+</ol>
+<p>By following these steps, we can monitor the Vertical Pod Autoscaler
+recommendations and adjustments. This helps us to make sure our
+Kubernetes workloads use resources well.</p>
+<h2 id="how-to-integrate-vpa-with-horizontal-pod-autoscaler-hpa">How to
+Integrate VPA with Horizontal Pod Autoscaler (HPA)?</h2>
+<p>We can integrate the Vertical Pod Autoscaler (VPA) with the
+Horizontal Pod Autoscaler (HPA) to improve how we use resources. This
+integration helps us to scale both vertically and horizontally based on
+needs. Here is how to do it:</p>
+<ol type="1">
+<li><p><strong>Install VPA and HPA</strong>: First, we need to make sure
+both VPA and HPA are installed on our Kubernetes cluster. VPA gives us
+recommendations for resource changes. HPA scales the number of pod
+replicas based on things like CPU and memory usage.</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes/autoscaler/releases/latest/download/vpa-v1.0.0.yaml</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes/autoscaler/releases/latest/download/hpa-v1.0.0.yaml</span></code></pre></div></li>
+<li><p><strong>Configure VPA</strong>: Next, we define a VPA object for
+our deployment. This setup helps VPA to suggest resource requests and
+limits based on how resources were used in the past.</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling.k8s.io/v1</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> VerticalPodAutoscaler</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-vpa</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">targetRef</span><span class="kw">:</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">updatePolicy</span><span class="kw">:</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">updateMode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Auto&quot;</span></span></code></pre></div></li>
+<li><p><strong>Configure HPA</strong>: Now, we define an HPA object that
+targets the same deployment. We need to set the metrics for scaling like
+CPU or memory usage.</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling/v2beta2</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> HorizontalPodAutoscaler</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-hpa</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scaleTargetRef</span><span class="kw">:</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">resource</span><span class="kw">:</span></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span></code></pre></div></li>
+<li><p><strong>Monitor Recommendations</strong>: We should regularly
+check the recommendations from VPA. We can use this command to see what
+VPA suggests:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe vpa my-app-vpa</span></code></pre></div></li>
+<li><p><strong>Avoid Conflicting Policies</strong>: It is important to
+make sure VPA and HPA do not have conflicting settings. VPA should focus
+on resource requests. HPA should focus on scaling based on the
+load.</p></li>
+<li><p><strong>Testing and Validation</strong>: We can deploy our
+application and create some load to test it. It is good to monitor how
+both VPA and HPA work together.</p></li>
+</ol>
+<p>This way, integrating VPA with HPA helps us to scale more
+efficiently. Our applications can handle different loads better while
+using resources wisely. For more information on using VPA to optimize
+resource usage, we can check this <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-optimize-resource-usage-with-vertical-pod-autoscaler-vpa.html">guide</a>.</p>
+<h2
+id="what-are-real-life-use-cases-for-vertical-pod-autoscaler-vpa">What
+are Real Life Use Cases for Vertical Pod Autoscaler (VPA)?</h2>
+<p>Vertical Pod Autoscaler (VPA) is a great tool for using resources
+better in Kubernetes. It changes the CPU and memory needs for containers
+based on how they were used before. This way, applications get the
+resources they need without giving them too much. Here are some
+real-life ways we can use VPA:</p>
+<ol type="1">
+<li><strong>Development and Testing Environments</strong>:
+<ul>
+<li>In places where we often change or update applications, VPA helps us
+manage resources well. For example, if a microservice uses more
+resources during tests, VPA can change the limits without us needing to
+do anything.</li>
+</ul></li>
+<li><strong>Resource-Constrained Environments</strong>:
+<ul>
+<li>For clusters with limited resources, like edge computing or
+on-premises data centers, VPA helps us use what we have better. It
+changes the pod resources automatically so that applications work well
+without using up all the available resources.</li>
+</ul></li>
+<li><strong>Handling Variable Workloads</strong>:
+<ul>
+<li>Applications with changing workloads, like machine learning tasks or
+batch processing, can use VPA. It changes the resources based on how
+much is used. This helps the application use less when it is not busy
+and more when it needs it.</li>
+</ul></li>
+<li><strong>Cost Optimization</strong>:
+<ul>
+<li>In cloud setups where we pay for what we use, VPA helps save money
+by reducing over-provisioning. For example, if a service uses less CPU
+and memory than we gave it, VPA will lower the requests and help us save
+costs.</li>
+</ul></li>
+<li><strong>Integration with CI/CD Pipelines</strong>:
+<ul>
+<li>Continuous Integration and Continuous Deployment (CI/CD) can use VPA
+to make sure we use the right resources for build and test pods. When
+builds or tests use different amounts of resources, VPA can adjust what
+is needed quickly, keeping resource use efficient.</li>
+</ul></li>
+<li><strong>Stateful Applications</strong>:
+<ul>
+<li>Stateful applications like databases or message queues can use VPA
+to manage resources as their workloads change. For example, a database
+might need more memory when there are many queries and less when it is
+quiet. VPA can handle this change automatically.</li>
+</ul></li>
+<li><strong>Microservices Architectures</strong>:
+<ul>
+<li>In a microservices setup where different services need different
+resources, VPA can optimize each service separately. This means each pod
+gets the right resources based on its own use without us needing to
+adjust things manually.</li>
+</ul></li>
+<li><strong>Testing Performance Tuning</strong>:
+<ul>
+<li>During performance tests, VPA can help find the best resource
+requests and limits for applications by watching how they act under
+pressure. This information can help us make better choices for future
+setups and resources.</li>
+</ul></li>
+</ol>
+<p>By using VPA, we can make resource use better, lower costs, and
+improve how applications perform in many different situations. For more
+information on using VPA with Kubernetes, check out this article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-optimize-resource-usage-with-vertical-pod-autoscaler-vpa.html">how
+to optimize resource usage with vertical pod autoscaler (VPA)</a>.</p>
+<h2 id="how-to-troubleshoot-common-vpa-issues">How to Troubleshoot
+Common VPA Issues?</h2>
+<p>When we use Vertical Pod Autoscaler (VPA) in Kubernetes, we might
+face some common problems. Here are simple steps to troubleshoot
+them.</p>
+<ol type="1">
+<li><p><strong>Check VPA Status</strong>: First, we can check the VPA
+status with this command:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get vpa</span></code></pre></div>
+<p>We should look at the <code>Status</code> column. It shows any
+warnings or errors about resource recommendations.</p></li>
+<li><p><strong>Review Events</strong>: Next, we need to look at the
+events for the VPA resource. This helps us find any issues:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe vpa <span class="op">&lt;</span>vpa-name<span class="op">&gt;</span></span></code></pre></div>
+<p>We should find warning messages. They tell us what might be wrong
+with the VPA.</p></li>
+<li><p><strong>Inspect logs</strong>: We should check the logs of the
+VPA controller. This gives us more details about possible issues. To
+find the pod running the VPA controller, we use:</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-n</span> kube-system <span class="kw">|</span> <span class="fu">grep</span> vpa</span></code></pre></div>
+<p>Then, we can get the logs with:</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>vpa-controller-pod-name<span class="op">&gt;</span> -n kube-system</span></code></pre></div></li>
+<li><p><strong>Resource Limits and Requests</strong>: It is important
+that our deployments have resource limits and requests set. VPA needs
+these to make its recommendations. We can check the configuration
+using:</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get deployment <span class="op">&lt;</span>deployment-name<span class="op">&gt;</span> -o yaml</span></code></pre></div>
+<p>We should make sure the <code>resources</code> section is set
+right:</p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200m&quot;</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1Gi&quot;</span></span></code></pre></div></li>
+<li><p><strong>VPA Modes</strong>: We need to confirm that our VPA is in
+the right mode for what we need. There are three modes:
+<code>Off</code>, <code>Auto</code>, and <code>Recreate</code>. For
+example, if VPA is <code>Off</code>, it will not make any
+recommendations. We check the mode with:</p>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get vpa <span class="op">&lt;</span>vpa-name<span class="op">&gt;</span> -o jsonpath=<span class="st">&#39;{.spec.mode}&#39;</span></span></code></pre></div></li>
+<li><p><strong>Pod Restart Issues</strong>: If our pods keep restarting,
+it may be due to VPA recommendations making resource limits too low. We
+can check the recommended resources here:</p>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe vpa <span class="op">&lt;</span>vpa-name<span class="op">&gt;</span></span></code></pre></div>
+<p>If needed, we can change the recommendations ourselves.</p></li>
+<li><p><strong>Compatibility with HPA</strong>: If we use Horizontal Pod
+Autoscaler (HPA) with VPA, we need to make sure they do not conflict.
+HPA scales based on metrics and VPA adjusts resource requests. We should
+watch both VPA and HPA settings to avoid problems.</p></li>
+<li><p><strong>Check Admission Controllers</strong>: We should ensure
+our Kubernetes cluster has the right admission controllers. Examples are
+<code>ResourceQuota</code> and <code>LimitRanger</code>. These can
+change how resources are given out.</p></li>
+<li><p><strong>Networking Issues</strong>: If VPA cannot talk to our
+metrics server, we must check the connection and setup of the metrics
+server. We can use this command:</p>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get apiservices</span></code></pre></div>
+<p>We should make sure the metrics API is available and can be
+reached.</p></li>
+</ol>
+<p>By doing these steps, we can find and fix common problems when using
+Vertical Pod Autoscaler. This helps us use resources better in our
+Kubernetes cluster.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-the-purpose-of-the-vertical-pod-autoscaler-vpa">What is
+the purpose of the Vertical Pod Autoscaler (VPA)?</h3>
+<p>The Vertical Pod Autoscaler (VPA) helps to manage resources in
+Kubernetes. It changes the resource requests and limits for your pods
+automatically. It looks at past resource usage data. This way, VPA makes
+sure that applications have enough CPU and memory. This helps in using
+resources well and stops resource shortages.</p>
+<h3
+id="how-does-the-vertical-pod-autoscaler-vpa-differ-from-the-horizontal-pod-autoscaler-hpa">How
+does the Vertical Pod Autoscaler (VPA) differ from the Horizontal Pod
+Autoscaler (HPA)?</h3>
+<p>The Vertical Pod Autoscaler (VPA) changes the resource requests and
+limits for single pods. But the Horizontal Pod Autoscaler (HPA) changes
+how many pod copies there are. It does this based on things like CPU
+usage or other metrics. Together, they help to improve resource use and
+keep the applications available in Kubernetes.</p>
+<h3
+id="can-i-use-vertical-pod-autoscaler-vpa-with-existing-deployments">Can
+I use Vertical Pod Autoscaler (VPA) with existing deployments?</h3>
+<p>Yes, we can use the Vertical Pod Autoscaler (VPA) with current
+Kubernetes deployments. We just need to apply a VPA setup to our
+deployment. After that, we will get suggestions for changing resources
+based on how our pods are really using them. This helps us use resources
+better without changing our app setup.</p>
+<h3
+id="what-are-the-different-modes-of-operation-for-the-vertical-pod-autoscaler-vpa">What
+are the different modes of operation for the Vertical Pod Autoscaler
+(VPA)?</h3>
+<p>The Vertical Pod Autoscaler (VPA) has three modes: “Off,” “Initial,”
+and “Auto.” When it is “Off,” VPA does not change anything. In “Initial”
+mode, it sets resource requests based on the first suggestions when the
+pod is created. In “Auto” mode, VPA changes the resource requests and
+limits based on how the usage is going on. This is the most active way
+to manage resources.</p>
+<h3 id="how-can-i-monitor-the-recommendations-made-by-vpa">How can I
+monitor the recommendations made by VPA?</h3>
+<p>To see the recommendations from the Vertical Pod Autoscaler (VPA), we
+can use Kubernetes tools like <code>kubectl</code>. We can run this
+command:</p>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe vpa <span class="op">&lt;</span>vpa-name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command gives us detailed info about what VPA suggests for
+resource requests and limits. It helps us to see the changes in
+real-time. For better monitoring, we should connect VPA with a logging
+or monitoring tool.</p>
+<p>Using the Vertical Pod Autoscaler (VPA) can help us use resources
+better in our Kubernetes cluster. For more tips on using resources well,
+we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-optimize-resource-usage-with-vertical-pod-autoscaler-vpa.html">how
+to optimize resource usage with VPA</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-resource-limits-and-requests-in-kubernetes.html">how
+to manage resource limits and requests in Kubernetes</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

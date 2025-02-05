@@ -1,0 +1,881 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Do I Deploy Kubernetes On-Premises?</title>
+            <meta name="description" content="Learn how to deploy Kubernetes on-premises with our step-by-step guide. Simplify your container orchestration today!">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Do I Deploy Kubernetes On-Premises?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Kubernetes is a tool that helps us manage containers. It is
+open-source and helps us automate how we deploy, scale, and handle
+containerized applications. When we deploy Kubernetes on our own
+servers, we can keep control over our infrastructure. At the same time,
+we can use the strong features that Kubernetes gives us for managing
+workloads with containers.</p>
+<p>In this article, we will look at how to deploy Kubernetes on our own
+servers. We will talk about what we need before we start, the different
+ways to install it, and how to set up our environment for Kubernetes. We
+will also give clear steps for installing Kubernetes with kubeadm. We
+will explain how to set up networking for our cluster, the common uses
+for on-premises deployments, and how to monitor and manage our cluster.
+Finally, we will share best practices to keep our Kubernetes deployment
+safe.</p>
+<ul>
+<li>How Can We Effectively Deploy Kubernetes On-Premises?</li>
+<li>What Are the Prerequisites for Deploying Kubernetes
+On-Premises?</li>
+<li>Which Installation Methods Can We Use for Kubernetes
+On-Premises?</li>
+<li>How Do We Prepare Our Environment for Kubernetes Deployment?</li>
+<li>What Are the Steps to Install Kubernetes Using kubeadm?</li>
+<li>How Do We Set Up a Network for Our On-Premises Kubernetes
+Cluster?</li>
+<li>What Are Common Use Cases for On-Premises Kubernetes
+Deployments?</li>
+<li>How Can We Monitor and Manage Our On-Premises Kubernetes
+Cluster?</li>
+<li>What Are the Best Practices for Securing Our Kubernetes
+Deployment?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>If we want to know more about Kubernetes, we can read these articles:
+<a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">What
+is Kubernetes and How Does it Simplify Container Management?</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html">Why
+Should We Use Kubernetes for Our Applications?</a>.</p>
+<h2
+id="what-are-the-prerequisites-for-deploying-kubernetes-on-premises">What
+Are the Prerequisites for Deploying Kubernetes On-Premises?</h2>
+<p>Before we deploy Kubernetes on-premises, we need to check if we have
+these prerequisites:</p>
+<ol type="1">
+<li><p><strong>Hardware Requirements:</strong></p>
+<ul>
+<li>At least 2 CPUs for each node.</li>
+<li>At least 4 GB RAM for each node. We recommend 8 GB for master
+nodes.</li>
+<li>At least 20 GB of free disk space for each node.</li>
+</ul></li>
+<li><p><strong>Operating System:</strong></p>
+<ul>
+<li>We should use a compatible Linux distribution like Ubuntu, CentOS,
+or Red Hat. Make sure the OS is up to date.</li>
+<li>We must disable swap memory because Kubernetes needs it to be
+off.</li>
+</ul>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> swapoff <span class="at">-a</span></span></code></pre></div></li>
+<li><p><strong>Network Configuration:</strong></p>
+<ul>
+<li>All nodes must communicate with each other over the network.</li>
+<li>We need to set up a DNS service for name resolution of services and
+pods.</li>
+</ul></li>
+<li><p><strong>Container Runtime:</strong></p>
+<ul>
+<li>We have to install a container runtime like Docker, containerd, or
+CRI-O.</li>
+</ul>
+<p>To install Docker, we can run:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get update</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> docker.io</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl enable docker</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl start docker</span></code></pre></div></li>
+<li><p><strong>Kubernetes Tools:</strong></p>
+<ul>
+<li>We need to install <code>kubectl</code>, <code>kubeadm</code>, and
+<code>kubelet</code>.</li>
+</ul>
+<p>For example, to install <code>kubectl</code> on Ubuntu, we can
+do:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get update</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> apt-transport-https ca-certificates curl</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-s</span> https://packages.cloud.google.com/apt/doc/apt-key.gpg <span class="kw">|</span> <span class="fu">sudo</span> apt-key add <span class="at">-</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;deb https://apt.kubernetes.io/ kubernetes-xenial main&quot;</span> <span class="kw">|</span> <span class="fu">sudo</span> tee /etc/apt/sources.list.d/kubernetes.list</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get update</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> kubectl</span></code></pre></div></li>
+<li><p><strong>Firewall Settings:</strong></p>
+<ul>
+<li>We need to open the right ports for Kubernetes components. Common
+ports include:
+<ul>
+<li>6443 for the Kubernetes API server</li>
+<li>10250 for Kubelet API</li>
+<li>10251 for Kube-scheduler</li>
+<li>10252 for Kube-controller-manager</li>
+</ul></li>
+<li>We must configure the firewall to allow traffic on these ports.</li>
+</ul></li>
+<li><p><strong>Time Synchronization:</strong></p>
+<ul>
+<li>All nodes should have the same time using NTP.</li>
+</ul>
+<p>To install NTP and start the service, we can run:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> ntp</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl enable ntp</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl start ntp</span></code></pre></div></li>
+<li><p><strong>User Permissions:</strong></p>
+<ul>
+<li>We should use a user with sudo rights to run installation
+commands.</li>
+</ul></li>
+</ol>
+<p>By checking these prerequisites, we can help make the Kubernetes
+deployment easier on our on-premises setup. For more information on
+Kubernetes basics, you can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">what
+are the key components of a Kubernetes cluster</a>.</p>
+<h2
+id="which-installation-methods-can-we-use-for-kubernetes-on-premises">Which
+Installation Methods Can We Use for Kubernetes On-Premises?</h2>
+<p>When we want to deploy Kubernetes on-premises, we have several ways
+to install it. Each way has benefits and fits different needs.</p>
+<ol type="1">
+<li><strong>Kubeadm</strong>:
+<ul>
+<li><p>This is a tool from Kubernetes. It helps us create and manage
+clusters.</p></li>
+<li><p>It is good for us if we want a simple and clear
+installation.</p></li>
+<li><p>Here are the steps:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Initialize the control-plane node</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubeadm</span> init <span class="at">--pod-network-cidr</span><span class="op">=</span>10.244.0.0/16</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># To make kubectl work for our user</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$HOME</span>/.kube</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> cp <span class="at">-i</span> /etc/kubernetes/admin.conf <span class="va">$HOME</span>/.kube/config</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chown <span class="va">$(</span><span class="fu">id</span> <span class="at">-u</span><span class="va">)</span>:<span class="va">$(</span><span class="fu">id</span> <span class="at">-g</span><span class="va">)</span> <span class="va">$HOME</span>/.kube/config</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Install a pod network add-on (Flannel example)</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k8s-manifests/kube-flannel.yml</span></code></pre></div></li>
+</ul></li>
+<li><strong>Kubernetes Operations (kops)</strong>:
+<ul>
+<li><p>This tool helps us create, destroy, upgrade, and manage
+Kubernetes clusters.</p></li>
+<li><p>It works mostly in cloud but we can also use it for
+on-premises.</p></li>
+<li><p>To create a cluster, we can use this command:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kops</span> create cluster <span class="at">--name</span><span class="op">=</span>mycluster.k8s.local <span class="at">--state</span><span class="op">=</span>s3://my-kops-state <span class="at">--zones</span><span class="op">=</span>us-east-1a</span></code></pre></div></li>
+</ul></li>
+<li><strong>Rancher</strong>:
+<ul>
+<li><p>Rancher is a full container management platform. It makes
+Kubernetes deployment easier.</p></li>
+<li><p>It gives us a web interface to manage clusters and can deploy
+many clusters in different places.</p></li>
+<li><p>To install Rancher on a Linux server, we can use:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--restart</span><span class="op">=</span>unless-stopped <span class="at">--privileged</span> <span class="at">--name</span> rancher <span class="dt">\</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 80:80 <span class="at">-p</span> 443:443 <span class="dt">\</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  rancher/rancher:v2.5.5</span></code></pre></div></li>
+</ul></li>
+<li><strong>Minikube</strong>:
+<ul>
+<li><p>Minikube is good for local development and testing of Kubernetes
+apps.</p></li>
+<li><p>It runs a single-node Kubernetes cluster inside a VM on our
+laptop.</p></li>
+<li><p>To start it, we can run:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">minikube</span> start</span></code></pre></div></li>
+</ul></li>
+<li><strong>K3s</strong>:
+<ul>
+<li><p>K3s is a lightweight version of Kubernetes. It is easy to install
+and manage.</p></li>
+<li><p>It is good for places with few resources.</p></li>
+<li><p>To install K3s, we can use:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-sfL</span> https://get.k3s.io <span class="kw">|</span> <span class="fu">sh</span> <span class="at">-</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Bare Metal Installation</strong>:
+<ul>
+<li><p>We can install Kubernetes directly on bare metal servers using
+tools like Kubespray.</p></li>
+<li><p>Kubespray uses Ansible playbooks for deployment:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ansible-playbook</span> <span class="at">-i</span> inventory/mycluster/hosts.yaml <span class="at">--become</span> <span class="at">--become-user</span><span class="op">=</span>root cluster.yml</span></code></pre></div></li>
+</ul></li>
+<li><strong>OpenShift</strong>:
+<ul>
+<li><p>OpenShift is Red Hat’s version of Kubernetes. It has extra
+features for big deployments.</p></li>
+<li><p>We can install it using the OpenShift installer.</p></li>
+<li><p>To install OpenShift, we can run:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./openshift-install</span> create cluster <span class="at">--dir</span><span class="op">=</span>mycluster</span></code></pre></div></li>
+</ul></li>
+</ol>
+<p>Each method gives us options based on what we need for on-premises.
+We should choose the one that fits our needs and skill level best. For
+more details on how to install and configure, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">this
+article about Kubernetes</a>.</p>
+<h2 id="how-do-we-prepare-our-environment-for-kubernetes-deployment">How
+Do We Prepare Our Environment for Kubernetes Deployment?</h2>
+<p>To prepare our environment for deploying Kubernetes on-premises, we
+can follow these steps:</p>
+<ol type="1">
+<li><strong>System Requirements</strong>:
+<ul>
+<li>First, we check the minimum hardware needs:
+<ul>
+<li><strong>Master Node</strong>:
+<ul>
+<li>2 CPU cores</li>
+<li>4 GB RAM</li>
+<li>20 GB storage</li>
+</ul></li>
+<li><strong>Worker Nodes</strong>:
+<ul>
+<li>1 CPU core</li>
+<li>2 GB RAM</li>
+<li>10 GB storage for each node</li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li><strong>Operating System</strong>:
+<ul>
+<li>We should use a compatible Linux version like Ubuntu, CentOS, or
+Debian. It is important to keep the OS up to date.</li>
+</ul></li>
+<li><strong>Network Configuration</strong>:
+<ul>
+<li><p>We need to make sure all nodes can talk to each other on the
+network. We will turn off swap memory:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> swapoff <span class="at">-a</span></span></code></pre></div></li>
+<li><p>Set a static IP for each node to keep the cluster
+stable.</p></li>
+</ul></li>
+<li><strong>Install Required Packages</strong>:
+<ul>
+<li><p>We can install the tools and packages that we need:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get update</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> apt-transport-https ca-certificates curl</span></code></pre></div></li>
+</ul></li>
+<li><strong>Container Runtime</strong>:
+<ul>
+<li><p>We must install a container runtime like Docker or containerd.
+For example, to install Docker, we can use:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> docker.io</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl enable docker</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl start docker</span></code></pre></div></li>
+</ul></li>
+<li><strong>Kubernetes Tools</strong>:
+<ul>
+<li><p>We will install <code>kubeadm</code>, <code>kubelet</code>, and
+<code>kubectl</code>:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-s</span> https://packages.cloud.google.com/apt/doc/apt-key.gpg <span class="kw">|</span> <span class="fu">sudo</span> apt-key add <span class="at">-</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> bash <span class="at">-c</span> <span class="st">&#39;echo &quot;deb https://apt.kubernetes.io/ kubernetes-xenial main&quot; &gt; /etc/apt/sources.list.d/kubernetes.list&#39;</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get update</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> kubelet kubeadm kubectl</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-mark hold kubelet kubeadm kubectl</span></code></pre></div></li>
+</ul></li>
+<li><strong>Firewall Configuration</strong>:
+<ul>
+<li><p>We need to allow important ports on the firewall:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ufw allow 6443/tcp  <span class="co"># For Kubernetes API Server</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ufw allow 2379:2380/tcp  <span class="co"># For etcd server client API</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ufw allow 10250/tcp  <span class="co"># For kubelet API</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ufw allow 10251/tcp  <span class="co"># For kube-scheduler</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ufw allow 10252/tcp  <span class="co"># For kube-controller-manager</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Time Synchronization</strong>:
+<ul>
+<li><p>We should install and set up NTP to make sure all nodes have the
+same time:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> ntp</span></code></pre></div></li>
+</ul></li>
+</ol>
+<p>By following these steps, we can prepare our environment for a
+successful on-premises Kubernetes deployment. For more details on
+Kubernetes parts, we can check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">what
+are the key components of a Kubernetes cluster</a>.</p>
+<h2 id="what-are-the-steps-to-install-kubernetes-using-kubeadm">What Are
+the Steps to Install Kubernetes Using kubeadm?</h2>
+<p>To install Kubernetes on your own servers using <code>kubeadm</code>,
+we can follow these steps:</p>
+<ol type="1">
+<li><strong>Prepare Your Environment:</strong>
+<ul>
+<li><p>First, we need a Linux system like Ubuntu or CentOS.</p></li>
+<li><p>Next, we should update the system:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get update <span class="kw">&amp;&amp;</span> <span class="fu">sudo</span> apt-get upgrade <span class="at">-y</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Install Docker:</strong>
+<ul>
+<li><p>Now, we install Docker to run containers:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> apt-transport-https ca-certificates curl software-properties-common</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-fsSL</span> https://download.docker.com/linux/ubuntu/gpg <span class="kw">|</span> <span class="fu">sudo</span> apt-key add <span class="at">-</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> add-apt-repository <span class="st">&quot;deb [arch=amd64] https://download.docker.com/linux/ubuntu </span><span class="va">$(</span><span class="ex">lsb_release</span> <span class="at">-cs</span><span class="va">)</span><span class="st"> stable&quot;</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get update</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> docker-ce</span></code></pre></div></li>
+</ul></li>
+<li><strong>Install kubeadm, kubelet, and kubectl:</strong>
+<ul>
+<li><p>We need to add the Kubernetes repository and install:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get update</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> apt-transport-https ca-certificates curl</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-s</span> https://packages.cloud.google.com/apt/doc/apt-key.gpg <span class="kw">|</span> <span class="fu">sudo</span> apt-key add <span class="at">-</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;deb https://apt.kubernetes.io/ kubernetes-xenial main&quot;</span> <span class="kw">|</span> <span class="fu">sudo</span> tee /etc/apt/sources.list.d/kubernetes.list</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get update</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> kubelet kubeadm kubectl</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-mark hold kubelet kubeadm kubectl</span></code></pre></div></li>
+</ul></li>
+<li><strong>Disable Swap:</strong>
+<ul>
+<li><p>We must turn off swap:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> swapoff <span class="at">-a</span></span></code></pre></div></li>
+<li><p>To keep swap off, we can comment out the swap line in
+<code>/etc/fstab</code>.</p></li>
+</ul></li>
+<li><strong>Initialize the Kubernetes Cluster:</strong>
+<ul>
+<li><p>On the master node, we run:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> kubeadm init <span class="at">--pod-network-cidr</span><span class="op">=</span>192.168.0.0/16</span></code></pre></div></li>
+<li><p>After that, we should follow the instructions at the end of the
+output. This usually tells us how to set up <code>kubectl</code> for the
+regular user:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$HOME</span>/.kube</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> cp <span class="at">-i</span> /etc/kubernetes/admin.conf <span class="va">$HOME</span>/.kube/config</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chown <span class="va">$(</span><span class="fu">id</span> <span class="at">-u</span><span class="va">)</span>:<span class="va">$(</span><span class="fu">id</span> <span class="at">-g</span><span class="va">)</span> <span class="va">$HOME</span>/.kube/config</span></code></pre></div></li>
+</ul></li>
+<li><strong>Install a Pod Network Add-On:</strong>
+<ul>
+<li><p>To add a network, we can use Calico:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://docs.projectcalico.org/manifests/calico.yaml</span></code></pre></div></li>
+</ul></li>
+<li><strong>Join Worker Nodes:</strong>
+<ul>
+<li>On each worker node, we run the command that
+<code>kubeadm init</code> gives us to join the cluster.</li>
+</ul></li>
+<li><strong>Verify the Installation:</strong>
+<ul>
+<li><p>Finally, we check the status of nodes:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get nodes</span></code></pre></div></li>
+</ul></li>
+</ol>
+<p>This steps will help us set up a basic Kubernetes cluster on our own
+servers using <code>kubeadm</code>. For more information about
+Kubernetes and its parts, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">What
+Are the Key Components of a Kubernetes Cluster</a>.</p>
+<h2
+id="how-do-we-set-up-a-network-for-our-on-premises-kubernetes-cluster">How
+Do We Set Up a Network for Our On-Premises Kubernetes Cluster?</h2>
+<p>Setting up a network for our on-premises Kubernetes cluster is very
+important. It helps pods and services talk to each other. Kubernetes
+uses a simple networking model. Every pod gets its own IP address. Here
+are the main steps to set up networking for our cluster:</p>
+<ol type="1">
+<li><p><strong>Choose a Networking Plugin</strong>: Kubernetes supports
+many network plugins (CNI). Some well-known options are:</p>
+<ul>
+<li>Calico</li>
+<li>Flannel</li>
+<li>Weave Net</li>
+<li>Canal</li>
+</ul></li>
+<li><p><strong>Install the Networking Plugin</strong>: The steps to
+install the CNI can change. Here is how we can install Calico:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://docs.projectcalico.org/manifests/calico.yaml</span></code></pre></div></li>
+<li><p><strong>Configure Network Policies (Optional)</strong>: If we
+want to add security rules, we can set up network policies. Here is a
+simple network policy that lets traffic between pods with a certain
+label:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> allow-same-namespace</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">role</span><span class="kw">:</span><span class="at"> db</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">from</span><span class="kw">:</span></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">role</span><span class="kw">:</span><span class="at"> frontend</span></span></code></pre></div></li>
+<li><p><strong>Service Networking</strong>: Kubernetes services help
+pods communicate. When we create a service, Kubernetes gives it a
+virtual IP. Here is an example of a NodePort service:</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> NodePort</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">nodePort</span><span class="kw">:</span><span class="at"> </span><span class="dv">30007</span></span></code></pre></div></li>
+<li><p><strong>DNS for Service Discovery</strong>: Kubernetes has an
+internal DNS. This helps services find each other using their names. We
+need to make sure that DNS is set up correctly. Usually, it is installed
+by default with kubeadm.</p></li>
+<li><p><strong>Testing the Network</strong>: After we set up the
+network, we can check if pods can connect. We can use tools like
+<code>curl</code> or <code>ping</code>. For example, we can run a
+command inside a pod:</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> exec <span class="at">-it</span> <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -- curl http://<span class="op">&lt;</span>service-name<span class="op">&gt;</span></span></code></pre></div></li>
+</ol>
+<p>By following these steps, we can set up a network for our on-premises
+Kubernetes cluster. This way, our applications can talk to each other
+without problems. For more details about Kubernetes networking, we can
+check the article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-networking-work.html">how
+does Kubernetes networking work</a>.</p>
+<h2
+id="what-are-common-use-cases-for-on-premises-kubernetes-deployments">What
+Are Common Use Cases for On-Premises Kubernetes Deployments?</h2>
+<p>On-premises Kubernetes deployments can help with many uses. They take
+advantage of container orchestration in local systems. Here are some
+common ways we can use them:</p>
+<ol type="1">
+<li><strong>Development and Testing Environments</strong>:
+<ul>
+<li>We often use on-premises Kubernetes to make separate spaces for
+development and testing. This helps developers to deploy and test apps
+in a safe place before they go live.<br />
+</li>
+<li>Example: We can deploy a microservices app to check how it works
+without changing the production systems.</li>
+</ul></li>
+<li><strong>Data Sovereignty and Compliance</strong>:
+<ul>
+<li>In fields with strict data rules like finance and healthcare,
+on-premises Kubernetes helps us keep control of sensitive data. This
+way, we can follow the rules.<br />
+</li>
+<li>Example: We store customer data locally to meet GDPR or HIPAA
+requirements.</li>
+</ul></li>
+<li><strong>High-Performance Computing (HPC)</strong>:
+<ul>
+<li>We can use on-premises Kubernetes to handle big data and machine
+learning tasks. This gives us the needed resources and
+performance.<br />
+</li>
+<li>Example: Running complex simulations or training machine learning
+models on our local clusters.</li>
+</ul></li>
+<li><strong>Legacy Application Modernization</strong>:
+<ul>
+<li>We can wrap old applications in containers using Kubernetes. This
+makes it easier to manage and scale while still using our current
+systems.<br />
+</li>
+<li>Example: Moving a large old app to a microservices setup that runs
+on Kubernetes.</li>
+</ul></li>
+<li><strong>Hybrid Cloud Deployments</strong>:
+<ul>
+<li>We can set up Kubernetes on-premises to make a hybrid cloud system.
+This lets us mix local and public cloud services.<br />
+</li>
+<li>Example: Running sensitive apps on-site while using cloud resources
+when we need extra capacity.</li>
+</ul></li>
+<li><strong>Edge Computing</strong>:
+<ul>
+<li>Kubernetes helps us run apps closer to where data comes from. This
+cuts down on lag and saves bandwidth.<br />
+</li>
+<li>Example: We can deploy IoT apps that need quick processing at the
+edge while keeping central control.</li>
+</ul></li>
+<li><strong>Disaster Recovery and Backup Solutions</strong>:
+<ul>
+<li>We can use on-premises Kubernetes as part of our disaster recovery
+plan. If something goes wrong, we can quickly restore apps from
+container images.<br />
+</li>
+<li>Example: Using Kubernetes to manage backup and recovery for
+important applications.</li>
+</ul></li>
+<li><strong>Security and Isolation</strong>:
+<ul>
+<li>We might choose on-premises Kubernetes to boost security. It helps
+us keep workloads safe from outside threats and control network access
+better.<br />
+</li>
+<li>Example: Running sensitive financial apps in a secure and isolated
+Kubernetes cluster.</li>
+</ul></li>
+<li><strong>Cost Management</strong>:
+<ul>
+<li>By using Kubernetes on our existing hardware, we can save money on
+cloud services, especially for tasks that we can predict.<br />
+</li>
+<li>Example: Running a steady set of applications on-premises to lower
+cloud costs.</li>
+</ul></li>
+<li><strong>Custom Application Hosting</strong>:
+<ul>
+<li>We can use on-premises Kubernetes for hosting custom apps that fit
+our business needs. This gives us full control over the app’s life
+cycle.<br />
+</li>
+<li>Example: Hosting a special customer relationship management (CRM)
+system.</li>
+</ul></li>
+</ol>
+<p>These examples show how flexible and useful on-premises Kubernetes
+can be. It helps us make the most of our systems while meeting our
+business needs. For more details on Kubernetes and its uses, we can
+check articles like <a
+href="https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html">Why
+Should I Use Kubernetes for My Applications?</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">What
+Are the Key Components of a Kubernetes Cluster?</a>.</p>
+<h2
+id="how-can-we-monitor-and-manage-our-on-premises-kubernetes-cluster">How
+Can We Monitor and Manage Our On-Premises Kubernetes Cluster?</h2>
+<p>To monitor and manage our on-premises Kubernetes cluster well, we can
+use different tools and methods. These help us see how our applications
+and infrastructure are performing, how healthy they are, and how much
+resources they are using.</p>
+<h3 id="monitoring-tools">Monitoring Tools</h3>
+<ol type="1">
+<li><p><strong>Prometheus</strong>: This is a well-known open-source
+tool for monitoring and alerting. It is made to be reliable and
+scalable.</p>
+<ul>
+<li><p><strong>Installation</strong>:</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> create namespace monitoring</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml</span></code></pre></div></li>
+<li><p><strong>Setup</strong>: We need to set up Prometheus to get
+metrics from our Kubernetes nodes and applications. We can do this by
+creating a ServiceMonitor resource.</p></li>
+</ul></li>
+<li><p><strong>Grafana</strong>: This tool helps us visualize data. It
+works with Prometheus to create dashboards.</p>
+<ul>
+<li><p><strong>Installation</strong>:</p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> create namespace grafana</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://raw.githubusercontent.com/grafana/helm-charts/main/charts/grafana/values.yaml</span></code></pre></div></li>
+<li><p><strong>Accessing Grafana</strong>: We can use port-forward to
+access the Grafana user interface.</p>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> port-forward service/grafana 3000:80 <span class="at">-n</span> grafana</span></code></pre></div></li>
+</ul></li>
+<li><p><strong>ELK Stack (Elasticsearch, Logstash, Kibana)</strong>:
+This stack is for logging and managing logs.</p>
+<ul>
+<li><strong>Setup</strong>:
+<ul>
+<li><strong>Elasticsearch</strong>: We use it to store logs.</li>
+<li><strong>Logstash</strong>: This is for collecting and processing
+logs.</li>
+<li><strong>Kibana</strong>: With this, we can visualize logs.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Kubernetes Dashboard</strong>: This is a web-based UI for
+Kubernetes. It helps us manage applications and fix cluster issues.</p>
+<ul>
+<li><p><strong>Installation</strong>:</p>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://raw.githubusercontent.com/kubernetes/dashboard/v2.5.1/aio/deploy/recommended.yaml</span></code></pre></div></li>
+<li><p><strong>Accessing Dashboard</strong>:</p>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> proxy</span></code></pre></div></li>
+</ul>
+<p>We can access the dashboard at
+<code>http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/</code>.</p></li>
+</ol>
+<h3 id="management-tools">Management Tools</h3>
+<ol type="1">
+<li><p><strong>kubectl</strong>: This is the main command-line tool to
+interact with our Kubernetes cluster.</p>
+<ul>
+<li><strong>Common Commands</strong>:
+<ul>
+<li><p>Get cluster information:</p>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> cluster-info</span></code></pre></div></li>
+<li><p>List pods:</p>
+<div class="sourceCode" id="cb36"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">--all-namespaces</span></span></code></pre></div></li>
+<li><p>View logs for a pod:</p>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+</ul></li>
+</ul></li>
+<li><p><strong>Kube-state-metrics</strong>: This tool gives us metrics
+about the state of Kubernetes objects at the cluster level.</p>
+<ul>
+<li><p><strong>Installation</strong>:</p>
+<div class="sourceCode" id="cb38"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://raw.githubusercontent.com/kubernetes/kube-state-metrics/main/examples/standard/kube-state-metrics-deployment.yaml</span></code></pre></div></li>
+</ul></li>
+<li><p><strong>Alertmanager</strong>: This works with Prometheus. It
+helps to manage alerts and notifications based on set thresholds.</p>
+<ul>
+<li><strong>Configuration</strong>: We need to define alert rules in
+Prometheus files and set up Alertmanager for notifications.</li>
+</ul></li>
+</ol>
+<h3 id="best-practices-for-monitoring-and-management">Best Practices for
+Monitoring and Management</h3>
+<ul>
+<li><strong>Resource Requests and Limits</strong>: We should define
+resource requests and limits for our pods. This prevents resource
+problems.</li>
+<li><strong>Regular Health Checks</strong>: We need to use readiness and
+liveness checks for our containers.</li>
+<li><strong>Centralized Logging</strong>: It is good to use a
+centralized logging system. This helps to gather logs from all pods for
+easy access and analysis.</li>
+<li><strong>Automated Backups</strong>: We should regularly back up
+important data and settings using tools like Velero.</li>
+</ul>
+<p>By using these tools and following these practices, we can monitor
+and manage our on-premises Kubernetes cluster effectively. This helps us
+keep our applications running well and reliably. For more detailed
+insights on managing Kubernetes, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-my-kubernetes-cluster.html">how
+to monitor my Kubernetes cluster</a>.</p>
+<h2
+id="what-are-the-best-practices-for-securing-my-kubernetes-deployment">What
+Are the Best Practices for Securing My Kubernetes Deployment?</h2>
+<p>Securing our Kubernetes deployment is very important. It helps us
+protect sensitive data and keeps our applications safe. Here are some
+best practices we can follow:</p>
+<ol type="1">
+<li><strong>Use Role-Based Access Control (RBAC)</strong>:
+<ul>
+<li>We should use RBAC to decide who can access what in our
+cluster.</li>
+<li>Let’s create roles and role bindings to manage permissions in
+namespaces and at the cluster level.</li>
+</ul>
+<div class="sourceCode" id="cb39"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> my-namespace</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-role</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span><span class="at"> </span></span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">]</span></span></code></pre></div></li>
+<li><strong>Network Policies</strong>:
+<ul>
+<li>We can use Kubernetes Network Policies to limit traffic between
+pods. This helps reduce risks and keeps our application organized.</li>
+</ul>
+<div class="sourceCode" id="cb40"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> allow-specific</span></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> my-namespace</span></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">role</span><span class="kw">:</span><span class="at"> frontend</span></span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">from</span><span class="kw">:</span></span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb40-13"><a href="#cb40-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb40-14"><a href="#cb40-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">role</span><span class="kw">:</span><span class="at"> backend</span></span></code></pre></div></li>
+<li><strong>Pod Security Standards</strong>:
+<ul>
+<li>We can use Pod Security Standards (PSS) to make sure we have
+security rules for pod specifications.</li>
+<li>Tools like OPA/Gatekeeper can help us enforce these policies.</li>
+</ul></li>
+<li><strong>Limit Privileges</strong>:
+<ul>
+<li>We should run containers with the least privileges. Avoid
+<code>privileged: true</code> in pod specs.</li>
+<li>We can use <code>runAsUser</code> and <code>runAsGroup</code> to set
+user and group IDs.</li>
+</ul>
+<div class="sourceCode" id="cb41"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">runAsUser</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">runAsGroup</span><span class="kw">:</span><span class="at"> </span><span class="dv">3000</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capabilities</span><span class="kw">:</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">drop</span><span class="kw">:</span></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> ALL</span></span></code></pre></div></li>
+<li><strong>Image Security</strong>:
+<ul>
+<li>Let’s scan container images for problems before we deploy. We can
+use tools like Trivy, Clair, or Aqua Security.</li>
+<li>We should only use trusted base images and keep them updated.</li>
+</ul></li>
+<li><strong>Secrets Management</strong>:
+<ul>
+<li>We can use Kubernetes Secrets to keep sensitive info like passwords
+and API keys safe.</li>
+<li>It is better to avoid hardcoding secrets in our application code or
+config files.</li>
+</ul>
+<div class="sourceCode" id="cb42"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Secret</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-secret</span></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="fu">type</span><span class="kw">:</span><span class="at"> Opaque</span></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span><span class="kw">:</span></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">password</span><span class="kw">:</span><span class="at"> cGFzc3dvcmQ=</span><span class="co"> # Base64 encoded</span></span></code></pre></div></li>
+<li><strong>Enable Audit Logging</strong>:
+<ul>
+<li>We should turn on Kubernetes audit logging. This helps us track all
+API requests and find unauthorized access.</li>
+</ul></li>
+<li><strong>Use TLS for Communication</strong>:
+<ul>
+<li>It is important that all communication in our cluster and outside is
+secure with TLS. We can use tools like cert-manager to manage
+certificates.</li>
+</ul></li>
+<li><strong>Regular Updates</strong>:
+<ul>
+<li>We need to keep our Kubernetes version and its parts updated. This
+helps us get security fixes and improvements.</li>
+</ul></li>
+<li><strong>Limit Resource Requests and Limits</strong>:
+<ul>
+<li>We should set resource requests and limits for CPU and memory. This
+helps prevent attacks that try to use up all resources.</li>
+</ul>
+<div class="sourceCode" id="cb43"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span></code></pre></div></li>
+</ol>
+<p>By following these best practices, we can make our on-premises
+Kubernetes deployment much safer. If we want to learn more about
+securing Kubernetes, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-security-best-practices.html">Kubernetes
+Security Best Practices</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="how-do-we-deploy-kubernetes-on-premises">How do we deploy
+Kubernetes on-premises?</h3>
+<p>We can deploy Kubernetes on-premises by following a few steps. First,
+we need to prepare our environment. Next, we install a Kubernetes
+distribution. After that, we set up the necessary parts like networking
+and storage. We can use tools like kubeadm to make the installation
+easier. For more help on deployment and what we need, we can read our
+article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-kubernetes-on-premises.html">How
+Do We Deploy Kubernetes On-Premises?</a>.</p>
+<h3
+id="what-are-the-hardware-requirements-for-deploying-kubernetes-on-premises">What
+are the hardware requirements for deploying Kubernetes on-premises?</h3>
+<p>To deploy Kubernetes on-premises, we need enough hardware. Normally,
+we recommend at least 2 CPUs, 4 GB of RAM, and 20 GB of disk space for
+each node. But these needs can change depending on what we want to run.
+For a better look at hardware specs, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">What
+Are the Key Components of a Kubernetes Cluster?</a>.</p>
+<h3
+id="which-installation-methods-are-available-for-kubernetes-on-premises">Which
+installation methods are available for Kubernetes on-premises?</h3>
+<p>There are different ways to install Kubernetes on-premises. We can
+use kubeadm, Kops, or a managed Kubernetes service. kubeadm is a good
+option because it is simple and flexible. For a full view of these
+methods, we can see our guide on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-kubernetes-on-premises.html">How
+Do We Deploy Kubernetes On-Premises?</a>.</p>
+<h3 id="how-do-we-manage-our-on-premises-kubernetes-cluster">How do we
+manage our on-premises Kubernetes cluster?</h3>
+<p>Managing our on-premises Kubernetes cluster means we need to watch
+performance, scale applications, and keep everything secure. We can use
+tools like Prometheus to monitor and Helm for package management. To
+learn more about good management practices, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-my-kubernetes-cluster.html">How
+Do We Monitor Our Kubernetes Cluster?</a>.</p>
+<h3
+id="what-are-the-best-practices-for-securing-our-on-premises-kubernetes-deployment">What
+are the best practices for securing our on-premises Kubernetes
+deployment?</h3>
+<p>Securing our on-premises Kubernetes deployment is very important. We
+should use Role-Based Access Control (RBAC), apply network policies, and
+keep our Kubernetes version up to date. For detailed security tips, we
+can read the article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-security-best-practices.html">What
+Are Kubernetes Security Best Practices?</a>.</p>
+<p>These FAQs help us with common questions about deploying Kubernetes
+on-premises. We can find more information for a good setup in our
+complete guide on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-kubernetes-on-premises.html">How
+Do We Deploy Kubernetes On-Premises?</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

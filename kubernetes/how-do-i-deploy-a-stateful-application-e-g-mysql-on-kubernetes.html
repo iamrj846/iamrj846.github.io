@@ -1,0 +1,692 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Do I Deploy a Stateful Application (e.g., MySQL) on Kubernetes?</title>
+            <meta name="description" content="Learn how to deploy stateful applications like MySQL on Kubernetes with our step-by-step guide for seamless management.">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Do I Deploy a Stateful Application (e.g., MySQL) on Kubernetes?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Deploying a stateful application like MySQL on Kubernetes is
+important for making a strong and flexible setup for managing data.
+Stateful applications need permanent storage and steady network
+identities. Kubernetes helps with this using StatefulSet, persistent
+volumes, and persistent volume claims.</p>
+<p>In this article, we will show how to deploy a stateful app like MySQL
+on Kubernetes. We will talk about important topics. These include what
+stateful applications are and why they matter in Kubernetes, what we
+need to deploy MySQL, how to create persistent volumes, how to set up a
+StatefulSet for deployment, networking choices, backup and restore
+methods, real-world examples, monitoring MySQL on Kubernetes, and
+answering common questions.</p>
+<ul>
+<li>How Can I Deploy a Stateful Application Like MySQL on
+Kubernetes?</li>
+<li>What is a Stateful Application and Why Use Kubernetes?</li>
+<li>What Prerequisites Do I Need for MySQL on Kubernetes?</li>
+<li>How Do I Create a Persistent Volume for MySQL in Kubernetes?</li>
+<li>How Do I Configure a StatefulSet for MySQL Deployment?</li>
+<li>What Networking Options Are Available for MySQL on Kubernetes?</li>
+<li>How Can I Perform Backup and Restore of MySQL in Kubernetes?</li>
+<li>What Are Real Life Use Cases for MySQL on Kubernetes?</li>
+<li>How Do I Monitor MySQL Deployment on Kubernetes?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more details on Kubernetes basics, we can read about <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">Kubernetes
+and how it makes container management easier</a> or check the benefits
+of using Kubernetes for our applications in <a
+href="https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html">this
+article</a>.</p>
+<h2 id="what-is-a-stateful-application-and-why-use-kubernetes">What is a
+Stateful Application and Why Use Kubernetes?</h2>
+<p>A stateful application is an app that keeps a steady state during
+sessions. Unlike stateless apps, stateful apps need a way to save data
+even after a restart or a failure. Some examples of stateful
+applications are databases like MySQL, message queues, and some web apps
+that handle user sessions.</p>
+<p>Kubernetes has many features that help when we deploy stateful
+applications:</p>
+<ul>
+<li><p><strong>Persistent Storage</strong>: Kubernetes gives us
+Persistent Volumes (PV) and Persistent Volume Claims (PVC). These help
+manage storage needs. This way, stateful apps can save data
+safely.</p></li>
+<li><p><strong>StatefulSets</strong>: This is a special Kubernetes
+resource. It helps us deploy stateful applications and take care of the
+unique identities and storage of each pod. StatefulSets make sure that
+the pods get created and deleted in a certain order. This keeps their
+identity and storage safe even when we move them around.</p></li>
+<li><p><strong>Scaling and Load Balancing</strong>: Kubernetes can
+easily increase the size of stateful applications while handling
+traffic. It also provides service discovery to connect pods. This way,
+stateful applications can deal with more users without
+problems.</p></li>
+<li><p><strong>High Availability</strong>: Kubernetes helps us run many
+copies of stateful applications. This allows for failover and backup,
+which makes the app stronger against failures.</p></li>
+</ul>
+<p>Using Kubernetes for stateful applications like MySQL makes
+management easier. It creates a strong environment that can handle
+tricky deployment situations. It also makes sure data stays safe and
+available.</p>
+<h2 id="what-prerequisites-do-we-need-for-mysql-on-kubernetes">What
+Prerequisites Do We Need for MySQL on Kubernetes?</h2>
+<p>To run MySQL on Kubernetes, we need to make sure our environment has
+some required things. Here is a simple checklist of what we will
+need:</p>
+<ol type="1">
+<li><p><strong>Kubernetes Cluster</strong>:<br />
+We need a working Kubernetes cluster. It can be on any cloud service
+like AWS EKS, Google GKE, or Azure AKS, or we can use a local setup with
+Minikube.</p></li>
+<li><p><strong>kubectl</strong>:<br />
+We must install the command-line tool <code>kubectl</code>. This tool is
+very important to talk with our Kubernetes cluster. We should check if
+it is ready to connect with our cluster:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> version <span class="at">--client</span></span></code></pre></div></li>
+<li><p><strong>Persistent Storage</strong>:<br />
+MySQL is a stateful app. So, we need a way to store data that lasts. We
+must check that our cluster can use Persistent Volumes (PV) and
+Persistent Volume Claims (PVC). We can see our storage classes with:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get storageclass</span></code></pre></div></li>
+<li><p><strong>MySQL Docker Image</strong>:<br />
+We should know about the MySQL Docker image on Docker Hub. We can get it
+by running:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> pull mysql:latest</span></code></pre></div></li>
+<li><p><strong>Resource Quotas</strong>:<br />
+We have to make sure our cluster has enough resources like CPU and
+memory for MySQL to run well. We can look at the current limits
+with:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe nodes</span></code></pre></div></li>
+<li><p><strong>Network Policies</strong>:<br />
+If we want to use network policies for security, we need to check if our
+cluster can support them and look at the settings we need.</p></li>
+<li><p><strong>Secrets Management</strong>:<br />
+We should use Kubernetes Secrets to keep safe information like MySQL
+passwords. We can make a secret with:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> create secret generic mysql-secret <span class="at">--from-literal</span><span class="op">=</span>password=yourpassword</span></code></pre></div></li>
+<li><p><strong>Access to Helm (Optional)</strong>:<br />
+If we want to use Helm to manage MySQL deployments, we need to install
+and set up Helm in our environment. We can check if Helm is ready
+with:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> version</span></code></pre></div></li>
+<li><p><strong>Monitoring Tools</strong>:<br />
+It is a good idea to set up monitoring tools like Prometheus or Grafana.
+These tools help us track how MySQL is doing in our Kubernetes
+environment.</p></li>
+</ol>
+<p>These things will help us have a good setup for MySQL on Kubernetes.
+For more information on setting up a Kubernetes cluster, we can look at
+<a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-set-up-a-kubernetes-cluster-on-aws-eks.html">how
+do I set up a Kubernetes cluster on AWS EKS</a> and other guides for
+managing Kubernetes.</p>
+<h2
+id="how-do-we-create-a-persistent-volume-for-mysql-in-kubernetes">How Do
+We Create a Persistent Volume for MySQL in Kubernetes?</h2>
+<p>When we want to run a stateful application like MySQL on Kubernetes,
+we need to make sure our data stays safe even if the pod restarts. We do
+this by making a Persistent Volume (PV) and a Persistent Volume Claim
+(PVC). Here are the steps to create a Persistent Volume for MySQL:</p>
+<ol type="1">
+<li><strong>Define a Persistent Volume</strong>: First, we create a YAML
+file called <code>mysql-pv.yaml</code>. This file tells Kubernetes about
+our Persistent Volume.</li>
+</ol>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-pv</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /mnt/data/mysql</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Create the Persistent Volume</strong>: Next, we run a
+command to make the Persistent Volume in our Kubernetes cluster.</li>
+</ol>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> mysql-pv.yaml</span></code></pre></div>
+<ol start="3" type="1">
+<li><strong>Define a Persistent Volume Claim</strong>: Now, we create
+another YAML file called <code>mysql-pvc.yaml</code>. This file will ask
+for the storage we defined in the Persistent Volume.</li>
+</ol>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-pvc</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span></code></pre></div>
+<ol start="4" type="1">
+<li><strong>Create the Persistent Volume Claim</strong>: We run another
+command to create the Persistent Volume Claim.</li>
+</ol>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> mysql-pvc.yaml</span></code></pre></div>
+<ol start="5" type="1">
+<li><strong>Verify the Persistent Volume and Claim</strong>: We should
+check if the Persistent Volume and Claim are created well and linked
+together.</li>
+</ol>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pv</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pvc</span></code></pre></div>
+<p>After we set up the Persistent Volume and Persistent Volume Claim, we
+can use <code>mysql-pvc</code> in our MySQL deployment config. This way,
+MySQL data will be saved safely in Kubernetes. For more details on how
+to manage volumes, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">Kubernetes
+Volumes</a>.</p>
+<h2 id="how-do-we-configure-a-statefulset-for-mysql-deployment">How Do
+We Configure a StatefulSet for MySQL Deployment?</h2>
+<p>To deploy MySQL on Kubernetes using a StatefulSet, we can follow
+these easy steps. We will create a YAML configuration file. This file
+will define the StatefulSet, Service, and PersistentVolumeClaim (PVC).
+This way, our MySQL application will keep its state.</p>
+<h3 id="step-1-create-a-persistentvolumeclaim">Step 1: Create a
+PersistentVolumeClaim</h3>
+<p>First, we need to make a PersistentVolumeClaim. This will ask for
+storage for our MySQL instance. Here is an example of a
+<code>mysql-pvc.yaml</code> file:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-pvc</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span></code></pre></div>
+<h3 id="step-2-create-the-statefulset">Step 2: Create the
+StatefulSet</h3>
+<p>Next, we create the StatefulSet YAML configuration. We will save it
+in a file named <code>mysql-statefulset.yaml</code>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">serviceName</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql:5.7</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MYSQL_ROOT_PASSWORD</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">value</span><span class="kw">:</span><span class="at"> yourpassword</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-storage</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/lib/mysql</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumeClaimTemplates</span><span class="kw">:</span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-storage</span></span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">accessModes</span><span class="kw">:</span><span class="at"> </span></span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> ReadWriteOnce</span></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span></code></pre></div>
+<h3 id="step-3-create-the-service">Step 3: Create the Service</h3>
+<p>Now we create a Service to expose the MySQL StatefulSet. We save it
+in a file called <code>mysql-service.yaml</code>:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span></code></pre></div>
+<h3 id="step-4-apply-the-configuration">Step 4: Apply the
+Configuration</h3>
+<p>We can run these commands to apply the configurations:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> mysql-pvc.yaml</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> mysql-service.yaml</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> mysql-statefulset.yaml</span></code></pre></div>
+<h3 id="step-5-verify-the-deployment">Step 5: Verify the Deployment</h3>
+<p>We should check the status of our StatefulSet and Pods with these
+commands:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get statefulsets</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods</span></code></pre></div>
+<p>This configuration will help us set up a MySQL StatefulSet with
+persistent storage. This way, our database will keep its data even if
+the pod restarts. For more details on managing StatefulSets, we can look
+at <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-stateful-applications-with-statefulsets.html">how
+to manage stateful applications with StatefulSets</a>.</p>
+<h2
+id="what-networking-options-are-available-for-mysql-on-kubernetes">What
+Networking Options Are Available for MySQL on Kubernetes?</h2>
+<p>When we deploy MySQL on Kubernetes, we need to choose the right
+networking options. This choice is important for good connection and
+performance. Below are the main networking parts and options we have for
+MySQL on Kubernetes:</p>
+<ol type="1">
+<li><p><strong>Kubernetes Services</strong>: We can use Kubernetes
+Services to make our MySQL pods visible. The common types are:</p>
+<ul>
+<li><strong>ClusterIP</strong>: This is the default type. It is only
+available inside the cluster.</li>
+<li><strong>NodePort</strong>: This exposes the service on each Node’s
+IP at a set port. It allows outside access.</li>
+<li><strong>LoadBalancer</strong>: This creates an external load
+balancer if the cloud provider supports it. It lets us access from
+outside the cluster.</li>
+</ul>
+<p>Here is an example YAML for a ClusterIP service:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> ClusterIP</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span></code></pre></div></li>
+<li><p><strong>StatefulSet Networking</strong>: When we deploy MySQL as
+a StatefulSet, each pod gets its own DNS name. This name comes from the
+service name and its index. This is important for apps that connect to
+certain MySQL instances.</p>
+<p>Here is an example of DNS for StatefulSet pods:</p>
+<pre><code>mysql-0.mysql-headless.default.svc.cluster.local
+mysql-1.mysql-headless.default.svc.cluster.local</code></pre></li>
+<li><p><strong>Headless Services</strong>: For StatefulSets, we can use
+a headless service. It helps with direct communication between pods
+without a load balancer. This lets clients connect straight to the MySQL
+pods.</p>
+<p>Here is an example YAML for a headless service:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-headless</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> None</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span></code></pre></div></li>
+<li><p><strong>Network Policies</strong>: We can set up network policies
+to control the traffic between MySQL and other services. This helps with
+security and meeting rules. We can define ingress and egress rules to
+limit access.</p>
+<p>Here is an example YAML for a network policy:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> allow-mysql</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">from</span><span class="kw">:</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-application</span></span></code></pre></div></li>
+<li><p><strong>Ingress Controllers</strong>: If we need outside access
+to MySQL over HTTP or HTTPS, we can use an ingress controller. This is
+common for web apps. But knowing about ingress can help us when MySQL is
+part of a bigger setup.</p></li>
+<li><p><strong>Service Mesh</strong>: For more advanced networking
+features like managing traffic, observing, and security, we can use a
+service mesh. Examples are Istio or Linkerd. This gives us better
+control over how MySQL talks to other microservices.</p></li>
+</ol>
+<p>By knowing these networking options, we can make sure our MySQL setup
+on Kubernetes works well. For more details on Kubernetes networking
+concepts, we can check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-networking-work.html">how
+does Kubernetes networking work</a>.</p>
+<h2
+id="how-can-we-perform-backup-and-restore-of-mysql-in-kubernetes">How
+Can We Perform Backup and Restore of MySQL in Kubernetes?</h2>
+<p>To backup and restore MySQL in Kubernetes, we can follow these
+steps:</p>
+<h3 id="backup-mysql">Backup MySQL</h3>
+<ol type="1">
+<li><p><strong>Using MySQL Dump:</strong> We can use
+<code>mysqldump</code> to make a backup of our MySQL database. Run this
+command to create a backup:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> exec <span class="at">-it</span> <span class="op">&lt;</span>mysql-pod-name<span class="op">&gt;</span> -- mysqldump <span class="at">-u</span> <span class="op">&lt;</span>username<span class="op">&gt;</span> -p<span class="op">&lt;</span>password<span class="op">&gt;</span> --all-databases <span class="op">&gt;</span> backup.sql</span></code></pre></div>
+<p>Remember to change <code>&lt;mysql-pod-name&gt;</code>,
+<code>&lt;username&gt;</code>, and <code>&lt;password&gt;</code> with
+our real MySQL pod name, username, and password.</p></li>
+<li><p><strong>Store Backup in Persistent Volume:</strong> To keep the
+backup safe, we should save the backup file to a Persistent Volume:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> cp <span class="op">&lt;</span>mysql-pod-name<span class="op">&gt;</span>:backup.sql /local/path/backup.sql</span></code></pre></div></li>
+<li><p><strong>Automating Backups with CronJobs:</strong> We can set up
+automated backups using Kubernetes CronJobs. Here is an example CronJob
+YAML:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronJob</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-backup</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">schedule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0 2 * * *&quot;</span><span class="co">  # Every day at 2 AM</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">jobTemplate</span><span class="kw">:</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-backup</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql:5.7</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;mysqldump -u &lt;username&gt; -p&lt;password&gt; --all-databases &gt; /backup/backup.sql&quot;</span><span class="kw">]</span></span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> backup-volume</span></span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /backup</span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> backup-volume</span></span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> &lt;pvc-name&gt;</span></span></code></pre></div></li>
+</ol>
+<h3 id="restore-mysql">Restore MySQL</h3>
+<ol type="1">
+<li><p><strong>Using MySQL Dump Restore:</strong> To restore from the
+dump file, we can use this command:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> cp /local/path/backup.sql <span class="op">&lt;</span>mysql-pod-name<span class="op">&gt;</span>:/backup/backup.sql</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> exec <span class="at">-it</span> <span class="op">&lt;</span>mysql-pod-name<span class="op">&gt;</span> -- mysql <span class="at">-u</span> <span class="op">&lt;</span>username<span class="op">&gt;</span> -p<span class="op">&lt;</span>password<span class="op">&gt;</span> <span class="op">&lt;</span> /backup/backup.sql</span></code></pre></div></li>
+<li><p><strong>Restoring from a Persistent Volume:</strong> If we saved
+the backup in a Persistent Volume, we need to make sure the volume is
+mounted to the MySQL pod. Then we can use the same command above to
+restore.</p></li>
+<li><p><strong>Using Helm for Backup/Restore:</strong> If we used Helm
+for our MySQL, we may want to use <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-a-wordpress-website-on-kubernetes.html">Helm
+hooks</a> to help with backup and restore with Helm charts.</p></li>
+</ol>
+<p>By using these steps, we can easily manage MySQL backups and restores
+in our Kubernetes environment.</p>
+<h2 id="what-are-real-life-use-cases-for-mysql-on-kubernetes">What Are
+Real Life Use Cases for MySQL on Kubernetes?</h2>
+<p>We see more and more people using MySQL on Kubernetes in real life.
+This is because it helps with scaling, resilience, and easy management.
+Here are some important use cases:</p>
+<ol type="1">
+<li><p><strong>Dynamic Web Applications</strong>: Many groups use MySQL
+as the backend for dynamic web apps on Kubernetes. This helps them scale
+the database and manage traffic well during busy times.</p></li>
+<li><p><strong>Microservices Architecture</strong>: In microservices,
+each service might need its own MySQL database. Kubernetes helps manage
+these databases. This way, developers can handle many MySQL databases
+easily while keeping them available.</p></li>
+<li><p><strong>Multi-Tenant Applications</strong>: Companies that
+provide SaaS often use MySQL on Kubernetes for many clients. This setup
+gives each client their own space. It also makes deployments and updates
+easier.</p></li>
+<li><p><strong>Data Analytics and Reporting</strong>: Organizations
+using Kubernetes for data analytics can use MySQL as a central data
+store. Kubernetes can easily scale MySQL instances to handle different
+data processing needs.</p></li>
+<li><p><strong>Continuous Integration and Delivery (CI/CD)</strong>: We
+can add MySQL to CI/CD pipelines on Kubernetes. This lets us run
+automated tests with a real database. It helps ensure that our
+applications are reliable and work well before going live.</p></li>
+<li><p><strong>Disaster Recovery Solutions</strong>: Kubernetes helps us
+set up MySQL replication and backup strategies across clusters. This
+improves disaster recovery. It is very important for businesses that
+want to reduce downtime and data loss.</p></li>
+<li><p><strong>IoT Applications</strong>: For IoT, we can use MySQL to
+store data from devices. Kubernetes can manage the scale needed for data
+from many devices, keeping data safe and available.</p></li>
+<li><p><strong>E-commerce Platforms</strong>: E-commerce apps need
+strong data storage. MySQL on Kubernetes helps with this. The platform
+can scale during busy times, like sales, to keep shopping
+smooth.</p></li>
+<li><p><strong>Gaming Applications</strong>: Online games often use
+MySQL for player data. Running MySQL on Kubernetes allows quick scaling
+when player numbers go up. It also helps keep data consistent and
+available.</p></li>
+<li><p><strong>Machine Learning Pipelines</strong>: MySQL can be a data
+source for machine learning. Kubernetes helps us manage training jobs
+and data tasks that work with MySQL, making the ML process
+smoother.</p></li>
+</ol>
+<p>Using MySQL on Kubernetes makes it easier to deploy and scale. It
+also improves application performance and reliability in many
+situations. For more information on how to manage stateful applications
+like MySQL on Kubernetes, check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-stateful-applications-with-statefulsets.html">how
+do I manage stateful applications with statefulsets</a>.</p>
+<h2 id="how-do-we-monitor-mysql-deployment-on-kubernetes">How Do We
+Monitor MySQL Deployment on Kubernetes?</h2>
+<p>Monitoring MySQL deployment on Kubernetes is very important. We need
+to make sure it runs well and is always available. Here are some easy
+ways to monitor MySQL:</p>
+<ol type="1">
+<li><strong>Using Kubernetes Metrics Server</strong>:
+<ul>
+<li><p>First, we install the Metrics Server. It helps us get the
+resource usage for our MySQL pods.</p></li>
+<li><p>We can use this command to install it:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml</span></code></pre></div></li>
+</ul></li>
+<li><strong>Prometheus for Monitoring</strong>:
+<ul>
+<li><p>Next, we deploy Prometheus to collect metrics from
+MySQL.</p></li>
+<li><p>We create a <code>ServiceMonitor</code> for MySQL to get the
+metrics.</p></li>
+<li><p>Here is an example of <code>ServiceMonitor</code> YAML:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> monitoring.coreos.com/v1</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceMonitor</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-monitor</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">endpoints</span><span class="kw">:</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> metrics</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">interval</span><span class="kw">:</span><span class="at"> 30s</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>MySQL Exporter</strong>:
+<ul>
+<li><p>We can use MySQL Exporter to show MySQL metrics to
+Prometheus.</p></li>
+<li><p>We can deploy it as a sidecar container or as a separate
+deployment.</p></li>
+<li><p>Here is an example deployment:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-exporter</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql-exporter</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql-exporter</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-exporter</span></span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> prom/mysqld-exporter:latest</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> DATA_SOURCE_NAME</span></span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;user:password@(mysql-service:3306)/&quot;</span></span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">9104</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Grafana for Visualization</strong>:
+<ul>
+<li>We can use Grafana with Prometheus to see MySQL metrics in a nice
+way.</li>
+<li>We should use Grafana dashboards that are made for MySQL
+monitoring.</li>
+</ul></li>
+<li><strong>Log Monitoring</strong>:
+<ul>
+<li>We can use a logging tool like ELK Stack (Elasticsearch, Logstash,
+Kibana) or Fluentd. This helps us collect and look at MySQL logs.</li>
+<li>We need to set MySQL to log queries and errors. Then we can send the
+logs to our logging tool.</li>
+</ul></li>
+<li><strong>Alerting</strong>:
+<ul>
+<li>We should set up alerts in Prometheus or Grafana. This is for
+important metrics like:
+<ul>
+<li>High CPU or memory usage</li>
+<li>Disk space usage</li>
+<li>Slow queries</li>
+</ul></li>
+</ul></li>
+<li><strong>Tools and Integrations</strong>:
+<ul>
+<li>We can use tools like <strong>Kube-state-metrics</strong> for
+getting Kubernetes state metrics.</li>
+<li>We can also use <strong>Alertmanager</strong> to manage alerts.</li>
+<li>It is good to connect with monitoring services like Datadog or New
+Relic for better monitoring.</li>
+</ul></li>
+</ol>
+<p>By using these monitoring methods, we can make sure our MySQL
+deployment on Kubernetes works well. We can also respond fast to any
+problems. For more details on monitoring Kubernetes, check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-my-kubernetes-cluster.html">how
+do I monitor my Kubernetes cluster</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="what-is-a-statefulset-in-kubernetes-and-why-is-it-important-for-mysql-deployment">1.
+What is a StatefulSet in Kubernetes and why is it important for MySQL
+deployment?</h3>
+<p>A StatefulSet is an object in Kubernetes. It helps us manage the
+deployment and scaling of Pods. It gives us guarantees about how Pods
+are ordered and made unique. For stateful apps like MySQL, StatefulSets
+make sure each instance has a unique identity and stable storage. This
+is very important for keeping our data consistent and available when we
+scale or update. This feature makes it easier and more reliable to run
+MySQL on Kubernetes.</p>
+<h3 id="how-can-i-back-up-mysql-data-in-a-kubernetes-environment">2. How
+can I back up MySQL data in a Kubernetes environment?</h3>
+<p>To back up MySQL data in Kubernetes, we can use
+<code>mysqldump</code> or other tools that work with MySQL. It is
+important to run this command inside the MySQL Pod. This helps us keep
+the data consistent. We can also use Persistent Volumes (PV) to store
+backup files. Using Kubernetes Jobs can help us automate the backup
+process. This way, we protect our data and can easily recover it.</p>
+<h3
+id="what-networking-options-are-available-for-mysql-on-kubernetes-1">3.
+What networking options are available for MySQL on Kubernetes?</h3>
+<p>When we deploy MySQL on Kubernetes, we have a few networking options.
+They include ClusterIP, NodePort, and LoadBalancer. ClusterIP is good
+for internal communication. NodePort lets us access our service from
+outside using specific ports. If we use cloud services, LoadBalancer
+helps us show our MySQL service to the internet easily. Knowing these
+options helps us pick the best setup for our needs.</p>
+<h3 id="how-do-i-create-a-persistent-volume-for-mysql-in-kubernetes">4.
+How do I create a Persistent Volume for MySQL in Kubernetes?</h3>
+<p>To create a Persistent Volume (PV) for MySQL in Kubernetes, we need
+to write a YAML file. This file will say what storage we need and how we
+will access it. After we write this file, we apply it using the
+Kubernetes command line tool (<code>kubectl</code>). We can also create
+a Persistent Volume Claim (PVC) to ask for the storage we defined in the
+PV. This setup helps our MySQL data stay safe even if Pods stop running.
+It is a key step for stateful apps.</p>
+<h3
+id="can-i-run-mysql-in-a-single-pod-or-should-i-scale-it-using-statefulsets">5.
+Can I run MySQL in a single Pod, or should I scale it using
+StatefulSets?</h3>
+<p>We can run MySQL in a single Pod for simple apps. But for production,
+we should use StatefulSets. StatefulSets give us important features like
+stable identities and persistent storage. These are very important for
+stateful apps like MySQL. This way, we can scale better, be more
+reliable, and manage our MySQL deployment well in Kubernetes. It helps
+our application handle more load without losing data.</p>
+<p>By answering these common questions, we can understand better how to
+deploy a stateful app like MySQL on Kubernetes. For more details on
+Kubernetes topics, check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-pods-and-how-do-i-work-with-them.html">what
+are Kubernetes Pods and how do I work with them</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-stateful-applications-with-statefulsets.html">how
+do I manage stateful applications with StatefulSets</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
