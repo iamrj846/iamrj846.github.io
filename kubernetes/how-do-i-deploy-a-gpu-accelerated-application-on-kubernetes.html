@@ -1,0 +1,712 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <title>How Do I Deploy a GPU-Accelerated Application on Kubernetes?</title>
+            <meta name="description" content="Learn to deploy GPU-accelerated applications on Kubernetes with our step-by-step guide. Boost performance and efficiency today!">
+
+            <div id="head-placeholder"></div>
+            <script src="/assets/js/blog.js" defer></script>
+            <link rel="stylesheet" href="/assets/css/post.css">
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Do I Deploy a GPU-Accelerated Application on Kubernetes?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Deploying a GPU-accelerated app on Kubernetes is about using the
+strong power of GPUs. This helps our apps, especially those needing a
+lot of computing power like machine learning and data processing, to run
+better and faster.</p>
+<p>In this article, we will look at the main steps and good practices
+for deploying a GPU-accelerated app on Kubernetes. We will talk about
+what we need before deploying GPUs, how to set up Kubernetes for GPU
+support, how to make a GPU-optimized Docker image, how to write a
+Kubernetes deployment, manage GPU resources, check GPU usage, real-world
+examples, fix common problems, and answer questions we often get.</p>
+<ul>
+<li>How Can I Successfully Deploy a GPU-Accelerated Application on
+Kubernetes?</li>
+<li>What Prerequisites Do I Need for GPU Deployment on Kubernetes?</li>
+<li>How Do I Configure Kubernetes for GPU Support?</li>
+<li>What Are the Steps to Create a GPU-Optimized Docker Image?</li>
+<li>How Do I Write a Kubernetes Deployment for a GPU Application?</li>
+<li>What Are the Best Practices for Managing GPU Resources in
+Kubernetes?</li>
+<li>How Can I Monitor GPU Usage in My Kubernetes Cluster?</li>
+<li>What Are Real-World Use Cases for GPU-Accelerated Applications on
+Kubernetes?</li>
+<li>How Do I Troubleshoot Common Issues with GPU Applications on
+Kubernetes?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more details on Kubernetes, we can check out these helpful links:
+<a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">What
+is Kubernetes and How Does it Simplify Container Management?</a>, <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-machine-learning-models-on-kubernetes.html">How
+Do I Deploy Machine Learning Models on Kubernetes?</a>, and <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-gpus-in-kubernetes.html">How
+Do I Manage GPUs in Kubernetes?</a>.</p>
+<h2
+id="what-prerequisites-do-we-need-for-gpu-deployment-on-kubernetes">What
+Prerequisites Do We Need for GPU Deployment on Kubernetes?</h2>
+<p>To deploy a GPU-accelerated app on Kubernetes, we need to meet some
+requirements.</p>
+<ol type="1">
+<li><p><strong>Kubernetes Cluster</strong>: We should have a running
+Kubernetes cluster. We can set this up on services like AWS, GCP, or
+Azure. Also, we can run it locally with Minikube.</p></li>
+<li><p><strong>GPU Hardware</strong>: Our nodes must have GPU hardware.
+We can use NVIDIA or AMD GPUs.</p></li>
+<li><p><strong>NVIDIA Device Plugin</strong>: If we have NVIDIA GPUs, we
+need to install the NVIDIA device plugin. This helps to show GPU
+resources to the Kubernetes scheduler. We can install it using a
+DaemonSet. We can use this command to create the DaemonSet:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/master/nvidia-device-plugin.yml</span></code></pre></div></li>
+<li><p><strong>Container Runtime</strong>: We must make sure our
+container runtime can handle GPU scheduling. We often use Docker, but we
+need to set it up properly.</p></li>
+<li><p><strong>NVIDIA Drivers</strong>: We need to install the right
+version of NVIDIA drivers on our nodes. This is important for the GPU to
+work well. We can use this command to install the driver:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get install <span class="at">-y</span> nvidia-driver-<span class="op">&lt;</span>version<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Kubernetes Configuration</strong>: We have to check our
+Kubernetes configuration. It needs to allow GPU scheduling. We may need
+to set the kubelet with the <code>--feature-gates</code> flag to enable
+GPU scheduling.</p></li>
+<li><p><strong>Resource Quotas</strong>: We should set up resource
+quotas in our Kubernetes namespace. This helps us manage GPU resources
+better. Here is an example of how to define resource quotas in a YAML
+file:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceQuota</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-quota</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> my-namespace</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hard</span><span class="kw">:</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests.nvidia.com/gpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4&quot;</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">limits.nvidia.com/gpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4&quot;</span></span></code></pre></div></li>
+<li><p><strong>Application Compatibility</strong>: We need to check if
+our application can use GPU acceleration. It usually needs libraries
+like CUDA for NVIDIA GPUs.</p></li>
+<li><p><strong>Monitoring Tools</strong>: We can think about using
+monitoring tools like Prometheus or Grafana. These tools help us track
+GPU resource usage in our Kubernetes cluster.</p></li>
+</ol>
+<p>By meeting these requirements, we can deploy a GPU-accelerated
+application on Kubernetes. For more information on managing GPUs in
+Kubernetes, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-gpus-in-kubernetes.html">this
+article on managing GPUs</a>.</p>
+<h2 id="how-do-we-configure-kubernetes-for-gpu-support">How Do We
+Configure Kubernetes for GPU Support?</h2>
+<p>To enable GPU support in Kubernetes, we need to follow these
+steps.</p>
+<ol type="1">
+<li><p><strong>Install NVIDIA Drivers</strong>: First, we must install
+the NVIDIA drivers on all nodes that will run GPU workloads. We can
+check if the installation is correct by running:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">nvidia-smi</span></span></code></pre></div></li>
+<li><p><strong>Install NVIDIA Container Toolkit</strong>: This toolkit
+helps Docker use the GPU. We can install it with these commands:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="va">distribution</span><span class="op">=</span><span class="va">$(</span><span class="bu">.</span> /etc/os-release<span class="kw">;</span><span class="bu">echo</span> <span class="va">$ID$VERSION_ID)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-s</span> <span class="at">-L</span> https://nvidia.github.io/nvidia-docker/gpgkey <span class="kw">|</span> <span class="fu">sudo</span> apt-key add <span class="at">-</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-s</span> <span class="at">-L</span> https://nvidia.github.io/nvidia-docker/<span class="va">$distribution</span>/nvidia-docker.list <span class="kw">|</span> <span class="fu">sudo</span> tee /etc/apt/sources.list.d/nvidia-docker.list</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt-get update <span class="kw">&amp;&amp;</span> <span class="fu">sudo</span> apt-get install <span class="at">-y</span> nvidia-docker2</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart docker</span></code></pre></div></li>
+<li><p><strong>Install Kubernetes NVIDIA Device Plugin</strong>: We need
+the NVIDIA device plugin to show the GPUs to the Kubernetes API. We can
+deploy it with this command:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="at">kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/master/manifests/nvidia-device-plugin.yml</span></span></code></pre></div></li>
+<li><p><strong>Verify GPU Availability</strong>: After we deploy the
+NVIDIA device plugin, we should check that the GPUs are available in our
+Kubernetes cluster. We can do this by running:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe nodes <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-i</span> gpu</span></code></pre></div></li>
+<li><p><strong>Configure Resource Requests and Limits</strong>: When we
+create our Kubernetes deployments, we need to specify GPU resource
+requests and limits in our pod specifications. For example:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-app</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> gpu-app</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> gpu-app</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-container</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> your-gpu-image</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">nvidia.com/gpu</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co"> # requesting 1 GPU</span></span></code></pre></div></li>
+<li><p><strong>Test the Deployment</strong>: Now we can deploy our
+application and check if it can access the GPU. We can look at the logs
+for any GPU errors:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+</ol>
+<p>By following these steps, we can set up our Kubernetes cluster for
+GPU support. This lets us run GPU-accelerated applications better. For
+more information on managing GPUs in Kubernetes, we can read <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-gpus-in-kubernetes.html">how
+to manage GPUs in Kubernetes</a>.</p>
+<h2 id="what-are-the-steps-to-create-a-gpu-optimized-docker-image">What
+Are the Steps to Create a GPU-Optimized Docker Image?</h2>
+<p>Creating a GPU-optimized Docker image has few steps. This help us to
+use GPU resources well in a Kubernetes cluster. Here is how we can do
+it:</p>
+<ol type="1">
+<li><p><strong>Choose a Base Image</strong>: We start with a base image
+that supports GPU. NVIDIA gives us CUDA images that are good for GPU.
+For example, we can use this image:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> nvidia/cuda:11.4.2-cudnn8-runtime-ubuntu20.04</span></code></pre></div></li>
+<li><p><strong>Install Required Libraries</strong>: We need to install
+any extra libraries our application needs. For example, if we use
+TensorFlow or PyTorch, we must install those libraries. Here is how we
+do it for TensorFlow:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apt-get</span> update <span class="kw">&amp;&amp;</span> <span class="ex">apt-get</span> install <span class="at">-y</span> <span class="dt">\</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    python3-pip <span class="dt">\</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">&amp;&amp;</span> <span class="ex">pip3</span> install tensorflow-gpu</span></code></pre></div></li>
+<li><p><strong>Set Up Application Code</strong>: Now, we copy our
+application code into the Docker image. We use the <code>COPY</code>
+command for this:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . /app</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span></code></pre></div></li>
+<li><p><strong>Expose Necessary Ports</strong>: If our application
+listens on certain ports, we should expose those in the Dockerfile. For
+example:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPOSE</span> 5000</span></code></pre></div></li>
+<li><p><strong>Define the Entry Point</strong>: We set the command or
+entry point for our application. This is how the Docker container will
+start our application:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;python3&quot;</span>, <span class="st">&quot;app.py&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>Build the Docker Image</strong>: We use the Docker
+command line to build our image. We run this command in the folder with
+the Dockerfile:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> my-gpu-app .</span></code></pre></div></li>
+<li><p><strong>Test the Image Locally</strong>: Before we put it on
+Kubernetes, we can test the image on our machine to see if it works. We
+run it with the NVIDIA runtime:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--gpus</span> all my-gpu-app</span></code></pre></div></li>
+<li><p><strong>Push to Container Registry</strong>: After testing, we
+push our image to a container registry like Docker Hub or Google
+Container Registry for Kubernetes deployment:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> tag my-gpu-app <span class="op">&lt;</span>your_registry<span class="op">&gt;</span>/my-gpu-app</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> push <span class="op">&lt;</span>your_registry<span class="op">&gt;</span>/my-gpu-app</span></code></pre></div></li>
+</ol>
+<p>By following these steps, we will have a GPU-optimized Docker image
+ready for Kubernetes. For more detailed help on GPU resources in
+Kubernetes, we can check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-gpus-in-kubernetes.html">this
+article</a>.</p>
+<h2
+id="how-do-we-write-a-kubernetes-deployment-for-a-gpu-application">How
+Do We Write a Kubernetes Deployment for a GPU Application?</h2>
+<p>To write a Kubernetes deployment for a GPU application, we need to
+tell the system what GPU resources we want in our deployment YAML file.
+Below is a simple example to create a Kubernetes deployment that uses
+NVIDIA GPUs.</p>
+<h3 id="example-deployment-yaml">Example Deployment YAML</h3>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-app</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> gpu-app</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> gpu-app</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-container</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> your-gpu-optimized-image:latest</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">nvidia.com/gpu</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co"> # We request 1 GPU</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<h3 id="key-components-explained">Key Components Explained</h3>
+<ul>
+<li><strong>apiVersion</strong>: This tells which API version we use to
+make the deployment.</li>
+<li><strong>kind</strong>: This shows the type of Kubernetes resource.
+Here it is a Deployment.</li>
+<li><strong>metadata</strong>: This part has information about the
+deployment like its name.</li>
+<li><strong>spec</strong>: This sets the desired state for the
+deployment.
+<ul>
+<li><strong>replicas</strong>: This is the number of pod replicas we
+want to run.</li>
+<li><strong>selector</strong>: This helps in identifying the pods that
+this deployment manages.</li>
+<li><strong>template</strong>: This is where we define the pod template.
+<ul>
+<li><strong>containers</strong>: This lists the containers in the
+pod.</li>
+<li><strong>resources</strong>: Here, we specify the resource requests
+and limits. We ask for one NVIDIA GPU using
+<code>nvidia.com/gpu: 1</code>.</li>
+<li><strong>ports</strong>: This exposes the container ports.</li>
+</ul></li>
+</ul></li>
+</ul>
+<h3 id="deploying-the-application">Deploying the Application</h3>
+<p>To deploy the GPU application, we save the above YAML to a file named
+<code>gpu-deployment.yaml</code>. Then we run this command:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> gpu-deployment.yaml</span></code></pre></div>
+<h3 id="verifying-deployment">Verifying Deployment</h3>
+<p>We can check if our deployment is running with GPU support by looking
+at the pod status:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods</span></code></pre></div>
+<p>If we want to see more details about the pod including resource
+usage, we use:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>It is important that our Kubernetes cluster is set up with GPU
+support. We also need to have the NVIDIA device plugin installed. This
+helps Kubernetes to manage GPU resources well. For more information on
+how to manage GPUs in Kubernetes, we can check the article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-gpus-in-kubernetes.html">how
+do we manage GPUs in Kubernetes</a>.</p>
+<h2
+id="what-are-the-best-practices-for-managing-gpu-resources-in-kubernetes">What
+Are the Best Practices for Managing GPU Resources in Kubernetes?</h2>
+<p>Managing GPU resources in Kubernetes is very important for getting
+the best performance and using resources well in GPU-accelerated
+applications. Here are some best practices we can follow:</p>
+<ol type="1">
+<li><p><strong>Use NVIDIA Device Plugin</strong>: We should deploy the
+NVIDIA device plugin for Kubernetes. This helps manage GPU resources. It
+lets Kubernetes schedule GPU workloads better.</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> DaemonSet</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nvidia-device-plugin</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nvidia-device-plugin</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nvidia-device-plugin</span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nvidia/k8s-device-plugin:1.0.0</span></span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nvidia-device-plugin-ctr</span></span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">nvidia.com/gpu</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/lib/kubelet/device-plugins</span></span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> device-plugin</span></span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> device-plugin</span></span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /var/lib/kubelet/device-plugins</span></span></code></pre></div></li>
+<li><p><strong>Resource Requests and Limits</strong>: We need to set
+resource requests and limits for GPU in our deployment specifications.
+This helps in proper resource allocation.</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">nvidia.com/gpu</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">nvidia.com/gpu</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div></li>
+<li><p><strong>Pod Affinity and Anti-affinity</strong>: We can use pod
+affinity and anti-affinity rules. This helps control where GPU workloads
+go. It makes sure they are on the right nodes.</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">affinity</span><span class="kw">:</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podAffinity</span><span class="kw">:</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="at"> app</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">values</span><span class="kw">:</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> gpu-app</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;kubernetes.io/hostname&quot;</span></span></code></pre></div></li>
+<li><p><strong>Node Labeling</strong>: We should label nodes with GPU
+resources. This makes scheduling easier. We can use labels like
+<code>gpu=true</code> to find GPU-enabled nodes.</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> label nodes <span class="op">&lt;</span>node-name<span class="op">&gt;</span> gpu=true</span></code></pre></div></li>
+<li><p><strong>Monitoring and Logging</strong>: We can use tools like
+Prometheus and Grafana to watch GPU usage and performance metrics. This
+helps us manage resources well.</p>
+<ul>
+<li>Use <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-a-kubernetes-application-with-prometheus-and-grafana.html">this
+guide</a> for setting up monitoring.</li>
+</ul></li>
+<li><p><strong>Horizontal Pod Autoscaler</strong>: We can use the
+Horizontal Pod Autoscaler (HPA). It helps scale GPU workloads based on
+how much resources we use.</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling/v2beta2</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> HorizontalPodAutoscaler</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-app-hpa</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scaleTargetRef</span><span class="kw">:</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-app</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">resource</span><span class="kw">:</span></span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nvidia.com/gpu</span></span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div></li>
+<li><p><strong>Vertical Pod Autoscaler</strong>: We can also think about
+using the Vertical Pod Autoscaler (VPA). It helps adjust resource
+requests for GPU workloads based on usage.</p>
+<ul>
+<li>Make sure to set up VPA according to what our cluster needs.</li>
+</ul></li>
+<li><p><strong>GPU Sharing</strong>: If possible, we can use GPU sharing
+methods. This allows several pods to use one GPU. It helps us use
+resources better.</p></li>
+<li><p><strong>Regular Updates</strong>: We need to keep our NVIDIA
+drivers and device plugins updated. This helps us get performance
+improvements and new features.</p></li>
+</ol>
+<p>If we follow these best practices, we can manage GPU resources in our
+Kubernetes clusters well. This will help us get the best performance for
+GPU-accelerated applications.</p>
+<h2 id="how-can-we-monitor-gpu-usage-in-our-kubernetes-cluster">How Can
+We Monitor GPU Usage in Our Kubernetes Cluster?</h2>
+<p>Monitoring GPU usage in our Kubernetes cluster is very important. It
+helps us to make sure that GPU resources are used well and performance
+is good. Here are some easy steps to monitor GPU usage.</p>
+<ol type="1">
+<li><p><strong>Install NVIDIA Device Plugin</strong>: First, we need to
+install the NVIDIA device plugin. This plugin makes GPUs available as
+resources for our pods. We can install it by using this command:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/master/deploy/kubernetes-device-plugin.yaml</span></code></pre></div></li>
+<li><p><strong>Check Pod Resources</strong>: After we install the
+plugin, we can check the GPU resources in our nodes. We do this
+with:</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe nodes <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-i</span> nvidia</span></code></pre></div></li>
+<li><p><strong>Use Metrics Server</strong>: Next, we need to deploy the
+Kubernetes Metrics Server. This server helps us gather resource metrics.
+We can do this by running:</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml</span></code></pre></div></li>
+<li><p><strong>Monitor GPU Usage with Prometheus and Grafana</strong>:
+We can set up Prometheus to collect metrics from the NVIDIA device
+plugin. Here is a simple configuration for Prometheus:</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">scrape_configs</span><span class="kw">:</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">job_name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;nvidia-gpus&#39;</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kubernetes_sd_configs</span><span class="kw">:</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">role</span><span class="kw">:</span><span class="at"> pod</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">relabel_configs</span><span class="kw">:</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">source_labels</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">__meta_kubernetes_pod_annotation_k8s_io_gpu</span><span class="kw">]</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">action</span><span class="kw">:</span><span class="at"> keep</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">regex</span><span class="kw">:</span><span class="at"> .*</span></span></code></pre></div></li>
+<li><p><strong>Visualize with Grafana</strong>: In Grafana, we can
+create dashboards to see GPU metrics. We can use this query to show GPU
+usage:</p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(rate(nvidia_gpu_duty_cycle{job<span class="op">=</span><span class="ot">&quot;nvidia-gpus&quot;</span>}[1m])) <span class="kw">by</span> (<span class="kw">instance</span>)</span></code></pre></div></li>
+<li><p><strong>Set Up Alerts</strong>: We can also set alerts in
+Prometheus. Alerts can tell us when GPU usage goes over a certain limit.
+Here is an example of an alert rule:</p>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">groups</span><span class="kw">:</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> GPUAlerts</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">alert</span><span class="kw">:</span><span class="at"> HighGPUUsage</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">expr</span><span class="kw">:</span><span class="at"> sum(rate(nvidia_gpu_duty_cycle{job=&quot;nvidia-gpus&quot;}[5m])) &gt; 80</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">for</span><span class="kw">:</span><span class="at"> 5m</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">severity</span><span class="kw">:</span><span class="at"> critical</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">summary</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;High GPU usage detected&quot;</span></span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;GPU usage is over 80% for more than 5 minutes.&quot;</span></span></code></pre></div></li>
+</ol>
+<p>For more tools for monitoring, we can check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-a-kubernetes-application-with-prometheus-and-grafana.html">Kubernetes
+Monitoring with Prometheus and Grafana</a>. It gives us a good overview
+of our GPU use and other cluster metrics.</p>
+<h2
+id="what-are-real-world-use-cases-for-gpu-accelerated-applications-on-kubernetes">What
+Are Real-World Use Cases for GPU-Accelerated Applications on
+Kubernetes?</h2>
+<p>We can see that GPU-accelerated applications in Kubernetes are used a
+lot in many industries. These industries need high computing power. Here
+are some real-world use cases:</p>
+<ol type="1">
+<li><strong>Machine Learning and Deep Learning</strong>:
+<ul>
+<li>Kubernetes helps to manage work for training deep learning models
+with tools like TensorFlow or PyTorch.</li>
+<li>For example, running TensorFlow jobs that use GPU can save a lot of
+time compared to training with only CPU.</li>
+</ul>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> tensorflow-job</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> tensorflow-container</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> tensorflow/tensorflow:latest</span></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;python&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;/path/to/train.py&quot;</span><span class="kw">]</span></span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">nvidia.com/gpu</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div></li>
+<li><strong>High-Performance Computing (HPC)</strong>:
+<ul>
+<li>Apps that need tough simulations or calculations, like climate
+modeling or molecular dynamics, use GPUs for better performance.</li>
+</ul></li>
+<li><strong>Video Processing and Rendering</strong>:
+<ul>
+<li><p>In media and entertainment, GPU use for rendering and video
+transcoding helps because of the parallel processing power of
+GPUs.</p></li>
+<li><p>For example, we can use an NVIDIA GPU in Kubernetes to render
+video frames quickly.</p></li>
+</ul></li>
+<li><strong>Scientific Research</strong>:
+<ul>
+<li>In areas like bioinformatics, physics, and chemistry, GPU resources
+help to do big calculations. This means we can analyze large datasets
+faster.</li>
+</ul></li>
+<li><strong>Financial Services</strong>:
+<ul>
+<li>In finance, algorithms for risk analysis and asset pricing use GPUs.
+This helps to process data in real time and do complex
+calculations.</li>
+</ul></li>
+<li><strong>Gaming and Graphics Rendering</strong>:
+<ul>
+<li>Cloud gaming platforms run GPU-accelerated applications on
+Kubernetes. This gives us high-quality gaming experiences over the
+internet.</li>
+</ul></li>
+<li><strong>Computer Vision</strong>:
+<ul>
+<li>Apps that work with image processing, object detection, and facial
+recognition can run better on GPU resources in a Kubernetes
+cluster.</li>
+</ul></li>
+<li><strong>Autonomous Vehicles</strong>:
+<ul>
+<li>AI models for navigation and control systems in self-driving cars
+use GPU power. This helps in processing sensor data in real time.</li>
+</ul></li>
+</ol>
+<p>For more information on how to deploy machine learning models using
+Kubernetes, we can check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-a-machine-learning-model-on-kubernetes-with-tensorflow-serving.html">how
+to deploy a machine learning model on Kubernetes with TensorFlow
+Serving</a>.</p>
+<p>These use cases show how GPU-accelerated applications in Kubernetes
+are important. They help in many areas that need strong computing
+power.</p>
+<h2
+id="how-do-we-troubleshoot-common-issues-with-gpu-applications-on-kubernetes">How
+Do We Troubleshoot Common Issues with GPU Applications on
+Kubernetes?</h2>
+<p>When we deploy GPU-accelerated applications on Kubernetes, we may
+face different issues. Here are some simple steps to troubleshoot:</p>
+<ol type="1">
+<li><p><strong>Check GPU Availability</strong>:<br />
+We need to make sure that the nodes have GPU resources. We can use this
+command to check:</p>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe nodes <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-i</span> nvidia.com/gpu</span></code></pre></div>
+<p>If we see no GPUs, we might need to install NVIDIA drivers and the
+NVIDIA device plugin.</p></li>
+<li><p><strong>Verify NVIDIA Device Plugin</strong>:<br />
+We should check if the NVIDIA device plugin is running well. Let’s look
+at the logs of the device plugin pod:</p>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="at">-n</span> kube-system <span class="op">&lt;</span>nvidia-device-plugin-pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>We need to find any error messages about GPU allocation or
+initialization.</p></li>
+<li><p><strong>Review Pod Specifications</strong>:<br />
+We must ensure that our pod specifications ask for the right GPU
+resources. Here is an example:</p>
+<div class="sourceCode" id="cb36"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">nvidia.com/gpu</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co"> # requesting 1 GPU</span></span></code></pre></div></li>
+<li><p><strong>Check Pod Status</strong>:<br />
+We should look at the status of our GPU pods to see if any are
+failed:</p>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods</span></code></pre></div>
+<p>For more detailed error messages, we can describe the pod:</p>
+<div class="sourceCode" id="cb38"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe pod <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Inspect Logs</strong>:<br />
+We need to check application logs for any errors that are related to GPU
+usage. We can access logs using:</p>
+<div class="sourceCode" id="cb39"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Monitor Node Resource Usage</strong>:<br />
+We can use tools like <code>kubectl top</code> to see the resource usage
+of nodes and pods:</p>
+<div class="sourceCode" id="cb40"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> top nodes</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> top pods</span></code></pre></div>
+<p>We should make sure that the nodes are not too busy, which can affect
+GPU performance.</p></li>
+<li><p><strong>Check Driver Compatibility</strong>:<br />
+We need to ensure that the GPU drivers on our nodes match with the CUDA
+version used in our application. If they do not match, it can cause
+failures.</p></li>
+<li><p><strong>Review Scheduler Configuration</strong>:<br />
+If pods are not scheduling because of GPU requests, we should check the
+scheduler’s configuration. We must ensure that the GPU resources are
+registered correctly.</p></li>
+<li><p><strong>Investigate Network Issues</strong>:<br />
+If our application needs data from outside, we should check if network
+policies or firewalls are blocking access.</p></li>
+<li><p><strong>Use Debugging Tools</strong>:<br />
+We can use tools like <code>kubectl exec</code> to enter the pod’s shell
+and run commands directly in the pod:</p>
+<div class="sourceCode" id="cb41"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> exec <span class="at">-it</span> <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -- /bin/bash</span></code></pre></div></li>
+</ol>
+<p>We can run commands to check GPU usage with <code>nvidia-smi</code>
+or other commands.</p>
+<p>By following these steps, we can troubleshoot common issues with GPU
+applications on Kubernetes. For more insights on GPU management, we can
+read <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-gpus-in-kubernetes.html">this
+article on managing GPUs in Kubernetes</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="how-do-we-check-if-our-kubernetes-cluster-supports-gpu-scheduling">1.
+How do we check if our Kubernetes cluster supports GPU scheduling?</h3>
+<p>To check if our Kubernetes cluster supports GPU scheduling, we need
+to see if the NVIDIA device plugin is installed. We can do this by
+running <code>kubectl get pods -n kube-system</code>. Then we look for a
+pod named <code>nvidia-device-plugin</code>. If we find it and it is
+running, our cluster supports GPU. For more steps on GPU management in
+Kubernetes, we can refer to <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-gpus-in-kubernetes.html">how
+do I manage GPUs in Kubernetes</a>.</p>
+<h3 id="what-are-the-best-practices-for-using-gpus-in-kubernetes">2.
+What are the best practices for using GPUs in Kubernetes?</h3>
+<p>When we deploy GPU-accelerated applications on Kubernetes, we should
+request specific GPU resources in our pod specs. We use resource limits
+to avoid using too many resources. Also, we can think about node
+affinity to schedule GPU pods on the right nodes. We should also monitor
+GPU use with tools like Prometheus and Grafana. We can set them up as
+shown in <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-a-kubernetes-application-with-prometheus-and-grafana.html">how
+do I monitor a Kubernetes application with Prometheus and
+Grafana</a>.</p>
+<h3
+id="can-we-use-multiple-types-of-gpus-in-a-single-kubernetes-cluster">3.
+Can we use multiple types of GPUs in a single Kubernetes cluster?</h3>
+<p>Yes, we can use different kinds of GPUs in a Kubernetes cluster. It
+is important to set up the Kubernetes scheduler to understand different
+GPU models. We do this by using proper labels and resource requests in
+our deployment YAML files. This way we can run many different workloads
+well, as explained in the article about <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-a-machine-learning-model-on-kubernetes-with-tensorflow-serving.html">how
+do I deploy a machine learning model on Kubernetes with TensorFlow
+Serving</a>.</p>
+<h3 id="how-do-we-monitor-and-optimize-gpu-usage-in-kubernetes">4. How
+do we monitor and optimize GPU usage in Kubernetes?</h3>
+<p>To monitor GPU usage in Kubernetes, we can use the metrics server or
+tools like NVIDIA’s DCGM Exporter with Prometheus. For optimization, we
+should regularly check resource use and change requests and limits in
+our deployments. This way we can improve performance and save costs, as
+mentioned in the guide on <a
+href="https://bestonlinetutorial.com/kubernetes/how-can-i-optimize-kubernetes-costs.html">how
+can I optimize Kubernetes costs</a>.</p>
+<h3
+id="what-tools-are-available-for-deploying-gpu-workloads-on-kubernetes">5.
+What tools are available for deploying GPU workloads on Kubernetes?</h3>
+<p>There are many tools for deploying GPU workloads on Kubernetes. The
+NVIDIA GPU Operator helps us manage GPU resources. Helm helps us deploy
+applications. These tools make it easier to deploy GPU-accelerated
+applications. They can also work with CI/CD pipelines, as explained in
+the article about <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-set-up-a-ci-cd-pipeline-with-jenkins-and-kubernetes.html">how
+do I set up a CI/CD pipeline with Jenkins and Kubernetes</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
