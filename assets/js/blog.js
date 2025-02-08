@@ -54,3 +54,33 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+    // Check if user has already made a choice
+    if (localStorage.getItem("cookieConsent")) return;
+
+    // Create consent banner container
+    const banner = document.createElement("div");
+    banner.id = "cookie-consent-banner";
+
+    // Create banner content
+    banner.innerHTML = `
+        <p>We use cookies to enhance your experience. By continuing, you agree to our <a href="/privacy.html" target="_blank">Privacy Policy</a>.</p>
+        <button id="accept-cookies">Accept</button>
+        <button id="reject-cookies">Reject</button>
+    `;
+
+    // Append banner to body
+    document.body.appendChild(banner);
+
+    // Handle button clicks
+    document.getElementById("accept-cookies").addEventListener("click", function () {
+        localStorage.setItem("cookieConsent", "accepted");
+        banner.remove();
+    });
+
+    document.getElementById("reject-cookies").addEventListener("click", function () {
+        localStorage.setItem("cookieConsent", "rejected");
+        banner.remove();
+    });
+});
