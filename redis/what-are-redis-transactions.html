@@ -1,0 +1,470 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>What are Redis transactions?</title>
+            <meta name="description" content="Discover what Redis transactions are, how they work, and their benefits for data management in this comprehensive guide.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">What are Redis transactions?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p><strong>Redis Transactions: A Simple Guide</strong></p>
+<p>Redis transactions are a strong feature. They let us run many
+commands at once as one action. This means that all commands in a
+transaction happen together. They either all work or none of them do.
+Redis makes this easy with some commands. We use MULTI, EXEC, WATCH, and
+DISCARD to help us manage operations. This keeps our data safe and
+correct.</p>
+<p>In this article, we will look closely at how Redis transactions work.
+We will learn how they keep everything atomic. We will also check out
+the commands we use for transactions and how to implement them in our
+applications. We will talk about what Redis transactions can’t do too.
+We will give examples to show how to use them. We will compare Redis
+transactions with those in other databases. Lastly, we will answer some
+common questions about this topic.</p>
+<ul>
+<li>What are Redis transactions and how do they work?</li>
+<li>How do Redis transactions ensure atomicity?</li>
+<li>What commands are used for Redis transactions?</li>
+<li>How to implement Redis transactions in your application?</li>
+<li>What are the limitations of Redis transactions?</li>
+<li>Practical examples of Redis transactions in action</li>
+<li>How do Redis transactions compare to other database
+transactions?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more reading on Redis, we can check these articles: <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">What is
+Redis?</a>, <a
+href="https://bestonlinetutorial.com/redis/how-do-i-install-redis.html">How
+do I install Redis?</a>, and <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">What
+are Redis data types?</a>.</p>
+<h2 id="how-do-redis-transactions-ensure-atomicity">How do Redis
+transactions ensure atomicity?</h2>
+<p>We can say that Redis transactions ensure atomicity by using the
+<code>MULTI</code>, <code>EXEC</code>, <code>WATCH</code>, and
+<code>DISCARD</code> commands. When we start a transaction with
+<code>MULTI</code>, Redis puts all commands that come after it into a
+queue. This queue stays until we call <code>EXEC</code>. During this
+time, no other commands can run. This makes sure the transaction works
+as one complete action.</p>
+<h3 id="key-features">Key Features:</h3>
+<ul>
+<li><strong>Atomic Execution</strong>: All commands in a transaction run
+alone from other clients.</li>
+<li><strong>No Partial Execution</strong>: If one command fails, then
+none of the commands will run. They either all work or none work.</li>
+<li><strong>Optimistic Locking</strong>: We can use <code>WATCH</code>
+to check keys for changes before running the transaction. This lets us
+run commands based on certain conditions.</li>
+</ul>
+<h3 id="example-of-atomicity-in-redis-transactions">Example of Atomicity
+in Redis Transactions:</h3>
+<pre class="redis"><code>MULTI
+SET key1 &quot;value1&quot;
+SET key2 &quot;value2&quot;
+EXEC</code></pre>
+<p>In this example, both <code>SET</code> commands get queued. They will
+only run if we call <code>EXEC</code>. If another client changes
+<code>key1</code> or <code>key2</code> after we set <code>WATCH</code>,
+then the transaction will not work.</p>
+<h3 id="using-watch-for-conditional-transactions">Using WATCH for
+Conditional Transactions:</h3>
+<pre class="redis"><code>WATCH key1
+MULTI
+SET key1 &quot;new_value&quot;
+SET key2 &quot;value2&quot;
+EXEC</code></pre>
+<p>In this case, if <code>key1</code> is changed by another client after
+we use <code>WATCH</code>, the <code>EXEC</code> command will fail. This
+makes sure the updates are atomic and stay consistent.</p>
+<h3 id="conclusion">Conclusion:</h3>
+<p>With these ways, Redis transactions help ensure atomicity. This
+allows us to build reliable applications that can handle data
+consistency and integrity well. For more information on Redis and its
+data types, check <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">What
+are Redis Data Types?</a>.</p>
+<h2 id="what-commands-are-used-for-redis-transactions">What commands are
+used for Redis transactions?</h2>
+<p>We use special commands to manage Redis transactions. These commands
+let us group many commands into one single operation. The main commands
+we need are:</p>
+<ul>
+<li><p><strong>MULTI</strong>: This command starts a transaction block.
+After we call this command, all the next commands will be saved for
+later use.</p></li>
+<li><p><strong>EXEC</strong>: This command runs all the commands we
+saved after the MULTI command. The execution is atomic. This means all
+commands will either succeed together or fail together.</p></li>
+<li><p><strong>DISCARD</strong>: This command cancels all commands saved
+in the transaction block. It simply ends the transaction.</p></li>
+<li><p><strong>WATCH</strong>: This command watches one or more keys for
+changes. If we change any watched key before we call the EXEC command,
+the transaction will stop.</p></li>
+</ul>
+<h3 id="example-of-redis-transactions">Example of Redis
+Transactions</h3>
+<p>Here is a simple example showing how to use these commands in a Redis
+transaction:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Start a transaction</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">MULTI</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Queue commands</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> key1 <span class="st">&quot;value1&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> key2 <span class="st">&quot;value2&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="ex">INCR</span> counter</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Execute the transaction</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="ex">EXEC</span></span></code></pre></div>
+<p>In this example, the <code>SET</code> and <code>INCR</code> commands
+are saved and run together when we call <code>EXEC</code>.</p>
+<h3 id="using-watch-with-transactions">Using WATCH with
+Transactions</h3>
+<p>We can use the <code>WATCH</code> command to make sure a transaction
+only runs under certain conditions:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Watch a key</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">WATCH</span> key1</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Start transaction</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">MULTI</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Queue commands</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> key1 <span class="st">&quot;new_value1&quot;</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="ex">INCR</span> counter</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Execute the transaction</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="ex">EXEC</span>  <span class="co"># Will only run if key1 was not changed by another client</span></span></code></pre></div>
+<p>In this case, if another client changed <code>key1</code> after we
+called <code>WATCH</code>, then <code>EXEC</code> will fail. This helps
+us keep data safe.</p>
+<p>By using these commands well, we can use the power of Redis
+transactions. This helps us keep our data consistent and atomic in our
+applications.</p>
+<h2 id="how-to-implement-redis-transactions-in-your-application">How to
+implement Redis transactions in your application?</h2>
+<p>To implement Redis transactions in our application, we mainly use the
+commands <code>MULTI</code>, <code>EXEC</code>, <code>DISCARD</code>,
+and <code>WATCH</code>. Here is a simple way to include transactions in
+our Redis work:</p>
+<ol type="1">
+<li><p><strong>Start a Transaction</strong>: We start with the
+<code>MULTI</code> command to open a transaction block.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">MULTI</span></span></code></pre></div></li>
+<li><p><strong>Queue Commands</strong>: Next, we write the commands we
+want to use in the transaction. These commands go into a queue but don’t
+run right away.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> key1 value1</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">INCR</span> key2</span></code></pre></div></li>
+<li><p><strong>Execute Commands</strong>: When we are ready, we use the
+<code>EXEC</code> command to run all commands in the queue at once.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">EXEC</span></span></code></pre></div></li>
+<li><p><strong>Abort Transaction</strong>: If we change our mind and do
+not want to run the queued commands, we can use the <code>DISCARD</code>
+command to cancel the transaction.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">DISCARD</span></span></code></pre></div></li>
+<li><p><strong>Optimistic Locking</strong>: We can use the
+<code>WATCH</code> command before starting a transaction to keep an eye
+on specific keys. If any watched keys change before we run
+<code>EXEC</code>, our transaction will not work.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">WATCH</span> key1 key2</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">MULTI</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> key1 newValue</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="ex">INCR</span> key2</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">EXEC</span></span></code></pre></div></li>
+</ol>
+<h3 id="example-of-implementing-redis-transactions">Example of
+Implementing Redis Transactions</h3>
+<p>Let’s see a simple example of a Redis transaction. This one increases
+a user’s score and updates their status.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Start transaction</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">MULTI</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Queue commands</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="ex">INCR</span> user:123:score</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> user:123:status <span class="st">&quot;active&quot;</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Execute transaction</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="ex">EXEC</span></span></code></pre></div>
+<p>In this example, we do both the score increase and the status update
+together.</p>
+<h3
+id="using-redis-transactions-in-a-programming-language-python-example">Using
+Redis Transactions in a Programming Language (Python Example)</h3>
+<p>If we use a library like <code>redis-py</code>, we can do
+transactions like this:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Connect to Redis</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> redis.Redis(host<span class="op">=</span><span class="st">&#39;localhost&#39;</span>, port<span class="op">=</span><span class="dv">6379</span>, db<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Start transaction</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>pipe <span class="op">=</span> r.pipeline()</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>pipe.watch(<span class="st">&#39;user:123:score&#39;</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>pipe.multi()</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Queue commands</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>pipe.incr(<span class="st">&#39;user:123:score&#39;</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>pipe.<span class="bu">set</span>(<span class="st">&#39;user:123:status&#39;</span>, <span class="st">&#39;active&#39;</span>)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Execute transaction</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="cf">try</span>:</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    pipe.execute()</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="cf">except</span> redis.WatchError:</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">&quot;Transaction failed due to changes in watched keys.&quot;</span>)</span></code></pre></div>
+<p>This code shows how we can use Redis transactions in a Python app. It
+keeps everything in one action when we update the user’s score and
+status.</p>
+<p>For more details on Redis and its data types, please check this link:
+<a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">What
+are Redis Data Types?</a>.</p>
+<h2 id="what-are-the-limitations-of-redis-transactions">What are the
+limitations of Redis transactions?</h2>
+<p>Redis transactions are strong tools but they have some limits that we
+should know about.</p>
+<ol type="1">
+<li><p><strong>No Rollback Mechanism</strong>: Once we run a transaction
+with the <code>EXEC</code> command, we can’t go back. If one command
+fails, the others still go through.</p></li>
+<li><p><strong>Single Database Context</strong>: We can only work with
+one Redis database in a transaction. We can’t run commands in different
+databases at the same time.</p></li>
+<li><p><strong>Command Queuing</strong>: Redis puts commands in a queue
+to run them in the order we gave them. But if there are problems like
+key expiration, these commands might not run like we expect.</p></li>
+<li><p><strong>Atomicity of Commands, Not Operations</strong>: Atomicity
+means each command runs as a whole. But if we have complex tasks that
+need many keys, we can’t run them together in one transaction.</p></li>
+<li><p><strong>Blocking Commands</strong>: Some commands like
+<code>BLPOP</code> cannot be part of a transaction. This makes it hard
+to do certain tasks in a transaction.</p></li>
+<li><p><strong>No Isolation Levels</strong>: Redis does not have the
+usual isolation levels that other databases have. Other clients can see
+all commands in a transaction as soon as they run. This can cause
+problems if we are not careful.</p></li>
+<li><p><strong>Limited Error Handling</strong>: If one command fails,
+the rest of the transaction still runs except for the failed command.
+The error handling is not as good as in traditional databases.</p></li>
+<li><p><strong>Performance Overhead</strong>: Transactions can be slower
+because of the queuing and locking keys until the transaction is
+done.</p></li>
+</ol>
+<p>We should understand these limits to use Redis transactions well in
+our apps. To learn more about Redis commands and data types, we can
+check <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">what
+are Redis data types</a> and <a
+href="https://bestonlinetutorial.com/redis/how-do-i-work-with-redis-strings.html">how
+do I work with Redis strings</a>.</p>
+<h2 id="practical-examples-of-redis-transactions-in-action">Practical
+examples of Redis transactions in action</h2>
+<p>We use Redis transactions with the <code>MULTI</code>,
+<code>EXEC</code>, <code>WATCH</code>, and <code>DISCARD</code>
+commands. Here are some simple examples that show how to use Redis
+transactions well.</p>
+<h3 id="example-1-basic-transaction">Example 1: Basic Transaction</h3>
+<p>In this example, we will use a transaction to count logins and
+signups together.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">MULTI</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">INCR</span> user:1000:login_count</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ex">INCR</span> user:1000:signup_count</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="ex">EXEC</span></span></code></pre></div>
+<p>This transaction adds one to both the <code>login_count</code> and
+<code>signup_count</code> for user <code>1000</code> in one step.</p>
+<h3 id="example-2-using-watch-for-optimistic-locking">Example 2: Using
+WATCH for Optimistic Locking</h3>
+<p>Sometimes, we want to make sure a key has not changed before we run
+the transaction. We can use the <code>WATCH</code> command for this.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">WATCH</span> user:1000:balance</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">MULTI</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="ex">DECR</span> user:1000:balance 100</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="ex">EXEC</span></span></code></pre></div>
+<p>If <code>user:1000:balance</code> changes after the
+<code>WATCH</code> command, the <code>EXEC</code> will not work. This
+keeps our operation safe.</p>
+<h3 id="example-3-compound-operations">Example 3: Compound
+Operations</h3>
+<p>We can also move money between two accounts in one transaction.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">MULTI</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">DECR</span> user:1000:balance 50</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="ex">INCR</span> user:1001:balance 50</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="ex">EXEC</span></span></code></pre></div>
+<p>This transaction takes away 50 from <code>user:1000</code> and gives
+50 to <code>user:1001</code> at the same time.</p>
+<h3 id="example-4-conditional-updates">Example 4: Conditional
+Updates</h3>
+<p>We can check a value before doing a transaction.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">WATCH</span> user:1000:balance</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">IF</span> <span class="er">(</span><span class="ex">GET</span> user:1000:balance<span class="kw">)</span> <span class="op">&gt;</span>= <span class="ex">100</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">MULTI</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="ex">DECR</span> user:1000:balance 100</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="ex">EXEC</span></span></code></pre></div>
+<p>This checks if the balance is at least 100 before we take away money
+in the transaction.</p>
+<h3 id="example-5-storing-user-session-data">Example 5: Storing User
+Session Data</h3>
+<p>We can manage user sessions with transactions too.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">MULTI</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> user:1000:session:token <span class="st">&quot;abc123&quot;</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> user:1000:session:expires <span class="st">&quot;1655555555&quot;</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="ex">EXEC</span></span></code></pre></div>
+<p>This sets the session token and the expiration time together, making
+sure everything is correct.</p>
+<p>These examples show how Redis transactions help us do many operations
+easily and safely. For more details on working with Redis keys and data
+types, we can check <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">what
+are Redis data types</a>.</p>
+<h2
+id="how-do-redis-transactions-compare-to-other-database-transactions">How
+do Redis transactions compare to other database transactions?</h2>
+<p>Redis transactions give us a special way to handle tasks. They are
+different from regular database transactions. Let’s look at some main
+differences.</p>
+<ul>
+<li><p><strong>Atomicity</strong>: Redis transactions use commands like
+<code>MULTI</code>, <code>EXEC</code>, <code>WATCH</code>, and
+<code>DISCARD</code>. These commands make sure a group of commands run
+together. In regular databases, we use SQL commands like
+<code>BEGIN</code>, <code>COMMIT</code>, and <code>ROLLBACK</code> for
+the same goal. This means either all tasks work or none do.</p></li>
+<li><p><strong>Isolation Level</strong>: Redis has a basic level of
+isolation. Commands in a transaction can not see changes from other
+clients until the transaction is done. On the other hand, regular
+databases have several isolation levels. These include READ UNCOMMITTED,
+READ COMMITTED, REPEATABLE READ, and SERIALIZABLE. They help control
+what changes we can see from other transactions.</p></li>
+<li><p><strong>Performance</strong>: Redis transactions are usually
+faster. This is because Redis keeps data in memory. Regular databases
+often deal with disk I/O and complex locks. This can make them
+slower.</p></li>
+<li><p><strong>Locking Mechanism</strong>: Redis does not use locks when
+running a transaction. It just queues the commands. But regular
+databases often use row-level or table-level locks. This can cause
+problems like deadlocks when many transactions try to work at the same
+time.</p></li>
+<li><p><strong>Complexity and Features</strong>: Redis transactions are
+simpler. They do not have features like savepoints or nested
+transactions. These features are common in regular databases. This makes
+Redis easier for simple tasks but less flexible for complicated
+transactions.</p></li>
+<li><p><strong>Error Handling</strong>: In Redis, if one command fails
+in a transaction, we lose the whole transaction. In regular databases,
+we might roll back to an earlier state or keep a log of errors for
+later.</p></li>
+</ul>
+<p>Here is an example of Redis transaction commands:</p>
+<pre class="redis"><code>MULTI
+SET key1 &quot;value1&quot;
+SET key2 &quot;value2&quot;
+EXEC</code></pre>
+<p>In conclusion, Redis transactions focus on speed and simplicity. They
+are good for tasks that need fast and atomic operations. They do not
+have the extra work that regular database transactions need. For more
+details on Redis and what it can do, you can look at <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">what is
+Redis</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-a-redis-transaction">What is a Redis transaction?</h3>
+<p>A Redis transaction is a list of commands that run as one single
+operation. This means either all commands run or none do. This keeps our
+data safe and correct. This is very important for apps that need a
+steady state in their Redis database. So, Redis transactions are key for
+good data management.</p>
+<h3 id="how-do-redis-transactions-handle-concurrency">How do Redis
+transactions handle concurrency?</h3>
+<p>Redis transactions use a system called MULTI/EXEC to handle many
+actions at once. When we start a transaction with the MULTI command,
+Redis saves the commands until we say EXEC. If another user tries to
+change the data while this happens, the transaction stays safe. This
+keeps our data consistent and separate. So, Redis transactions help us
+manage many operations at the same time.</p>
+<h3 id="can-redis-transactions-roll-back-commands">Can Redis
+transactions roll back commands?</h3>
+<p>No, Redis transactions can’t roll back commands. Once we run the EXEC
+command, all saved commands happen. If we need to go back, we have to do
+it in the application. We can keep track of old states or use other
+Redis features like WATCH to see changes before we run commands.</p>
+<h3
+id="what-are-the-performance-implications-of-using-redis-transactions">What
+are the performance implications of using Redis transactions?</h3>
+<p>Using Redis transactions can slow things down a bit because commands
+are saved and run together. But they still work fast because Redis uses
+memory. For important actions that need to happen all at once, the good
+sides of transactions are often more important than the small delay.
+This helps keep our data correct and reliable in our app.</p>
+<h3 id="how-do-redis-transactions-compare-to-sql-transactions">How do
+Redis transactions compare to SQL transactions?</h3>
+<p>Redis transactions are different from SQL transactions because they
+can’t roll back or have different isolation levels. SQL transactions can
+do complex things with ACID rules. But Redis transactions focus on
+running commands all at once. This makes Redis good for fast situations
+where speed matters more than strict rules for transactions. This is
+great for caching and real-time data work.</p>
+<p>For more information on Redis and its features, we can read articles
+like <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">What is
+Redis?</a> and <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">What
+are Redis data types?</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
