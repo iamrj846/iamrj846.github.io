@@ -28,7 +28,7 @@ function loadHead() {
     fetch('/assets/head.html')
     .then(response => response.text())
     .then(data => {
-        document.head.innerHTML += data; // Ensure it goes inside <head>
+        document.head.innerHTML = data + document.head.innerHTML;
     }).catch(error => console.error("Error loading head:", error));
 }
 
