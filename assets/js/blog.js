@@ -34,14 +34,28 @@ function loadHead() {
 
 document.addEventListener("DOMContentLoaded", loadHead);
 
-$(document).ready(function() {
-    $('.job-card a').click(function (event) {
-        event.preventDefault();
-        console.log('Clicked job card link');
-        // Example: window.open($(this).attr('href'), '_blank'); 
-    });
+document.addEventListener('DOMContentLoaded', function () {
+    document.body.addEventListener('click', function (event) {
+        // Handle job card link clicks
+        if (event.target.matches('.job-card a')) {
+            event.preventDefault();
+            console.log('Clicked job card link');
+            window.open(event.target.href, '_blank'); // Open link in a new tab
+        }
 
-    $('.job-card button').click(function () {
-        console.log('Clicked job card button');
+        // Handle job card button clicks
+        if (event.target.matches('.job-card button')) {
+            console.log('Clicked job card button');
+            
+            // Find the closest job-card and its anchor tag
+            let jobCard = event.target.closest('.job-card');
+            let link = jobCard ? jobCard.querySelector('a') : null;
+            
+            if (link) {
+                window.open(link.href, '_blank'); // Open the link in a new tab
+            } else {
+                console.error('No link found inside job-card');
+            }
+        }
     });
 });
