@@ -1,0 +1,471 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>How do I configure Redis AOF persistence?</title>
+            <meta name="description" content="Learn how to configure Redis AOF persistence step-by-step. Enhance your data durability and performance with our expert guide!">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How do I configure Redis AOF persistence?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <h1 id="redis-aof-persistence">Redis AOF Persistence</h1>
+<p>Redis AOF (Append-Only File) persistence helps us keep our data safe
+in the Redis in-memory database. AOF logs every write command that the
+server gets. This way, we can rebuild the database after a restart or
+crash. This feature is very important for apps that need strong data
+safety and want to lose as little data as possible if something goes
+wrong.</p>
+<p>In this article, we will look at how to set up Redis AOF persistence
+in a good way. We will talk about what Redis AOF is and why it matters.
+We will also go through the steps to turn on AOF persistence. Then, we
+will discuss the different AOF rewrite rules we can use. After that, we
+will show how to change AOF settings to fit our needs. We will give some
+real examples of AOF setup and talk about how to check Redis AOF
+performance. Finally, we will answer some common questions about Redis
+AOF persistence.</p>
+<ul>
+<li>How can we set up Redis AOF persistence well?</li>
+<li>What is Redis AOF and why should we use it?</li>
+<li>How do we turn on AOF persistence in Redis?</li>
+<li>What are the different AOF rewrite rules?</li>
+<li>How can we change AOF settings?</li>
+<li>What are some real examples of Redis AOF setup?</li>
+<li>How do we check Redis AOF performance?</li>
+<li>Common Questions</li>
+</ul>
+<p>For more basic info on Redis, we can look at articles like <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">What is
+Redis?</a> and <a
+href="https://bestonlinetutorial.com/redis/what-is-redis-persistence.html">What
+is Redis Persistence?</a>.</p>
+<h2 id="what-is-redis-aof-and-why-use-it">What is Redis AOF and why use
+it?</h2>
+<p>Redis AOF (Append Only File) is a way to keep data safe in Redis. It
+logs every time the server writes something. This log helps us get back
+our data when the server restarts. It makes sure our data stays safe and
+reduces the chance of losing it.</p>
+<h3 id="key-benefits-of-redis-aof">Key Benefits of Redis AOF:</h3>
+<ul>
+<li><strong>Data Durability</strong>: AOF saves every write. So, we can
+get our data back even if the server shuts down suddenly.</li>
+<li><strong>Flexible Configuration</strong>: We can set AOF to find a
+good balance between speed and data safety. This is done by changing how
+often we write to the log.</li>
+<li><strong>Easier Recovery</strong>: We can use the AOF file to restore
+the database to how it was before.</li>
+</ul>
+<h3 id="how-aof-works">How AOF Works:</h3>
+<ol type="1">
+<li>Every time we write something, it goes to the AOF file right
+away.</li>
+<li>We can set Redis to save the AOF file to the disk at different times
+or after each write.</li>
+<li>We can also rewrite the AOF in the background to make it smaller
+without losing any data.</li>
+</ol>
+<h3 id="when-to-use-aof">When to Use AOF:</h3>
+<ul>
+<li>We should use AOF when we need the best data safety and can handle a
+bit slower performance.</li>
+<li>We should also use it if our app needs to keep a full record of
+write actions for checking or fixing problems.</li>
+</ul>
+<p>For more information about Redis and how it keeps data, we can check
+<a
+href="https://bestonlinetutorial.com/redis/what-is-redis-persistence.html">what
+is Redis persistence</a>.</p>
+<h2 id="how-do-we-enable-aof-persistence-in-redis">How do we enable AOF
+persistence in Redis?</h2>
+<p>To enable Append-Only File (AOF) persistence in Redis, we need to
+change the Redis configuration file. This file is usually called
+<code>redis.conf</code>. We can also set it using the Redis command
+line. AOF persistence logs every write action the server gets. This
+makes data storage more reliable than RDB snapshots.</p>
+<h3 id="steps-to-enable-aof-persistence">Steps to Enable AOF
+Persistence:</h3>
+<ol type="1">
+<li><p><strong>Find the Configuration File</strong>:<br />
+We typically find the configuration file at
+<code>/etc/redis/redis.conf</code> or in the Redis installation
+folder.</p></li>
+<li><p><strong>Change the Configuration</strong>:<br />
+Open the configuration file and look for the line with
+<code>appendonly</code>. We need to change it to <code>yes</code> to
+turn on AOF persistence.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">appendonly</span> yes</span></code></pre></div></li>
+<li><p><strong>Set the AOF Filename</strong> (optional):<br />
+We can choose the name of the AOF file. By default, it is
+<code>appendonly.aof</code>. If we want to change it, we can find this
+line and edit it:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">appendfilename</span> <span class="st">&quot;myappendonly.aof&quot;</span></span></code></pre></div></li>
+<li><p><strong>Set the AOF Rewrite Policy</strong> (optional):<br />
+We can decide how often the AOF file gets rewritten. This helps with
+file size and I/O load. For example, to set it to rewrite every 60
+seconds with at least 10000 commands, we can use:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">auto-aof-rewrite-min-size</span> 64mb</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">auto-aof-rewrite-percentage</span> 100</span></code></pre></div></li>
+<li><p><strong>Restart Redis</strong>:<br />
+After making the changes, we need to restart the Redis server to apply
+the new settings:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart redis</span></code></pre></div></li>
+<li><p><strong>Check if AOF is Enabled</strong>:<br />
+We can see if AOF persistence is on by running this command in the Redis
+CLI:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">CONFIG</span> GET appendonly</span></code></pre></div>
+<p>The output should show <code>appendonly</code> set to
+<code>yes</code>.</p></li>
+</ol>
+<p>By following these steps, we enable AOF persistence in Redis. This
+means all write actions are logged for data recovery and durability. For
+more information about Redis persistence, we can look at the article on
+<a
+href="https://bestonlinetutorial.com/redis/what-is-redis-persistence.html">what
+is Redis persistence</a>.</p>
+<h2 id="what-are-the-different-aof-rewrite-policies">What are the
+different AOF rewrite policies?</h2>
+<p>Redis has three main AOF (Append Only File) rewrite policies. These
+policies help us manage when and how the AOF file is rewritten. This is
+important for improving performance and making the file size smaller.
+The policies are:</p>
+<ol type="1">
+<li><strong>Always</strong>:
+<ul>
+<li>We rewrite the AOF file every time we run a write command.<br />
+</li>
+<li>This option gives us the best durability. But, it can slow down
+performance because we rewrite often.</li>
+</ul>
+<pre class="plaintext"><code>appendfsync always</code></pre></li>
+<li><strong>Everysec</strong>:
+<ul>
+<li>We rewrite the AOF file every second.<br />
+</li>
+<li>This is the default choice and it is recommended. It balances
+performance and durability. If Redis has a crash before the next
+rewrite, we might lose some data.</li>
+</ul>
+<pre class="plaintext"><code>appendfsync everysec</code></pre></li>
+<li><strong>No</strong>:
+<ul>
+<li>The AOF file does not rewrite automatically.<br />
+</li>
+<li>We usually do not recommend this option. It can make the AOF file
+very big over time, which can hurt performance.</li>
+</ul>
+<pre class="plaintext"><code>appendfsync no</code></pre></li>
+</ol>
+<p>To set these options, we need to change the <code>redis.conf</code>
+file:</p>
+<pre class="plaintext"><code># Append Only File configuration
+appendonly yes
+appendfsync everysec  # We can change to &#39;always&#39; or &#39;no&#39; if we want</code></pre>
+<p>Also, Redis lets us manually rewrite the AOF. We can use the
+<code>BGREWRITEAOF</code> command to do this. It helps to make the AOF
+size smaller without stopping other tasks.</p>
+<p>If we want to know more about Redis persistence options, we can look
+at <a
+href="https://bestonlinetutorial.com/redis/what-is-redis-persistence.html">what
+is Redis persistence</a>.</p>
+<h2 id="how-can-we-customize-aof-configuration-settings">How can we
+customize AOF configuration settings?</h2>
+<p>To customize Redis AOF (Append-Only File) settings, we need to change
+the <code>redis.conf</code> file. We can also set options at runtime
+with the Redis command line. Here are the important settings we can
+adjust to improve AOF storage for our needs.</p>
+<h3 id="key-aof-configuration-parameters">Key AOF Configuration
+Parameters</h3>
+<ol type="1">
+<li><strong>appendonly</strong>
+<ul>
+<li><p>This turns on AOF storage.</p></li>
+<li><p>To turn it on, we set:</p>
+<pre class="plaintext"><code>appendonly yes</code></pre></li>
+</ul></li>
+<li><strong>appendfsync</strong>
+<ul>
+<li><p>This decides how often Redis saves the AOF buffer to disk.
+Options are:</p>
+<ul>
+<li><code>always</code>: Save after every write. This is safe but
+slow.</li>
+<li><code>everysec</code>: Save every second. This is the default.</li>
+<li><code>no</code>: Let the OS manage it. This is fast but less
+safe.</li>
+</ul></li>
+<li><p>Example setting:</p>
+<pre class="plaintext"><code>appendfsync everysec</code></pre></li>
+</ul></li>
+<li><strong>no-appendfsync-on-rewrite</strong>
+<ul>
+<li><p>This stops adding to the AOF file during a background rewrite. It
+helps to reduce I/O load.</p></li>
+<li><p>To enable:</p>
+<pre class="plaintext"><code>no-appendfsync-on-rewrite yes</code></pre></li>
+</ul></li>
+<li><strong>aof-rewrite-incremental-fsync</strong>
+<ul>
+<li><p>This allows incremental fsync while rewriting AOF. It lowers the
+performance hit during rewrites.</p></li>
+<li><p>Example setting:</p>
+<pre class="plaintext"><code>aof-rewrite-incremental-fsync yes</code></pre></li>
+</ul></li>
+<li><strong>aof-rewrite-min-size</strong>
+<ul>
+<li><p>This is the minimum size of the AOF file before a rewrite starts.
+It helps to control the size of the AOF file.</p></li>
+<li><p>Example setting:</p>
+<pre class="plaintext"><code>aof-rewrite-min-size 64mb</code></pre></li>
+</ul></li>
+<li><strong>aof-rewrite-percentage</strong>
+<ul>
+<li><p>This is the percentage of AOF file growth that starts a rewrite.
+We can use this to manage when rewrites happen.</p></li>
+<li><p>Example setting:</p>
+<pre class="plaintext"><code>aof-rewrite-percentage 100</code></pre></li>
+</ul></li>
+<li><strong>aof-load-truncated</strong>
+<ul>
+<li><p>This controls if we load cut-off AOF files when starting. This is
+very important for recovery.</p></li>
+<li><p>Example setting:</p>
+<pre class="plaintext"><code>aof-load-truncated yes</code></pre></li>
+</ul></li>
+</ol>
+<h3 id="example-configuration">Example Configuration</h3>
+<p>Here is an example of configuration for the <code>redis.conf</code>
+file:</p>
+<pre class="plaintext"><code>appendonly yes
+appendfsync everysec
+no-appendfsync-on-rewrite yes
+aof-rewrite-incremental-fsync yes
+aof-rewrite-min-size 64mb
+aof-rewrite-percentage 100
+aof-load-truncated yes</code></pre>
+<h3 id="applying-changes">Applying Changes</h3>
+<p>After we change the configuration, we should restart the Redis server
+to make the changes work. We can also change settings while running with
+the <code>CONFIG SET</code> command:</p>
+<pre class="plaintext"><code>CONFIG SET appendfsync everysec</code></pre>
+<p>These settings help us customize Redis AOF storage based on our
+application’s needs for speed and safety. For more details on Redis
+storage, we can check the article on <a
+href="https://bestonlinetutorial.com/redis/what-is-redis-persistence.html">what
+is Redis persistence</a> to learn more.</p>
+<h2 id="what-are-practical-examples-of-redis-aof-configuration">What are
+practical examples of Redis AOF configuration?</h2>
+<p>To set up Redis AOF (Append Only File) persistence well, we can use
+different settings to improve performance and safety. Here are some easy
+examples of Redis AOF configuration:</p>
+<ol type="1">
+<li><p><strong>Basic AOF Configuration</strong>:<br />
+To turn on AOF persistence in your <code>redis.conf</code> file, we can
+set this:</p>
+<pre class="conf"><code>appendonly yes
+appendfsync everysec</code></pre>
+<p>This will turn on AOF and make it save every second. This helps
+balance speed and safety.</p></li>
+<li><p><strong>AOF Rewrite Configuration</strong>:<br />
+We can set when to rewrite the AOF file to make it smaller. For example,
+we can rewrite it if it is bigger than 64MB and if it is at least 25%
+bigger than before:</p>
+<pre class="conf"><code>auto-aof-rewrite-min-size 64mb
+auto-aof-rewrite-percentage 25</code></pre></li>
+<li><p><strong>Changing AOF File Name</strong>:<br />
+If we want to give a special name to the AOF file, we can set this:</p>
+<pre class="conf"><code>appendfilename &quot;myredis.aof&quot;</code></pre></li>
+<li><p><strong>Setting AOF Buffer Size</strong>:<br />
+To control how big the AOF rewrite buffer can be, we can set:</p>
+<pre class="conf"><code>aof-rewrite-buffer-size 1gb</code></pre>
+<p>This helps us manage memory when we rewrite.</p></li>
+<li><p><strong>AOF Fsync Policy</strong>:<br />
+We can change the fsync policy based on what we need:</p>
+<ul>
+<li><p><strong>Every second</strong> (default):</p>
+<pre class="conf"><code>appendfsync everysec</code></pre></li>
+<li><p><strong>Always</strong> (more safety, less speed):</p>
+<pre class="conf"><code>appendfsync always</code></pre></li>
+<li><p><strong>No Fsync</strong> (faster but risk of losing data):</p>
+<pre class="conf"><code>appendfsync no</code></pre></li>
+</ul></li>
+<li><p><strong>Manual AOF Rewrite</strong>:<br />
+To start an AOF rewrite by ourselves, we can use this Redis command:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">BGREWRITEAOF</span></span></code></pre></div>
+<p>This lets us make the AOF file better without stopping the
+server.</p></li>
+<li><p><strong>Monitoring AOF Status</strong>:<br />
+To see how the AOF is doing, we can use the <code>INFO</code>
+command:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">INFO</span> persistence</span></code></pre></div>
+<p>This gives us details about the current AOF setup and stats.</p></li>
+<li><p><strong>Using AOF with RDB</strong>:<br />
+We can use RDB and AOF together for better safety. Set RDB snapshots in
+<code>redis.conf</code> like this:</p>
+<pre class="conf"><code>save 900 1
+save 300 10
+save 60 10000</code></pre>
+<p>This makes sure we take snapshots, while AOF keeps logs in
+real-time.</p></li>
+</ol>
+<p>For more details on Redis persistence options, check <a
+href="https://bestonlinetutorial.com/redis/what-is-redis-persistence.html">What
+is Redis Persistence?</a>.</p>
+<h2 id="how-do-we-monitor-redis-aof-performance">How do we monitor Redis
+AOF performance?</h2>
+<p>Monitoring Redis AOF (Append Only File) performance is very
+important. It helps us keep our data safe and our applications running
+well. Here are some easy steps and commands to monitor AOF performance
+in Redis:</p>
+<ol type="1">
+<li><p><strong>Using Redis INFO Command</strong>: This command gives us
+many stats about our Redis server. It includes AOF metrics too. We can
+run this command in our Redis CLI:</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">INFO</span> persistence</span></code></pre></div>
+<p>Here are key things to check:</p>
+<ul>
+<li><code>aof_enabled</code>: This tells us if AOF is on.</li>
+<li><code>aof_rewrite_in_progress</code>: This shows if an AOF rewrite
+is happening now.</li>
+<li><code>aof_current_size</code>: This shows the size of the current
+AOF file.</li>
+<li><code>aof_base_size</code>: This is the size of the base AOF file
+before any rewrites.</li>
+</ul></li>
+<li><p><strong>AOF Rewrite Metrics</strong>: We need to watch AOF
+rewrite metrics. This helps us understand how often rewrites happen. We
+can use:</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">INFO</span> persistence</span></code></pre></div>
+<p>Look for:</p>
+<ul>
+<li><code>aof_rewrite_count</code>: This is how many AOF rewrites we
+did.</li>
+<li><code>aof_rewrite_time_sec</code>: This shows how long the last AOF
+rewrite took.</li>
+</ul></li>
+<li><p><strong>Monitoring Latency</strong>: To see the delay caused by
+AOF, we can use the <code>latency</code> command:</p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="ex">LATENCY</span> GRAPH aof</span></code></pre></div>
+<p>This helps us see how AOF affects overall latency.</p></li>
+<li><p><strong>Log Files</strong>: We should check Redis log files for
+any warnings or errors about AOF. This helps us find problems during AOF
+rewrites or background saving.</p></li>
+<li><p><strong>Redis Monitoring Tools</strong>: We can use tools like
+RedisInsight or other monitoring tools (like Prometheus and Grafana) to
+see AOF performance metrics over time.</p></li>
+<li><p><strong>Command Statistics</strong>: We can use
+<code>SLOWLOG</code> to find slow commands that might be affected by AOF
+writes:</p>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SLOWLOG</span> GET</span></code></pre></div></li>
+<li><p><strong>Memory Usage</strong>: We should check memory usage to
+make sure AOF does not use too much memory. We can use:</p>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="ex">INFO</span> memory</span></code></pre></div>
+<p>Look for:</p>
+<ul>
+<li><code>used_memory</code>: This tells us total memory used by
+Redis.</li>
+<li><code>used_memory_peak</code>: This shows the highest memory
+usage.</li>
+</ul></li>
+</ol>
+<p>By checking these metrics often, we can make Redis AOF performance
+better and keep our data safe. For more details on Redis persistence, we
+can check <a
+href="https://bestonlinetutorial.com/redis/what-is-redis-persistence.html">What
+is Redis Persistence?</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-redis-aof-persistence-and-how-does-it-work">What is
+Redis AOF persistence and how does it work?</h3>
+<p>Redis AOF (Append-Only File) persistence is a way to keep data safe.
+It logs every write operation that the Redis server gets. This helps us
+recover data by replaying the logged operations if the server fails.
+Many people like AOF because it gives a better way to recover data than
+RDB snapshots. We can learn more about Redis persistence <a
+href="https://bestonlinetutorial.com/redis/what-is-redis-persistence.html">here</a>.</p>
+<h3 id="how-does-redis-aof-compare-to-rdb-persistence">How does Redis
+AOF compare to RDB persistence?</h3>
+<p>Redis AOF and RDB (Redis Database) persistence both help keep data
+safe but work in different ways. AOF logs each write operation. RDB
+saves snapshots of the data at certain times. AOF gives better recovery
+options. It is good for apps that need data safety almost in real time.
+For more details, we can check the article on <a
+href="https://bestonlinetutorial.com/redis/how-do-i-configure-redis-rdb-persistence.html">Redis
+RDB persistence</a>.</p>
+<h3 id="what-are-the-different-aof-rewrite-policies-in-redis">What are
+the different AOF rewrite policies in Redis?</h3>
+<p>Redis has different AOF rewrite policies. These help to make
+performance better and control file size. The most used policies are
+“always,” “everysec,” and “no.” The “everysec” policy is a good choice
+for balancing performance and data safety. Knowing these policies helps
+us set up Redis AOF persistence better.</p>
+<h3 id="how-can-i-customize-my-redis-aof-configuration-settings">How can
+I customize my Redis AOF configuration settings?</h3>
+<p>We can customize Redis AOF configuration settings by changing the
+<code>redis.conf</code> file. Important settings include
+<code>appendonly</code>, <code>appendfsync</code>, and
+<code>auto-aof-rewrite-min-size</code>. Changing these settings helps us
+improve performance based on what our application needs. For more
+details on customizing AOF configuration, we can see the section in this
+article.</p>
+<h3 id="how-do-i-monitor-the-performance-of-redis-aof">How do I monitor
+the performance of Redis AOF?</h3>
+<p>To monitor Redis AOF performance, we can use Redis monitoring tools
+and commands like <code>INFO</code> and <code>MONITOR</code>. These
+tools show us AOF file sizes, rewrite operations, and other important
+metrics. Regularly checking this helps us ensure that AOF persistence
+works well and can help us find performance issues.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
