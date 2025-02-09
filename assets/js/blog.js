@@ -84,3 +84,74 @@ document.addEventListener("DOMContentLoaded", function () {
         banner.remove();
     });
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+  const jobsContainer = document.querySelector('.job-card-container');
+
+  if (jobsContainer) {
+    fetch('jobs.json')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(jobData => {
+        jobData.forEach(companyData => {
+          const article = document.createElement('article');
+          article.classList.add('job-card');
+
+          let companyHTML = `
+            <div class="company-name"><strong>${companyData["Company Name"]}</strong></div>
+            <div class="job-role-container">
+          `;
+
+          for (let i = 1; i <= 4; i += 2) {
+            const role1 = companyData[`Role ${i}`];
+            const location1 = companyData[`Location ${i}`];
+            const link1 = companyData[`Link ${i}`];
+            const salary1 = companyData[`Salary ${i}`]; // Get salary for role 1
+
+            const role2 = companyData[`Role ${i + 1}`];
+            const location2 = companyData[`Location ${i + 1}`];
+            const link2 = companyData[`Link ${i + 1}`];
+            const salary2 = companyData[`Salary ${i + 1}`]; // Get salary for role 2
+
+            companyHTML += `
+              <div class="job-role-row">
+                <div class="job-role">
+                  <div class="role-title">${role1}</div>
+                  <div class="role-details">
+                    <div class="detail"><i class="fas fa-map-marker-alt"></i>&nbsp;<strong>Location:</strong>&nbsp;${location1}</div>
+                    <div class="detail"><i class="fas fa-dollar-sign"></i>&nbsp;<strong>Salary:</strong>&nbsp;${salary1} (*Glassdoor)</div>
+                  </div>
+                  <a href="${link1}" target="_blank" rel="noopener noreferrer" class="apply">Apply</a>
+                </div>
+                <div class="job-role">
+                  <div class="role-title">${role2}</div>
+                  <div class="role-details">
+                    <div class="detail"><i class="fas fa-map-marker-alt"></i>&nbsp;<strong>Location:</strong>&nbsp;${location2}</div>
+                    <div class="detail"><i class="fas fa-dollar-sign"></i>&nbsp;<strong>Salary:</strong>&nbsp;${salary2} (*Glassdoor)</div>
+                  </div>
+                  <a href="${link2}" target="_blank" rel="noopener noreferrer" class="apply">Apply</a>
+                </div>
+              </div>
+            `;
+          }
+
+          companyHTML += `</div>`;
+          article.innerHTML = companyHTML;
+          jobsContainer.appendChild(article);
+          jobsContainer.appendChild(document.createElement('br'));
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching or parsing JSON:', error);
+        if (jobsContainer) {
+          jobsContainer.innerHTML = "<p>Error loading job listings.</p>";
+        }
+      });
+  } else {
+    console.log("No .job-card-container found on this page. Skipping job listings.");
+  }
+});
