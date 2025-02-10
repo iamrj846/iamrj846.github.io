@@ -1,0 +1,452 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>How does Redis Sentinel work?</title>
+            <meta name="description" content="Discover how Redis Sentinel ensures high availability and monitoring in Redis databases. Learn its architecture and features!">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How does Redis Sentinel work?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Redis Sentinel is a system that helps keep Redis running well and
+monitors it. It works as a backup plan. If one of the main Redis nodes
+stops working, your Redis setup can still work. Redis Sentinel manages
+the copies and keeps an eye on the Redis servers. This way, it helps
+make sure your data is safe and easy to reach in production.</p>
+<p>In this article, we will look at how Redis Sentinel works. We will
+see how it helps with high availability. We will talk about the main
+parts involved and how it watches Redis instances. We will also explain
+how the failover process works. We will show you how to set up Redis
+Sentinel in your system. You will see practical examples with code.
+Plus, we will explain how Sentinel chooses a new master. We will also
+answer some common questions about Redis Sentinel.</p>
+<ul>
+<li>How does Redis Sentinel Work in High Availability</li>
+<li>What are the Main Parts of Redis Sentinel</li>
+<li>How does Redis Sentinel Watch Redis Instances</li>
+<li>How does Redis Sentinel Manage Failover</li>
+<li>How to Set Up Redis Sentinel for Your System</li>
+<li>Practical Examples of Using Redis Sentinel with Code</li>
+<li>How does Redis Sentinel Choose a New Master</li>
+<li>Common Questions</li>
+</ul>
+<p>If you want more information on Redis, you can look at this article
+on <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">What is
+Redis?</a> or learn about <a
+href="https://bestonlinetutorial.com/redis/how-do-i-install-redis.html">How
+to Install Redis</a>.</p>
+<h2 id="what-are-the-key-components-of-redis-sentinel">What are the Key
+Components of Redis Sentinel?</h2>
+<p>Redis Sentinel has some important parts that work together to keep
+Redis running smoothly. Knowing these parts is important for setting up
+and managing Redis Sentinel well.</p>
+<ol type="1">
+<li><p><strong>Sentinel Instances</strong>: These are the main parts
+that watch over Redis master and slave instances. Usually, we need at
+least three Sentinel instances. This helps us make good decisions when
+there are problems.</p></li>
+<li><p><strong>Master and Slave Instances</strong>: The Redis master
+instance does all the write tasks. One or more slave instances copy the
+master’s data and do the read tasks. The Sentinel keeps an eye on these
+instances to find any issues.</p></li>
+<li><p><strong>Configuration Quorum</strong>: This is how many Sentinel
+instances need to agree on the master’s state before we can start a
+failover. This helps us avoid split-brain problems and makes sure the
+failover works well.</p></li>
+<li><p><strong>Sentinel Configuration</strong>: Sentinel has its own
+config file, often called <code>sentinel.conf</code>. This file sets up
+things like which Redis instances to watch, the quorum, and how to send
+alerts. A simple setup to watch a Redis master might look like this:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> monitor mymaster 127.0.0.1 6379 2</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> down-after-milliseconds mymaster 5000</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> failover-timeout mymaster 60000</span></code></pre></div></li>
+<li><p><strong>Notification System</strong>: Sentinel can send alerts
+(using scripts) to tell admins about changes in Redis instances. This
+helps us monitor and manage Redis better.</p></li>
+<li><p><strong>Client Libraries</strong>: Clients that work with Redis
+Sentinel need to know about Sentinel’s API. They use Sentinel commands
+to find the current master and connect with the Redis cluster. This
+helps them connect to the right instance.</p></li>
+</ol>
+<p>These parts work together to give us a strong high-availability
+solution. This way, Redis can keep running even if there is a problem.
+For more details on Redis Sentinel, check out <a
+href="https://bestonlinetutorial.com/redis/what-is-redis-sentinel.html">What
+is Redis Sentinel?</a>.</p>
+<h2 id="how-does-redis-sentinel-monitor-redis-instances">How does Redis
+Sentinel Monitor Redis Instances?</h2>
+<p>We use Redis Sentinel to keep an eye on Redis instances. It helps us
+make sure everything works well and stays available. It does some
+important things:</p>
+<ol type="1">
+<li><p><strong>Health Checks</strong>: Sentinel sends <code>PING</code>
+commands to the Redis servers often. This checks if they respond. If a
+server does not reply in a set time, Sentinel says it is ‘subjectively
+down’.</p></li>
+<li><p><strong>Quorum Voting</strong>: To be sure a server is really
+down, Sentinel needs a group of Sentinels to agree that it is down. This
+helps us avoid mistakes.</p></li>
+<li><p><strong>State Assessment</strong>: Sentinel gathers details about
+the Redis instances. It checks their role like master or replica, their
+status, and how far they are in replication.</p></li>
+<li><p><strong>Configuration Updates</strong>: When the status of a
+Redis instance changes, Sentinel updates its settings. It also tells
+other Sentinels and clients about the current setup.</p></li>
+</ol>
+<p>Here is an example for Sentinel monitoring:</p>
+<pre class="conf"><code>sentinel monitor mymaster 127.0.0.1 6379 2
+sentinel down-after-milliseconds mymaster 5000
+sentinel failover-timeout mymaster 60000
+sentinel parallel-syncs mymaster 1</code></pre>
+<p>In this example:</p>
+<ul>
+<li><code>mymaster</code> is the name we give to the master
+instance.</li>
+<li>Sentinel needs at least 2 Sentinels to agree before it says the
+master is down after 5 seconds of no reply.</li>
+<li>The failover timeout is 60 seconds. Only one replica will sync
+during failover.</li>
+</ul>
+<p>This way of monitoring is very important for keeping Redis systems
+reliable and available. If we want to learn more about Redis Sentinel,
+we can check the article on <a
+href="https://bestonlinetutorial.com/redis/what-is-redis-sentinel.html">What
+is Redis Sentinel</a>.</p>
+<h2 id="how-does-redis-sentinel-handle-failover">How does Redis Sentinel
+Handle Failover?</h2>
+<p>Redis Sentinel is a strong tool that helps keep Redis systems running
+smoothly. It automatically manages failover when things go wrong. If the
+main Redis instance goes down, Redis Sentinel steps in. It promotes a
+replica to become the new master. This way, we have less downtime and
+our system keeps running.</p>
+<h3 id="failover-process">Failover Process</h3>
+<ol type="1">
+<li><p><strong>Detection</strong>: Redis Sentinel always checks the
+health of Redis instances. If a master does not respond in a certain
+time, Sentinel marks it as “subjectively down” (SDOWN).</p></li>
+<li><p><strong>Quorum Decision</strong>: After marking the master as
+SDOWN, Sentinel asks other Sentinels for their opinion. If most
+Sentinels agree that the master is down, it marks the master as
+“objectively down” (ODOWN).</p></li>
+<li><p><strong>Failover Initiation</strong>: Once a master is ODOWN,
+Redis Sentinel starts the failover process. It chooses a replica to
+promote.</p></li>
+</ol>
+<h3 id="promoting-a-replica">Promoting a Replica</h3>
+<ul>
+<li>Sentinel picks a replica based on things like replication lag and
+priority settings. The selected replica becomes the new master.</li>
+</ul>
+<h3 id="reconfiguration">Reconfiguration</h3>
+<ul>
+<li>After promoting the new master, we need to reconfigure all other
+replicas. They must start replicating from the new master. Sentinel
+updates their settings automatically.</li>
+</ul>
+<h3 id="example-configuration">Example Configuration</h3>
+<p>To set up Redis Sentinel for handling failover, we can use this
+example in the <code>sentinel.conf</code> file:</p>
+<pre class="conf"><code># Example Sentinel configuration
+sentinel monitor mymaster 127.0.0.1 6379 2
+sentinel down-after-milliseconds mymaster 5000
+sentinel failover-timeout mymaster 60000
+sentinel parallel-syncs mymaster 1</code></pre>
+<h3 id="key-configuration-parameters">Key Configuration Parameters</h3>
+<ul>
+<li><strong>sentinel monitor</strong>: This tells which master to watch.
+It includes its IP, port, and how many Sentinels need to agree.</li>
+<li><strong>sentinel down-after-milliseconds</strong>: This is the time
+in milliseconds before Sentinel thinks the master is SDOWN.</li>
+<li><strong>sentinel failover-timeout</strong>: This is how long in
+milliseconds the failover takes.</li>
+<li><strong>sentinel parallel-syncs</strong>: This shows how many
+replicas can sync with the new master at the same time.</li>
+</ul>
+<p>This setup helps Redis Sentinel manage failovers well. It keeps our
+Redis service available. For more details on how to set up and use Redis
+Sentinel, we can check the article on <a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redis-sentinel-for-high-availability.html">how
+to use Redis Sentinel for high availability</a>.</p>
+<h2 id="how-to-configure-redis-sentinel-for-your-setup">How to Configure
+Redis Sentinel for Your Setup?</h2>
+<p>Configuring Redis Sentinel is about setting up Sentinel parts to
+watch your Redis master and replicas. This helps us keep high
+availability. We can follow these steps to set up Redis Sentinel:</p>
+<ol type="1">
+<li><p><strong>Install Redis and Sentinel</strong>: First, we need to
+install Redis on all the nodes. Sentinel is included with
+Redis.</p></li>
+<li><p><strong>Create Sentinel Configuration File</strong>: Next, we
+create a file for each Sentinel instance. We usually name it
+<code>sentinel.conf</code>. Here is an example:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># sentinel.conf</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">port</span> 26379</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">dir</span> /tmp</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> monitor mymaster <span class="op">&lt;</span>master-ip<span class="op">&gt;</span> <span class="op">&lt;</span>master-port<span class="op">&gt;</span> <span class="op">&lt;</span>quorum<span class="op">&gt;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> down-after-milliseconds mymaster 5000</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> failover-timeout mymaster 60000</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> parallel-syncs mymaster 1</span></code></pre></div>
+<ul>
+<li>We must change <code>&lt;master-ip&gt;</code> and
+<code>&lt;master-port&gt;</code> to the real IP address and port of our
+master Redis server.</li>
+<li>We set <code>&lt;quorum&gt;</code> to how many Sentinels need to
+agree that a master is down.</li>
+</ul></li>
+<li><p><strong>Start Sentinel</strong>: Now, we run the Sentinel with
+our config file:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-sentinel</span> /path/to/sentinel.conf</span></code></pre></div></li>
+<li><p><strong>Configure Redis Instances</strong>: We need to make sure
+each Redis instance (master and replicas) has the Sentinel settings in
+their <code>redis.conf</code> file.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># redis.conf (for each instance)</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> announce-ip <span class="op">&lt;</span>sentinel-ip<span class="op">&gt;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> announce-port 26379</span></code></pre></div></li>
+<li><p><strong>Check Sentinel Status</strong>: We can use this command
+to see if Sentinel is working:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> <span class="at">-p</span> 26379 sentinel masters</span></code></pre></div></li>
+<li><p><strong>Testing Failover</strong>: To test failover, we stop the
+master Redis instance. Sentinel should then promote a replica to be the
+new master. We can check the new master with:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> <span class="at">-p</span> 26379 sentinel get-master-addr-by-name mymaster</span></code></pre></div></li>
+<li><p><strong>Additional Sentinel Instances</strong>: For better
+reliability, we should add more Sentinel instances on different nodes.
+This helps us avoid having a single point of failure.</p></li>
+</ol>
+<p>We should regularly check our Sentinel settings and look at the logs
+for any problems. For more information on Redis Sentinel, we can check
+<a
+href="https://bestonlinetutorial.com/redis/what-is-redis-sentinel.html">What
+is Redis Sentinel?</a>.</p>
+<h2 id="practical-examples-of-using-redis-sentinel-with-code">Practical
+Examples of Using Redis Sentinel with Code</h2>
+<p>Redis Sentinel helps us to keep Redis instances running smoothly. It
+also monitors them. Here are some easy examples showing how we can use
+Redis Sentinel in our setup.</p>
+<h3 id="example-1-basic-sentinel-configuration">Example 1: Basic
+Sentinel Configuration</h3>
+<p>First, we need to set up the Sentinel instances. Here is an example
+of the <code>sentinel.conf</code> file for one master and two
+sentinels:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># sentinel.conf</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ex">port</span> 26379</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> monitor mymaster 127.0.0.1 6379 2</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> down-after-milliseconds mymaster 5000</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> failover-timeout mymaster 60000</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="ex">sentinel</span> parallel-syncs mymaster 1</span></code></pre></div>
+<h3 id="example-2-starting-sentinel">Example 2: Starting Sentinel</h3>
+<p>We can start Redis Sentinel using the command line like this:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-sentinel</span> /path/to/sentinel.conf</span></code></pre></div>
+<h3 id="example-3-monitoring-redis-with-sentinel">Example 3: Monitoring
+Redis with Sentinel</h3>
+<p>In our application, we can connect to Redis Sentinel to find out the
+current master details. The next Python code shows how to do this using
+the <code>redis-py</code> library:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> redis.sentinel <span class="im">import</span> Sentinel</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>sentinel <span class="op">=</span> Sentinel([(‘<span class="fl">127.0.0.1</span>’, <span class="dv">26379</span>)], socket_timeout<span class="op">=</span><span class="fl">0.1</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the master address</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>master <span class="op">=</span> sentinel.master_for(<span class="st">&#39;mymaster&#39;</span>, socket_timeout<span class="op">=</span><span class="fl">0.1</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Set a key</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>master.<span class="bu">set</span>(<span class="st">&#39;foo&#39;</span>, <span class="st">&#39;bar&#39;</span>)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the key</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>value <span class="op">=</span> master.get(<span class="st">&#39;foo&#39;</span>)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(value)  <span class="co"># Output: b&#39;bar&#39;</span></span></code></pre></div>
+<h3 id="example-4-handling-failover">Example 4: Handling Failover</h3>
+<p>If a failover happens, our application can still reach the Redis
+instances using Sentinel. Here’s how we can get the current master after
+a failover:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the current master after a failover</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>master <span class="op">=</span> sentinel.master_for(<span class="st">&#39;mymaster&#39;</span>, socket_timeout<span class="op">=</span><span class="fl">0.1</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Do some operations</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>master.<span class="bu">set</span>(<span class="st">&#39;baz&#39;</span>, <span class="st">&#39;qux&#39;</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(master.get(<span class="st">&#39;baz&#39;</span>))  <span class="co"># Output: b&#39;qux&#39;</span></span></code></pre></div>
+<h3 id="example-5-sentinel-cli-commands">Example 5: Sentinel CLI
+Commands</h3>
+<p>We can use the command line to interact with Sentinel for checking
+and managing it. Here are some commands to try:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Connect to the Sentinel instance</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> <span class="at">-p</span> 26379</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Check the master status</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="ex">SENTINEL</span> masters</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Check the sentinels</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="ex">SENTINEL</span> sentinels mymaster</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the current master address</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="ex">SENTINEL</span> get-master-addr-by-name mymaster</span></code></pre></div>
+<h3 id="example-6-redis-sentinel-with-docker">Example 6: Redis Sentinel
+with Docker</h3>
+<p>To quickly create a Redis Sentinel environment, we can use Docker.
+Here is a simple <code>docker-compose.yml</code> setup:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">redis-master</span><span class="kw">:</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis:latest</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;6379:6379&quot;</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">redis-sentinel</span><span class="kw">:</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis:latest</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;redis-sentinel&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;/etc/redis/sentinel.conf&quot;</span><span class="kw">]</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> ./sentinel.conf:/etc/redis/sentinel.conf</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;26379:26379&quot;</span></span></code></pre></div>
+<p>We run this command to start the services:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> up</span></code></pre></div>
+<p>These examples show how we can set up and use Redis Sentinel for high
+availability in our applications. For more details about Redis Sentinel,
+we can check the article on <a
+href="https://bestonlinetutorial.com/redis/what-is-redis-sentinel.html">what
+is Redis Sentinel</a>.</p>
+<h2 id="how-does-redis-sentinel-promote-a-new-master">How does Redis
+Sentinel Promote a New Master?</h2>
+<p>Redis Sentinel helps to promote a new master when the current master
+is not working. It does this through a clear failover process. Let us
+see how it works.</p>
+<ol type="1">
+<li><p><strong>Detection of Master Failure</strong>: Sentinel instances
+keep checking the master and replica Redis instances. If a master does
+not respond in a given time, Sentinels say it is down.</p></li>
+<li><p><strong>Quorum Decision</strong>: To be sure the master is really
+down, a group of Sentinels must agree. We can set this up by using the
+<code>sentinel monitor</code> command with a quorum value.</p>
+<p>Here is an example in <code>sentinel.conf</code>:</p>
+<pre class="plaintext"><code>sentinel monitor mymaster 127.0.0.1 6379 2</code></pre></li>
+<li><p><strong>Selecting a New Master</strong>: When we confirm the
+master is down, Sentinels will choose one of the available replicas to
+be the new master. They will look at things like replication lag and
+health of the replicas.</p></li>
+<li><p><strong>Promotion of the Replica</strong>: The chosen replica
+becomes the master by using the <code>SLAVEOF NO ONE</code> command.
+This command stops its replication role and makes it the new master.</p>
+<p>Here is an example command:</p>
+<pre class="plaintext"><code>SLAVEOF NO ONE</code></pre></li>
+<li><p><strong>Reconfiguration of Replicas</strong>: After we promote a
+new master, other replicas need to change to replicate from this new
+master. We do this by using the <code>SLAVEOF</code> command with the
+new master’s address.</p>
+<p>Here is an example command:</p>
+<pre class="plaintext"><code>SLAVEOF &lt;new-master-ip&gt; &lt;new-master-port&gt;</code></pre></li>
+<li><p><strong>Notification</strong>: Sentinel tells clients about the
+new master by using the <code>sentinel sentinels</code> command. This
+helps them to update their connections.</p></li>
+</ol>
+<p>By following these steps, Redis Sentinel makes sure there is little
+downtime and keeps high availability in Redis environments. If we want
+to learn more about Redis Sentinel and what it does, we can check out <a
+href="https://bestonlinetutorial.com/redis/what-is-redis-sentinel.html">What
+is Redis Sentinel?</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-redis-sentinel-and-how-does-it-work">1. What is Redis
+Sentinel and how does it work?</h3>
+<p>We can say Redis Sentinel is a system that helps keep Redis running
+all the time. It looks at your Redis servers. If one server fails, it
+promotes a new master. It also helps Redis clients stay connected to the
+right master. If you want to learn more about Redis Sentinel, check out
+<a
+href="https://bestonlinetutorial.com/redis/what-is-redis-sentinel.html">what
+is Redis Sentinel</a>.</p>
+<h3 id="how-does-redis-sentinel-handle-failover-1">2. How does Redis
+Sentinel handle failover?</h3>
+<p>Redis Sentinel does automatic failover. It finds out when the master
+server is down. Then it promotes one of the replicas to be the new
+master. This uses a method where most Sentinel instances must agree
+about the failure before taking action. For more details on this, visit
+<a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redis-sentinel-for-high-availability.html">how
+do I use Redis Sentinel for high availability</a>.</p>
+<h3 id="what-are-the-key-components-of-redis-sentinel-1">3. What are the
+key components of Redis Sentinel?</h3>
+<p>The main parts of Redis Sentinel are Sentinel instances, monitored
+Redis instances, and the config file. Sentinel instances do the
+monitoring and failover work. The monitored Redis instances are the
+actual Redis servers. For more information about each part, read <a
+href="https://bestonlinetutorial.com/redis/what-is-redis-sentinel.html">the
+key components of Redis Sentinel</a>.</p>
+<h3 id="how-do-i-configure-redis-sentinel-for-my-setup">4. How do I
+configure Redis Sentinel for my setup?</h3>
+<p>To set up Redis Sentinel, we need to make a Sentinel config file.
+This file tells which master to monitor, its replicas, and the quorum
+settings. This config helps Sentinel manage the Redis servers well. For
+step-by-step help on this, check <a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redis-sentinel-for-high-availability.html">how
+to configure Redis Sentinel for your setup</a>.</p>
+<h3
+id="what-happens-during-the-promotion-of-a-new-master-in-redis-sentinel">5.
+What happens during the promotion of a new master in Redis
+Sentinel?</h3>
+<p>When Redis Sentinel promotes a new master, it updates the config of
+the other Sentinel instances. It also tells the client apps about the
+new master. This helps everything run smoothly with little downtime. For
+more about this, see the article on <a
+href="https://bestonlinetutorial.com/redis/what-is-redis-sentinel.html">how
+does Redis Sentinel promote a new master</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
