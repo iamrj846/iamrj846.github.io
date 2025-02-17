@@ -1,0 +1,541 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>How do I monitor Redis in production?</title>
+            <meta name="description" content="Discover effective strategies to monitor Redis in production. Enhance performance, troubleshoot issues, and ensure reliability.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How do I monitor Redis in production?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Monitoring Redis in production is very important for keeping our
+application running well. Redis is a place where we store data in
+memory. It acts like a database, cache, and message broker. So, we need
+to watch its operations and health closely when we use it in production.
+Good monitoring helps us find and fix problems before they affect our
+users.</p>
+<p>In this article, we will look at the best ways to monitor Redis in
+production. We will talk about the key metrics we should check to see
+how Redis is doing. We will also cover ways to set up Redis monitoring
+using Redis CLI. There are many tools we can use for monitoring. We will
+learn how to use Prometheus and Grafana for Redis monitoring. Plus, we
+will give some examples of monitoring scripts and show how to set up
+alerts for performance problems. Finally, we will answer some common
+questions about Redis monitoring.</p>
+<ul>
+<li>How can we monitor Redis in production?</li>
+<li>What metrics should we track for Redis performance?</li>
+<li>How do we set up Redis monitoring using Redis CLI?</li>
+<li>Which tools can we use to monitor Redis in production?</li>
+<li>How do we use Prometheus and Grafana for Redis monitoring?</li>
+<li>What are some examples of Redis monitoring scripts?</li>
+<li>How can we set up alerts for Redis performance issues?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more information on Redis, you can read articles on <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">what
+Redis is</a> and <a
+href="https://bestonlinetutorial.com/redis/how-do-i-monitor-redis-performance.html">how
+to monitor Redis performance</a>.</p>
+<h2 id="what-metrics-should-we-track-for-redis-performance">What metrics
+should we track for Redis performance?</h2>
+<p>To monitor Redis performance in production, we need to track some
+important metrics. These metrics help us see how well our Redis instance
+is doing. Here are the main metrics we should focus on:</p>
+<ol type="1">
+<li><p><strong>Memory Usage</strong>:</p>
+<ul>
+<li><code>used_memory</code>: This shows total bytes Redis uses to store
+data.</li>
+<li><code>used_memory_peak</code>: This is the highest memory usage
+recorded.</li>
+<li><code>maxmemory</code>: This is the maximum memory limit we set for
+Redis.</li>
+</ul>
+<p>To check memory metrics, we can use this command:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> info memory</span></code></pre></div></li>
+<li><p><strong>CPU Usage</strong>:</p>
+<ul>
+<li>We should watch the CPU percentage that Redis uses. This can help us
+find where performance might slow down.</li>
+</ul></li>
+<li><p><strong>Keyspace Statistics</strong>:</p>
+<ul>
+<li><code>db0:keys</code>: This shows the number of keys in the default
+database.</li>
+<li><code>db0:expires</code>: This shows how many keys have an
+expiration time set.</li>
+</ul>
+<p>To check keyspace metrics, we can run this command:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> info keyspace</span></code></pre></div></li>
+<li><p><strong>Command Execution Metrics</strong>:</p>
+<ul>
+<li><code>total_commands_processed</code>: This shows the total number
+of commands the server has processed.</li>
+<li><code>instantaneous_ops_per_sec</code>: This shows how many commands
+the server processes each second.</li>
+</ul></li>
+<li><p><strong>Replication Metrics</strong>:</p>
+<ul>
+<li><code>connected_slaves</code>: This shows how many replicas (slaves)
+are connected.</li>
+<li><code>master_link_status</code>: This shows the status of the link
+to the master server.</li>
+</ul>
+<p>To check replication metrics, we can use this command:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> info replication</span></code></pre></div></li>
+<li><p><strong>Latency Metrics</strong>:</p>
+<ul>
+<li>We need to track the response time for commands. This helps us watch
+for latency, especially for important operations.</li>
+</ul></li>
+<li><p><strong>Eviction Metrics</strong>:</p>
+<ul>
+<li><code>evicted_keys</code>: This shows how many keys have been
+evicted due to memory limits.</li>
+<li><code>expired_keys</code>: This shows how many keys have
+expired.</li>
+</ul>
+<p>To check eviction metrics, we can run this command:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> info stats</span></code></pre></div></li>
+<li><p><strong>Persistence Metrics</strong>:</p>
+<ul>
+<li><code>rdb_changes_since_last_save</code>: This shows how many
+changes happened since the last RDB save.</li>
+<li><code>aof_current_size</code>: This shows the current size of the
+AOF file.</li>
+</ul></li>
+</ol>
+<p>By watching these metrics, we can understand how Redis performs in
+production. We can also find potential problems and improve its setup
+for better performance. If we want to learn more about monitoring Redis
+performance, we can check out <a
+href="https://bestonlinetutorial.com/redis/how-do-i-monitor-redis-performance.html">this
+article on Redis monitoring</a>.</p>
+<h2 id="how-do-i-set-up-redis-monitoring-using-redis-cli">How do I set
+up Redis monitoring using Redis CLI?</h2>
+<p>We can monitor Redis in production using the Redis CLI. There are
+many commands that give us real-time insights into how the server is
+doing. Here are some important commands to help us monitor our Redis
+instance well:</p>
+<ol type="1">
+<li><p><strong>Ping the Redis Server</strong>:<br />
+We can check if the Redis server is working using the <code>PING</code>
+command.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> PING</span></code></pre></div></li>
+<li><p><strong>Get Server Info</strong>:<br />
+The <code>INFO</code> command gives us a lot of details about the Redis
+server. This includes memory use, connected clients, and replication
+status.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> INFO</span></code></pre></div>
+<p>We can also specify a section to get focused output. For example:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> INFO memory</span></code></pre></div></li>
+<li><p><strong>Check Memory Usage</strong>:<br />
+We can use the <code>MEMORY</code> command to see details about memory
+usage.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> MEMORY USAGE <span class="op">&lt;</span>key<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Monitor Command Execution</strong>:<br />
+The <code>MONITOR</code> command lets us see all commands that the
+server processes in real-time.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> MONITOR</span></code></pre></div></li>
+<li><p><strong>Check Client Connections</strong>:<br />
+To see how many clients are connected to our Redis instance, we use:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> CLIENT LIST</span></code></pre></div></li>
+<li><p><strong>View Keyspace Statistics</strong>:<br />
+To get an overview of the keyspace, like the number of keys and
+expiration info, we run:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> INFO keyspace</span></code></pre></div></li>
+<li><p><strong>Check Latency</strong>:<br />
+We can monitor the latency of commands to find possible performance
+problems.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> <span class="at">--intrinsic-latency</span></span></code></pre></div></li>
+<li><p><strong>Check Slow Log</strong>:<br />
+If we have performance problems, we should check the slow log to find
+slow queries.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> SLOWLOG GET</span></code></pre></div></li>
+</ol>
+<p>By using these commands, we can monitor how our Redis instance is
+performing in production. For more details on Redis setup and tracking
+performance, check out <a
+href="https://bestonlinetutorial.com/redis/how-do-i-monitor-redis-performance.html">this
+article</a>.</p>
+<h2 id="which-tools-can-i-use-to-monitor-redis-in-production">Which
+tools can I use to monitor Redis in production?</h2>
+<p>To monitor Redis in production, we can use several tools. They help
+us track performance, find problems, and see data clearly. Here are some
+popular tools we can consider:</p>
+<ol type="1">
+<li><p><strong>Redis CLI</strong>: This is the command-line tool for
+Redis. We can use it to get metrics directly. Here are some commands we
+can run:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> info</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> monitor</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> slowlog get</span></code></pre></div></li>
+<li><p><strong>Prometheus</strong>: This is an open-source tool for
+monitoring. It can collect metrics from Redis. To use Prometheus, we can
+set up <code>redis_exporter</code> like this:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">-p</span> 9121:9121 <span class="at">--name</span> redis_exporter <span class="dt">\</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  oliver006/redis_exporter:latest <span class="dt">\</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-redis.addr</span><span class="op">=</span>redis://<span class="op">&lt;</span>REDIS_HOST<span class="op">&gt;</span>:<span class="op">&lt;</span>REDIS_PORT<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Grafana</strong>: We often use this tool with Prometheus.
+Grafana gives us nice dashboards to see Redis metrics. We need to set up
+a Prometheus data source in Grafana. Then we can create dashboards to
+show things like memory use, command stats, and latency.</p></li>
+<li><p><strong>RedisInsight</strong>: This is a strong GUI tool for
+monitoring and managing Redis databases. It helps us see data
+structures, check performance, and look at slow queries. We can download
+it from the Redis website and connect it to our Redis instance.</p></li>
+<li><p><strong>Datadog</strong>: This is a complete monitoring tool that
+works with Redis. It offers application performance monitoring, log
+management, and alerts. We need to install the Datadog agent and turn on
+the Redis integration for tracking metrics in detail.</p></li>
+<li><p><strong>New Relic</strong>: This tool helps us monitor
+performance and analyze Redis. We can track important metrics and set up
+alerts for any problems. To use Redis with New Relic, we should follow
+their setup guide.</p></li>
+<li><p><strong>Elastic Stack (ELK)</strong>: We can use the Elastic
+Stack to gather logs and metrics from Redis. We need to set up the
+Logstash input plugin to pull data from Redis. After that, we can see it
+in Kibana.</p></li>
+<li><p><strong>Zabbix</strong>: This is an open-source tool for
+monitoring. We can configure Zabbix to watch Redis servers. It can
+collect metrics using the built-in Redis template and notify us about
+performance problems.</p></li>
+</ol>
+<p>By using these tools, we can monitor our Redis instance well in
+production. This helps us keep performance high and find issues
+quickly.</p>
+<h2
+id="how-do-i-implement-redis-monitoring-with-prometheus-and-grafana">How
+do I implement Redis monitoring with Prometheus and Grafana?</h2>
+<p>To implement Redis monitoring with Prometheus and Grafana, we can
+follow these simple steps:</p>
+<ol type="1">
+<li><p><strong>Install Prometheus</strong>: First, we need to download
+and install Prometheus on our server.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> https://github.com/prometheus/prometheus/releases/download/v2.39.0/prometheus-2.39.0.linux-amd64.tar.gz</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> <span class="at">-xzf</span> prometheus-2.39.0.linux-amd64.tar.gz</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> prometheus-2.39.0.linux-amd64</span></code></pre></div></li>
+<li><p><strong>Install Redis Exporter</strong>: We need the Redis
+exporter to show Redis metrics to Prometheus.</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> https://github.com/oliver006/redis_exporter/releases/download/v1.30.0/redis_exporter-v1.30.0.linux-amd64.tar.gz</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> <span class="at">-xzf</span> redis_exporter-v1.30.0.linux-amd64.tar.gz</span></code></pre></div></li>
+<li><p><strong>Run Redis Exporter</strong>: Next, we will start the
+Redis exporter. We must give it the Redis server connection details.</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./redis_exporter</span> <span class="at">-redis.addr</span><span class="op">=</span>redis://<span class="op">&lt;</span>REDIS_HOST<span class="op">&gt;</span>:<span class="op">&lt;</span>REDIS_PORT<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Configure Prometheus</strong>: Now, we edit the
+<code>prometheus.yml</code> file to get metrics from the Redis
+exporter.</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">scrape_configs</span><span class="kw">:</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">job_name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;redis&#39;</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">static_configs</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">targets</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;localhost:9121&#39;</span><span class="kw">]</span><span class="co">  # Change this if your Redis exporter is on a different host/port</span></span></code></pre></div></li>
+<li><p><strong>Start Prometheus</strong>: We run Prometheus with the new
+configuration.</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./prometheus</span> <span class="at">--config.file</span><span class="op">=</span>prometheus.yml</span></code></pre></div></li>
+<li><p><strong>Install Grafana</strong>: Then, we download and install
+Grafana.</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> https://dl.grafana.com/oss/release/grafana-9.4.7.linux-amd64.tar.gz</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tar</span> <span class="at">-zxvf</span> grafana-9.4.7.linux-amd64.tar.gz</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> grafana-9.4.7/bin</span></code></pre></div></li>
+<li><p><strong>Run Grafana</strong>: Now, we start Grafana.</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./grafana-server</span></span></code></pre></div></li>
+<li><p><strong>Configure Grafana</strong>: We can access Grafana at
+<code>http://localhost:3000</code>. We log in (default username and
+password are both <code>admin</code>). Then we add a new data source for
+Prometheus.</p>
+<ul>
+<li>Go to <strong>Configuration</strong> &gt; <strong>Data
+Sources</strong> &gt; <strong>Add data source</strong> &gt;
+<strong>Prometheus</strong>.</li>
+<li>Set the URL to <code>http://localhost:9090</code> (or where
+Prometheus is running).</li>
+</ul></li>
+<li><p><strong>Create Dashboards</strong>: We can use ready-made Redis
+dashboards from the Grafana dashboard repository. Or we can create our
+own panels to see Redis metrics.</p></li>
+<li><p><strong>Monitor Metrics</strong>: Now, we can monitor Redis
+metrics like memory usage, command stats, and connected clients in
+Grafana.</p></li>
+</ol>
+<p>By following these steps, we can set up Redis monitoring with
+Prometheus and Grafana. This helps us to see how our Redis instances are
+performing. For more details on Redis and how to monitor it, we can
+check <a
+href="https://bestonlinetutorial.com/redis/how-do-i-monitor-redis-performance.html">this
+guide on Redis monitoring</a>.</p>
+<h2
+id="what-are-some-practical-examples-of-redis-monitoring-scripts">What
+are some practical examples of Redis monitoring scripts?</h2>
+<p>We can use Redis monitoring scripts to track how Redis performs
+automatically. Here are some easy examples:</p>
+<h3 id="example-1-monitor-memory-usage">Example 1: Monitor Memory
+Usage</h3>
+<p>This script checks how much memory a Redis instance uses and writes
+it down.</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Redis server details</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="va">REDIS_HOST</span><span class="op">=</span><span class="st">&quot;127.0.0.1&quot;</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="va">REDIS_PORT</span><span class="op">=</span><span class="st">&quot;6379&quot;</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Get memory usage</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="va">MEMORY_USAGE</span><span class="op">=</span><span class="va">$(</span><span class="ex">redis-cli</span> <span class="at">-h</span> <span class="va">$REDIS_HOST</span> <span class="at">-p</span> <span class="va">$REDIS_PORT</span> info memory <span class="kw">|</span> <span class="fu">grep</span> used_memory_human<span class="va">)</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Log memory usage</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">: </span><span class="va">$MEMORY_USAGE</span><span class="st">&quot;</span> <span class="op">&gt;&gt;</span> /var/log/redis_memory.log</span></code></pre></div>
+<h3 id="example-2-monitor-keyspace-hits-and-misses">Example 2: Monitor
+Keyspace Hits and Misses</h3>
+<p>This script looks at keyspace hits and misses to see how well the
+cache works.</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="va">REDIS_HOST</span><span class="op">=</span><span class="st">&quot;127.0.0.1&quot;</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="va">REDIS_PORT</span><span class="op">=</span><span class="st">&quot;6379&quot;</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Get keyspace hits and misses</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="va">KEYSPACE_STATS</span><span class="op">=</span><span class="va">$(</span><span class="ex">redis-cli</span> <span class="at">-h</span> <span class="va">$REDIS_HOST</span> <span class="at">-p</span> <span class="va">$REDIS_PORT</span> info stats <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-E</span> <span class="st">&quot;keyspace_hits:keyspace_misses&quot;</span><span class="va">)</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Log stats</span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">: </span><span class="va">$KEYSPACE_STATS</span><span class="st">&quot;</span> <span class="op">&gt;&gt;</span> /var/log/redis_keyspace.log</span></code></pre></div>
+<h3 id="example-3-alert-on-high-memory-usage">Example 3: Alert on High
+Memory Usage</h3>
+<p>This script sends a warning if memory use goes over a limit.</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="va">REDIS_HOST</span><span class="op">=</span><span class="st">&quot;127.0.0.1&quot;</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="va">REDIS_PORT</span><span class="op">=</span><span class="st">&quot;6379&quot;</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="va">THRESHOLD</span><span class="op">=</span>80  <span class="co"># percentage</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Get memory info</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="va">MEMORY_INFO</span><span class="op">=</span><span class="va">$(</span><span class="ex">redis-cli</span> <span class="at">-h</span> <span class="va">$REDIS_HOST</span> <span class="at">-p</span> <span class="va">$REDIS_PORT</span> info memory<span class="va">)</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="va">USED_MEMORY</span><span class="op">=</span><span class="va">$(</span><span class="bu">echo</span> <span class="st">&quot;</span><span class="va">$MEMORY_INFO</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="fu">grep</span> used_memory <span class="kw">|</span> <span class="fu">cut</span> <span class="at">-d</span><span class="st">&#39;:&#39;</span> <span class="at">-f2</span><span class="va">)</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="va">TOTAL_MEMORY</span><span class="op">=</span><span class="va">$(</span><span class="bu">echo</span> <span class="st">&quot;</span><span class="va">$MEMORY_INFO</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="fu">grep</span> total_system_memory <span class="kw">|</span> <span class="fu">cut</span> <span class="at">-d</span><span class="st">&#39;:&#39;</span> <span class="at">-f2</span><span class="va">)</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate memory usage percentage</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a><span class="va">MEMORY_USAGE_PERCENT</span><span class="op">=</span><span class="va">$(</span><span class="bu">echo</span> <span class="st">&quot;scale=2; </span><span class="va">$USED_MEMORY</span><span class="st">/</span><span class="va">$TOTAL_MEMORY</span><span class="st">*100&quot;</span> <span class="kw">|</span> <span class="fu">bc</span><span class="va">)</span></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="kw">((</span> <span class="va">$(</span><span class="bu">echo</span> <span class="st">&quot;</span><span class="va">$MEMORY_USAGE_PERCENT</span><span class="st"> &gt; </span><span class="va">$THRESHOLD</span><span class="st">&quot;</span> <span class="kw">|</span> <span class="fu">bc</span> <span class="at">-l</span><span class="va">)</span> <span class="kw">));</span> <span class="cf">then</span></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">&quot;ALERT: Memory usage is at </span><span class="va">${MEMORY_USAGE_PERCENT}</span><span class="st">%!&quot;</span> <span class="kw">|</span> <span class="ex">mail</span> <span class="at">-s</span> <span class="st">&quot;Redis Memory Alert&quot;</span> admin@example.com</span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span></code></pre></div>
+<h3 id="example-4-monitor-latency">Example 4: Monitor Latency</h3>
+<p>This script checks how long Redis commands take.</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="va">REDIS_HOST</span><span class="op">=</span><span class="st">&quot;127.0.0.1&quot;</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="va">REDIS_PORT</span><span class="op">=</span><span class="st">&quot;6379&quot;</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Measure latency for PING command</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="va">LATENCY</span><span class="op">=</span><span class="va">$(</span><span class="ex">redis-cli</span> <span class="at">-h</span> <span class="va">$REDIS_HOST</span> <span class="at">-p</span> <span class="va">$REDIS_PORT</span> ping <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-o</span> <span class="st">&#39;PONG&#39;</span> <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Log latency</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">: Latency check - </span><span class="va">$LATENCY</span><span class="st"> ms&quot;</span> <span class="op">&gt;&gt;</span> /var/log/redis_latency.log</span></code></pre></div>
+<h3 id="example-5-check-redis-instance-uptime">Example 5: Check Redis
+Instance Uptime</h3>
+<p>This script keeps track of how long the Redis server has been
+running.</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="va">REDIS_HOST</span><span class="op">=</span><span class="st">&quot;127.0.0.1&quot;</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="va">REDIS_PORT</span><span class="op">=</span><span class="st">&quot;6379&quot;</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Get uptime</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="va">UPTIME</span><span class="op">=</span><span class="va">$(</span><span class="ex">redis-cli</span> <span class="at">-h</span> <span class="va">$REDIS_HOST</span> <span class="at">-p</span> <span class="va">$REDIS_PORT</span> info server <span class="kw">|</span> <span class="fu">grep</span> uptime_in_seconds<span class="va">)</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Log uptime</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">date</span><span class="va">)</span><span class="st">: </span><span class="va">$UPTIME</span><span class="st">&quot;</span> <span class="op">&gt;&gt;</span> /var/log/redis_uptime.log</span></code></pre></div>
+<p>We can use these scripts in cron jobs to run them regularly. This
+helps us to keep watching Redis performance all the time. If you want to
+learn more about Redis monitoring, you can check <a
+href="https://bestonlinetutorial.com/redis/how-do-i-monitor-redis-performance.html">this
+article on monitoring Redis performance</a>.</p>
+<h2 id="how-can-i-set-up-alerts-for-redis-performance-issues">How can I
+set up alerts for Redis performance issues?</h2>
+<p>Setting up alerts for Redis performance issues is very important. It
+helps us keep the system running well and reliable in production. We can
+use different tools and services to create alerts based on Redis
+metrics. Here is how we can set up alerts easily:</p>
+<ol type="1">
+<li><p><strong>Using Redis Monitoring Tools</strong>: Many Redis
+monitoring tools like <strong>Prometheus</strong>,
+<strong>Grafana</strong>, and <strong>DataDog</strong> let us set alerts
+based on set limits for important metrics.</p></li>
+<li><p><strong>Key Metrics for Alerts</strong>:</p>
+<ul>
+<li><strong>Memory Usage</strong>: We alert when memory usage goes over
+a certain limit.</li>
+<li><strong>CPU Usage</strong>: We alert if CPU usage is higher than a
+set limit.</li>
+<li><strong>Latency</strong>: We alert if command execution time is too
+long.</li>
+<li><strong>Evicted Keys</strong>: We alert when the number of evicted
+keys is too high, which shows memory pressure.</li>
+<li><strong>Connected Clients</strong>: We alert if the number of
+connected clients is close to the limit.</li>
+</ul></li>
+<li><p><strong>Prometheus Alert Example</strong>: We can set alert rules
+in Prometheus for Redis like this:</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">groups</span><span class="kw">:</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis_alerts</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">alert</span><span class="kw">:</span><span class="at"> RedisHighMemoryUsage</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">expr</span><span class="kw">:</span><span class="at"> redis_memory_used_bytes / redis_memory_max_bytes &gt; 0.9</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">for</span><span class="kw">:</span><span class="at"> 5m</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">severity</span><span class="kw">:</span><span class="at"> critical</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">summary</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;High memory usage detected on Redis instance&quot;</span></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Memory usage is over 90% for more than 5 minutes.&quot;</span></span></code></pre></div></li>
+<li><p><strong>Grafana Alert Example</strong>: In Grafana, we can create
+alerts by setting conditions on our metrics. For example, to alert on
+high latency:</p>
+<ul>
+<li>Go to the panel where we see Redis latency.</li>
+<li>Click on the alert tab and set a condition like:
+<ul>
+<li>If <code>avg(latency)</code> is more than <code>100ms</code> for
+<code>5 minutes</code>.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Using Redis CLI</strong>: We can create a simple script
+that checks Redis metrics and sends alerts by email or Slack. For
+example:</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="va">THRESHOLD</span><span class="op">=</span>80</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="va">MEMORY_USAGE</span><span class="op">=</span><span class="va">$(</span><span class="ex">redis-cli</span> info memory <span class="kw">|</span> <span class="fu">grep</span> used_memory <span class="kw">|</span> <span class="fu">cut</span> <span class="at">-d:</span> <span class="at">-f2</span><span class="va">)</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="va">MEMORY_USAGE_MB</span><span class="op">=</span><span class="va">$((MEMORY_USAGE</span> <span class="op">/</span> <span class="dv">1024</span> <span class="op">/</span> <span class="dv">1024</span><span class="va">))</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">[</span> <span class="st">&quot;</span><span class="va">$MEMORY_USAGE_MB</span><span class="st">&quot;</span> <span class="ot">-gt</span> <span class="st">&quot;</span><span class="va">$THRESHOLD</span><span class="st">&quot;</span> <span class="bu">]</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">&quot;Alert: Redis memory usage is above </span><span class="va">${THRESHOLD}</span><span class="st">MB!&quot;</span> <span class="kw">|</span> <span class="ex">mail</span> <span class="at">-s</span> <span class="st">&quot;Redis Alert&quot;</span> your-email@example.com</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span></code></pre></div></li>
+<li><p><strong>Integrate with Alerting Systems</strong>: We should think
+about linking Redis alerts with systems like <strong>PagerDuty</strong>
+or <strong>OpsGenie</strong>. This can help us manage incidents and
+respond better.</p></li>
+</ol>
+<p>By using these methods, we can keep an eye on Redis in production and
+get alerts for performance issues. This helps us make sure everything is
+working well. For more details on Redis performance monitoring, check
+out <a
+href="https://bestonlinetutorial.com/redis/how-do-i-monitor-redis-performance.html">How
+Do I Monitor Redis Performance?</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-are-the-main-metrics-to-monitor-redis-in-production">1.
+What are the main metrics to monitor Redis in production?</h3>
+<p>To monitor Redis in production, we should look at key metrics. These
+include memory usage, hit/miss ratio, latency, and command execution
+time. By tracking these metrics, we can find performance issues and make
+Redis work better. For more details on these metrics, please see our
+article on <a
+href="https://bestonlinetutorial.com/redis/how-do-i-monitor-redis-performance.html">Redis
+monitoring performance</a>.</p>
+<h3 id="how-can-i-set-up-alerts-for-redis-performance-issues-1">2. How
+can I set up alerts for Redis performance issues?</h3>
+<p>We can set up alerts for Redis performance issues by using tools like
+Prometheus or Grafana. We need to set alerts based on certain limits for
+metrics like memory usage and query latency. This way, we can fix
+problems before they affect our application. Read more about how to use
+these tools in our guide on <a
+href="https://bestonlinetutorial.com/redis/how-do-i-implement-redis-monitoring-with-prometheus-and-grafana.html">Implementing
+Redis monitoring with Prometheus and Grafana</a>.</p>
+<h3 id="what-tools-are-available-for-monitoring-redis">3. What tools are
+available for monitoring Redis?</h3>
+<p>There are many tools we can use to monitor Redis. Some popular ones
+are Redis CLI, RedisInsight, Prometheus, and Grafana. These tools offer
+features like seeing metrics in real-time and getting alerts. Picking
+the right tool helps us monitor Redis better in production. For
+comparisons of these tools, visit our article on <a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redisinsight.html">Redis
+monitoring tools</a>.</p>
+<h3 id="how-do-i-monitor-redis-using-redis-cli">4. How do I monitor
+Redis using Redis CLI?</h3>
+<p>We can monitor Redis using Redis CLI by running commands like
+<code>INFO</code>, <code>MONITOR</code>, and <code>SLOWLOG</code>. These
+commands give us useful information about server metrics, real-time
+command actions, and slow queries. Learning these commands helps us with
+monitoring. For more details on how to use them, check our guide on <a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-the-redis-cli.html">Using
+Redis CLI</a>.</p>
+<h3 id="can-i-use-prometheus-and-grafana-for-redis-monitoring">5. Can I
+use Prometheus and Grafana for Redis monitoring?</h3>
+<p>Yes, we can use Prometheus and Grafana to monitor Redis well. We need
+to set up Prometheus to collect Redis metrics and use Grafana for
+showing them. This helps us create dashboards that show important
+performance data. This setup improves our monitoring and alerting for
+Redis in production. For setup steps, see our article on <a
+href="https://bestonlinetutorial.com/redis/how-do-i-implement-redis-monitoring-with-prometheus-and-grafana.html">Implementing
+Redis monitoring with Prometheus and Grafana</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
