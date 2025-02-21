@@ -31,7 +31,7 @@ class MarkdownFile:
         except Exception as e:
             print(f"An error occurred while saving the file: {e}")
 
-client = OpenAI(api_key="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")
+client = OpenAI(api_key="API_KEY")
 
 if len(sys.argv) != 3:
     print("Usage: python generate_article.py <article_title> <post_urls>")
