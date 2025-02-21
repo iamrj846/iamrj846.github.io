@@ -139,6 +139,23 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
           }
 
+          const tutorialTitle = companyData[`TutorialTitle`];
+          const tutorialDescription = companyData[`TutorialDescription`];
+          const tutorialLink = companyData[`TutorialLink`];
+
+          companyHTML += `
+          <div class="job-role-row">
+            <div class="job-role">
+              <div class="role-title">${tutorialTitle}</div>
+              <div class="role-details">
+                <div class="detail">${tutorialDescription}</div>
+              </div>
+              <a href="/${tutorialLink}" target="_blank"
+                rel="noopener noreferrer" class="apply">View Tutorial</a>
+            </div>
+          </div>
+          `
+
           companyHTML += `</div>`;
           article.innerHTML = companyHTML;
           jobsContainer.appendChild(article);
