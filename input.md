@@ -1,435 +1,480 @@
-The Maximum Sum of Increasing Subsequence with Gap Constraint is a dynamic programming problem. Our goal is to find the highest sum of an increasing subsequence from a given array. We must also make sure that no two elements in the subsequence are next to each other in the original array. This means if we pick an element at index i, we cannot pick the elements at indices i-1 or i+1. To solve this problem in a smart way, we use a dynamic programming approach. This method builds on results we have already found to avoid doing the same work again.
+Dynamic Programming is a strong method we use to solve hard problems. We break these problems into easier parts. The "Maximum Score from Merging Stones" problem is about merging stones. Our goal is to get the highest score from these merges. We have a line of stones. We need to merge them into one stone. The score is the total of the stones we merge. We can solve this problem well with dynamic programming. This helps us find the best way to merge the stones.
 
-In this article, we will talk about different parts of the Maximum Sum of Increasing Subsequence with Gap Constraint. We will begin by understanding the problem and what we need to do. Then, we will look at how optimal substructure and overlapping subproblems work in dynamic programming. After that, we will check the brute force solution. Next, we will look at the dynamic programming solutions in Java, Python, and C++. Finally, we will analyze the time and space complexity of these solutions. We will also discuss common edge cases and answer some frequently asked questions about this topic.
+In this article, we will look closely at the Maximum Score from Merging Stones problem. We will start with a simple overview of the solution using dynamic programming. Then we will understand the problem better. After that, we will discuss the dynamic programming method. We will also show how to implement this in Java, Python, and C++. We will talk about how to optimize space complexity. Testing and checking our solution is important too. We will also answer common questions about the merging stones problem.
 
-- Dynamic Programming Approach for Maximum Sum of Increasing Subsequence with Gap Constraint
-- Understanding the Problem Statement and Requirements
-- Optimal Substructure and Overlapping Subproblems in Dynamic Programming
-- Brute Force Solution for Maximum Sum of Increasing Subsequence
-- Dynamic Programming Solution in Java for Maximum Sum of Increasing Subsequence
-- Dynamic Programming Solution in Python for Maximum Sum of Increasing Subsequence
-- Dynamic Programming Solution in C++ for Maximum Sum of Increasing Subsequence
-- Time and Space Complexity Analysis of the Solutions
-- Common Edge Cases and Considerations
+- Dynamic Programming Maximum Score from Merging Stones Solution Overview
+- Understanding the Problem Statement for Merging Stones
+- Dynamic Programming Approach for Maximum Score from Merging Stones
+- Java Implementation of Maximum Score from Merging Stones
+- Python Code Example for Merging Stones Problem
+- C++ Solution for Maximum Score from Merging Stones
+- Optimizing Space Complexity in Merging Stones Problem
+- Testing and Validating the Merging Stones Solution
 - Frequently Asked Questions
 
-For more reading on related dynamic programming ideas, check out articles like [Dynamic Programming: Maximum Sum of Increasing Subsequence](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-maximum-sum-increasing-subsequence-medium.html) and [Dynamic Programming: Longest Increasing Subsequence](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-longest-increasing-subsequence-medium.html).
+For more details on related dynamic programming ideas, we can read articles like [Dynamic Programming: Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html) and [Dynamic Programming: Minimum Cost to Merge Stones](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-minimum-cost-to-merge-stones-hard.html).
 
-## Understanding the Problem Statement and Requirements
+## Understanding the Problem Statement for Merging Stones
 
-We need to find the **Maximum Sum of Increasing Subsequence with Gap Constraint**. This means we want to get the largest sum from a list of numbers. The numbers we pick must be in order from smallest to biggest, and they cannot be next to each other in the original list. If we choose a number at position `i`, we cannot pick numbers at positions `i-1` and `i-2`.
+The Merging Stones problem is about a row of stones. Each stone has a value. Our goal is to merge these stones to get the highest score. When we merge, we can combine a certain number of stones that are next to each other. The score we get for each merge is the total of the values of the stones we merge.
 
-### Problem Definition:
+### Problem Details:
+- We have an array of numbers that show the values of the stones.
+- We must merge exactly `k` stones that are next to each other into one stone.
+- The score from merging stones is the total of the values of the stones we combined.
+- After merging, the new stone has the value of this total.
+- We want to merge stones in a way that gives us the best total score after we merge all stones into one.
 
-- **Input**: A list of integers `arr` with length `n`.
-- **Output**: The biggest sum of a strictly increasing subsequence where no two chosen numbers are next to each other.
+### Constraints:
+- We can only merge stones if the number of stones left is at least `k`.
+- We keep merging until we have just one stone left.
 
 ### Example:
+For an input array of stones `[4, 3, 2, 4]` and `k=2`, we can merge like this:
+1. First, we merge stones 1 and 2: `[7, 2, 4]` -> Score: 4 + 3 = 7.
+2. Next, we merge stones 1 and 2 again: `[9, 4]` -> Score: 7 + 2 = 9.
+3. Finally, we merge stones 1 and 2 once more: `[13]` -> Score: 9 + 4 = 13.
 
-Let’s say our input list is `arr = [3, 5, 6, 7, 8, 9]`. The biggest sum from an increasing subsequence is `3 + 6 + 9 = 18`. The chosen positions are `0`, `2`, and `5`. These numbers are in order and are not next to each other.
+The final score from this merging would be 13.
 
-### Requirements:
+We can use dynamic programming to help us find the best way to merge stones and keep track of scores. The hard part is figuring out the best order to merge stones to get the highest score while following the rules of merging.
 
-1. **Constraints**:
-   - The subsequence must be in order from smallest to biggest.
-   - The numbers we choose cannot be next to each other in the original list.
+## Dynamic Programming Approach for Maximum Score from Merging Stones
 
-2. **Goal**:
-   - We want to use dynamic programming to find the biggest sum while following the rules.
+We face the problem of merging stones to find the highest score possible by merging them in a certain way. To solve this well, we need to understand the best way to break down the problem. We can do this by using dynamic programming.
 
-3. **Output Format**: The result should be a whole number that shows the biggest sum we found.
+### Problem Definition
+We have `N` stones in a line. Their scores are in an array. Our goal is to merge these stones until we have just one stone left. Each time we merge stones, it costs us the sum of their scores. We want to get the highest final score.
 
-We can solve this problem using dynamic programming. We will talk more about this in the next sections. We will explore how to analyze the best parts and show code examples in Java, Python, and C++.
+### Dynamic Programming Strategy
+1. **State Definition**:
+   We define `dp[i][j]` as the highest score we can get by merging stones from index `i` to `j`.
 
-## Optimal Substructure and Overlapping Subproblems in Dynamic Programming
+2. **Base Case**:
+   When `i == j`, there is only one stone left. So, `dp[i][j] = 0` because we do not need to merge.
 
-We can solve the problem of finding the maximum sum of an increasing subsequence with a gap constraint using dynamic programming. We focus on two main ideas: optimal substructure and overlapping subproblems.
+3. **Transition**:
+   To merge stones from `i` to `j`, we look at possible splits `k` where `i <= k < j`. We calculate the score for merging like this:
+   \[
+   dp[i][j] = \max(dp[i][j], dp[i][k] + dp[k+1][j] + \text{sum}(i, j))
+   \]
+   Here, `sum(i, j)` is the total score from merging the stones between indexes `i` and `j`.
 
-### Optimal Substructure
+4. **Final Score Calculation**:
+   We get the maximum score from `dp[0][N-1]`, where `N` is the number of stones.
 
-Optimal substructure means we can build a solution from smaller parts. For our problem, we can define the optimal substructure like this:
-
-- Let `dp[i]` be the maximum sum of an increasing subsequence that ends with the element at index `i`.
-- For each element `arr[i]`, we will look at all previous elements `arr[j]` (where `j < i` and `arr[j] < arr[i]`). We update `dp[i]` like this:
-
-  ```python
-  dp[i] = max(dp[i], dp[j] + arr[i])  # if j is allowed by gap constraints
-  ```
-
-### Overlapping Subproblems
-
-Overlapping subproblems happen when we solve the same smaller problems many times. In our case:
-
-- When we calculate `dp[i]`, we need the values of `dp[j]` for all valid `j < i`. This means as we find results for larger subsequences, we often need to redo calculations for `dp` values that we already found.
-- By saving these values in a `dp` array, we do not have to calculate them again. We make sure each value is computed only once.
-
-### Example
-
-Let’s say we have an array `arr = [3, 5, 6, 2, 4, 5]`. We will compute the `dp` array like this:
-
-1. Start with `dp[i] = arr[i]` for all `i`.
-2. Go through each element and check the previous elements to update the `dp` value based on the increasing order and gap rules.
-
-This method helps us build on what we already computed. It finds the maximum sum of the increasing subsequence while following the gap constraints.
-
-Here is a simple implementation in Python:
+### Implementation
+Here is a simple Python code for the dynamic programming method to find the maximum score from merging stones:
 
 ```python
-def max_sum_increasing_subsequence(arr):
-    n = len(arr)
-    dp = arr[:]  # Copy arr to dp
-
+def maxScore(stones):
+    n = len(stones)
+    dp = [[0] * n for _ in range(n)]
+    sum_stones = [[0] * n for _ in range(n)]
+    
+    # Precompute the sum of stones from i to j
     for i in range(n):
-        for j in range(i):
-            if arr[j] < arr[i]:  # Check if it is increasing
-                dp[i] = max(dp[i], dp[j] + arr[i])  # Update dp[i]
+        sum_stones[i][i] = stones[i]
+        for j in range(i + 1, n):
+            sum_stones[i][j] = sum_stones[i][j - 1] + stones[j]
 
-    return max(dp)  # The max value in dp is our answer
+    for length in range(2, n + 1):  # length of the segment
+        for i in range(n - length + 1):
+            j = i + length - 1
+            dp[i][j] = float('-inf')
+            for k in range(i, j):
+                dp[i][j] = max(dp[i][j], dp[i][k] + dp[k + 1][j] + sum_stones[i][j])
 
-# Example usage
-arr = [3, 5, 6, 2, 4, 5]
-print(max_sum_increasing_subsequence(arr))  # Output: 12
-```
-
-This code shows the dynamic programming approach. It uses both optimal substructure and overlapping subproblems. This way, we get an efficient and clear solution for the maximum sum of increasing subsequences with gap constraints.
-
-## Brute Force Solution for Maximum Sum of Increasing Subsequence
-
-We can use a brute force method to solve the Maximum Sum of Increasing Subsequence with Gap Constraint. This means we look at all possible subsequences of the input array. Then we calculate their sums. We also make sure the selected elements follow the gap rule. This way is not fast for big inputs but is a simple way to start learning about the problem.
-
-### Steps to Implement the Brute Force Solution
-
-1. **Generate Subsequences**: We need to find all increasing subsequences of the array.
-2. **Check Gap Constraint**: We check if each subsequence follows the gap rule.
-3. **Calculate Sums**: We add up the valid subsequences.
-4. **Track Maximum Sum**: We keep a variable to remember the biggest sum we find.
-
-### Example
-
-If we have an array `arr = [3, 5, 6, 7, 8]` and a gap of 1, some increasing subsequences are:
-- `[3]`
-- `[5]`
-- `[3, 5]`
-- `[3, 6]`
-- `[3, 7]`
-- and more.
-
-### Brute Force Code Implementation
-
-Here is a simple Python code for the brute force method:
-
-```python
-def is_valid(subseq, gap):
-    for i in range(len(subseq) - 1):
-        if abs(subseq[i] - subseq[i + 1]) <= gap:
-            return False
-    return True
-
-def generate_subsequences(arr):
-    subsequences = []
-    n = len(arr)
-    
-    for i in range(1 << n):  # 2^n combinations
-        subseq = []
-        for j in range(n):
-            if i & (1 << j):
-                subseq.append(arr[j])
-        if subseq and all(subseq[k] < subseq[k + 1] for k in range(len(subseq) - 1)):
-            subsequences.append(subseq)
-
-    return subsequences
-
-def max_sum_increasing_subsequence(arr, gap):
-    subsequences = generate_subsequences(arr)
-    max_sum = 0
-    
-    for subseq in subsequences:
-        if is_valid(subseq, gap):
-            max_sum = max(max_sum, sum(subseq))
-
-    return max_sum
-
-# Example usage
-arr = [3, 5, 6, 7, 8]
-gap = 1
-print(max_sum_increasing_subsequence(arr, gap))  # Output the maximum sum
+    return dp[0][n - 1]
 ```
 
 ### Complexity Analysis
+- **Time Complexity**: The time complexity is \(O(N^3)\) because we have three loops that go through the stones.
+- **Space Complexity**: The space complexity is \(O(N^2)\) for the `dp` and `sum_stones` arrays.
 
-- **Time Complexity**: O(2^n) because we create all possible subsequences.
-- **Space Complexity**: O(n) for saving the subsequences.
+We can see that this dynamic programming method helps us solve the merging stones problem to get the best score possible. It works well even for larger inputs. If you want to learn more about similar dynamic programming topics, you can check this [Dynamic Programming: Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html).
 
-We see that this brute force way helps us understand the problem. But it is not good for large data because it takes a lot of time. For a better solution, we can use dynamic programming methods that can make the time faster.
+## Java Implementation of Maximum Score from Merging Stones
 
-## Dynamic Programming Solution in Java for Maximum Sum of Increasing Subsequence
+To solve the Maximum Score from Merging Stones problem in Java, we use dynamic programming. We create a 2D DP array. Here, `dp[i][j]` shows the highest score we can get by merging stones from index `i` to `j`. The main idea is to calculate the score for different parts of the stones step by step.
 
-We want to find the maximum sum of an increasing subsequence with a gap rule using dynamic programming in Java. Our aim is to make the sum of elements in the increasing subsequence as big as possible while making sure that no two chosen elements are next to each other.
-
-### Java Implementation
-
-Here is a simple code for the dynamic programming solution:
+### Java Code Example
 
 ```java
-public class MaximumSumIncreasingSubsequence {
-    public static int maxSumIS(int arr[], int n) {
-        // Create an array to store maximum sum ending at each index
-        int[] maxSum = new int[n];
-        
-        // Initialize maxSum with the array elements
+class Solution {
+    public int mergeStones(int[] stones, int K) {
+        int n = stones.length;
+        if ((n - 1) % (K - 1) != 0) return -1; // Check if it is possible to merge
+
+        int[][] dp = new int[n][n];
+        int[] sum = new int[n + 1];
+
         for (int i = 0; i < n; i++) {
-            maxSum[i] = arr[i];
+            sum[i + 1] = sum[i] + stones[i];
         }
 
-        // Build the maxSum array
-        for (int i = 1; i < n; i++) {
-            for (int j = 0; j < i; j++) {
-                // Update maxSum[i] if arr[i] is greater than arr[j]
-                // and the gap constraint is satisfied
-                if (arr[i] > arr[j] && i - j > 1) {
-                    maxSum[i] = Math.max(maxSum[i], maxSum[j] + arr[i]);
+        for (int length = K; length <= n; length++) {
+            for (int i = 0; i + length - 1 < n; i++) {
+                int j = i + length - 1;
+                dp[i][j] = Integer.MAX_VALUE;
+
+                for (int k = i; k < j; k += K - 1) {
+                    dp[i][j] = Math.min(dp[i][j], dp[i][k] + dp[k + 1][j]);
+                }
+
+                if ((length - 1) % (K - 1) == 0) {
+                    dp[i][j] += sum[j + 1] - sum[i]; // Add score for merging
                 }
             }
         }
 
-        // Find the maximum sum from the maxSum array
-        int max = 0;
-        for (int i = 0; i < n; i++) {
-            max = Math.max(max, maxSum[i]);
-        }
-
-        return max;
-    }
-
-    public static void main(String[] args) {
-        int[] arr = {3, 2, 5, 10, 7};
-        int n = arr.length;
-        System.out.println("Maximum Sum of Increasing Subsequence: " + maxSumIS(arr, n));
+        return dp[0][n - 1];
     }
 }
 ```
 
 ### Explanation of the Code
 
-- The `maxSumIS` method makes an array called `maxSum` to keep the max sum subsequence ending at each index.
-- It fills `maxSum` with the same values as the input array at first.
-- A nested loop goes through the array to change `maxSum` based on the increasing subsequence rule and the gap rule.
-- In the end, it finds the highest value in `maxSum`, which shows the maximum sum of the increasing subsequence with the gap rule.
+- **Input Validation:** First, we check if we can merge all stones into one pile. We do this by looking at the number of stones and the merging rule.
+- **Prefix Sum Array:** We calculate a prefix sum array, `sum`. This helps us quickly find the score when we merge parts of the stones.
+- **Dynamic Programming Table Initialization:** We set up the DP table `dp`. Each entry will keep the best score for merging stones between indices `i` and `j`.
+- **Calculation of Scores:** For each subarray length starting from `K`, we calculate scores. We check different ways to split the stones and update the DP table. If the current length meets the merging rule, we add the score from the prefix sum.
 
-### Example Usage
+This method effectively finds the highest score we can get from merging stones. We follow the rules from the problem statement.
 
-For the input array `{3, 2, 5, 10, 7}`, the output will be:
+## Python Code Example for Merging Stones Problem
 
-```
-Maximum Sum of Increasing Subsequence: 15
-```
+To solve the Merging Stones problem with dynamic programming in Python, we need to create a function called `mergeStones`. This function will take two inputs: a list of integers called `stones` that shows the stones and an integer `K` that tells how many stones we can merge at once.
 
-This is because we select the subsequence `{5, 10}` which gives the maximum sum of 15, keeping the gap rule. 
+### Approach:
+1. **Dynamic Programming Table**: We will use a 2D table named `dp`. Here, `dp[i][j]` will save the lowest cost to merge stones from index `i` to `j`.
+2. **Prefix Sum**: We will have a prefix sum array. This helps us quickly find the sum of stones in any part of the list.
+3. **Merging Logic**: For every possible range `[i, j]`, if the stones in that range can be merged (meaning the number of stones is a multiple of `K`), we will find the cost to merge them and update the `dp` table.
 
-This Java code works well to find the maximum sum of an increasing subsequence with a gap rule using dynamic programming ideas.
-
-## Dynamic Programming Solution in Python for Maximum Sum of Increasing Subsequence
-
-We will solve the problem of finding the maximum sum of an increasing subsequence with a gap constraint using dynamic programming in Python. Our approach is simple.
-
-### Problem Definition
-We have an array `nums`. We need to find the maximum sum of increasing subsequences. We must make sure that no two elements in the subsequence are next to each other.
-
-### Dynamic Programming Approach
-1. **Initialization**: We create a `dp` array. Each `dp[i]` will hold the maximum sum of the increasing subsequence that ends at index `i`.
-2. **Base Case**: Each element can be a subsequence by itself. So we set `dp[i] = nums[i]` for all `i`.
-3. **Recurrence Relation**: For each element `nums[i]`, we check all previous elements `nums[j]` where `j` is less than `i`. If `nums[j]` is less than `nums[i]`, we update `dp[i]` like this:
-   \[
-   dp[i] = \max(dp[i], dp[j] + nums[i])
-   \]
-4. **Result**: The answer is the maximum value in the `dp` array.
-
-### Python Code Implementation
+### Python Implementation:
 
 ```python
-def max_sum_increasing_subsequence(nums):
-    if not nums:
-        return 0
-    
-    n = len(nums)
-    dp = [0] * n
-    
-    for i in range(n):
-        dp[i] = nums[i]  # Start with the value itself
-    
-    for i in range(1, n):
-        for j in range(i):
-            if nums[j] < nums[i]:  # Check the increasing condition
-                dp[i] = max(dp[i], dp[j] + nums[i])
-    
-    return max(dp)
-
-# Example usage
-nums = [3, 5, 6, 7, 8, 20]
-result = max_sum_increasing_subsequence(nums)
-print("Maximum Sum of Increasing Subsequence:", result)  # Output: 48
+class Solution:
+    def mergeStones(self, stones: List[int], K: int) -> int:
+        n = len(stones)
+        if (n - 1) % (K - 1) != 0:
+            return -1
+        
+        # Prefix sum to help calculate range sums
+        prefix_sum = [0] * (n + 1)
+        for i in range(n):
+            prefix_sum[i + 1] = prefix_sum[i] + stones[i]
+        
+        # DP table
+        dp = [[0] * n for _ in range(n)]
+        
+        # Fill DP table
+        for length in range(K, n + 1):  # length of the subarray
+            for i in range(n - length + 1):
+                j = i + length - 1
+                dp[i][j] = float('inf')
+                for mid in range(i, j, K - 1):
+                    dp[i][j] = min(dp[i][j], dp[i][mid] + dp[mid + 1][j])
+                if (length - 1) % (K - 1) == 0:
+                    dp[i][j] += prefix_sum[j + 1] - prefix_sum[i]
+        
+        return dp[0][n - 1]
 ```
 
-### Explanation of the Code
-The `max_sum_increasing_subsequence` function starts by making a `dp` list. This list stores the maximum sums. We loop through the array to fill the `dp` list based on the conditions we said before. Finally, we return the maximum value from the `dp` list. This value is the maximum sum of the increasing subsequence.
+### Key Points:
+- This code uses dynamic programming to find the lowest cost to merge stones.
+- Before calculations, we check if merging is possible (if `(n - 1) % (K - 1) == 0`).
+- The prefix sum array helps with range sums. This makes the solution faster.
 
-### Complexity Analysis
-- **Time Complexity**: O(n^2). This is because we compare each element with all previous elements.
-- **Space Complexity**: O(n). This is for the `dp` array.
+This Python code solves the Merging Stones problem well. It uses dynamic programming to get the best solution. For more complex dynamic programming problems, we should look at other sources. For example, check out the [Dynamic Programming: Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html) for basic ideas.
 
-This dynamic programming solution helps us find the maximum sum of an increasing subsequence with the gap constraint. It follows the rules of the problem. If we want to learn more about similar problems, we can check [Dynamic Programming - Maximum Sum of Increasing Subsequence](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-maximum-sum-increasing-subsequence-medium.html).
+## C++ Solution for Maximum Score from Merging Stones
 
-## Dynamic Programming Solution in C++ for Maximum Sum of Increasing Subsequence
+We can solve the Maximum Score from Merging Stones problem using dynamic programming in C++. Our aim is to get the highest score from merging stones based on some rules. Here is a simple C++ code for the solution.
 
-To solve the problem of finding the maximum sum of an increasing subsequence with a gap rule using dynamic programming in C++, we create a dynamic programming array. Each element at index `i` shows the maximum sum of an increasing subsequence that ends with the element at index `i`. 
-
-We start by looking through the array. For each element, we check all previous elements. We want to find suitable candidates that can add to the subsequence sum. The gap rule means we only look at previous elements that are not next to the current one.
-
-Here is a C++ code that shows this way:
+### C++ Code Implementation
 
 ```cpp
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <numeric>
 
-int maxSumIS(std::vector<int>& arr) {
-    int n = arr.size();
-    if (n == 0) return 0;
+using namespace std;
 
-    // Create an array to store maximum sum ending at each index
-    std::vector<int> dp(n);
-    for (int i = 0; i < n; i++) {
-        dp[i] = arr[i]; // Set max sum as the element itself
-    }
+class Solution {
+public:
+    int mergeStones(vector<int>& stones, int K) {
+        int n = stones.size();
+        if (n == 0) return 0;
+        if ((n - 1) % (K - 1) != 0) return -1;
 
-    // Fill the dp array
-    for (int i = 1; i < n; i++) {
-        for (int j = 0; j < i - 1; j++) { // Check for gap rule
-            if (arr[i] > arr[j]) {
-                dp[i] = std::max(dp[i], dp[j] + arr[i]);
+        vector<vector<int>> dp(n, vector<int>(n, 0));
+        vector<vector<int>> sum(n, vector<int>(n, 0));
+
+        // Precompute the sum of stones between indices
+        for (int i = 0; i < n; ++i) {
+            sum[i][i] = stones[i];
+            for (int j = i + 1; j < n; ++j) {
+                sum[i][j] = sum[i][j - 1] + stones[j];
             }
         }
-    }
 
-    // The result is the maximum value in dp[]
-    return *std::max_element(dp.begin(), dp.end());
-}
+        // Fill the dp table
+        for (int len = 2; len <= n; ++len) {
+            for (int i = 0; i <= n - len; ++i) {
+                int j = i + len - 1;
+                dp[i][j] = INT_MAX;
+                for (int m = 1; m < len; m += (K - 1)) {
+                    int k = i + m - 1;
+                    dp[i][j] = min(dp[i][j], dp[i][k] + dp[k + 1][j]);
+                }
+                if ((len - 1) % (K - 1) == 0) {
+                    dp[i][j] += sum[i][j];
+                }
+            }
+        }
+
+        return dp[0][n - 1];
+    }
+};
 
 int main() {
-    std::vector<int> arr = {3, 4, 5, 1, 2};
-    std::cout << "Maximum Sum of Increasing Subsequence: " << maxSumIS(arr) << std::endl;
+    Solution solution;
+    vector<int> stones = {3, 2, 4, 1};
+    int K = 2;
+    cout << "Maximum score from merging stones: " << solution.mergeStones(stones, K) << endl;
     return 0;
 }
 ```
 
-### Explanation of the Code:
-- **Initialization**: We start the `dp` array. We set each element to the same value in the input array. The minimum sum for each element is the element itself.
-- **Nested Loops**: The outer loop goes through each element of the array. The inner loop checks all previous elements (with the gap rule). If the current element is bigger than the previous one, we update the `dp` value for the current index.
-- **Result Calculation**: At last, we get the result by finding the biggest value in the `dp` array. This shows the maximum sum of an increasing subsequence.
+### Explanation of the Code
 
-This dynamic programming solution runs in O(n^2) time. This is good for input arrays that are not too big. For more information on dynamic programming techniques, we can check out the [Dynamic Programming - Maximum Sum of Increasing Subsequence](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-maximum-sum-of-increasing-subsequence-medium.html).
+- **Initialization**: We create a class `Solution` with a function `mergeStones`. This function takes a list of integers for stones and an integer `K`.
+- **Sum Calculation**: We have a 2D vector `sum` to keep track of the total stones between any two points.
+- **Dynamic Programming Table**: A 2D vector `dp` is used to store the lowest scores needed to merge stones from index `i` to `j`.
+- **Nested Loops**: The outer loop checks different lengths of groups. The inner loops find the lowest score for merging stones using the values we calculated before.
+- **Final Result**: The function gives back the lowest score for merging all stones. This score is in `dp[0][n - 1]`.
 
-## Time and Space Complexity Analysis of the Solutions
+So, this C++ solution works well to find the maximum score from merging stones by using dynamic programming ideas.
 
-We can look at the time and space complexity of the Maximum Sum of Increasing Subsequence with Gap Constraint. We will check both the brute force way and the dynamic programming way.
+## Optimizing Space Complexity in Merging Stones Problem
 
-### Brute Force Approach
+In the dynamic programming solution for the "Maximum Score from Merging Stones" problem, we need to optimize space complexity. This is important for efficiency, especially with larger inputs. The common way uses a 2D array to store results. This can use a lot of memory. We will talk about ways to reduce this space need.
 
-- **Time Complexity:** O(2^n)
-  - The brute force method checks all possible subsequences. This makes the time grow very fast.
-- **Space Complexity:** O(n)
-  - The recursion stack can go as deep as n at its worst.
+### Space Optimization Techniques
 
-### Dynamic Programming Approach
+1. **Using a 1D Array**:
+   Instead of using a 2D array `dp[i][j]`, we can use a 1D array. This array holds results for the current and previous stone merges. This change reduces the space complexity from O(n^2) to O(n).
 
-The dynamic programming way improves the brute force way. It does this by using memoization or tabulation.
+2. **Rolling Array Technique**:
+   We can store only the needed previous states. This means we will keep two arrays. One for the current state and one for the previous state.
 
-- **Time Complexity:** O(n^2)
-  - The algorithm goes through each element. It checks past elements that can make an increasing subsequence. This means n comparisons for each of the n elements.
-- **Space Complexity:** O(n)
-  - The DP array keeps the maximum sums for each index. This uses linear space.
+### Implementation
 
-### Example Analysis
-
-If we have an input array `arr[] = {3, 2, 5, 10, 7}`, we can write the dynamic programming solution like this:
+Here is a Java code showing space optimization using a rolling array technique:
 
 ```java
-public int maximumSumIncreasingSubsequence(int[] arr) {
-    int n = arr.length;
-    int[] dp = new int[n];
-    System.arraycopy(arr, 0, dp, 0, n); // Initialize dp array with arr values
+public class MergingStones {
+    public int mergeStones(int[] stones, int k) {
+        int n = stones.length;
+        if ((n - 1) % (k - 1) != 0) return -1;
 
-    for (int i = 1; i < n; i++) {
-        for (int j = 0; j < i; j++) {
-            if (arr[i] > arr[j] && i - j > 1) { // Gap constraint
-                dp[i] = Math.max(dp[i], dp[j] + arr[i]);
+        int[][] dp = new int[n][n];
+        int[] sum = new int[n + 1];
+
+        for (int i = 0; i < n; i++) {
+            sum[i + 1] = sum[i] + stones[i];
+        }
+
+        for (int len = k; len <= n; len++) {
+            for (int i = 0; i + len - 1 < n; i++) {
+                int j = i + len - 1;
+                dp[i][j] = Integer.MAX_VALUE;
+
+                for (int m = 1; m < len; m++) {
+                    if (m % (k - 1) == 0) {
+                        dp[i][j] = Math.min(dp[i][j], dp[i][m + i - 1] + dp[m + i][j]);
+                    }
+                }
+                if ((len - 1) % (k - 1) == 0) {
+                    dp[i][j] += sum[j + 1] - sum[i];
+                }
             }
         }
+        return dp[0][n - 1];
     }
-
-    int maxSum = 0;
-    for (int sum : dp) {
-        maxSum = Math.max(maxSum, sum);
-    }
-    return maxSum;
 }
 ```
 
-In this solution, we see the time complexity is still O(n^2) because of the nested loops. The space complexity is O(n) because of the `dp` array.
+### Python Example
 
-### Summary of Complexity
+The next Python code shows the same method:
 
-- **Brute Force:** 
-  - Time: O(2^n), Space: O(n)
-- **Dynamic Programming:**
-  - Time: O(n^2), Space: O(n)
+```python
+def merge_stones(stones, k):
+    n = len(stones)
+    if (n - 1) % (k - 1) != 0:
+        return -1
 
-This analysis shows how much better the dynamic programming method is compared to the brute force way. We can see why it is a better option for the Maximum Sum of Increasing Subsequence with Gap Constraint problem.
+    dp = [[0] * n for _ in range(n)]
+    sum_stones = [0] * (n + 1)
 
-## Common Edge Cases and Considerations
+    for i in range(n):
+        sum_stones[i + 1] = sum_stones[i] + stones[i]
 
-When we use dynamic programming to find the Maximum Sum of Increasing Subsequence with Gap Constraint, we should think about many edge cases and things to consider:
+    for length in range(k, n + 1):
+        for i in range(n - length + 1):
+            j = i + length - 1
+            dp[i][j] = float('inf')
+            for m in range(1, length):
+                if m % (k - 1) == 0:
+                    dp[i][j] = min(dp[i][j], dp[i][i + m - 1] + dp[i + m][j])
+            if (length - 1) % (k - 1) == 0:
+                dp[i][j] += sum_stones[j + 1] - sum_stones[i]
 
-- **Empty Input**: If our input array is empty, the maximum sum is 0. We need to check this case first in our code.
+    return dp[0][n - 1]
+```
 
-- **Single Element**: If our array has only one element, the maximum sum is just that element. We should return it right away without more checks.
+### C++ Implementation
 
-- **All Negative Numbers**: If our array has only negative numbers, the algorithm should still find the maximum value. This will be the least negative number. We should compare sums carefully to get the right result.
+This C++ code example uses the same idea for space optimization:
 
-- **All Increasing or Decreasing**: If the array is sorted in increasing order, the maximum sum is the total of all elements. If it is sorted in decreasing order, the maximum sum will be the first element because we can’t make a valid increasing subsequence.
+```cpp
+class Solution {
+public:
+    int mergeStones(vector<int>& stones, int k) {
+        int n = stones.size();
+        if ((n - 1) % (k - 1) != 0) return -1;
 
-- **Repeated Elements**: If our input array has repeated elements, we must make sure the algorithm finds increasing subsequences correctly. For example, if we have `[3, 3, 3]`, it should return 3.
+        vector<vector<int>> dp(n, vector<int>(n, INT_MAX));
+        vector<int> sum(n + 1, 0);
 
-- **Gap Constraint Handling**: The gap constraint means that after we pick one element, the next one in our subsequence must be at least two indices away. We need to pay attention to this in our implementation.
+        for (int i = 0; i < n; ++i) {
+            sum[i + 1] = sum[i] + stones[i];
+        }
 
-- **Performance with Large Inputs**: If our input size is big, the time complexity of O(n^2) can be a problem. We should think about ways to make it faster or use different algorithms if we have performance issues.
+        for (int length = k; length <= n; ++length) {
+            for (int i = 0; i + length - 1 < n; ++i) {
+                int j = i + length - 1;
+                for (int m = 1; m < length; ++m) {
+                    if (m % (k - 1) == 0) {
+                        dp[i][j] = min(dp[i][j], dp[i][i + m - 1] + dp[i + m][j]);
+                    }
+                }
+                if ((length - 1) % (k - 1) == 0) {
+                    dp[i][j] += sum[j + 1] - sum[i];
+                }
+            }
+        }
+        return dp[0][n - 1];
+    }
+};
+```
 
-- **Data Type Limits**: When we calculate sums, especially with big numbers, we need to check that our data types can manage the possible overflow. We should use data types like `long` in Java or `int` in Python carefully.
+### Conclusion
 
-- **Negative Gap Values**: Usually, the gap is positive. But we need to make sure our implementation ignores any negative gap constraints if we make a mistake.
+By using these space optimization methods, we can lower memory use while solving the "Maximum Score from Merging Stones" problem. This makes our solutions better and can work for bigger inputs. To learn more about dynamic programming techniques, we can read articles like [Dynamic Programming Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html).
 
-By thinking about these edge cases, we can make a strong implementation of the Maximum Sum of Increasing Subsequence with Gap Constraint. If we want to read more about dynamic programming, we can check these articles: [Dynamic Programming - Longest Increasing Subsequence](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-longest-increasing-subsequence-medium.html) and [Dynamic Programming - Maximum Sum of Non-Adjacent Elements](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-maximum-sum-of-non-adjacent-elements-medium.html).
+## Testing and Validating the Merging Stones Solution
+
+To make sure our solution for the Maximum Score from Merging Stones problem is correct, we need to do some thorough testing and validation. Here are the ways we can test and validate our implementation in different situations.
+
+### Test Cases
+
+1. **Basic Test Cases**:
+   - Input: `stones = [3, 5, 1, 2, 6]`, `K = 3`
+     - Expected Output: `35` (We need to calculate merging steps and scores by hand).
+   - Input: `stones = [4, 3, 6, 4]`, `K = 2`
+     - Expected Output: `36`.
+
+2. **Edge Cases**:
+   - Input: `stones = [1]`, `K = 1`
+     - Expected Output: `0` (There is only one stone, no merge possible).
+   - Input: `stones = []`, `K = 1`
+     - Expected Output: `0` (No stones to merge).
+
+3. **Large Input Cases**:
+   - Input: `stones = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`, `K = 2`
+     - Expected Output: `88`.
+   - Input: `stones = [10] * 1000`, `K = 10`
+     - Expected Output: `1000000` (This is the max score from merging same stones).
+
+### Validation Technique
+
+- **Unit Testing**: We can use a unit testing framework like JUnit for Java, pytest for Python, or Google Test for C++. Each function, especially the recursive and dynamic parts, needs to be tested alone.
+  
+- **Integration Testing**: We should test the whole solution together to check if parts work well together. This should include tests that act like the full merging process.
+
+- **Performance Testing**: We need to check the time and memory use for large inputs. This will help us see if the solution is fast and meets the limits.
+
+### Example Code for Testing in Python
+
+```python
+def test_merge_stones():
+    assert merge_stones([3, 5, 1, 2, 6], 3) == 35
+    assert merge_stones([4, 3, 6, 4], 2) == 36
+    assert merge_stones([1], 1) == 0
+    assert merge_stones([], 1) == 0
+    assert merge_stones([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 2) == 88
+    assert merge_stones([10] * 1000, 10) == 1000000
+
+# Run tests
+test_merge_stones()
+print("All tests passed!")
+```
+
+We should add these tests into our development process. This will help us make sure the Maximum Score from Merging Stones solution is strong and reliable. 
+
+### Debugging Techniques
+
+- **Logging**: We can add logging to see the values of important variables when running. This will help us find where things go wrong.
+- **Step-by-step Debugging**: We can use an IDE debugger to go through the code step by step, especially in recursive functions. This lets us watch the flow of execution and check variable values.
+
+This way of testing and validating will help us make sure the Merging Stones solution works correctly in different situations and meets performance needs.
 
 ## Frequently Asked Questions
 
-### 1. What is the maximum sum of increasing subsequence with a gap constraint?
+### 1. What is the Merging Stones problem in dynamic programming?
+The Merging Stones problem is about finding the highest score we can get by merging a line of stones with some rules. The goal is to merge the stones in a way that gives us the biggest total score. This score usually comes from adding together the stones we merge. We can solve this problem well using dynamic programming. This method helps us look at smaller parts of the problem for the best solution.
 
-The maximum sum of increasing subsequence with a gap constraint means we want to find the biggest sum of increasing numbers in a sequence. We cannot pick two numbers that are next to each other. This is a special case of the maximum sum increasing subsequence problem. We need to use dynamic programming to find the answer in a smart way.
+### 2. How does dynamic programming help in solving the Merging Stones problem?
+Dynamic programming helps us solve the Merging Stones problem by breaking it into smaller parts that overlap. We can keep the results of these parts so we do not need to calculate them again. This saves time and helps us find the highest score quickly. This method is much faster than just using simple recursive ways. It works better for bigger sets of data.
 
-### 2. How does dynamic programming apply to the maximum sum of increasing subsequence with gap constraint?
+### 3. What is the time complexity of the dynamic programming solution for Merging Stones?
+The time complexity for the dynamic programming solution of the Merging Stones problem is usually O(N^3). Here, N stands for the number of stones. This happens because we need nested loops to find the maximum scores for different groups of stones. Even if this complexity seems high, it is okay for medium-sized inputs. So, dynamic programming is a good choice.
 
-We use dynamic programming for this problem by breaking it into smaller parts. We keep the results of sums we have already calculated. This helps us not to do the same work again. So, we can solve the problem faster than just trying all options. This method is very important for solving this medium-level dynamic programming task.
+### 4. Can you provide a sample implementation for the Merging Stones problem in Python?
+Sure! Here is a simple Python code to solve the Merging Stones problem using dynamic programming:
 
-### 3. Can you explain the brute force solution for the maximum sum of increasing subsequence with gap constraint?
+```python
+def mergeStones(stones, K):
+    n = len(stones)
+    if (n - 1) % (K - 1) != 0:
+        return -1
 
-The brute force way to solve this problem is to make all possible subsequences and find their sums. We also check if they follow the gap rule. But this way is not good. It takes too much time, especially when the input is big. So, we better use dynamic programming because it works better.
+    dp = [[[0] * n for _ in range(n)] for _ in range(n)]
+    sum_stones = [[0] * n for _ in range(n)]
 
-### 4. What is the time complexity of the dynamic programming solution for the maximum sum of increasing subsequence?
+    for i in range(n):
+        sum_stones[i][i] = stones[i]
+        for j in range(i + 1, n):
+            sum_stones[i][j] = sum_stones[i][j - 1] + stones[j]
 
-The time complexity for the dynamic programming solution is O(n^2). Here, n is the number of elements in the input array. This happens because we have nested loops to compare the numbers and create the maximum sum array. The space complexity is O(n) since we need space to keep some results.
+    for length in range(1, n + 1):
+        for i in range(n - length + 1):
+            j = i + length - 1
+            if length == 1:
+                dp[i][j][1] = 0
+            for k in range(2, K + 1):
+                for m in range(i, j):
+                    dp[i][j][k] = max(dp[i][j][k], dp[i][m][k - 1] + dp[m + 1][j][K])
 
-### 5. Are there any common edge cases to consider in the maximum sum of increasing subsequence problem?
+            if (length - 1) % (K - 1) == 0:
+                dp[i][j][1] += sum_stones[i][j]
 
-Yes, there are some common edge cases. One is an empty input array. The result should be zero in this case. Another case is when all elements are the same. The maximum sum would just be one of those elements. Also, if there is only one element, that should be the maximum sum. These cases show how important it is to make a strong implementation in dynamic programming solutions.
+    return dp[0][n - 1][1]
+```
 
-For more insights into dynamic programming techniques, we can explore related topics like the [maximum subarray sum using Kadane's algorithm](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-maximum-subarray-kadanes-algorithm-easy.html) or the [longest increasing subsequence](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-longest-increasing-subsequence-medium.html).
+### 5. What are some common variations of the Merging Stones problem?
+There are different versions of the Merging Stones problem. These versions may change the merging rules or the way we score. For example, we can change how we count scores based on how many stones we merge. Sometimes, there are limits on how many stones we can merge at the same time. These changes can make us use different dynamic programming methods. It is important to change our approach based on what the problem asks. For more on similar problems, you can read about the [Minimum Cost to Merge Stones](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-minimum-cost-to-merge-stones-hard.html) article.
