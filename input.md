@@ -1,542 +1,511 @@
-The House Robber II problem is a step up from the House Robber I problem. It is about getting the most money a robber can take from houses that are in a circle. The tricky part is that the first and last houses are next to each other. This means the robber can’t rob both. 
+A wiggle subsequence is a sequence of numbers. In this sequence, the differences between the numbers change signs. Our goal with the Wiggle Subsequence problem is to find the longest wiggle subsequence in a list of integers. We can solve this problem well using dynamic programming. This method helps us break the problem into smaller parts. Then, we store the results so we can use them again.
 
-To solve this problem, we can use dynamic programming. This method helps us deal with the circle of houses. It also makes sure we handle the important parts of the problem well.
+In this article, we will look at how to use dynamic programming to solve the Wiggle Subsequence problem. We will explain the problem clearly. We will also talk about what wiggle subsequences are. We will show code examples in Java, Python, and C++. We will also discuss how to save space while solving this problem. We will compare different methods. We will point out common mistakes. And we will share best practices for writing solutions. Here are the topics we will cover:
 
-In this article, we will look at the dynamic programming method for the House Robber II problem. We will explain it, show how to implement it in Java, Python, and C++. We will also talk about how to make space usage better, how to deal with special cases, and compare solutions in different programming languages. We will answer common questions about the House Robber II problem too.
-
-- Dynamic Programming House Robber II Problem Explanation
-- Understanding the Dynamic Programming Approach for House Robber II
-- Java Implementation of House Robber II Solution
-- Python Code for House Robber II Dynamic Programming
-- C++ Solution for House Robber II Problem
-- Optimizing Space Complexity in House Robber II
-- Handling Edge Cases in House Robber II
-- Comparative Analysis of Solutions in Different Languages
+- Explanation of Dynamic Programming Wiggle Subsequence Problem
+- Understanding Wiggle Subsequence Concept
+- Dynamic Programming Approach in Java for Wiggle Subsequence
+- Dynamic Programming Approach in Python for Wiggle Subsequence
+- Dynamic Programming Approach in C++ for Wiggle Subsequence
+- Optimizing Space Complexity for Wiggle Subsequence
+- Comparing Different Approaches for Wiggle Subsequence
+- Common Mistakes in Solving Wiggle Subsequence Problem
+- Best Practices for Implementing Wiggle Subsequence Solutions
 - Frequently Asked Questions
 
-If you want to learn more about dynamic programming, you can check out other articles like [Dynamic Programming Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html) and [Dynamic Programming Climbing Stairs](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-climbing-stairs-easy.html).
+## Understanding the Concept of Wiggle Subsequence
 
-## Understanding the Dynamic Programming Approach for House Robber II
+A Wiggle Subsequence is a list of numbers. In this list, the differences between the numbers go up and down. For example, if we have a list \( a_1, a_2, a_3, \ldots, a_n \), it is a wiggle sequence if:
 
-The House Robber II problem is a step up from the House Robber I problem. In this case, houses are in a circle. The main problem is that if we rob the first house, we cannot rob the last house. So, we have two situations to look at:
+- \( (a_2 - a_1) \times (a_3 - a_2) < 0 \)
+- \( (a_3 - a_2) \times (a_4 - a_3) < 0 \)
+- And this goes on...
 
-1. **Rob houses from the first to the second last** (do not rob the last house).
-2. **Rob houses from the second to the last** (do not rob the first house).
+Our goal is to find the longest wiggle subsequence from a given list.
 
-The dynamic programming approach helps us find the most money we can rob without getting caught by the police.
+### Properties
 
-### Dynamic Programming Formulation
+- A wiggle sequence has at least one number if the input list is not empty.
+- We can find the longest wiggle subsequence using dynamic programming. This means we will keep track of the peaks and valleys in the list.
 
-We can define `dp[i]` as the maximum amount of money we can rob from the first `i` houses. We can write the rules like this:
+### Example
 
-- If we rob the house at index `i`:
-  \[
-  dp[i] = nums[i] + dp[i-2]
-  \]
-- If we do not rob the house at index `i`:
-  \[
-  dp[i] = dp[i-1]
-  \]
+Let’s look at the list: [1, 7, 4, 9, 2, 5].
 
-So, we have this rule:
-\[
-dp[i] = \max(dp[i-1], nums[i] + dp[i-2])
-\]
+- The differences are: [6, -3, 5, -7, 3]
+- The longest wiggle subsequence in this case is [1, 7, 4, 9] and its length is 4.
 
-### Base Cases
-- `dp[0] = nums[0]` (only one house)
-- `dp[1] = \max(nums[0], nums[1])` (choose the bigger amount from the first two houses)
+### Approach
 
-### Implementation Steps
-1. We need to create a helper function that finds the maximum money we can rob using the dynamic programming approach.
-2. We will handle both situations mentioned before and return the bigger amount from the two results.
+1. **Start**: First, check if the list has at least two numbers.
+2. **Track Differences**: We will keep counters for the current length of the wiggle sequence and the previous difference.
+3. **Loop**: Go through the list and update the counters based on the difference between the numbers.
+4. **Update Length**: If we find a valid wiggle (a positive or negative difference), we increase the length counter.
 
-### Example Code (Java)
+This way helps us find the longest wiggle subsequence in a good time, about \( O(n) \).
 
-```java
-public class HouseRobberII {
-    public int rob(int[] nums) {
-        if (nums.length == 1) return nums[0];
-        return Math.max(robLinear(Arrays.copyOfRange(nums, 0, nums.length - 1)),
-                        robLinear(Arrays.copyOfRange(nums, 1, nums.length)));
-    }
-
-    private int robLinear(int[] nums) {
-        int n = nums.length;
-        if (n == 0) return 0;
-        if (n == 1) return nums[0];
-        
-        int[] dp = new int[n];
-        dp[0] = nums[0];
-        dp[1] = Math.max(nums[0], nums[1]);
-        
-        for (int i = 2; i < n; i++) {
-            dp[i] = Math.max(dp[i - 1], nums[i] + dp[i - 2]);
-        }
-        
-        return dp[n - 1];
-    }
-}
-```
-
-### Example Code (Python)
+### Code Example (Python)
 
 ```python
-class HouseRobberII:
-    def rob(self, nums):
-        if len(nums) == 1:
-            return nums[0]
-        return max(self.rob_linear(nums[:-1]), self.rob_linear(nums[1:]))
+def wiggleMaxLength(nums):
+    if len(nums) < 2:
+        return len(nums)
+    
+    count = 1
+    prev_diff = 0
+    
+    for i in range(1, len(nums)):
+        diff = nums[i] - nums[i - 1]
+        if (diff > 0 and prev_diff <= 0) or (diff < 0 and prev_diff >= 0):
+            count += 1
+            prev_diff = diff
+            
+    return count
 
-    def rob_linear(self, nums):
-        n = len(nums)
-        if n == 0:
-            return 0
-        if n == 1:
-            return nums[0]
-
-        dp = [0] * n
-        dp[0] = nums[0]
-        dp[1] = max(nums[0], nums[1])
-
-        for i in range(2, n):
-            dp[i] = max(dp[i - 1], nums[i] + dp[i - 2])
-
-        return dp[n - 1]
+# Example usage
+nums = [1, 7, 4, 9, 2, 5]
+print(wiggleMaxLength(nums))  # Output: 4
 ```
 
-### Example Code (C++)
+This code shows how to find the wiggle subsequence. It is a simple way to understand this concept.
 
-```cpp
-class HouseRobberII {
-public:
-    int rob(vector<int>& nums) {
-        if (nums.size() == 1) return nums[0];
-        return max(robLinear(vector<int>(nums.begin(), nums.end() - 1)),
-                   robLinear(vector<int>(nums.begin() + 1, nums.end())));
-    }
+## Dynamic Programming Approach in Java for Wiggle Subsequence
 
-    int robLinear(vector<int>& nums) {
-        int n = nums.size();
-        if (n == 0) return 0;
-        if (n == 1) return nums[0];
+We can solve the Wiggle Subsequence problem with dynamic programming in Java. Our goal is to find the longest subsequence where the differences between each element go up and down. Here are the steps to follow:
 
-        vector<int> dp(n);
-        dp[0] = nums[0];
-        dp[1] = max(nums[0], nums[1]);
+1. **Define the State**: We will use two arrays called `up` and `down`. 
+   - `up[i]` shows the length of the longest wiggle subsequence ending at index `i` where the difference is positive.
+   - `down[i]` shows the length of the longest wiggle subsequence ending at index `i` where the difference is negative.
 
-        for (int i = 2; i < n; ++i) {
-            dp[i] = max(dp[i - 1], nums[i] + dp[i - 2]);
-        }
+2. **Initialization**: We set both `up[0]` and `down[0]` to 1. This is because the shortest wiggle subsequence that includes the first element has a length of 1.
 
-        return dp[n - 1];
-    }
-};
-```
+3. **Recurrence Relation**: 
+   - For each element from the second to the last, we compare it with the previous element:
+     - If `nums[i] > nums[i-1]`, then:
+       - `up[i] = down[i-1] + 1`
+       - `down[i] = down[i-1]` (it does not change)
+     - If `nums[i] < nums[i-1]`, then:
+       - `down[i] = up[i-1] + 1`
+       - `up[i] = up[i-1]` (it does not change)
+     - If they are the same, both `up[i]` and `down[i]` stay the same.
 
-This method helps us find the most money we can rob while following the rules. If we want to learn more about dynamic programming, we can read articles like [Dynamic Programming Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html) or [Dynamic Programming House Robber I](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-house-robber-i-easy.html).
+4. **Final Result**: The final answer is the bigger value between the last elements of `up` and `down`.
 
-## Java Implementation of House Robber II Solution
-
-We can solve the House Robber II problem using dynamic programming in Java. This problem is a bit different from the normal House Robber problem. It has houses in a circle. The main challenge is to make sure we do not rob both the first and last houses at the same time.
-
-### Java Code Implementation
+Here is the Java code for this approach:
 
 ```java
-public class HouseRobberII {
-    public int rob(int[] nums) {
-        if (nums.length == 0) return 0;
-        if (nums.length == 1) return nums[0];
-        
-        // Calculate the maximum money for two cases:
-        // 1. Skip the first house
-        // 2. Skip the last house
-        return Math.max(robLinear(Arrays.copyOfRange(nums, 0, nums.length - 1)),
-                        robLinear(Arrays.copyOfRange(nums, 1, nums.length)));
-    }
+public class WiggleSubsequence {
+    public int wiggleMaxLength(int[] nums) {
+        if (nums.length < 2) return nums.length;
 
-    private int robLinear(int[] nums) {
-        int prev1 = 0;
-        int prev2 = 0;
-        for (int num : nums) {
-            int temp = prev1;
-            prev1 = Math.max(prev2 + num, prev1);
-            prev2 = temp;
+        int[] up = new int[nums.length];
+        int[] down = new int[nums.length];
+        
+        up[0] = 1;
+        down[0] = 1;
+
+        for (int i = 1; i < nums.length; i++) {
+            if (nums[i] > nums[i - 1]) {
+                up[i] = down[i - 1] + 1;
+                down[i] = down[i - 1];
+            } else if (nums[i] < nums[i - 1]) {
+                down[i] = up[i - 1] + 1;
+                up[i] = up[i - 1];
+            } else {
+                up[i] = up[i - 1];
+                down[i] = down[i - 1];
+            }
         }
-        return prev1;
+
+        return Math.max(up[nums.length - 1], down[nums.length - 1]);
     }
 
     public static void main(String[] args) {
-        HouseRobberII robber = new HouseRobberII();
-        int[] houses = {2, 3, 2};
-        System.out.println("Maximum amount robbed: " + robber.rob(houses)); // Output: 3
+        WiggleSubsequence ws = new WiggleSubsequence();
+        int[] nums = {1, 7, 4, 9, 2, 5};
+        System.out.println("Length of Longest Wiggle Subsequence: " + ws.wiggleMaxLength(nums));
     }
 }
+```
+
+This code creates a class `WiggleSubsequence`. It has a method called `wiggleMaxLength` that uses the dynamic programming approach to find the length of the longest wiggle subsequence. The `main` method shows how to use this method with an example array.
+
+Using this dynamic programming method, we can find the solution in O(n) time and O(n) space. We can also make it better to O(1) space by only keeping track of the last lengths instead of using the full arrays.
+
+## Dynamic Programming Approach in Python for Wiggle Subsequence
+
+We will solve the Wiggle Subsequence problem with dynamic programming in Python. We need to track two states. These states are the length of the longest wiggle subsequence that ends with an upward wiggle and a downward wiggle.
+
+### Problem Definition
+We have an integer array. Our goal is to find the length of the longest subsequence that goes up and down.
+
+### Dynamic Programming Solution
+
+1. **Initialization**: We create two arrays called `up` and `down`. They are the same length as the input array. Here:
+   - `up[i]` shows the length of the longest wiggle subsequence ending at index `i` with an upward wiggle.
+   - `down[i]` shows the length of the longest wiggle subsequence ending at index `i` with a downward wiggle.
+
+   At start, we set both `up[0]` and `down[0]` to 1 because a single element is a wiggle subsequence of length 1.
+
+2. **State Transition**:
+   - For each index from 1 to n-1, we compare the current element with the previous one:
+     - If `nums[i]` is greater than `nums[i-1]`: 
+       - We update `up[i]` to be `down[i-1] + 1`
+       - We keep `down[i]` the same as `down[i-1]`
+     - If `nums[i]` is less than `nums[i-1]`: 
+       - We update `down[i]` to be `up[i-1] + 1`
+       - We keep `up[i]` the same as `up[i-1]`
+     - If they are equal, both `up[i]` and `down[i]` stay the same as before.
+
+3. **Result**: We get the result by finding the maximum value between the last elements of `up` and `down`.
+
+### Python Code
+
+```python
+def wiggleMaxLength(nums):
+    if not nums:
+        return 0
+    
+    n = len(nums)
+    if n < 2:
+        return n
+    
+    up = [1] * n
+    down = [1] * n
+
+    for i in range(1, n):
+        if nums[i] > nums[i - 1]:
+            up[i] = down[i - 1] + 1
+            down[i] = down[i - 1]
+        elif nums[i] < nums[i - 1]:
+            down[i] = up[i - 1] + 1
+            up[i] = up[i - 1]
+        else:
+            up[i] = up[i - 1]
+            down[i] = down[i - 1]
+
+    return max(up[-1], down[-1])
+
+# Example usage
+nums = [1, 7, 4, 9, 2, 5]
+print(wiggleMaxLength(nums))  # Output: 6
+```
+
+### Complexity Analysis
+- **Time Complexity**: O(n). Here n is the length of the input array.
+- **Space Complexity**: O(n) because of the `up` and `down` arrays. We can make this O(1) by using two variables to track the lengths instead of arrays.
+
+This way we compute the longest wiggle subsequence with dynamic programming in Python. For more reading on similar dynamic programming problems, look at [Dynamic Programming - Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html).
+
+## Dynamic Programming Approach in C++ for Wiggle Subsequence
+
+To solve the Wiggle Subsequence problem using Dynamic Programming in C++, we need to keep track of two states. One state is for the length of the longest wiggle subsequence ending with an upward movement. The other state is for a downward movement. We will go through the array and update these states based on the relationship between the numbers next to each other.
+
+### C++ Implementation
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace std;
+
+int wiggleMaxLength(vector<int>& nums) {
+    if (nums.size() < 2) return nums.size();
+    
+    int up = 1, down = 1; // Start counts for ups and downs
+
+    for (int i = 1; i < nums.size(); ++i) {
+        if (nums[i] > nums[i - 1]) {
+            up = down + 1; // Update up count
+        } else if (nums[i] < nums[i - 1]) {
+            down = up + 1; // Update down count
+        }
+    }
+    
+    return max(up, down); // Return the biggest wiggle length
+}
+
+int main() {
+    vector<int> nums = {1, 7, 4, 9, 2, 5};
+    cout << "Length of longest wiggle subsequence: " << wiggleMaxLength(nums) << endl;
+    return 0;
+}
+```
+
+### Explanation of the Code
+
+- The function `wiggleMaxLength` takes a vector of integers as input.
+- It starts two variables, `up` and `down`, to keep track of the lengths of the longest wiggle subsequence. One is for the upward and other is for downward movement.
+- The loop goes through the `nums` array starting from the second element. It checks if the current number is bigger or smaller than the previous one. Then it updates `up` or `down`.
+- Finally, we return the maximum of `up` and `down`. This tells us the length of the longest wiggle subsequence.
+
+### Complexity Analysis
+
+- **Time Complexity**: O(n), where n is the size of the input array.
+- **Space Complexity**: O(1), because we use just a fixed amount of space.
+
+This way helps us find the longest wiggle subsequence in an efficient way. For more reading on similar dynamic programming problems, we can check articles like [Dynamic Programming - Longest Increasing Subsequence](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-longest-increasing-subsequence-medium.html) or [Dynamic Programming - Maximum Subarray](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-maximum-subarray-kadanes-algorithm-easy.html).
+
+## Optimizing Space Complexity for Wiggle Subsequence
+
+We can make the space needed for the Wiggle Subsequence problem smaller. Instead of using O(n) space, we can change it to O(1). We do this by keeping only the important variables that track the lengths of the wiggle subsequence. We do not need a full dynamic programming array. We just track the lengths of the last two wiggle subsequences while we go through the array.
+
+### Code Example
+
+Here is a space-saving way to do this in Java, Python, and C++.
+
+**Java Implementation:**
+
+```java
+public class WiggleSubsequence {
+    public int wiggleMaxLength(int[] nums) {
+        if (nums.length < 2) return nums.length;
+
+        int up = 1, down = 1;
+
+        for (int i = 1; i < nums.length; i++) {
+            if (nums[i] > nums[i - 1]) {
+                up = down + 1;
+            } else if (nums[i] < nums[i - 1]) {
+                down = up + 1;
+            }
+        }
+
+        return Math.max(up, down);
+    }
+}
+```
+
+**Python Implementation:**
+
+```python
+def wiggleMaxLength(nums):
+    if len(nums) < 2:
+        return len(nums)
+    
+    up, down = 1, 1
+
+    for i in range(1, len(nums)):
+        if nums[i] > nums[i - 1]:
+            up = down + 1
+        elif nums[i] < nums[i - 1]:
+            down = up + 1
+
+    return max(up, down)
+```
+
+**C++ Implementation:**
+
+```cpp
+class Solution {
+public:
+    int wiggleMaxLength(vector<int>& nums) {
+        if (nums.size() < 2) return nums.size();
+
+        int up = 1, down = 1;
+
+        for (int i = 1; i < nums.size(); i++) {
+            if (nums[i] > nums[i - 1]) {
+                up = down + 1;
+            } else if (nums[i] < nums[i - 1]) {
+                down = up + 1;
+            }
+        }
+
+        return max(up, down);
+    }
+};
 ```
 
 ### Explanation
 
-- **rob Method**: This method checks some special cases like no houses or just one house. Then it finds the maximum money we can rob by looking at two cases:
-  - Skipping the first house.
-  - Skipping the last house.
+- **Variables Used**: 
+  - `up`: This keeps the length of the longest wiggle subsequence that ends with a "up" move.
+  - `down`: This keeps the length of the longest wiggle subsequence that ends with a "down" move.
   
-- **robLinear Method**: This helper method uses dynamic programming for the normal House Robber problem:
-  - It has two variables, `prev1` and `prev2`, to remember the maximum amounts robbed until the current and the last house.
-  - It goes through the list and updates the values based on if we rob the current house or not.
+- **Time Complexity**: O(n), where n is the size of the input array.
+- **Space Complexity**: O(1), because we use only a constant amount of space.
 
-This code works well for the circle of houses and keeps a linear time of O(n) and a space of O(1).
+By using this better way, we lower the space needed a lot. We keep the time efficiency the same. This makes our method good for bigger input sizes.
 
-## Python Code for House Robber II Dynamic Programming
+## Comparing Different Approaches for Wiggle Subsequence
 
-To solve the House Robber II problem using dynamic programming in Python, we need to change the way we solve House Robber I. This is because the houses are in a circle. We will look at two cases:
+When we look at the Wiggle Subsequence problem, we can use different methods. Each one has its own pros and cons. The main methods we can think of are Dynamic Programming, Greedy, and a simple brute-force method. Here is a comparison of these methods based on how complex they are, how fast they work, and how easy they are to use.
 
-1. Rob houses from the first house to the second last house.
-2. Rob houses from the second house to the last house.
+### 1. Dynamic Programming Approach
+- **Time Complexity**: O(n) where n is the length of the input array.
+- **Space Complexity**: O(n) but can be improved to O(1).
+- **Description**: This method builds a DP table. It tracks the longest wiggle subsequence for each index. We keep two states. One for when the last wiggle goes up. The other for when it goes down.
 
-Then we find which case gives us more money. Here is the Python code:
-
-```python
-def rob(nums):
-    if not nums:
-        return 0
-    if len(nums) == 1:
-        return nums[0]
-    
-    def rob_linear(houses):
-        prev, curr = 0, 0
-        for amount in houses:
-            prev, curr = curr, max(prev + amount, curr)
-        return curr
-
-    # Case 1: Exclude the last house
-    case1 = rob_linear(nums[:-1])
-    # Case 2: Exclude the first house
-    case2 = rob_linear(nums[1:])
-    
-    return max(case1, case2)
-
-# Example Usage
-houses = [2, 3, 2]
-print(rob(houses))  # Output: 3
-```
-
-### Explanation:
-- The `rob` function checks if the list is empty or has only one house and takes care of these cases.
-- The `rob_linear` function uses the logic from House Robber I for a straight line of houses.
-- We call `rob_linear` two times. First, we leave out the last house. Second, we leave out the first house.
-- In the end, we return the most money we can rob from the two cases.
-
-This way, we handle the circular setup of the problem well. We use dynamic programming ideas to make it work better.
-
-## C++ Solution for House Robber II Problem
-
-The House Robber II problem is a version of the House Robber problem. Here, the houses are in a circle. Our goal is to find the most money we can rob without taking from two houses that are next to each other. We use dynamic programming to find the best amount of money we can get.
-
-Here is a C++ code for the solution:
-
-```cpp
-#include <vector>
-#include <algorithm>
-
-class Solution {
-public:
-    int rob(std::vector<int>& nums) {
-        int n = nums.size();
-        if (n == 0) return 0;
-        if (n == 1) return nums[0];
-        
-        // This function helps to calculate max money for a line of houses
-        auto robLinear = [&](std::vector<int>& houses) {
-            int prev1 = 0, prev2 = 0;
-            for (int amount : houses) {
-                int temp = prev1;
-                prev1 = std::max(prev1, prev2 + amount);
-                prev2 = temp;
-            }
-            return prev1;
-        };
-
-        // Since houses are in a circle, we can choose to rob:
-        // 1. From the first house to the second last house
-        // 2. From the second house to the last house
-        return std::max(robLinear(std::vector<int>(nums.begin(), nums.end() - 1)), 
-                        robLinear(std::vector<int>(nums.begin() + 1, nums.end())));
-    }
-};
-```
-
-### Explanation of the Code:
-
-- The `rob` function takes a vector `nums`. This vector shows how much money is in each house.
-- If there are no houses, it returns 0. If there is only one house, it returns the money in that house.
-- The `robLinear` lambda function calculates the most money we can rob from a line of houses. It uses a dynamic programming method.
-- The main function looks at two cases:
-  1. Robbing from the first house to the second last house.
-  2. Robbing from the second house to the last house.
-- It returns the bigger amount from the two cases.
-
-This C++ solution works well for the circle of houses and makes sure we do not rob two houses next to each other. If you want to learn more about dynamic programming, you can check the [Dynamic Programming - House Robber I](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-house-robber-i-easy.html) article.
-
-## Optimizing Space Complexity in House Robber II
-
-In the House Robber II problem, we can make space usage better while still using a dynamic programming method. The main point is that we only need to remember the last two states. We do not need to keep a whole array for all houses.
-
-### Space Optimization Strategy
-- Instead of using a big array `dp[]` with size `n`, we can use two simple variables `prev1` and `prev2`. These will hold the maximum money we can rob from the last two houses.
-- This change makes the space usage go down from O(n) to O(1).
-
-### Implementation
-Here is a Java method that shows the better way to do it:
-
+**Java Implementation**:
 ```java
-public class HouseRobberII {
-    public int rob(int[] nums) {
-        int n = nums.length;
-        if (n == 1) return nums[0];
-        return Math.max(robLinear(Arrays.copyOfRange(nums, 0, n - 1)), 
-                         robLinear(Arrays.copyOfRange(nums, 1, n)));
+public int wiggleMaxLength(int[] nums) {
+    if (nums.length < 2) return nums.length;
+
+    int up = 1, down = 1;
+
+    for (int i = 1; i < nums.length; i++) {
+        if (nums[i] > nums[i - 1]) {
+            up = down + 1;
+        } else if (nums[i] < nums[i - 1]) {
+            down = up + 1;
+        }
     }
 
-    private int robLinear(int[] nums) {
-        int prev1 = 0, prev2 = 0;
-        for (int num : nums) {
-            int temp = prev1;
-            prev1 = Math.max(prev1, prev2 + num);
-            prev2 = temp;
-        }
-        return prev1;
-    }
+    return Math.max(up, down);
 }
 ```
 
-### Python Version
-This is how we can do the same space saving in Python:
+### 2. Greedy Approach
+- **Time Complexity**: O(n).
+- **Space Complexity**: O(1).
+- **Description**: This method goes through the array and counts wiggles. It compares each pair of neighboring elements. We increase the count when we see a wiggle, which means a change in direction.
 
+**Python Implementation**:
 ```python
-def rob(nums):
-    def rob_linear(nums):
-        prev1, prev2 = 0, 0
-        for num in nums:
-            prev1, prev2 = max(prev1, prev2 + num), prev1
-        return prev1
+def wiggleMaxLength(nums):
+    if len(nums) < 2:
+        return len(nums)
 
-    n = len(nums)
-    if n == 1: return nums[0]
-    return max(rob_linear(nums[:-1]), rob_linear(nums[1:]))
+    count = 1
+    for i in range(1, len(nums)):
+        if (nums[i] > nums[i - 1] and (i == 1 or nums[i - 1] <= nums[i - 2])) or \
+           (nums[i] < nums[i - 1] and (i == 1 or nums[i - 1] >= nums[i - 2])):
+            count += 1
+
+    return count
 ```
 
-### C++ Implementation
-The C++ version also shows the same space saving:
+### 3. Brute-Force Approach
+- **Time Complexity**: O(2^n) - exponential.
+- **Space Complexity**: O(n).
+- **Description**: This method makes all possible subsequences. It checks each one to see if it is a wiggle. This method is usually not useful for bigger inputs because it is slow.
 
+**C++ Implementation**:
 ```cpp
-class Solution {
-public:
-    int rob(vector<int>& nums) {
-        int n = nums.size();
-        if (n == 1) return nums[0];
-        return max(robLinear(vector<int>(nums.begin(), nums.end() - 1)),
-                   robLinear(vector<int>(nums.begin() + 1, nums.end())));
-    }
-
-    int robLinear(vector<int>& nums) {
-        int prev1 = 0, prev2 = 0;
-        for (int num : nums) {
-            int temp = prev1;
-            prev1 = max(prev1, prev2 + num);
-            prev2 = temp;
+int wiggleMaxLength(vector<int>& nums) {
+    if (nums.size() < 2) return nums.size();
+    
+    int count = 1;
+    for (int i = 1; i < nums.size(); ++i) {
+        if ((nums[i] > nums[i - 1] && (i == 1 || nums[i - 1] <= nums[i - 2])) ||
+            (nums[i] < nums[i - 1] && (i == 1 || nums[i - 1] >= nums[i - 2]))) {
+            count++;
         }
-        return prev1;
     }
-};
-```
-
-By using this O(1) space method, we cut down the memory use a lot. We still solve the House Robber II problem well. This change helps a lot when we have big inputs. It keeps our solution quick and able to handle more data.
-
-## Handling Edge Cases in House Robber II
-
-When we work on the House Robber II problem with dynamic programming, we must think about different edge cases. This way, our solution will be strong. Here are some cases we should look at:
-
-1. **Empty Input**: If the list of houses is empty, we cannot rob anything. So, the maximum amount we can rob is `0`.
-
-    ```java
-    if (nums.length == 0) return 0;
-    ```
-
-2. **Single House**: If there is only one house, we can just rob that house.
-
-    ```java
-    if (nums.length == 1) return nums[0];
-    ```
-
-3. **Two Houses**: If there are two houses, we choose the one that has more value.
-
-    ```java
-    if (nums.length == 2) return Math.max(nums[0], nums[1]);
-    ```
-
-4. **More than Two Houses**: Since the houses are in a circle, we need to think in two ways:
-    - Rob houses from index 0 to n-2.
-    - Rob houses from index 1 to n-1.
-
-    ```python
-    def rob(nums):
-        if not nums:
-            return 0
-        if len(nums) == 1:
-            return nums[0]
-        if len(nums) == 2:
-            return max(nums[0], nums[1])
-
-        def simple_rob(houses):
-            prev, curr = 0, 0
-            for amount in houses:
-                prev, curr = curr, max(prev + amount, curr)
-            return curr
-        
-        return max(simple_rob(nums[:-1]), simple_rob(nums[1:]))
-    ```
-
-5. **Negative Values**: If any house has a negative value, we should not count it. The algorithm treats it as `0` when we calculate the maximum amount.
-
-6. **All Houses with Zero Value**: If all houses have a value of `0`, we still get `0` as the result.
-
-7. **Large Input Size**: We must make sure the algorithm works well with large input sizes. It should run in O(n) time and O(1) space to be the best.
-
-By thinking about these edge cases, we make our House Robber II solution better and more correct. The dynamic programming method will help us get the most money while considering the circle of houses and stopping us from robbing two houses next to each other.
-
-## Comparative Analysis of Solutions in Different Languages
-
-In this part, we look at solutions for the House Robber II problem. We will see how it is done in three programming languages: Java, Python, and C++. Each solution uses dynamic programming to solve the problem well. We also see how each language works.
-
-### Java Implementation
-
-In Java, we use an array. This array keeps track of the most money we can rob up to each house. We need to think about the circular layout of the houses. We can rob from the first house to the second last house or from the second house to the last house.
-
-```java
-public class HouseRobberII {
-    public int rob(int[] nums) {
-        if (nums.length == 1) return nums[0];
-        return Math.max(robLinear(Arrays.copyOfRange(nums, 0, nums.length - 1)),
-                        robLinear(Arrays.copyOfRange(nums, 1, nums.length)));
-    }
-
-    private int robLinear(int[] nums) {
-        int rob1 = 0, rob2 = 0;
-        for (int n : nums) {
-            int temp = Math.max(rob1 + n, rob2);
-            rob1 = rob2;
-            rob2 = temp;
-        }
-        return rob2;
-    }
+    return count;
 }
 ```
 
-### Python Implementation
+### Conclusion of Approaches
+- The **Dynamic Programming** method is good but takes more space.
+- The **Greedy** method is fast and uses less space, but we need to be careful with edge cases.
+- The **Brute-Force** method is not a good choice for real use because it is too slow.
 
-The Python solution is almost the same as Java. It uses list slicing for the two cases. It also has a helper function for the robbery logic.
+Choosing the right method depends on what we need for the problem. For most cases, we prefer the Greedy or Dynamic Programming methods because they are more efficient.
+
+## Common Mistakes in Solving Wiggle Subsequence Problem
+
+When we solve the Wiggle Subsequence problem with dynamic programming, we can make some common mistakes. Knowing these mistakes can help us to create a better solution.
+
+1. **Incorrect Understanding of Wiggle Sequence**:  
+   - One mistake is not understanding what a "wiggle" is. It should switch between increasing and decreasing. We need to spot these changes when we go through the sequence.
+
+2. **Mismanaging State Variables**:  
+   - Some of us might not manage the state variables well. These variables track the number of wiggles. We should keep separate counts for wiggles that end with an upward or downward change.
+
+3. **Ignoring Edge Cases**:  
+   - We should not forget edge cases like sequences that are 0 or 1 in length. If we do, we can get wrong answers. We need to handle these cases clearly by returning 0 or 1.
+
+4. **Improper Initialization**:  
+   - It is very important to initialize dynamic programming arrays correctly. We must set the first element based on whether it is part of a wiggle sequence.
+
+5. **Inefficient Space Complexity**:  
+   - Some solutions may use too much memory. It is better to use a constant space solution when we can, using simple variables instead of big arrays.
+
+6. **Looping Over Unnecessary Elements**:  
+   - We should not check all pairs of elements. We need to look for transitions directly. This will make our time complexity much better.
+
+7. **Failure to Update States Properly**:  
+   - We must update our states correctly after checking each transition. If we do not, we can get the wrong count of the wiggle subsequence.
+
+8. **Not Considering Non-Adjacent Elements**:  
+   - The wiggle subsequence can skip some elements. We must make sure our logic allows for non-adjacent elements to cause a wiggle.
+
+9. **Overcomplicating the Logic**:  
+   - Some solutions get too complicated with too many condition checks. We should aim for a simple approach that meets the problem needs.
+
+10. **Neglecting to Optimize the Final Count**:  
+   - After we process the array, we need to return the maximum count of the wiggle subsequence. This is usually found in the last element of our state variable.
+
+By paying attention to these common mistakes, we can create a stronger and more efficient solution for the Wiggle Subsequence problem with dynamic programming. For more reading on dynamic programming techniques, we can look at related articles like [Dynamic Programming: Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html) and [Dynamic Programming: Longest Increasing Subsequence](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-longest-increasing-subsequence-medium.html).
+
+## Best Practices for Implementing Wiggle Subsequence Solutions
+
+When we implement solutions for the Wiggle Subsequence problem using dynamic programming, we need to follow some best practices. This helps us make our code efficient, clear, and easy to maintain.
+
+1. **Understand the Problem Statement**: We must have a clear idea of what a wiggle sequence is. A wiggle sequence is where the differences between consecutive numbers switch between positive and negative.
+
+2. **Optimal Substructure**: We can build the solution from the solutions of smaller parts. For the Wiggle Subsequence, we track two things:
+   - `up[i]`: the length of the longest wiggle subsequence ending at index `i` with a positive difference.
+   - `down[i]`: the length of the longest wiggle subsequence ending at index `i` with a negative difference.
+
+3. **Iterative Approach**: We should use an iterative way instead of a recursive one. This helps us avoid problems like stack overflow and makes our code faster. It also keeps our data flow clear.
+
+4. **Space Optimization**: Instead of using arrays for `up` and `down`, we can just use two variables. This cuts down space usage from O(n) to O(1).
+
+5. **Edge Cases**: We need to think about edge cases like:
+   - Arrays with less than two elements (no wiggle sequence is possible).
+   - Arrays where all elements are the same (the longest wiggle subsequence is 1).
+
+6. **Code Readability**: We should make sure our code is easy to read. We can do this by adding comments and using clear variable names. It is also good to keep formatting the same throughout the code.
+
+### Example Code in Python
 
 ```python
-class Solution:
-    def rob(self, nums):
-        if len(nums) == 1:
-            return nums[0]
-        return max(self.rob_linear(nums[:-1]), self.rob_linear(nums[1:]))
+def wiggleMaxLength(nums):
+    if len(nums) < 2:
+        return len(nums)
 
-    def rob_linear(self, nums):
-        rob1, rob2 = 0, 0
-        for n in nums:
-            temp = max(rob1 + n, rob2)
-            rob1 = rob2
-            rob2 = temp
-        return rob2
+    up = down = 1  # Start counters for up and down
+
+    for i in range(1, len(nums)):
+        if nums[i] > nums[i - 1]:
+            up = down + 1
+        elif nums[i] < nums[i - 1]:
+            down = up + 1
+
+    return max(up, down)
+
+# Example usage
+nums = [1, 7, 4, 9, 2, 5]
+print(wiggleMaxLength(nums))  # Output: 6
 ```
 
-### C++ Implementation
+7. **Testing**: We should write good unit tests to check many situations, including edge cases. This helps us make sure our code works correctly.
 
-In C++, we do it in a similar way. We use vectors for storage and create a function for the linear robbery logic.
+8. **Performance Analysis**: We need to check the time and space usage of our solution. The best solution should run in O(n) time and O(1) space. This makes it work well for big inputs.
 
-```cpp
-class Solution {
-public:
-    int rob(vector<int>& nums) {
-        if (nums.size() == 1) return nums[0];
-        return max(robLinear(vector<int>(nums.begin(), nums.end() - 1)),
-                   robLinear(vector<int>(nums.begin() + 1, nums.end())));
-    }
+9. **Documentation**: We need to write documentation for our code and give examples. This helps others understand what we did quickly.
 
-    int robLinear(vector<int>& nums) {
-        int rob1 = 0, rob2 = 0;
-        for (int n : nums) {
-            int temp = max(rob1 + n, rob2);
-            rob1 = rob2;
-            rob2 = temp;
-        }
-        return rob2;
-    }
-};
-```
-
-### Performance Comparison
-
-- **Time Complexity:** All three solutions have a time complexity of O(n). Here n is the number of houses.
-- **Space Complexity:** Each solution reduces space complexity to O(1). It only keeps two variables for the last two maximum values. But slicing in Python and Java may need extra space for a short time.
-
-### Conclusion
-
-We see that the syntax and specific features are different in Java, Python, and C++. But the main dynamic programming method stays the same. Each language can solve the House Robber II problem well. This shows how flexible dynamic programming is in different programming languages. For more about similar dynamic programming problems, you can check [Dynamic Programming - House Robber I](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-house-robber-i-easy.html).
+By following these best practices, we can make a strong and efficient solution for the Wiggle Subsequence problem. This way, our code will be effective and easy to maintain. For more reading on dynamic programming ideas, we can look at resources like [Dynamic Programming: Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html) and [Dynamic Programming: Longest Increasing Subsequence](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-longest-increasing-subsequence-medium.html).
 
 ## Frequently Asked Questions
 
-### 1. What is the House Robber II problem in Dynamic Programming?
-The House Robber II problem is a twist on the classic House Robber problem. In this problem, the houses are in a circle. This means the first house is next to the last house. This setup creates special rules. We need to find new ways to use dynamic programming to get the most money without getting caught by the police. Understanding this problem helps us learn more about dynamic programming.
+### What is a wiggle subsequence in dynamic programming?
+A wiggle subsequence is a kind of sequence. In this sequence, the differences between the numbers change direction. So, we can say it goes up and down. For a sequence to be a wiggle subsequence, it needs to show this up and down pattern. The dynamic programming method helps us find the longest wiggle subsequence from a given list. It does this by keeping track of increases and decreases.
 
-### 2. How does the dynamic programming approach work for House Robber II?
-The dynamic programming method for House Robber II breaks the problem into smaller parts. We define states that show the most money we can take from certain houses. We build our solutions step by step. The main idea is to look at two situations. One is to rob from the first house and not the last one. The other is to rob from the last house and not the first one. This way, we make the best choices at each step.
+### How do I implement a dynamic programming solution for the wiggle subsequence problem?
+To make a dynamic programming solution for the wiggle subsequence problem, we can use two variables. One variable will hold the longest wiggle subsequence that ends with an upward movement. The other will hold the one that ends with a downward movement. We will go through the input array and update these values based on how the current number relates to the previous one. This way, we can find the longest subsequence in O(n) time.
 
-### 3. Can you provide a Java implementation of the House Robber II problem?
-Sure! Here is a simple Java code for the House Robber II problem:
+### What is the time complexity of the wiggle subsequence dynamic programming solution?
+The time complexity of the dynamic programming solution for the wiggle subsequence problem is O(n). Here, n is the length of the input array. We get this efficiency by making one pass through the array. While we do this, we update the counts of the longest wiggle subsequence based on the increases and decreases.
 
-```java
-public int rob(int[] nums) {
-    if(nums.length == 1) return nums[0];
-    return Math.max(robLinear(Arrays.copyOfRange(nums, 0, nums.length - 1)), 
-                      robLinear(Arrays.copyOfRange(nums, 1, nums.length)));
-}
+### How can I optimize space complexity for the wiggle subsequence solution?
+To make the space complexity better in the wiggle subsequence solution, we can use just two variables instead of using separate arrays. By tracking the lengths of the longest wiggle subsequences that end in up and down states, we can achieve a space complexity of O(1). This is the best we can do for this problem.
 
-private int robLinear(int[] nums) {
-    int prev1 = 0, prev2 = 0;
-    for (int num : nums) {
-        int temp = prev1;
-        prev1 = Math.max(prev2 + num, prev1);
-        prev2 = temp;
-    }
-    return prev1;
-}
-```
-This code works well with the circle rule. It uses the normal House Robber logic on two different parts.
+### What are common mistakes when solving the wiggle subsequence problem?
+Some common mistakes when solving the wiggle subsequence problem are misunderstanding what wiggle subsequences are, not managing the up and down state changes well, and not considering special cases. For example, we need to think about sequences with no elements or where all elements are the same. It is very important to track the alternating pattern correctly to avoid these mistakes.
 
-### 4. Is there a Python code example for House Robber II?
-Yes! Here is a Python code example for the House Robber II problem:
-
-```python
-def rob(nums):
-    if len(nums) == 1:
-        return nums[0]
-
-    def rob_linear(houses):
-        prev1, prev2 = 0, 0
-        for num in houses:
-            temp = prev1
-            prev1 = max(prev2 + num, prev1)
-            prev2 = temp
-        return prev1
-
-    return max(rob_linear(nums[:-1]), rob_linear(nums[1:]))
-```
-This Python code uses a helper function. It calculates the most money we can rob while taking care of the circle of houses.
-
-### 5. How do you optimize space complexity in the House Robber II solution?
-To make space use better in the House Robber II problem, we can use less space for our dynamic programming states. Instead of keeping an array for past results, we only need two variables. These will keep track of the most money robbed from the last two houses. This way, we cut down space use from O(n) to O(1). This makes our solution faster.
-
-For more information about dynamic programming, we can read more articles. Some good ones are [Dynamic Programming: House Robber I](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-house-robber-i-easy.html) and [Dynamic Programming: Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html).
+For more reading about similar dynamic programming problems, you can check out articles on [Dynamic Programming: Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html) and [Dynamic Programming: Longest Increasing Subsequence](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-longest-increasing-subsequence-medium.html).
