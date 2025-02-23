@@ -1,480 +1,562 @@
-Dynamic Programming is a strong method we use to solve hard problems. We break these problems into easier parts. The "Maximum Score from Merging Stones" problem is about merging stones. Our goal is to get the highest score from these merges. We have a line of stones. We need to merge them into one stone. The score is the total of the stones we merge. We can solve this problem well with dynamic programming. This helps us find the best way to merge the stones.
+The degree of an array is the highest number of times any item appears in that array. To find the degree, we need to look for the items that show up the most. We can also check where they first appear and where they last appear. This helps us find the smallest subarray that includes all the times the most common item appears. We can do this quickly by going through the array just once. We will keep track of how many times each item appears and note their positions.
 
-In this article, we will look closely at the Maximum Score from Merging Stones problem. We will start with a simple overview of the solution using dynamic programming. Then we will understand the problem better. After that, we will discuss the dynamic programming method. We will also show how to implement this in Java, Python, and C++. We will talk about how to optimize space complexity. Testing and checking our solution is important too. We will also answer common questions about the merging stones problem.
+In this article, we will look closely at the degree of an array. We will explain what it is. We will also show how to do it in Java, Python, and C++. We will talk about ways to make the calculation faster for bigger arrays. We will go over different methods. We will also think about common edge cases. We will check performance issues and answer questions that people often ask. This will help us understand the topic better. 
 
-- Dynamic Programming Maximum Score from Merging Stones Solution Overview
-- Understanding the Problem Statement for Merging Stones
-- Dynamic Programming Approach for Maximum Score from Merging Stones
-- Java Implementation of Maximum Score from Merging Stones
-- Python Code Example for Merging Stones Problem
-- C++ Solution for Maximum Score from Merging Stones
-- Optimizing Space Complexity in Merging Stones Problem
-- Testing and Validating the Merging Stones Solution
+- [Array] Degree of an Array - Easy Solution Overview
+- Understanding the Degree of an Array
+- Java Implementation of Degree of an Array
+- Python Implementation of Degree of an Array
+- C++ Implementation of Degree of an Array
+- Optimizing Degree Calculation for Large Arrays
+- Comparative Analysis of Approaches
+- Common Edge Cases in Degree of an Array
+- Performance Considerations for Degree of an Array
 - Frequently Asked Questions
 
-For more details on related dynamic programming ideas, we can read articles like [Dynamic Programming: Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html) and [Dynamic Programming: Minimum Cost to Merge Stones](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-minimum-cost-to-merge-stones-hard.html).
+If you want to learn more about similar topics, you might like these articles: [Array Two Sum - Easy](https://bestonlinetutorial.com/array/array-two-sum-easy.html), [Array Contains Duplicate - Easy](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html), and [Array Maximum Subarray - Easy](https://bestonlinetutorial.com/array/array-maximum-subarray-easy.html).
 
-## Understanding the Problem Statement for Merging Stones
+## Understanding the Degree of an Array
 
-The Merging Stones problem is about a row of stones. Each stone has a value. Our goal is to merge these stones to get the highest score. When we merge, we can combine a certain number of stones that are next to each other. The score we get for each merge is the total of the values of the stones we merge.
+We define the degree of an array as the highest count of any element in that array. This means it shows us how many times the most common element shows up. To find the degree of an array well, we also need to find the shortest subarray that has all the times this element happens.
 
-### Problem Details:
-- We have an array of numbers that show the values of the stones.
-- We must merge exactly `k` stones that are next to each other into one stone.
-- The score from merging stones is the total of the values of the stones we combined.
-- After merging, the new stone has the value of this total.
-- We want to merge stones in a way that gives us the best total score after we merge all stones into one.
-
-### Constraints:
-- We can only merge stones if the number of stones left is at least `k`.
-- We keep merging until we have just one stone left.
+### Properties:
+- **Degree**: The number of the most common element.
+- **Element**: The value that appears the most.
+- **Subarray**: The smallest part of the array that has all the times the element with the degree appears.
 
 ### Example:
-For an input array of stones `[4, 3, 2, 4]` and `k=2`, we can merge like this:
-1. First, we merge stones 1 and 2: `[7, 2, 4]` -> Score: 4 + 3 = 7.
-2. Next, we merge stones 1 and 2 again: `[9, 4]` -> Score: 7 + 2 = 9.
-3. Finally, we merge stones 1 and 2 once more: `[13]` -> Score: 9 + 4 = 13.
+For the array `[1, 2, 2, 3, 1]`:
+- The number `1` shows up two times and the number `2` shows up two times too.
+- So the degree of the array is `2`.
+- The shortest subarray that gives this degree is `[2, 2]`.
 
-The final score from this merging would be 13.
+### Steps to Calculate:
+1. Count how many times each element appears using a hash map.
+2. Keep track of where each element first and last appears.
+3. Find the highest count and the shortest length of the subarray.
 
-We can use dynamic programming to help us find the best way to merge stones and keep track of scores. The hard part is figuring out the best order to merge stones to get the highest score while following the rules of merging.
-
-## Dynamic Programming Approach for Maximum Score from Merging Stones
-
-We face the problem of merging stones to find the highest score possible by merging them in a certain way. To solve this well, we need to understand the best way to break down the problem. We can do this by using dynamic programming.
-
-### Problem Definition
-We have `N` stones in a line. Their scores are in an array. Our goal is to merge these stones until we have just one stone left. Each time we merge stones, it costs us the sum of their scores. We want to get the highest final score.
-
-### Dynamic Programming Strategy
-1. **State Definition**:
-   We define `dp[i][j]` as the highest score we can get by merging stones from index `i` to `j`.
-
-2. **Base Case**:
-   When `i == j`, there is only one stone left. So, `dp[i][j] = 0` because we do not need to merge.
-
-3. **Transition**:
-   To merge stones from `i` to `j`, we look at possible splits `k` where `i <= k < j`. We calculate the score for merging like this:
-   \[
-   dp[i][j] = \max(dp[i][j], dp[i][k] + dp[k+1][j] + \text{sum}(i, j))
-   \]
-   Here, `sum(i, j)` is the total score from merging the stones between indexes `i` and `j`.
-
-4. **Final Score Calculation**:
-   We get the maximum score from `dp[0][N-1]`, where `N` is the number of stones.
-
-### Implementation
-Here is a simple Python code for the dynamic programming method to find the maximum score from merging stones:
+### Code Example:
+Here is a simple Python code to find the degree of an array:
 
 ```python
-def maxScore(stones):
-    n = len(stones)
-    dp = [[0] * n for _ in range(n)]
-    sum_stones = [[0] * n for _ in range(n)]
+def findDegree(nums):
+    count = {}
+    first_position = {}
+    last_position = {}
     
-    # Precompute the sum of stones from i to j
-    for i in range(n):
-        sum_stones[i][i] = stones[i]
-        for j in range(i + 1, n):
-            sum_stones[i][j] = sum_stones[i][j - 1] + stones[j]
-
-    for length in range(2, n + 1):  # length of the segment
-        for i in range(n - length + 1):
-            j = i + length - 1
-            dp[i][j] = float('-inf')
-            for k in range(i, j):
-                dp[i][j] = max(dp[i][j], dp[i][k] + dp[k + 1][j] + sum_stones[i][j])
-
-    return dp[0][n - 1]
+    for index, num in enumerate(nums):
+        if num not in count:
+            count[num] = 0
+            first_position[num] = index
+        count[num] += 1
+        last_position[num] = index
+    
+    degree = max(count.values())
+    min_length = float('inf')
+    
+    for num in count:
+        if count[num] == degree:
+            min_length = min(min_length, last_position[num] - first_position[num] + 1)
+    
+    return degree, min_length
 ```
 
-### Complexity Analysis
-- **Time Complexity**: The time complexity is \(O(N^3)\) because we have three loops that go through the stones.
-- **Space Complexity**: The space complexity is \(O(N^2)\) for the `dp` and `sum_stones` arrays.
+This function gives us the degree of the array and the length of the shortest subarray that has all the times the element with the highest count appears. For other problems about arrays, we can look at ideas like [Array Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html) or [Array Maximum Subarray](https://bestonlinetutorial.com/array/array-maximum-subarray-easy.html).
 
-We can see that this dynamic programming method helps us solve the merging stones problem to get the best score possible. It works well even for larger inputs. If you want to learn more about similar dynamic programming topics, you can check this [Dynamic Programming: Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html).
+## Java Implementation of Degree of an Array
 
-## Java Implementation of Maximum Score from Merging Stones
+We can find the degree of an array in Java by using a HashMap. This HashMap helps us count how many times each number appears. The degree of an array is the highest count of any number in that array. We also need to remember where each number first appears and where it last appears. This helps us find the length of the subarray that gives us the degree.
 
-To solve the Maximum Score from Merging Stones problem in Java, we use dynamic programming. We create a 2D DP array. Here, `dp[i][j]` shows the highest score we can get by merging stones from index `i` to `j`. The main idea is to calculate the score for different parts of the stones step by step.
-
-### Java Code Example
+Here is a simple implementation:
 
 ```java
-class Solution {
-    public int mergeStones(int[] stones, int K) {
-        int n = stones.length;
-        if ((n - 1) % (K - 1) != 0) return -1; // Check if it is possible to merge
+import java.util.HashMap;
 
-        int[][] dp = new int[n][n];
-        int[] sum = new int[n + 1];
-
-        for (int i = 0; i < n; i++) {
-            sum[i + 1] = sum[i] + stones[i];
+public class DegreeOfArray {
+    public static int findDegree(int[] nums) {
+        HashMap<Integer, Integer> countMap = new HashMap<>();
+        HashMap<Integer, Integer> firstIndexMap = new HashMap<>();
+        HashMap<Integer, Integer> lastIndexMap = new HashMap<>();
+        
+        for (int i = 0; i < nums.length; i++) {
+            countMap.put(nums[i], countMap.getOrDefault(nums[i], 0) + 1);
+            if (!firstIndexMap.containsKey(nums[i])) {
+                firstIndexMap.put(nums[i], i);
+            }
+            lastIndexMap.put(nums[i], i);
         }
-
-        for (int length = K; length <= n; length++) {
-            for (int i = 0; i + length - 1 < n; i++) {
-                int j = i + length - 1;
-                dp[i][j] = Integer.MAX_VALUE;
-
-                for (int k = i; k < j; k += K - 1) {
-                    dp[i][j] = Math.min(dp[i][j], dp[i][k] + dp[k + 1][j]);
-                }
-
-                if ((length - 1) % (K - 1) == 0) {
-                    dp[i][j] += sum[j + 1] - sum[i]; // Add score for merging
-                }
+        
+        int degree = 0;
+        int minLength = Integer.MAX_VALUE;
+        
+        for (int key : countMap.keySet()) {
+            if (countMap.get(key) > degree) {
+                degree = countMap.get(key);
+                minLength = lastIndexMap.get(key) - firstIndexMap.get(key) + 1;
+            } else if (countMap.get(key) == degree) {
+                minLength = Math.min(minLength, lastIndexMap.get(key) - firstIndexMap.get(key) + 1);
             }
         }
+        
+        return minLength;
+    }
 
-        return dp[0][n - 1];
+    public static void main(String[] args) {
+        int[] nums = {1, 2, 2, 3, 1};
+        System.out.println("The length of the smallest subarray with the same degree is: " + findDegree(nums));
     }
 }
 ```
 
-### Explanation of the Code
+### Explanation of the Code:
+- The `countMap` counts how many times each number appears.
+- The `firstIndexMap` saves the first spot where each number appears.
+- The `lastIndexMap` saves the last spot where each number appears.
+- After we check the array, we find the degree and also the smallest length of the subarray that shows that degree.
 
-- **Input Validation:** First, we check if we can merge all stones into one pile. We do this by looking at the number of stones and the merging rule.
-- **Prefix Sum Array:** We calculate a prefix sum array, `sum`. This helps us quickly find the score when we merge parts of the stones.
-- **Dynamic Programming Table Initialization:** We set up the DP table `dp`. Each entry will keep the best score for merging stones between indices `i` and `j`.
-- **Calculation of Scores:** For each subarray length starting from `K`, we calculate scores. We check different ways to split the stones and update the DP table. If the current length meets the merging rule, we add the score from the prefix sum.
+This Java code quickly calculates the degree of an array. It also finds the length of the smallest subarray with the same degree. If we want to see more problems about arrays, we can look at [Array Two Sum - Easy](https://bestonlinetutorial.com/array/array-two-sum-easy.html) and [Array Contains Duplicate - Easy](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html).
 
-This method effectively finds the highest score we can get from merging stones. We follow the rules from the problem statement.
+## Python Implementation of Degree of an Array
 
-## Python Code Example for Merging Stones Problem
-
-To solve the Merging Stones problem with dynamic programming in Python, we need to create a function called `mergeStones`. This function will take two inputs: a list of integers called `stones` that shows the stones and an integer `K` that tells how many stones we can merge at once.
-
-### Approach:
-1. **Dynamic Programming Table**: We will use a 2D table named `dp`. Here, `dp[i][j]` will save the lowest cost to merge stones from index `i` to `j`.
-2. **Prefix Sum**: We will have a prefix sum array. This helps us quickly find the sum of stones in any part of the list.
-3. **Merging Logic**: For every possible range `[i, j]`, if the stones in that range can be merged (meaning the number of stones is a multiple of `K`), we will find the cost to merge them and update the `dp` table.
-
-### Python Implementation:
+To find the degree of an array in Python, we want to find the highest frequency of any number and the smallest part of the array that has this highest frequency. Here is a simple way we can do this:
 
 ```python
-class Solution:
-    def mergeStones(self, stones: List[int], K: int) -> int:
-        n = len(stones)
-        if (n - 1) % (K - 1) != 0:
-            return -1
-        
-        # Prefix sum to help calculate range sums
-        prefix_sum = [0] * (n + 1)
-        for i in range(n):
-            prefix_sum[i + 1] = prefix_sum[i] + stones[i]
-        
-        # DP table
-        dp = [[0] * n for _ in range(n)]
-        
-        # Fill DP table
-        for length in range(K, n + 1):  # length of the subarray
-            for i in range(n - length + 1):
-                j = i + length - 1
-                dp[i][j] = float('inf')
-                for mid in range(i, j, K - 1):
-                    dp[i][j] = min(dp[i][j], dp[i][mid] + dp[mid + 1][j])
-                if (length - 1) % (K - 1) == 0:
-                    dp[i][j] += prefix_sum[j + 1] - prefix_sum[i]
-        
-        return dp[0][n - 1]
+def findDegree(arr):
+    first_occurrence = {}
+    last_occurrence = {}
+    count = {}
+
+    for i, num in enumerate(arr):
+        if num not in first_occurrence:
+            first_occurrence[num] = i
+        last_occurrence[num] = i
+        count[num] = count.get(num, 0) + 1
+
+    degree = max(count.values())
+    min_length = float('inf')
+
+    for num in count:
+        if count[num] == degree:
+            min_length = min(min_length, last_occurrence[num] - first_occurrence[num] + 1)
+
+    return min_length
+
+# Example usage
+arr = [1, 2, 2, 3, 1]
+degree_length = findDegree(arr)
+print(f"The length of the smallest subarray with the same degree is: {degree_length}")
 ```
 
-### Key Points:
-- This code uses dynamic programming to find the lowest cost to merge stones.
-- Before calculations, we check if merging is possible (if `(n - 1) % (K - 1) == 0`).
-- The prefix sum array helps with range sums. This makes the solution faster.
+### Explanation of the Code:
+- **Data Structures**: We use three dictionaries:
+  - `first_occurrence` to keep track of where each number first appears.
+  - `last_occurrence` to keep track of where each number last appears.
+  - `count` to count how many times each number appears.
+- **Loop through the Array**: We go through the array to fill these dictionaries.
+- **Calculate Degree**: We find the degree by looking for the highest count in the `count` dictionary.
+- **Find Minimum Length**: For each number that has the degree, we find the length of its subarray and remember the smallest length.
 
-This Python code solves the Merging Stones problem well. It uses dynamic programming to get the best solution. For more complex dynamic programming problems, we should look at other sources. For example, check out the [Dynamic Programming: Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html) for basic ideas.
+This way runs in O(n) time. Here n is the size of the array, so it works well for big arrays.
 
-## C++ Solution for Maximum Score from Merging Stones
+If you want to learn more about array problems, you can read the article on [Array: Contains Duplicate](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html) for more information.
 
-We can solve the Maximum Score from Merging Stones problem using dynamic programming in C++. Our aim is to get the highest score from merging stones based on some rules. Here is a simple C++ code for the solution.
+## C++ Implementation of Degree of an Array
 
-### C++ Code Implementation
+To find the degree of an array in C++, we need to get the degree. The degree is the highest count of any number in the array. We also need to find the smallest length of the subarray that has this degree.
+
+Here is a simple C++ solution for this:
 
 ```cpp
-#include <vector>
 #include <iostream>
-#include <algorithm>
-#include <numeric>
+#include <unordered_map>
+#include <vector>
+#include <limits>
 
 using namespace std;
 
-class Solution {
-public:
-    int mergeStones(vector<int>& stones, int K) {
-        int n = stones.size();
-        if (n == 0) return 0;
-        if ((n - 1) % (K - 1) != 0) return -1;
+int findShortestSubarray(vector<int>& nums) {
+    unordered_map<int, int> firstIndex, lastIndex, count;
+    int degree = 0;
 
-        vector<vector<int>> dp(n, vector<int>(n, 0));
-        vector<vector<int>> sum(n, vector<int>(n, 0));
-
-        // Precompute the sum of stones between indices
-        for (int i = 0; i < n; ++i) {
-            sum[i][i] = stones[i];
-            for (int j = i + 1; j < n; ++j) {
-                sum[i][j] = sum[i][j - 1] + stones[j];
-            }
+    for (int i = 0; i < nums.size(); ++i) {
+        if (firstIndex.find(nums[i]) == firstIndex.end()) {
+            firstIndex[nums[i]] = i; // First occurrence
         }
-
-        // Fill the dp table
-        for (int len = 2; len <= n; ++len) {
-            for (int i = 0; i <= n - len; ++i) {
-                int j = i + len - 1;
-                dp[i][j] = INT_MAX;
-                for (int m = 1; m < len; m += (K - 1)) {
-                    int k = i + m - 1;
-                    dp[i][j] = min(dp[i][j], dp[i][k] + dp[k + 1][j]);
-                }
-                if ((len - 1) % (K - 1) == 0) {
-                    dp[i][j] += sum[i][j];
-                }
-            }
-        }
-
-        return dp[0][n - 1];
+        lastIndex[nums[i]] = i; // Last occurrence
+        count[nums[i]]++; // Count frequency
+        degree = max(degree, count[nums[i]]); // Update degree
     }
-};
+
+    int minLength = numeric_limits<int>::max();
+    for (const auto& entry : count) {
+        if (entry.second == degree) {
+            minLength = min(minLength, lastIndex[entry.first] - firstIndex[entry.first] + 1);
+        }
+    }
+
+    return minLength;
+}
 
 int main() {
-    Solution solution;
-    vector<int> stones = {3, 2, 4, 1};
-    int K = 2;
-    cout << "Maximum score from merging stones: " << solution.mergeStones(stones, K) << endl;
+    vector<int> nums = {1, 2, 2, 3, 1};
+    cout << "Length of the smallest subarray with the same degree: " << findShortestSubarray(nums) << endl;
     return 0;
 }
 ```
 
-### Explanation of the Code
+### Explanation of the Code:
+- **Data Structures Used**: 
+  - We use `unordered_map` to keep the first and last occurrence of each number and their counts.
+  
+- **Loop Through Array**: 
+  - For each number, we record its first occurrence, last occurrence, and count its frequency.
 
-- **Initialization**: We create a class `Solution` with a function `mergeStones`. This function takes a list of integers for stones and an integer `K`.
-- **Sum Calculation**: We have a 2D vector `sum` to keep track of the total stones between any two points.
-- **Dynamic Programming Table**: A 2D vector `dp` is used to store the lowest scores needed to merge stones from index `i` to `j`.
-- **Nested Loops**: The outer loop checks different lengths of groups. The inner loops find the lowest score for merging stones using the values we calculated before.
-- **Final Result**: The function gives back the lowest score for merging all stones. This score is in `dp[0][n - 1]`.
+- **Calculate Degree**: 
+  - We update the degree by looking for the highest frequency we find.
 
-So, this C++ solution works well to find the maximum score from merging stones by using dynamic programming ideas.
+- **Find Minimum Length**: 
+  - We check each number to find the smallest length of the subarray that has the same degree.
 
-## Optimizing Space Complexity in Merging Stones Problem
+This implementation works well with a time complexity of O(n) and a space complexity of O(n). This is good for large arrays. For more algorithms, you can check [Array Majority Element - Easy](https://bestonlinetutorial.com/array/array-majority-element-easy.html) and [Array Contains Duplicate - Easy](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html).
 
-In the dynamic programming solution for the "Maximum Score from Merging Stones" problem, we need to optimize space complexity. This is important for efficiency, especially with larger inputs. The common way uses a 2D array to store results. This can use a lot of memory. We will talk about ways to reduce this space need.
+## Optimizing Degree Calculation for Large Arrays
 
-### Space Optimization Techniques
+When we work with large arrays, it is very important to calculate the degree of an array in a fast way. The degree of an array is the highest count of any element in the array. To make this calculation better, we can use a hash map. This helps us keep track of when each element appears first and last, and how often it appears.
 
-1. **Using a 1D Array**:
-   Instead of using a 2D array `dp[i][j]`, we can use a 1D array. This array holds results for the current and previous stone merges. This change reduces the space complexity from O(n^2) to O(n).
+### Approach
 
-2. **Rolling Array Technique**:
-   We can store only the needed previous states. This means we will keep two arrays. One for the current state and one for the previous state.
+1. **Single Pass Calculation**:
+   - We will go through the array one time. We will make a hash map that holds the count, first index, and last index of each element.
+   - This way, we only look at the array a few times.
 
-### Implementation
+2. **Use a HashMap**:
+   - We will store each element as a key. The value will be an array that has its count, first index, and last index.
+   - This helps us easily find the degree and the shortest subarray length.
 
-Here is a Java code showing space optimization using a rolling array technique:
+### Java Implementation
 
 ```java
-public class MergingStones {
-    public int mergeStones(int[] stones, int k) {
-        int n = stones.length;
-        if ((n - 1) % (k - 1) != 0) return -1;
+import java.util.HashMap;
 
-        int[][] dp = new int[n][n];
-        int[] sum = new int[n + 1];
-
-        for (int i = 0; i < n; i++) {
-            sum[i + 1] = sum[i] + stones[i];
-        }
-
-        for (int len = k; len <= n; len++) {
-            for (int i = 0; i + len - 1 < n; i++) {
-                int j = i + len - 1;
-                dp[i][j] = Integer.MAX_VALUE;
-
-                for (int m = 1; m < len; m++) {
-                    if (m % (k - 1) == 0) {
-                        dp[i][j] = Math.min(dp[i][j], dp[i][m + i - 1] + dp[m + i][j]);
-                    }
-                }
-                if ((len - 1) % (k - 1) == 0) {
-                    dp[i][j] += sum[j + 1] - sum[i];
-                }
+public class DegreeOfArray {
+    public static int findDegree(int[] nums) {
+        HashMap<Integer, int[]> map = new HashMap<>();
+        for (int i = 0; i < nums.length; i++) {
+            if (!map.containsKey(nums[i])) {
+                map.put(nums[i], new int[]{1, i, i}); // frequency, first index, last index
+            } else {
+                map.get(nums[i])[0]++; // Increment frequency
+                map.get(nums[i])[2] = i; // Update last index
             }
         }
-        return dp[0][n - 1];
+
+        int degree = 0;
+        int minLength = Integer.MAX_VALUE;
+
+        for (int[] value : map.values()) {
+            int frequency = value[0];
+            int firstIndex = value[1];
+            int lastIndex = value[2];
+            if (frequency > degree) {
+                degree = frequency;
+                minLength = lastIndex - firstIndex + 1;
+            } else if (frequency == degree) {
+                minLength = Math.min(minLength, lastIndex - firstIndex + 1);
+            }
+        }
+
+        return minLength;
     }
 }
 ```
 
-### Python Example
-
-The next Python code shows the same method:
+### Python Implementation
 
 ```python
-def merge_stones(stones, k):
-    n = len(stones)
-    if (n - 1) % (k - 1) != 0:
-        return -1
+def find_degree(nums):
+    count_map = {}
+    for i, num in enumerate(nums):
+        if num not in count_map:
+            count_map[num] = [1, i, i]  # frequency, first index, last index
+        else:
+            count_map[num][0] += 1  # Increment frequency
+            count_map[num][2] = i  # Update last index
 
-    dp = [[0] * n for _ in range(n)]
-    sum_stones = [0] * (n + 1)
+    degree = 0
+    min_length = float('inf')
 
-    for i in range(n):
-        sum_stones[i + 1] = sum_stones[i] + stones[i]
+    for freq, first, last in count_map.values():
+        if freq > degree:
+            degree = freq
+            min_length = last - first + 1
+        elif freq == degree:
+            min_length = min(min_length, last - first + 1)
 
-    for length in range(k, n + 1):
-        for i in range(n - length + 1):
-            j = i + length - 1
-            dp[i][j] = float('inf')
-            for m in range(1, length):
-                if m % (k - 1) == 0:
-                    dp[i][j] = min(dp[i][j], dp[i][i + m - 1] + dp[i + m][j])
-            if (length - 1) % (k - 1) == 0:
-                dp[i][j] += sum_stones[j + 1] - sum_stones[i]
-
-    return dp[0][n - 1]
+    return min_length
 ```
 
 ### C++ Implementation
 
-This C++ code example uses the same idea for space optimization:
-
 ```cpp
+#include <unordered_map>
+#include <vector>
+#include <limits>
+
 class Solution {
 public:
-    int mergeStones(vector<int>& stones, int k) {
-        int n = stones.size();
-        if ((n - 1) % (k - 1) != 0) return -1;
-
-        vector<vector<int>> dp(n, vector<int>(n, INT_MAX));
-        vector<int> sum(n + 1, 0);
-
-        for (int i = 0; i < n; ++i) {
-            sum[i + 1] = sum[i] + stones[i];
-        }
-
-        for (int length = k; length <= n; ++length) {
-            for (int i = 0; i + length - 1 < n; ++i) {
-                int j = i + length - 1;
-                for (int m = 1; m < length; ++m) {
-                    if (m % (k - 1) == 0) {
-                        dp[i][j] = min(dp[i][j], dp[i][i + m - 1] + dp[i + m][j]);
-                    }
-                }
-                if ((length - 1) % (k - 1) == 0) {
-                    dp[i][j] += sum[j + 1] - sum[i];
-                }
+    int findShortestSubarray(std::vector<int>& nums) {
+        std::unordered_map<int, std::vector<int>> countMap; // frequency, first index, last index
+        
+        for (int i = 0; i < nums.size(); i++) {
+            if (countMap.count(nums[i]) == 0) {
+                countMap[nums[i]] = {1, i, i}; // initialize
+            } else {
+                countMap[nums[i]][0]++; // Increment frequency
+                countMap[nums[i]][2] = i; // Update last index
             }
         }
-        return dp[0][n - 1];
+
+        int degree = 0, minLength = std::numeric_limits<int>::max();
+
+        for (const auto& entry : countMap) {
+            int freq = entry.second[0], first = entry.second[1], last = entry.second[2];
+            if (freq > degree) {
+                degree = freq;
+                minLength = last - first + 1;
+            } else if (freq == degree) {
+                minLength = std::min(minLength, last - first + 1);
+            }
+        }
+
+        return minLength;
     }
 };
 ```
 
-### Conclusion
+### Performance Considerations
 
-By using these space optimization methods, we can lower memory use while solving the "Maximum Score from Merging Stones" problem. This makes our solutions better and can work for bigger inputs. To learn more about dynamic programming techniques, we can read articles like [Dynamic Programming Fibonacci Number](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-fibonacci-number-easy.html).
+- **Time Complexity**: O(n), where n is the length of the array. We go through the array just one time.
+- **Space Complexity**: O(m), where m is how many unique elements are in the array. This is for the hash map storage.
 
-## Testing and Validating the Merging Stones Solution
+This smart way is very important for working with big data sets. It helps us find the degree of an array without using too much time or memory. For more details on array tasks, check [Array: Contains Duplicate](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html).
 
-To make sure our solution for the Maximum Score from Merging Stones problem is correct, we need to do some thorough testing and validation. Here are the ways we can test and validate our implementation in different situations.
+## Comparative Analysis of Approaches
 
-### Test Cases
+When we look at the degree of an array, we can use different ways to do this. The choice depends on how fast and simple we want the solution to be. Here are some common methods to find the degree of an array. We will also see their pros and cons.
 
-1. **Basic Test Cases**:
-   - Input: `stones = [3, 5, 1, 2, 6]`, `K = 3`
-     - Expected Output: `35` (We need to calculate merging steps and scores by hand).
-   - Input: `stones = [4, 3, 6, 4]`, `K = 2`
-     - Expected Output: `36`.
+1. **HashMap Approach**:
+   - **Description**: We can use a HashMap (or a dictionary) to keep track of the first and last times we see each number. We calculate the degree by finding the difference between these two positions.
+   - **Time Complexity**: O(n)
+   - **Space Complexity**: O(n)
+   - **Example**:
+     ```java
+     import java.util.HashMap;
 
-2. **Edge Cases**:
-   - Input: `stones = [1]`, `K = 1`
-     - Expected Output: `0` (There is only one stone, no merge possible).
-   - Input: `stones = []`, `K = 1`
-     - Expected Output: `0` (No stones to merge).
+     public class DegreeOfArray {
+         public static int findDegree(int[] nums) {
+             HashMap<Integer, int[]> map = new HashMap<>();
+             for (int i = 0; i < nums.length; i++) {
+                 if (!map.containsKey(nums[i])) {
+                     map.put(nums[i], new int[]{i, i});
+                 } else {
+                     map.get(nums[i])[1] = i;
+                 }
+             }
+             int degree = 0;
+             for (int[] indices : map.values()) {
+                 degree = Math.max(degree, indices[1] - indices[0] + 1);
+             }
+             return degree;
+         }
+     }
+     ```
 
-3. **Large Input Cases**:
-   - Input: `stones = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]`, `K = 2`
-     - Expected Output: `88`.
-   - Input: `stones = [10] * 1000`, `K = 10`
-     - Expected Output: `1000000` (This is the max score from merging same stones).
+2. **Brute Force Approach**:
+   - **Description**: We go through each number and count how many times it appears. We write down the first and last places we see each number.
+   - **Time Complexity**: O(n^2)
+   - **Space Complexity**: O(1)
+   - **Example**:
+     ```python
+     def findDegree(nums):
+         degree = 0
+         for num in set(nums):
+             left = nums.index(num)
+             right = len(nums) - 1 - nums[::-1].index(num)
+             degree = max(degree, right - left + 1)
+         return degree
+     ```
 
-### Validation Technique
+3. **Optimized Two-Pass Approach**:
+   - **Description**: This is like the HashMap method but we use two arrays to store first and last positions.
+   - **Time Complexity**: O(n)
+   - **Space Complexity**: O(k) where k is the number of unique numbers.
+   - **Example**:
+     ```cpp
+     #include <vector>
+     #include <unordered_map>
+     using namespace std;
 
-- **Unit Testing**: We can use a unit testing framework like JUnit for Java, pytest for Python, or Google Test for C++. Each function, especially the recursive and dynamic parts, needs to be tested alone.
-  
-- **Integration Testing**: We should test the whole solution together to check if parts work well together. This should include tests that act like the full merging process.
+     int findDegree(vector<int>& nums) {
+         unordered_map<int, pair<int, int>> indices;
+         for (int i = 0; i < nums.size(); i++) {
+             if (indices.find(nums[i]) == indices.end()) {
+                 indices[nums[i]] = {i, i};
+             } else {
+                 indices[nums[i]].second = i;
+             }
+         }
+         int degree = 0;
+         for (auto& p : indices) {
+             degree = max(degree, p.second.second - p.second.first + 1);
+         }
+         return degree;
+     }
+     ```
 
-- **Performance Testing**: We need to check the time and memory use for large inputs. This will help us see if the solution is fast and meets the limits.
+4. **Space-Efficient Counting**:
+   - **Description**: We can count occurrences in one pass. We also keep track of the first and last indices in a simple way.
+   - **Time Complexity**: O(n)
+   - **Space Complexity**: O(1), if we only keep track of the maximum degree while we go through the array.
 
-### Example Code for Testing in Python
+The method we choose depends on the situation. For small arrays, the brute force method can work fine. But for bigger arrays, we should use the HashMap or optimized two-pass methods because they are faster.
+
+If you want to read more about array problems, we can check out articles on [Array Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html) or [Array Best Time to Buy and Sell Stock](https://bestonlinetutorial.com/array/array-best-time-to-buy-and-sell-stock-easy.html).
+
+## Common Edge Cases in Degree of an Array
+
+When we work with the degree of an array, we can face some edge cases. These cases can change how our code works and what result we get. It is important to understand these situations to make strong solutions.
+
+1. **Empty Array**:
+   - An empty array will give us a degree of 0. There are no elements to think about.
+
+   ```python
+   def find_degree(arr):
+       if not arr:
+           return 0
+       # Implementation continues...
+   ```
+
+2. **Single Element Array**:
+   - An array with just one element has a degree of 1. The one element shows up once.
+
+   ```python
+   arr = [5]
+   degree = find_degree(arr)  # Returns 1
+   ```
+
+3. **All Unique Elements**:
+   - If every element in the array is different, the degree will be 1. The first and last place of these unique elements is the same.
+
+   ```python
+   arr = [1, 2, 3, 4]
+   degree = find_degree(arr)  # Returns 1
+   ```
+
+4. **All Identical Elements**:
+   - An array where all elements are the same has a degree equal to how many elements there are.
+
+   ```python
+   arr = [2, 2, 2, 2]
+   degree = find_degree(arr)  # Returns 4
+   ```
+
+5. **Multiple Maximum Degree Elements**:
+   - When many elements have the same maximum degree, the answer should be the index of the last time this element appears.
+
+   ```python
+   arr = [1, 2, 2, 3, 1]
+   degree = find_degree(arr)  # Should return index of last '2'
+   ```
+
+6. **Negative Numbers**:
+   - Arrays can have negative numbers. We should treat these just like positive numbers.
+
+   ```python
+   arr = [-1, -1, 2, -1, 3]
+   degree = find_degree(arr)  # Returns 3 for the last index of -1
+   ```
+
+7. **Zero Values**:
+   - Arrays that have zero should be handled too. Zero is a valid integer.
+
+   ```python
+   arr = [0, 1, 0, 2, 0]
+   degree = find_degree(arr)  # Returns 4 for the last index of 0
+   ```
+
+8. **Large Input Sizes**:
+   - For big arrays, we must make sure our way to calculate the degree is fast enough. We do not want too much time to calculate.
+
+By thinking about these edge cases, we can make our implementation of the degree of an array more dependable and quick. This way, we can handle special situations correctly in our calculations.
+
+## Performance Considerations for Degree of an Array
+
+When we make a solution to find the degree of an array, we need to think about performance. This is very important when we work with large datasets. The degree of an array is the maximum number of times any element appears. Here are the main things to consider:
+
+1. **Time Complexity**: 
+   - The best way usually needs us to go through the array just once. This gives us O(n) time complexity. Here, n is the number of elements in the array. We can use a hash map to count how many times each element appears.
+
+2. **Space Complexity**: 
+   - When we get O(n) time complexity, the space complexity can also be O(n) in the worst case. This is because the hash map may need to hold all unique elements. But if we have few unique elements, we can use less space.
+
+3. **Implementation Strategy**:
+   - We can use a hash map (or dictionary) to keep track of the first and last positions of each element. We also store their counts. This helps us find the degree and its indexes more easily.
+
+4. **Handling Large Arrays**:
+   - For arrays with many elements, we need to manage the hash map well. If there are much fewer unique elements than n, we can use a fixed-size array for counting instead of a hash map.
+
+5. **Edge Cases**: 
+   - Arrays with all the same elements.
+   - Empty arrays with no elements.
+   - Arrays with different types of elements (if the language allows it).
+
+6. **Example Implementation**: 
+   - Here is a simple Python code that finds the degree of an array:
 
 ```python
-def test_merge_stones():
-    assert merge_stones([3, 5, 1, 2, 6], 3) == 35
-    assert merge_stones([4, 3, 6, 4], 2) == 36
-    assert merge_stones([1], 1) == 0
-    assert merge_stones([], 1) == 0
-    assert merge_stones([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 2) == 88
-    assert merge_stones([10] * 1000, 10) == 1000000
-
-# Run tests
-test_merge_stones()
-print("All tests passed!")
+def findDegree(arr):
+    count = {}
+    first_index = {}
+    last_index = {}
+    
+    for index, value in enumerate(arr):
+        if value not in count:
+            count[value] = 0
+            first_index[value] = index
+        count[value] += 1
+        last_index[value] = index
+    
+    degree = max(count.values())
+    min_length = float('inf')
+    
+    for value in count:
+        if count[value] == degree:
+            min_length = min(min_length, last_index[value] - first_index[value] + 1)
+    
+    return min_length
 ```
 
-We should add these tests into our development process. This will help us make sure the Maximum Score from Merging Stones solution is strong and reliable. 
+7. **Performance Testing**: 
+   - We should test our code with arrays that have different sizes and types to check if it works well. We also need to include edge cases to make sure it is strong.
 
-### Debugging Techniques
+8. **Profiling**: 
+   - We can use profiling tools in our programming environment to find slow parts. This helps us make the algorithm better.
 
-- **Logging**: We can add logging to see the values of important variables when running. This will help us find where things go wrong.
-- **Step-by-step Debugging**: We can use an IDE debugger to go through the code step by step, especially in recursive functions. This lets us watch the flow of execution and check variable values.
-
-This way of testing and validating will help us make sure the Merging Stones solution works correctly in different situations and meets performance needs.
+By keeping these performance points in mind, we can create a strong solution for finding the degree of an array. This will work well even with larger inputs.
 
 ## Frequently Asked Questions
 
-### 1. What is the Merging Stones problem in dynamic programming?
-The Merging Stones problem is about finding the highest score we can get by merging a line of stones with some rules. The goal is to merge the stones in a way that gives us the biggest total score. This score usually comes from adding together the stones we merge. We can solve this problem well using dynamic programming. This method helps us look at smaller parts of the problem for the best solution.
+### What is the degree of an array?
+The degree of an array is the highest number of times any element appears in the array. It helps us know how often the most common element shows up. Knowing the degree of an array is important for many problems. For example, we can use it to find the shortest subarray that has the same degree. If you want to learn more about arrays, check our article on [Array Maximum Subarray - Easy](https://bestonlinetutorial.com/array/array-maximum-subarray-easy.html).
 
-### 2. How does dynamic programming help in solving the Merging Stones problem?
-Dynamic programming helps us solve the Merging Stones problem by breaking it into smaller parts that overlap. We can keep the results of these parts so we do not need to calculate them again. This saves time and helps us find the highest score quickly. This method is much faster than just using simple recursive ways. It works better for bigger sets of data.
+### How can I calculate the degree of an array efficiently?
+To find the degree of an array fast, we can use a hash map. It helps us count how many times each element appears as we go through the array one time. This way, we can find the maximum frequency in linear time O(n). We can easily do this in Java, Python, or C++. We also have code examples in our article on the [Degree of an Array](#).
 
-### 3. What is the time complexity of the dynamic programming solution for Merging Stones?
-The time complexity for the dynamic programming solution of the Merging Stones problem is usually O(N^3). Here, N stands for the number of stones. This happens because we need nested loops to find the maximum scores for different groups of stones. Even if this complexity seems high, it is okay for medium-sized inputs. So, dynamic programming is a good choice.
+### What are some common edge cases when finding the degree of an array?
+When we look for the degree of an array, we should think about some edge cases. These include arrays with all different elements, arrays where every element is the same, and empty arrays. Each case can change how we calculate the degree. We need to handle these cases well for a strong solution. For more problems, see our article on [Array Contains Duplicate - Easy](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html).
 
-### 4. Can you provide a sample implementation for the Merging Stones problem in Python?
-Sure! Here is a simple Python code to solve the Merging Stones problem using dynamic programming:
+### How does the degree of an array relate to the shortest subarray?
+The degree of an array helps us find the shortest subarray that keeps the same degree. By keeping track of where the most common elements first and last appear, we can find the length of the needed subarray. This link is very important in many coding challenges. For more details, check our article on [Array Majority Element - Easy](https://bestonlinetutorial.com/array/array-majority-element-easy.html).
 
-```python
-def mergeStones(stones, K):
-    n = len(stones)
-    if (n - 1) % (K - 1) != 0:
-        return -1
-
-    dp = [[[0] * n for _ in range(n)] for _ in range(n)]
-    sum_stones = [[0] * n for _ in range(n)]
-
-    for i in range(n):
-        sum_stones[i][i] = stones[i]
-        for j in range(i + 1, n):
-            sum_stones[i][j] = sum_stones[i][j - 1] + stones[j]
-
-    for length in range(1, n + 1):
-        for i in range(n - length + 1):
-            j = i + length - 1
-            if length == 1:
-                dp[i][j][1] = 0
-            for k in range(2, K + 1):
-                for m in range(i, j):
-                    dp[i][j][k] = max(dp[i][j][k], dp[i][m][k - 1] + dp[m + 1][j][K])
-
-            if (length - 1) % (K - 1) == 0:
-                dp[i][j][1] += sum_stones[i][j]
-
-    return dp[0][n - 1][1]
-```
-
-### 5. What are some common variations of the Merging Stones problem?
-There are different versions of the Merging Stones problem. These versions may change the merging rules or the way we score. For example, we can change how we count scores based on how many stones we merge. Sometimes, there are limits on how many stones we can merge at the same time. These changes can make us use different dynamic programming methods. It is important to change our approach based on what the problem asks. For more on similar problems, you can read about the [Minimum Cost to Merge Stones](https://bestonlinetutorial.com/dynamic_programming/dynamic-programming-minimum-cost-to-merge-stones-hard.html) article.
+### What programming languages are best suited for implementing degree of an array solutions?
+We can use many programming languages to implement the degree of an array. Java, Python, and C++ are popular choices because they have good data structures and libraries. Each language has its own strengths. For example, Python is easy to use while Java has many libraries. For more coding challenges, see our article on [Array Rotate Array - Medium](https://bestonlinetutorial.com/array/array-rotate-array-medium.html).
