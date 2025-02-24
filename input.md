@@ -1,585 +1,389 @@
-Finding the minimum sum of a four-digit number after splitting its digits is a fun task. We need to change the digits of the four-digit number to make two two-digit numbers. Our goal is to make the sum of these two numbers as small as we can. 
+Finding the number of unequal triplets in an array is a simple but interesting challenge in math. The goal is to count groups of three different elements from an array. We want to make sure that no two elements in the group are the same. We can solve this problem using different methods. These include basic brute force methods and better ways that use hash maps for faster counting.
 
-We can do this by putting the digits in order from smallest to biggest. Then we can pair the smallest digit with the next smallest one. This way, we get the smallest possible sum. It is a simple and effective method to solve this problem.
+In this article, we will look into the details of the problem "Number of Unequal Triplets in Array." We will first talk about the brute force method. This method helps us understand the problem better. After that, we will discuss an optimized solution that uses hash maps. We will also show how to implement these solutions in Java, Python, and C++. At the end, we will check the time complexity of our solutions. We will also answer common questions about this topic.
 
-In this article, we will look into the problem of finding the minimum sum of a four-digit number after splitting its digits. We will check the rules and special cases that come with it. We will also find the best way to solve this challenge. We will show how to do this in Java, Python, and C++. After that, we will talk about how good these different methods are. Lastly, we will test our solution and answer some common questions about this topic.
-
-- [Array] Minimum Sum of Four Digit Number After Splitting Digits - Easy
-- Understanding the Problem Statement for Minimum Sum of Four Digit Number
-- Analyzing the Constraints and Edge Cases
-- Optimal Approach to Solve Minimum Sum of Four Digit Number
-- Java Implementation of Minimum Sum Calculation
-- Python Implementation for Minimum Sum of Four Digit Number
-- C++ Code Solution for Minimum Sum of Four Digit Number
-- Complexity Analysis of Different Approaches
-- Testing and Validation of the Solution
+- Understanding the Problem of Number of Unequal Triplets in Array - Easy
+- Brute Force Approach for Number of Unequal Triplets in Array
+- Optimized Approach Using Hash Maps for Number of Unequal Triplets in Array
+- Java Implementation for Number of Unequal Triplets in Array
+- Python Implementation for Number of Unequal Triplets in Array
+- C++ Implementation for Number of Unequal Triplets in Array
+- Analyzing Time Complexity for Number of Unequal Triplets in Array
+- Testing and Validating Solutions for Number of Unequal Triplets in Array
 - Frequently Asked Questions
 
-For more reading on related array problems, we can check these articles: [Array Two Sum - Easy](https://bestonlinetutorial.com/array/array-two-sum-easy.html), [Array Best Time to Buy and Sell Stock - Easy](https://bestonlinetutorial.com/array/array-best-time-to-buy-and-sell-stock-easy.html), and [Array Contains Duplicate - Easy](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html).
+If you want more resources about array problems, you can check out articles like [Array Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html) and [Array Contains Duplicate](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html). These articles give more information about different array techniques. They can help us improve our understanding and problem-solving skills in this area.
 
-## [Array] Minimum Sum of Four Digit Number After Splitting Digits - Easy
+## Brute Force Approach for Number of Unequal Triplets in Array
 
-### Understanding the Problem Statement for Minimum Sum of Four Digit Number
+We can use a brute force approach to find how many unequal triplets are in an array. This method means we will make all possible triplets and then count the ones that are not equal. A triplet is a set of three indices \(i, j, k\) where \(0 \leq i < j < k < n\) and the values at these indices are different.
 
-We need to find the smallest sum of two four-digit numbers. We can make these numbers by splitting the digits from a given array of integers. Each integer in the array is one digit, and the array must have exactly four digits.
+### Steps:
+1. We will use three loops to check all possible triplet combinations.
+2. For each triplet, we will check if the values at the indices are different.
+3. If all three values are different, we will count the triplet.
 
-To get the minimum sum, we should arrange the digits in the best way. The main steps are:
+### Complexity:
+- Time Complexity: \(O(n^3)\). Here \(n\) is the length of the array.
+- Space Complexity: \(O(1)\). We do not need extra space apart from some variables.
 
-1. Sort the digits from smallest to biggest.
-2. Split the sorted digits into two groups.
-3. Make two numbers from these groups.
-4. Add the two numbers together.
+### Example Code (Python):
+```python
+def countUnequalTriplets(arr):
+    n = len(arr)
+    count = 0
+    
+    for i in range(n):
+        for j in range(i + 1, n):
+            for k in range(j + 1, n):
+                if arr[i] != arr[j] and arr[j] != arr[k] and arr[i] != arr[k]:
+                    count += 1
+                    
+    return count
 
-For example, for the digits [1, 2, 3, 4], the best split gives us the numbers 13 and 24. This results in a minimum sum of 37.
-
-### Analyzing the Constraints and Edge Cases
-
-- **Constraints:**
-  - The input array must have exactly four digits (0-9).
-  - We can have leading zeros in the numbers (like 02 is okay).
-  
-- **Edge Cases:**
-  - If all digits are the same (like [1, 1, 1, 1]), we get the sum of two same numbers.
-  - If there is a zero among the digits (like [0, 1, 2, 3]), we need to handle this to avoid leading zeros.
-
-### Optimal Approach to Solve Minimum Sum of Four Digit Number
-
-To solve the problem in the best way, we follow these steps:
-
-1. **Sort** the array of digits.
-2. Split the sorted array into two numbers:
-   - The first number uses the first and third digits.
-   - The second number uses the second and fourth digits.
-3. Add the two numbers together.
-
-Here’s how we can write it in pseudo-code:
-
-```pseudo
-function minSum(arr):
-    sort(arr)
-    num1 = arr[0] * 10 + arr[2]  // First number from first and third digits
-    num2 = arr[1] * 10 + arr[3]  // Second number from second and fourth digits
-    return num1 + num2
+# Example Usage
+arr = [1, 2, 3, 4]
+result = countUnequalTriplets(arr)
+print("Number of unequal triplets:", result)
 ```
 
-### Java Implementation of Minimum Sum Calculation
+This way is easy to understand but can be slow for larger arrays because it takes more time. If we work with bigger datasets, we can look for better solutions like using hash maps. This can help to make the time quicker.
 
-```java
-import java.util.Arrays;
+## Optimized Approach Using Hash Maps for Number of Unequal Triplets in Array
 
-public class MinSum {
-    public static int minSum(int[] arr) {
-        Arrays.sort(arr);
-        int num1 = arr[0] * 10 + arr[2];
-        int num2 = arr[1] * 10 + arr[3];
-        return num1 + num2;
-    }
+We can find the number of unequal triplets in an array in a smart way. We use hash maps to count how often each number appears. This method is faster than just checking every possible triplet.
 
-    public static void main(String[] args) {
-        int[] digits = {3, 5, 1, 4};
-        System.out.println("Minimum Sum: " + minSum(digits));
-    }
-}
-```
+### Steps:
 
-### Python Implementation for Minimum Sum of Four Digit Number
+1. **Count Frequencies**: We will use a hash map to keep track of how many times each number shows up in the array.
+2. **Calculate Total Triplets**: For each unique triplet combination (i, j, k), we make sure that all three indices are different and the elements are not the same.
+3. **Use Combinatorial Counting**: For each element, we will find out how many triplets we can make without using that element more than once.
+
+### Implementation:
+
+Here’s the code in Python:
 
 ```python
-def min_sum(arr):
-    arr.sort()
-    num1 = arr[0] * 10 + arr[2]
-    num2 = arr[1] * 10 + arr[3]
-    return num1 + num2
-
-if __name__ == "__main__":
-    digits = [3, 5, 1, 4]
-    print("Minimum Sum:", min_sum(digits))
-```
-
-### C++ Code Solution for Minimum Sum of Four Digit Number
-
-```cpp
-#include <iostream>
-#include <algorithm>
-#include <vector>
-
-using namespace std;
-
-int minSum(vector<int>& arr) {
-    sort(arr.begin(), arr.end());
-    int num1 = arr[0] * 10 + arr[2];
-    int num2 = arr[1] * 10 + arr[3];
-    return num1 + num2;
-}
-
-int main() {
-    vector<int> digits = {3, 5, 1, 4};
-    cout << "Minimum Sum: " << minSum(digits) << endl;
-    return 0;
-}
-```
-
-### Complexity Analysis of Different Approaches
-
-- **Time Complexity:** O(n log n) because we sort the array.
-- **Space Complexity:** O(1) if we sort in place. O(n) if we use a new array.
-
-### Testing and Validation of the Solution
-
-We can test with different digit combinations to check if the function finds the minimum sum correctly. Here are some examples:
-
-- Input: [6, 2, 5, 3] → Output: 58
-- Input: [0, 1, 2, 3] → Output: 3
-
-### Frequently Asked Questions
-
-- **Q: Can the input array have non-digit values?**
-  - A: No, the input must only have digits from 0 to 9.
-
-- **Q: How does the algorithm deal with leading zeros?**
-  - A: The algorithm handles leading zeros correctly when making the numbers.
-
-For more information on similar array problems, check these articles: [Array: Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html), [Array: Maximum Subarray](https://bestonlinetutorial.com/array/array-maximum-subarray-easy.html), [Array: Remove Duplicates from Sorted Array](https://bestonlinetutorial.com/array/array-remove-duplicates-from-sorted-array-easy.html).
-
-## Analyzing the Constraints and Edge Cases
-
-When we try to find the minimum sum of a four-digit number by splitting its digits, we need to look at the rules and special cases. Here are the main points to think about:
-
-- **Input Range**: The input must be a four-digit number. This means it should be between 1000 and 9999. We must deal with any numbers that are not in this range.
-- **Digit Splitting**: We need to get the digits from the number correctly. For example, if the number is 2023, the digits should be [2, 0, 2, 3].
-- **Handling Leading Zeros**: When we make new numbers from the split digits, we need to remember about leading zeros. For example, if we have digits [0, 2], they should make the number 2, not 02.
-- **Minimizing the Sum**: Our goal is to make the smallest sum of two two-digit numbers from the original digits. We should find the best way to arrange them. For example, from digits [1, 2, 3, 4], the best split is 12 + 34 = 46. This is smaller than any other way to combine them.
-- **Duplicates**: If the input number has the same digits, like 1122, we must make sure we find the right minimum sum without missing any combinations.
-- **Negative Inputs**: We should not accept negative numbers. If the input is negative, we should return an error since we only want four-digit positive numbers.
-
-By looking at these rules and special cases carefully, we can make sure our solution works well. This will also help us check the results when we test different situations.
-
-## [Array] Minimum Sum of Four Digit Number After Splitting Digits - Easy
-
-### Understanding the Problem Statement for Minimum Sum of Four Digit Number
-We want to make the sum of two two-digit numbers as small as possible. To do this, we take a four-digit number and split its digits. Then we rearrange the digits to create two two-digit numbers. Finally, we calculate the sum of these two numbers.
-
-### Analyzing the Constraints and Edge Cases
-- The input must be a four-digit number. This means it must be from 1000 to 9999.
-- We should think about cases where some digits repeat.
-- We need to find the minimum sum when we rearrange the digits.
-
-### Optimal Approach to Solve Minimum Sum of Four Digit Number
-1. **Extract Digits**: We will change the four-digit number into an array of its digits.
-2. **Sort Digits**: We will put the digits in order from smallest to largest.
-3. **Form Two-Digit Numbers**: We will take the smallest and the second smallest digits to make the first two-digit number. Then we take the third and the fourth smallest digits for the second two-digit number.
-4. **Calculate the Sum**: We will add the two two-digit numbers together.
-
-#### Pseudocode:
-```
-function minimumSum(num):
-    digits = extractDigits(num)
-    sort(digits)
-    firstNumber = digits[0] * 10 + digits[2]
-    secondNumber = digits[1] * 10 + digits[3]
-    return firstNumber + secondNumber
-```
-
-### Java Implementation of Minimum Sum Calculation
-```java
-import java.util.Arrays;
-
-public class MinimumSum {
-    public static int minimumSum(int num) {
-        int[] digits = new int[4];
-        for (int i = 0; i < 4; i++) {
-            digits[i] = num % 10;
-            num /= 10;
-        }
-        Arrays.sort(digits);
-        return (digits[0] * 10 + digits[2]) + (digits[1] * 10 + digits[3]);
-    }
-}
-```
-
-### Python Implementation for Minimum Sum of Four Digit Number
-```python
-def minimum_sum(num):
-    digits = [int(d) for d in str(num)]
-    digits.sort()
-    return (digits[0] * 10 + digits[2]) + (digits[1] * 10 + digits[3])
-```
-
-### C++ Code Solution for Minimum Sum of Four Digit Number
-```cpp
-#include <vector>
-#include <algorithm>
-
-class Solution {
-public:
-    int minimumSum(int num) {
-        std::vector<int> digits(4);
-        for (int i = 0; i < 4; ++i) {
-            digits[i] = num % 10;
-            num /= 10;
-        }
-        std::sort(digits.begin(), digits.end());
-        return (digits[0] * 10 + digits[2]) + (digits[1] * 10 + digits[3]);
-    }
-};
-```
-
-### Complexity Analysis of Different Approaches
-- **Time Complexity**: O(1) for getting digits, O(n log n) for sorting (where n = 4), so we can say it is O(1).
-- **Space Complexity**: O(1) because we use a fixed-size array for digits.
-
-### Testing and Validation of the Solution
-We should test our code with different four-digit numbers. We can include edge cases like:
-- 1000 (expected result: 1 + 0 = 1)
-- 2222 (expected result: 22 + 22 = 44)
-- 4321 (expected result: 13 + 42 = 55)
-
-### Frequently Asked Questions
-- **Q: Can the input number have leading zeros?**
-  - A: No, the input always must be a four-digit number from 1000 to 9999.
-- **Q: What if some digits are the same?**
-  - A: The method works well with repeated digits because it sorts them and makes the smallest sum. 
-
-For more reading on array problems, we can look at articles like [Array Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html) and [Array Maximum Subarray](https://bestonlinetutorial.com/array/array-maximum-subarray-easy.html).
-
-## [Array] Minimum Sum of Four Digit Number After Splitting Digits - Easy
-
-### Java Implementation of Minimum Sum Calculation
-
-We can calculate the minimum sum of a four-digit number after splitting its digits. Here is how we do it in Java:
-
-1. First we convert the number to a string. This helps us access its digits easily.
-2. Next we store the digits in an array.
-3. Then we sort the array. This arranges the digits in order from smallest to biggest.
-4. Finally we form two two-digit numbers from the sorted digits and find their sum.
-
-Here is a simple Java code example:
-
-```java
-import java.util.Arrays;
-
-public class MinimumSum {
-    public static int minimumSum(int num) {
-        // Convert the number to a character array
-        char[] digits = String.valueOf(num).toCharArray();
-
-        // Sort the digits
-        Arrays.sort(digits);
-
-        // Form two two-digit numbers
-        int firstNumber = (digits[0] - '0') * 10 + (digits[2] - '0');
-        int secondNumber = (digits[1] - '0') * 10 + (digits[3] - '0');
-
-        // Return the minimum sum
-        return firstNumber + secondNumber;
-    }
-
-    public static void main(String[] args) {
-        int num = 2736;
-        System.out.println("Minimum Sum: " + minimumSum(num)); // Output: 52
-    }
-}
-```
-
-### Explanation of the Code:
-
-- We convert the input number to a character array. This makes it easy to access each digit.
-- We use `Arrays.sort()` to sort the digits in order from smallest to biggest.
-- We create two two-digit numbers from the sorted digits. This helps to get the minimum sum.
-- We return the sum of these two numbers.
-
-This Java code works well to find the minimum sum of a four-digit number after splitting its digits. If you want to see more problems about arrays, you can look at [Array Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html) and [Array Best Time to Buy and Sell Stock](https://bestonlinetutorial.com/array/array-best-time-to-buy-and-sell-stock-easy.html).
-
-## [Array] Minimum Sum of Four Digit Number After Splitting Digits - Easy
-
-### Python Implementation for Minimum Sum of Four Digit Number
-
-To find the minimum sum of a four-digit number after we split its digits, we can follow these steps:
-
-1. **Get the digits** of the four-digit number.
-2. **Put the digits in order** from smallest to largest.
-3. **Make two two-digit numbers** using the smallest digits to get the lowest sum.
-4. **Add these two two-digit numbers** together.
-
-Here is the Python code for this:
-
-```python
-def minimum_sum(num):
-    # Step 1: Get digits
-    digits = [int(d) for d in str(num)]
+def countUnequalTriplets(arr):
+    from collections import Counter
     
-    # Step 2: Put the digits in order
-    digits.sort()
+    count = Counter(arr)
+    total_triplets = 0
+    n = len(arr)
     
-    # Step 3: Make two two-digit numbers
-    num1 = digits[0] * 10 + digits[2]  # First two smallest digits
-    num2 = digits[1] * 10 + digits[3]  # Last two smallest digits
-    
-    # Step 4: Add the minimum sum
-    return num1 + num2
+    for x in count:
+        # Total pairs excluding the current element
+        pairs = (n - count[x]) * (n - count[x] - 1) // 2
+        total_triplets += pairs * count[x]
+
+    return total_triplets
 
 # Example usage
-result = minimum_sum(2736)
-print(result)  # Output: 52
+arr = [1, 2, 3, 1, 2]
+print(countUnequalTriplets(arr))  # Output: number of unequal triplets
 ```
 
 ### Explanation of the Code:
 
-- The function `minimum_sum` takes a four-digit number as input.
-- We get the digits and turn them into a list of numbers.
-- Then we put this list in order from smallest to biggest.
-- We make two two-digit numbers by taking the first two and the last two digits.
-- In the end, we return the sum of these two numbers.
+We use Python's `Counter` from the `collections` module. It helps us count how many times each number appears in the array. 
 
-This method helps us to find the smallest possible sum of the two numbers made after we split the digits of the four-digit number. 
+For each unique element `x`, we count how many ways we can choose pairs from the other numbers. We do this by using the formula `(n - count[x]) * (n - count[x] - 1) // 2`. This formula helps us find pairs among other different elements. Then, we multiply this by the count of `x` to get the total triplets.
 
-For more topics, you can check out [Array Two Sum - Easy](https://bestonlinetutorial.com/array/array-two-sum-easy.html) or [Array Maximum Subarray - Easy](https://bestonlinetutorial.com/array/array-maximum-subarray-easy.html).
+This method is quick. It works in `O(n)` time for counting and `O(u)` for going through unique elements. Here, `u` is the number of unique numbers in the array.
 
-## [Array] Minimum Sum of Four Digit Number After Splitting Digits - Easy
+For more problems and solutions like this, we can check out [Array Two Sum - Easy](https://bestonlinetutorial.com/array/array-two-sum-easy.html) or [Array Contains Duplicate - Easy](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html).
 
-### C++ Code Solution for Minimum Sum of Four Digit Number
+## Java Implementation for Number of Unequal Triplets in Array
 
-We can find the minimum sum of a four-digit number by splitting its digits. Let’s follow these simple steps:
+We want to count the number of unequal triplets in an array using a simple Java solution. Our main goal is to find triplets (i, j, k) where the values at these positions are different. Here is how we can do it:
 
-1. **Extract Digits**: Change the number into an array of its digits.
-2. **Sort Digits**: Put the digits in order from smallest to biggest. This helps us to get the smallest combination.
-3. **Form Two Numbers**: Split the sorted digits into two parts. We will make two two-digit numbers.
-4. **Calculate the Sum**: Add these two numbers to find the minimum sum.
+### Java Code
 
-Here is the C++ code that shows this method:
+```java
+import java.util.HashMap;
+
+public class UnequalTriplets {
+    public static int countUnequalTriplets(int[] nums) {
+        HashMap<Integer, Integer> frequency = new HashMap<>();
+        for (int num : nums) {
+            frequency.put(num, frequency.getOrDefault(num, 0) + 1);
+        }
+
+        int totalTriplets = 0;
+        int n = nums.length;
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                for (int k = 0; k < n; k++) {
+                    if (i != j && j != k && i != k) {
+                        if (nums[i] != nums[j] && nums[j] != nums[k] && nums[i] != nums[k]) {
+                            totalTriplets++;
+                        }
+                    }
+                }
+            }
+        }
+
+        return totalTriplets;
+    }
+
+    public static void main(String[] args) {
+        int[] nums = {1, 2, 3, 4};
+        int result = countUnequalTriplets(nums);
+        System.out.println("Number of unequal triplets: " + result);
+    }
+}
+```
+
+### Explanation
+
+1. **Frequency Count**: We make a map to count how many times each number appears in the array. This helps us avoid extra checks later.
+
+2. **Triple Loop**: We use three loops to look at every combination of indices (i, j, k). The checks make sure the indices are different and the values are not the same.
+
+3. **Counting Triplets**: Each time we find a valid triplet where all values are different, we add to our count.
+
+### Time Complexity
+
+- The time complexity of this method is O(n^3) because we have three nested loops. This method is not the best for big arrays but it is easy to understand the basic idea.
+
+### Optimization Note
+
+For larger data, we can improve our solution by using a better way with frequency maps. This will help us lower the computing time.
+
+### Related Links
+
+For more problems with arrays, check out [Array: Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html) and [Array: Contains Duplicate](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html).
+
+## Python Implementation for Number of Unequal Triplets in Array
+
+We can solve the problem of counting unequal triplets in an array with a simple and clear solution in Python. We want to find triplets `(i, j, k)` where `nums[i]`, `nums[j]`, and `nums[k]` are all different, and `i < j < k`.
+
+Here is a simple Python code that uses a brute force method to count the unequal triplets:
+
+```python
+def countUnequalTriplets(nums):
+    n = len(nums)
+    count = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            for k in range(j + 1, n):
+                if nums[i] != nums[j] and nums[j] != nums[k] and nums[i] != nums[k]:
+                    count += 1
+    return count
+
+# Example usage
+nums = [1, 2, 3, 4]
+print(countUnequalTriplets(nums))  # Output: 4
+```
+
+For a better solution, we can use a hash map to count how many times each number appears. This makes the code faster. Here is the optimized way:
+
+```python
+from collections import Counter
+
+def countUnequalTripletsOptimized(nums):
+    count_map = Counter(nums)
+    total_triplets = 0
+    total_pairs = 0
+    total_numbers = len(nums)
+    
+    for value in count_map.values():
+        total_numbers -= value
+        total_triplets += total_pairs * value
+        total_pairs += value * (total_numbers)
+        
+    return total_triplets
+
+# Example usage
+nums = [1, 2, 3, 4]
+print(countUnequalTripletsOptimized(nums))  # Output: 4
+```
+
+### Explanation of the Optimized Approach:
+- **Counter**: We use `Counter` from the `collections` library to count how many times each number appears in the array.
+- **Triplet Counting**: As we look at each unique number, we change the total counts of pairs and remaining numbers to find how many valid triplets we can make.
+
+This method counts the number of unequal triplets in an array. We use math and hash maps, which helps the performance a lot compared to the brute force method.
+
+## C++ Implementation for Number of Unequal Triplets in Array
+
+We can find the number of unequal triplets in an array using a simple method in C++. This algorithm counts all unique triplet combinations `(i, j, k)` where `arr[i]`, `arr[j]`, and `arr[k]` are different and `i < j < k`.
+
+Here is the C++ code for this problem:
 
 ```cpp
 #include <iostream>
 #include <vector>
-#include <algorithm>
+#include <unordered_map>
+using namespace std;
 
-int minimumSum(int num) {
-    std::vector<int> digits;
+int countUnequalTriplets(vector<int>& arr) {
+    unordered_map<int, int> freq;
+    int n = arr.size();
+    int totalTriplets = 0;
 
-    // Extract digits
-    while (num > 0) {
-        digits.push_back(num % 10);
-        num /= 10;
+    // Count how many times each number appears
+    for (int num : arr) {
+        freq[num]++;
     }
 
-    // Sort the digits
-    std::sort(digits.begin(), digits.end());
+    // Total number of triplets is nC3 = n*(n-1)*(n-2)/6
+    int totalCombinations = n * (n - 1) * (n - 2) / 6;
 
-    // Form two numbers from the sorted digits
-    int num1 = digits[0] * 10 + digits[2];
-    int num2 = digits[1] * 10 + digits[3];
+    // Subtract the combinations where at least two numbers are the same
+    for (auto& entry : freq) {
+        int count = entry.second;
+        if (count >= 2) {
+            totalCombinations -= (count * (count - 1) * (n - count)) / 2; // Choosing 2 from count
+        }
+        if (count >= 3) {
+            totalCombinations -= (count * (count - 1) * (count - 2)) / 6; // Choosing 3 from count
+        }
+    }
 
-    // Return the minimum sum
-    return num1 + num2;
+    return totalCombinations;
 }
 
 int main() {
-    int num = 2736; // Example input
-    std::cout << "Minimum sum of four digit number: " << minimumSum(num) << std::endl; // Output: 57
+    vector<int> arr = {1, 2, 3, 4, 5};
+    int result = countUnequalTriplets(arr);
+    cout << "Number of unequal triplets: " << result << endl;
     return 0;
 }
 ```
 
 ### Explanation of the Code:
-- **Digit Extraction**: The code takes digits from the number using modulus and integer division.
-- **Sorting**: We use the `std::sort` function to put the digits in order for best arrangement.
-- **Number Formation**: We make two two-digit numbers by adding suitable digits.
-- **Output**: We print the minimum sum based on the two numbers we made.
 
-This C++ solution helps us to find the minimum sum of the four-digit number quickly and correctly. If you want to learn more about array problems, you can visit [Array Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html).
+We use an `unordered_map` to count how many times each number appears in the input array. We calculate the total number of triplet combinations using the formula `nC3`. Next, we subtract the combinations where at least two numbers are the same. We do this using simple math based on the frequency counts. Finally, the function gives us the count of unequal triplets.
 
-## [Array] Minimum Sum of Four Digit Number After Splitting Digits - Easy
+This code works well and follows the problem rules. We make sure to count only the unequal triplets in the array. For more problems related to arrays, we can check articles like [Array Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html) or [Array Contains Duplicate](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html).
 
-### Understanding the Problem Statement for Minimum Sum of Four Digit Number
-We need to find two two-digit numbers from the digits of a four-digit number. Our goal is to make their sum as small as possible. We will treat the four-digit number like an array of digits. By pairing the digits wisely, we can get the minimum sum.
+## Analyzing Time Complexity for Number of Unequal Triplets in Array
 
-### Analyzing the Constraints and Edge Cases
-- The input number must be a four-digit integer (1000 to 9999).
-- Each digit can be from 0 to 9.
-- We can have leading zeros in two-digit numbers, like 01 or 02.
-- Edge cases can be numbers with repeated digits or all digits the same.
+We will look at the time complexity of finding the number of unequal triplets in an array. We have two main methods: brute force and optimized with hash maps.
 
-### Optimal Approach to Solve Minimum Sum of Four Digit Number
-1. We convert the four-digit number into an array of its digits.
-2. We sort the array to group the smallest digits together.
-3. We make two two-digit numbers from the sorted digits by pairing them well.
-4. We calculate the sum of these two numbers.
+### Brute Force Approach
+In the brute force solution, we create all possible triplets in the array. Then we check if they are unequal. If we have an array of size `n`, we can choose 3 elements from it in \( C(n, 3) \) ways. This is calculated as \( \frac{n(n-1)(n-2)}{6} \). The time complexity for this method is:
 
-### Java Implementation of Minimum Sum Calculation
-```java
-import java.util.Arrays;
+- **Time Complexity**: \( O(n^3) \)
 
-public class MinimumSum {
-    public static int minimumSum(int num) {
-        int[] digits = new int[4];
-        for (int i = 0; i < 4; i++) {
-            digits[i] = num % 10;
-            num /= 10;
-        }
-        Arrays.sort(digits);
-        int num1 = digits[0] * 10 + digits[2];
-        int num2 = digits[1] * 10 + digits[3];
-        return num1 + num2;
-    }
-}
-```
+### Optimized Approach Using Hash Maps
+In the optimized method, we use a hash map. This helps us count how many times each number appears in the array. With this information, we can find the number of unequal triplets without checking each triplet one by one.
 
-### Python Implementation for Minimum Sum of Four Digit Number
-```python
-def minimum_sum(num):
-    digits = [int(d) for d in str(num)]
-    digits.sort()
-    num1 = digits[0] * 10 + digits[2]
-    num2 = digits[1] * 10 + digits[3]
-    return num1 + num2
-```
+1. Count each unique number in the array.
+2. Find the total number of triplets using the counts of unique numbers.
+3. For each unique number, we find how many triplets can include that number with two other different numbers.
 
-### C++ Code Solution for Minimum Sum of Four Digit Number
-```cpp
-#include <vector>
-#include <algorithm>
+The main steps are:
+- Count the frequency of each number: \( O(n) \)
+- Go through unique numbers and find triplet combinations: \( O(u^2) \). Here `u` is the number of unique elements (at most `n`).
 
-class Solution {
-public:
-    int minimumSum(int num) {
-        std::vector<int> digits;
-        while (num > 0) {
-            digits.push_back(num % 10);
-            num /= 10;
-        }
-        std::sort(digits.begin(), digits.end());
-        int num1 = digits[0] * 10 + digits[2];
-        int num2 = digits[1] * 10 + digits[3];
-        return num1 + num2;
-    }
-};
-```
+So, the total time complexity for the optimized method is:
 
-### Complexity Analysis of Different Approaches
-- **Time Complexity**: O(n log n). Here n is the number of digits which is fixed at 4. So it is like O(1). Sorting is the main part of the time cost.
-- **Space Complexity**: O(n) for saving the digits. Since n is fixed, it is also O(1) for practical use.
+- **Time Complexity**: \( O(n + u^2) \)
 
-### Testing and Validation of the Solution
-We should test with many four-digit integers to check if it works. Some examples are:
-- Input: 2736, Output: 57 (27 + 36)
-- Input: 4422, Output: 58 (42 + 42)
+Since \( u \) can be at most \( n \), the worst case stays at \( O(n^2) \).
 
-For more problems with arrays, we can check articles like [Array Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html) and [Array Contains Duplicate](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html).
+### Space Complexity
+- **Brute Force**: \( O(1) \) (just a few variables for counting).
+- **Optimized Approach**: \( O(u) \) for keeping the count of each unique number in a hash map.
 
-### Frequently Asked Questions
-1. **What if the input is not a four-digit number?**
-   The problem says that the input must be a valid four-digit integer.
-2. **Can the digits be negative?**
-   No, the digits cannot be negative because they are decimal digits.
+In real situations, the optimized method is much better than the brute force way. This is especially true for larger arrays.
 
-## [Array] Minimum Sum of Four Digit Number After Splitting Digits - Easy
+## Testing and Validating Solutions for Number of Unequal Triplets in Array
 
-### Testing and Validation of the Solution
+To make sure our solutions for counting unequal triplets in an array are correct, we need to test them properly. Here are some important points to think about when we test and validate our solutions.
 
-We need to check if our solution for finding the minimum sum of a four-digit number after splitting its digits is correct. We should do a lot of tests and make sure our solution works in different cases. This includes both edge cases and normal cases.
+### Test Cases
 
-#### Test Cases
+1. **Basic Test Cases**:
+   - Input: `[1, 2, 3]` 
+     - Output: `1` (Triplet: (1, 2, 3))
+   - Input: `[1, 1, 2]` 
+     - Output: `0` (No unique triplets)
+   - Input: `[1, 2, 2, 3]` 
+     - Output: `3` (Triplets: (1, 2, 3), (2, 1, 3), (2, 2, 3))
 
-1. **Basic Test Case**
-   - Input: `[1, 2, 3, 4]`
-   - Expected Output: `37` (Numbers formed: 12 and 34)
+2. **Edge Cases**:
+   - Input: `[]` 
+     - Output: `0` (No elements)
+   - Input: `[1]` 
+     - Output: `0` (Not enough elements)
+   - Input: `[1, 2]` 
+     - Output: `0` (Not enough elements)
 
-2. **Edge Case with Zeros**
-   - Input: `[0, 0, 1, 2]`
-   - Expected Output: `2` (Numbers formed: 01 and 02)
+3. **Large Input**:
+   - Input: `[1, 2, 3, ..., n]` (where n is big)
+   - Check if the output matches the expected number of unique triplets.
 
-3. **All Digits Same**
-   - Input: `[5, 5, 5, 5]`
-   - Expected Output: `55` (Numbers formed: 55 and 55)
+4. **Performance Testing**:
+   - Use arrays with repeated numbers and different sizes to check if the solution works in time limits. For example, an array with 10,000 elements where all are unique or where many are the same.
 
-4. **Descending Order**
-   - Input: `[9, 8, 7, 6]`
-   - Expected Output: `168` (Numbers formed: 67 and 89)
+### Validation Methodology
 
-5. **Random Digits**
-   - Input: `[3, 6, 2, 8]`
-   - Expected Output: `58` (Numbers formed: 28 and 36)
+- **Unit Testing**: We write unit tests for each function in the solution to check if they work correctly by themselves.
+- **Integration Testing**: We test the whole solution with different inputs to see if all parts work together well.
+- **Comparative Analysis**: We run both brute force and optimized methods on the same input and compare results. This helps us check if the optimized method is correct.
 
-#### Validation Steps
-
-- We should write unit tests for each test case using a testing framework like JUnit for Java or unittest for Python.
-- We will use assertions to check if our output matches the expected output.
-
-#### Example Implementation for Testing in Python
+### Example Code for Testing in Python
 
 ```python
-def test_minimum_sum():
-    test_cases = [
-        ([1, 2, 3, 4], 37),
-        ([0, 0, 1, 2], 2),
-        ([5, 5, 5, 5], 55),
-        ([9, 8, 7, 6], 168),
-        ([3, 6, 2, 8], 58)
-    ]
-    
-    for digits, expected in test_cases:
-        result = minimum_sum(digits)
-        assert result == expected, f"Test failed for {digits}: expected {expected}, got {result}"
+def count_unequal_triplets(arr):
+    count = 0
+    n = len(arr)
+    for i in range(n):
+        for j in range(i + 1, n):
+            for k in range(j + 1, n):
+                if arr[i] != arr[j] and arr[j] != arr[k] and arr[i] != arr[k]:
+                    count += 1
+    return count
 
-test_minimum_sum()
+# Test cases
+assert count_unequal_triplets([1, 2, 3]) == 1
+assert count_unequal_triplets([1, 1, 2]) == 0
+assert count_unequal_triplets([1, 2, 2, 3]) == 3
+assert count_unequal_triplets([]) == 0
+assert count_unequal_triplets([1]) == 0
+assert count_unequal_triplets([1, 2]) == 0
+
+print("All tests passed!")
 ```
 
-#### Java Testing Example
+### Testing Frameworks
 
-```java
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+We can use testing frameworks like `unittest` in Python or `JUnit` in Java. This helps us test automatically and make sure we check all edge cases and possible problems.
 
-public class MinimumSumTest {
-
-    @Test
-    public void testMinimumSum() {
-        assertEquals(37, MinimumSum.minimumSum(new int[]{1, 2, 3, 4}));
-        assertEquals(2, MinimumSum.minimumSum(new int[]{0, 0, 1, 2}));
-        assertEquals(55, MinimumSum.minimumSum(new int[]{5, 5, 5, 5}));
-        assertEquals(168, MinimumSum.minimumSum(new int[]{9, 8, 7, 6}));
-        assertEquals(58, MinimumSum.minimumSum(new int[]{3, 6, 2, 8}));
-    }
-}
-```
-
-#### C++ Testing Example
-
-```cpp
-#include <cassert>
-#include <vector>
-
-void testMinimumSum() {
-    assert(minimumSum({1, 2, 3, 4}) == 37);
-    assert(minimumSum({0, 0, 1, 2}) == 2);
-    assert(minimumSum({5, 5, 5, 5}) == 55);
-    assert(minimumSum({9, 8, 7, 6}) == 168);
-    assert(minimumSum({3, 6, 2, 8}) == 58);
-}
-
-int main() {
-    testMinimumSum();
-    return 0;
-}
-```
-
-By using these methods for testing, we can check our solution very well. This helps to make sure it meets the problem needs for finding the minimum sum of four-digit numbers after splitting the digits.
+By using these testing and validation methods, we can make sure our solutions for counting unequal triplets in an array are right and work well.
 
 ## Frequently Asked Questions
 
-### 1. What is the minimum sum of a four-digit number after splitting its digits?
-The minimum sum of a four-digit number after we split its digits means we rearrange the digits to make two two-digit numbers. We want to add these numbers to get the smallest sum. To do this, we sort the digits in order from smallest to biggest and pair them in a smart way. For more details, look at our article on [Minimum Sum of Four Digit Number After Splitting Digits](#).
+### 1. What is the problem of counting unequal triplets in an array?
+The problem of counting unequal triplets in an array is to find all unique groups of three different elements. Here, no two elements can be the same. This is important for many uses, like data analysis and combinatorial algorithms. When we understand this problem, we can better handle similar tasks in making algorithms.
 
-### 2. How do you implement the minimum sum calculation in Java?
-To do the minimum sum calculation in Java, we first get the digits from the four-digit number. Then we sort them and pair them to create two two-digit numbers. Finally, we add these two numbers to find the minimum sum. For an example and more code, see our Java Implementation section in the article.
+### 2. How can I solve the unequal triplets problem using a brute force approach?
+To solve the unequal triplets problem using a brute force method, we use three loops. Each loop goes through the array and checks every possible triplet. If a triplet has three different elements, we add one to a counter. This method is simple but not very fast for big arrays because it has O(n^3) time complexity. For better ways to solve it, we can look at the optimized methods in this article.
 
-### 3. Is there a Python solution for calculating the minimum sum of a four-digit number?
-Yes, there is a Python solution to find the minimum sum of a four-digit number. The method changes the number into a list of digits. We sort the digits, pair them, and then add the two two-digit numbers we get. You can see the full Python code in our article on [Minimum Sum of Four Digit Number After Splitting Digits](#).
+### 3. What are the benefits of using hash maps for counting triplets in an array?
+Using hash maps to count unequal triplets can make things much faster than the brute force way. By saving how many times each element appears, we can quickly find unique triplet combinations. This means we do not need to check every group. It lowers the time complexity to O(n^2). This makes it a better choice for larger data sets.
 
-### 4. What are the time and space complexity considerations for the minimum sum calculation?
-The time complexity for finding the minimum sum of a four-digit number after we split its digits is mainly O(n log n) because of sorting. Here, n is the number of digits. The space complexity is O(n) for keeping the digits, which is easy to manage for a four-digit number. For more details, check the Complexity Analysis section in our article.
+### 4. Can you provide an example of how to implement the unequal triplets algorithm in Python?
+Sure! Here is a simple Python code for the unequal triplets problem:
 
-### 5. Can this problem be solved using C++?
-Yes! We can solve this problem using C++. The steps are the same: we take the digits, sort them, and then find the sum of the two two-digit numbers we create. For more detailed C++ code, please see our C++ Implementation section in the article on the [Minimum Sum of Four Digit Number After Splitting Digits](#).
+```python
+def countUnequalTriplets(arr):
+    count = 0
+    n = len(arr)
+    for i in range(n):
+        for j in range(i + 1, n):
+            for k in range(j + 1, n):
+                if arr[i] != arr[j] and arr[j] != arr[k] and arr[i] != arr[k]:
+                    count += 1
+    return count
+```
+This function goes through the array and counts unique triplet combinations in an easy way.
 
-By answering these frequently asked questions, we try to make it clear how to calculate the minimum sum of four-digit numbers. We also show how to do this in different programming languages.
+### 5. How do I analyze the time complexity of the unequal triplets problem?
+To analyze the time complexity of the unequal triplets problem, we look at the method used. The brute force way has a time complexity of O(n^3) because of three loops. But if we use an optimized way with hash maps, we can bring it down to O(n^2). This is because it counts frequencies to reduce how many comparisons we need. Knowing these complexities helps us pick the right algorithm for our needs.
+
+For more reading on similar array problems, check out articles like [Array: Two Sum - Easy](https://bestonlinetutorial.com/array/array-two-sum-easy.html) and [Array: Contains Duplicate - Easy](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html) to improve our algorithm skills.
