@@ -1,0 +1,411 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>How Can You Retrieve Keys in Redis That Do Not Match a Specific Pattern?</title>
+            <meta name="description" content="Learn how to efficiently retrieve keys in Redis that don't match a specific pattern with our expert tips and techniques.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Can You Retrieve Keys in Redis That Do Not Match a Specific Pattern?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To get keys in Redis that do not fit a certain pattern, we can use
+the SCAN command. We also need to add some filtering logic in our app or
+use Lua scripting. This way, we can go through the keys without
+including those that match the patterns we don’t want. It helps keep our
+Redis database queries fast and efficient.</p>
+<p>In this article, we will look at different ways to get keys that do
+not match in Redis. We will cover how to use the SCAN command to leave
+out patterns. We will also talk about filtering keys with Lua scripting.
+We will show how to add our own logic in the app and use Redis key tags
+to make pattern exclusions easier. We will also think about performance
+and answer some common questions about this subject.</p>
+<ul>
+<li>How to Retrieve Keys in Redis That Do Not Match a Specific
+Pattern</li>
+<li>Using the Redis SCAN Command to Exclude Patterns</li>
+<li>Filtering Keys in Redis with Lua Scripting</li>
+<li>Implementing a Custom Exclusion Logic in Your Application</li>
+<li>Using Redis Key Tags to Simplify Pattern Exclusions</li>
+<li>Performance Considerations When Retrieving Non-Matching Keys in
+Redis</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2 id="using-the-redis-scan-command-to-exclude-patterns">Using the
+Redis SCAN Command to Exclude Patterns</h2>
+<p>We can use the <code>SCAN</code> command in Redis to get keys that do
+not match a certain pattern. This command is better than the
+<code>KEYS</code> command. The <code>KEYS</code> command can slow down
+the server if there are many keys. The <code>SCAN</code> command lets us
+go through keys step by step. This way, we don’t overload the
+server.</p>
+<h3 id="basic-scan-syntax">Basic SCAN Syntax</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SCAN</span> cursor [MATCH pattern] [COUNT count]</span></code></pre></div>
+<h3 id="excluding-specific-patterns">Excluding Specific Patterns</h3>
+<p>The <code>SCAN</code> command does not let us directly exclude
+patterns. But we can write some logic in our application to filter out
+keys that match a certain pattern. Here is a simple example using Python
+with the <code>redis-py</code> client:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Connect to Redis</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> redis.Redis(host<span class="op">=</span><span class="st">&#39;localhost&#39;</span>, port<span class="op">=</span><span class="dv">6379</span>, db<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the pattern to exclude</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>excluded_pattern <span class="op">=</span> <span class="st">&quot;exclude:*&quot;</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Start scanning</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>cursor <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    cursor, keys <span class="op">=</span> r.scan(cursor, count<span class="op">=</span><span class="dv">100</span>)  <span class="co"># Adjust count as necessary</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Filter keys that do NOT match the excluded pattern</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    non_matching_keys <span class="op">=</span> [key <span class="cf">for</span> key <span class="kw">in</span> keys <span class="cf">if</span> <span class="kw">not</span> key.decode(<span class="st">&#39;utf-8&#39;</span>).startswith(excluded_pattern.split(<span class="st">&#39;:&#39;</span>)[<span class="dv">0</span>])]</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Process non-matching keys</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> key <span class="kw">in</span> non_matching_keys:</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(key.decode(<span class="st">&#39;utf-8&#39;</span>))</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Break if cursor is 0, indicating completion</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> cursor <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span></span></code></pre></div>
+<h3 id="considerations">Considerations</h3>
+<ul>
+<li><strong>Performance</strong>: The <code>SCAN</code> command is good
+for performance. It does not lock the database. This makes it good for
+production use.</li>
+<li><strong>COUNT Option</strong>: The <code>COUNT</code> option is a
+tip for Redis on how many items to return each time. You can change it
+to fit your needs.</li>
+<li><strong>Pattern Matching</strong>: If needed, we can use Python
+string methods to make more complex rules for excluding patterns.</li>
+</ul>
+<p>Using the <code>SCAN</code> command this way helps us get keys that
+do not match certain patterns easily and quickly. For more information
+about working with Redis keys, we can check the guide on <a
+href="https://bestonlinetutorial.com/redis/what-are-the-best-redis-key-naming-conventions.html">what
+are the best Redis key naming conventions</a>.</p>
+<h2 id="filtering-keys-in-redis-with-lua-scripting">Filtering Keys in
+Redis with Lua Scripting</h2>
+<p>We can use Lua scripting in Redis to find keys that do not match a
+certain pattern. This method helps us run a script on the server side.
+It reduces the load on the network and makes things faster.</p>
+<p>To filter keys, we can use the <code>KEYS</code> command in a Lua
+script. But we should be careful. The <code>KEYS</code> command is not
+good for production. It can slow down the server if there are too many
+keys. Instead, we can use <code>SCAN</code> for big datasets.</p>
+<p>Here is an example of how we can filter keys with a Lua script:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode lua"><code class="sourceCode lua"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">local</span> <span class="va">pattern</span> <span class="op">=</span> <span class="cn">ARGV</span><span class="op">[</span><span class="dv">1</span><span class="op">]</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">local</span> <span class="va">result</span> <span class="op">=</span> <span class="op">{}</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- Use SCAN to iterate over keys</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">local</span> <span class="va">cursor</span> <span class="op">=</span> <span class="st">&quot;0&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="cf">repeat</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">local</span> <span class="va">res</span> <span class="op">=</span> <span class="va">redis</span><span class="op">.</span>call<span class="op">(</span><span class="st">&quot;SCAN&quot;</span><span class="op">,</span> <span class="va">cursor</span><span class="op">,</span> <span class="st">&quot;MATCH&quot;</span><span class="op">,</span> <span class="st">&quot;*&quot;</span><span class="op">)</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="va">cursor</span> <span class="op">=</span> <span class="va">res</span><span class="op">[</span><span class="dv">1</span><span class="op">]</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> <span class="cn">_</span><span class="op">,</span> <span class="va">key</span> <span class="kw">in</span> <span class="fu">ipairs</span><span class="op">(</span><span class="va">res</span><span class="op">[</span><span class="dv">2</span><span class="op">])</span> <span class="cf">do</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> <span class="va">key</span><span class="op">:</span><span class="fu">match</span><span class="op">(</span><span class="va">pattern</span><span class="op">)</span> <span class="cf">then</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>            <span class="fu">table.insert</span><span class="op">(</span><span class="va">result</span><span class="op">,</span> <span class="va">key</span><span class="op">)</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">end</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="cf">until</span> <span class="va">cursor</span> <span class="op">==</span> <span class="st">&quot;0&quot;</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> <span class="va">result</span></span></code></pre></div>
+<h3 id="how-to-execute-the-lua-script">How to Execute the Lua
+Script</h3>
+<p>We can run the Lua script using the <code>EVAL</code> command in
+Redis CLI or any Redis client. For example, if we want to exclude keys
+that match the pattern <code>*test*</code>, we run:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">EVAL</span> <span class="st">&quot;&lt;lua_script&gt;&quot;</span> 0 <span class="st">&quot;test&quot;</span></span></code></pre></div>
+<h3 id="key-points">Key Points</h3>
+<ul>
+<li><code>ARGV[1]</code> lets us pass the pattern easily.</li>
+<li>The script uses <code>SCAN</code> so it does not block the Redis
+server.</li>
+<li>The filtered keys come back in a table.</li>
+</ul>
+<p>This way, we can find keys that do not match efficiently while using
+Redis’s Lua scripting. For more details on using Redis Lua scripting, we
+can check <a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redis-lua-scripting.html">how
+do I use Redis Lua scripting</a>.</p>
+<h2
+id="implementing-a-custom-exclusion-logic-in-your-application">Implementing
+a Custom Exclusion Logic in Your Application</h2>
+<p>We can get keys in Redis that do not fit a certain pattern by using
+custom exclusion logic in our application. This gives us more control
+over how we filter keys based on what we need. Here is a simple outline
+for this process.</p>
+<ol type="1">
+<li><p><strong>Retrieve All Keys</strong>: We use the <code>SCAN</code>
+command to get keys in a way that saves memory.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SCAN</span> 0 MATCH your_pattern<span class="pp">*</span></span></code></pre></div></li>
+<li><p><strong>Filter Keys in Your Application</strong>: In our
+application code, we filter out keys that fit the given pattern. We can
+use any programming language we like. Here is a small example in
+Python:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> redis.StrictRedis(host<span class="op">=</span><span class="st">&#39;localhost&#39;</span>, port<span class="op">=</span><span class="dv">6379</span>, db<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to get keys not matching a specific pattern</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_keys_not_matching_pattern(pattern):</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    cursor <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    matching_keys <span class="op">=</span> []</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        cursor, keys <span class="op">=</span> r.scan(cursor, match<span class="op">=</span><span class="st">&#39;*&#39;</span>)  <span class="co"># Get all keys</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        matching_keys.extend(keys)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> cursor <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Exclude keys that fit the given pattern</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    excluded_keys <span class="op">=</span> [key <span class="cf">for</span> key <span class="kw">in</span> matching_keys <span class="cf">if</span> <span class="kw">not</span> key.decode(<span class="st">&#39;utf-8&#39;</span>).startswith(pattern)]</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> excluded_keys</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>non_matching_keys <span class="op">=</span> get_keys_not_matching_pattern(<span class="st">&#39;your_pattern&#39;</span>)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(non_matching_keys)</span></code></pre></div></li>
+<li><p><strong>Use the Redis Key Tags</strong>: We can add key tags in
+our data model to make exclusion logic easier. For example, we can add
+tags at the start of keys to show their category or type.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> tag:user:1001 <span class="st">&quot;John Doe&quot;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> tag:order:2001 <span class="st">&quot;Order Details&quot;</span></span></code></pre></div>
+<p>Then we can easily skip keys based on these tags:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>excluded_keys <span class="op">=</span> [key <span class="cf">for</span> key <span class="kw">in</span> matching_keys <span class="cf">if</span> <span class="kw">not</span> key.decode(<span class="st">&#39;utf-8&#39;</span>).startswith(<span class="st">&#39;tag:&#39;</span>)]</span></code></pre></div></li>
+<li><p><strong>Considerations for Performance</strong>: When we make
+custom logic for getting keys, we should think about how it affects
+performance. The <code>SCAN</code> command is better than
+<code>KEYS</code> for big datasets. It does not block and gives results
+step by step.</p></li>
+<li><p><strong>Application Logic</strong>: We must make sure our
+application logic is efficient. We should try to reduce the number of
+keys we process. Using good data structures and algorithms helps with
+key filtering.</p></li>
+</ol>
+<p>By doing these steps, we can set up custom exclusion logic in our
+application. This way, we can get keys in Redis that do not match a
+certain pattern. For more details on how to use Redis, we can check the
+<a href="https://bestonlinetutorial.com/redis/what-is-redis.html">Redis
+documentation</a>.</p>
+<h2 id="using-redis-key-tags-to-simplify-pattern-exclusions">Using Redis
+Key Tags to Simplify Pattern Exclusions</h2>
+<p>Using key tags in Redis can make it easier to exclude keys based on
+certain patterns. By tagging keys with clear prefixes or parts, we can
+filter out unwanted keys without using complex logic. Here is how we can
+use key tags well:</p>
+<ol type="1">
+<li><p><strong>Define Key Tags</strong>: First, we need to pick a naming
+style that includes tags. For example, we can use a format like
+<code>user:{userId}:session</code>, where <code>userId</code> is a
+unique number.</p></li>
+<li><p><strong>Store Keys with Tags</strong>: When we add keys to Redis,
+we should always use the chosen tag. This helps us keep related keys
+together.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> user:1:session <span class="st">&quot;session_data_1&quot;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> user:2:session <span class="st">&quot;session_data_2&quot;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ex">SET</span> product:1:data <span class="st">&quot;product_data_1&quot;</span></span></code></pre></div></li>
+<li><p><strong>Retrieve Keys Excluding Specific Tags</strong>: We can
+use the <code>SCAN</code> command with a <code>MATCH</code> pattern to
+get keys that do not have certain tags.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SCAN</span> 0 MATCH <span class="pp">*</span>:session</span></code></pre></div>
+<p>If we want to get keys that do not start with the <code>user</code>
+prefix, we can filter them in our application after we get
+them.</p></li>
+<li><p><strong>Example of Filtering</strong>: In our application, we can
+create a filter to remove keys with the unwanted tag.</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> redis.Redis()</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>cursor <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>non_user_keys <span class="op">=</span> []</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    cursor, keys <span class="op">=</span> r.scan(cursor, match<span class="op">=</span><span class="st">&#39;*&#39;</span>, count<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> key <span class="kw">in</span> keys:</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> key.decode().startswith(<span class="st">&#39;user:&#39;</span>):</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>            non_user_keys.append(key.decode())</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> cursor <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(non_user_keys)</span></code></pre></div></li>
+<li><p><strong>Performance Considerations</strong>: Using key tags helps
+us scan and filter keys more efficiently. This reduces the load on our
+Redis. It is very helpful when we work with large datasets where
+performance matters a lot.</p></li>
+</ol>
+<p>By using key tags in our Redis key naming, we make it easier to get
+keys that do not match certain patterns. This makes our data management
+better. For more tips on using Redis and its data types, we can check <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">this
+article</a>.</p>
+<h2
+id="performance-considerations-when-retrieving-non-matching-keys-in-redis">Performance
+Considerations When Retrieving Non-Matching Keys in Redis</h2>
+<p>When we retrieve keys in Redis that do not match a certain pattern,
+we should think about performance. This helps us to work efficiently.
+Here are some important points:</p>
+<ul>
+<li><p><strong>Use SCAN Instead of KEYS</strong>: The <code>KEYS</code>
+command can be slow. It can block Redis for a long time, especially with
+big datasets. Instead, we should use the <code>SCAN</code> command. It
+does not block and lets us look through keys bit by bit.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SCAN</span> cursor MATCH pattern COUNT count</span></code></pre></div>
+<ul>
+<li><code>cursor</code>: This is the position from the last call.</li>
+<li><code>MATCH</code>: We use this to say the pattern.</li>
+<li><code>COUNT</code>: This gives a hint about how many keys to
+return.</li>
+</ul></li>
+<li><p><strong>Filtering Logic</strong>: When we use <code>SCAN</code>,
+we may still need to remove keys that match the pattern. We can do this
+in our application:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> redis.Redis()</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>cursor <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>non_matching_keys <span class="op">=</span> []</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    cursor, keys <span class="op">=</span> r.scan(cursor, count<span class="op">=</span><span class="dv">100</span>)</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> key <span class="kw">in</span> keys:</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="kw">not</span> key.decode().startswith(<span class="st">&quot;excluded_pattern&quot;</span>):</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>            non_matching_keys.append(key)</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> cursor <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span></span></code></pre></div></li>
+<li><p><strong>Lua Scripting</strong>: If we have complex filters, we
+can use Lua scripting. This can help us reduce trips between the client
+and server. A Lua script can get and filter keys right on the
+server.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode lua"><code class="sourceCode lua"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">local</span> <span class="va">excluded_pattern</span> <span class="op">=</span> <span class="cn">ARGV</span><span class="op">[</span><span class="dv">1</span><span class="op">]</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">local</span> <span class="va">result</span> <span class="op">=</span> <span class="op">{}</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> <span class="cn">_</span><span class="op">,</span> <span class="va">key</span> <span class="kw">in</span> <span class="fu">ipairs</span><span class="op">(</span><span class="va">redis</span><span class="op">.</span>call<span class="op">(</span><span class="st">&#39;KEYS&#39;</span><span class="op">,</span> <span class="st">&#39;*&#39;</span><span class="op">))</span> <span class="cf">do</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> <span class="fu">string.match</span><span class="op">(</span><span class="va">key</span><span class="op">,</span> <span class="va">excluded_pattern</span><span class="op">)</span> <span class="cf">then</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">table.insert</span><span class="op">(</span><span class="va">result</span><span class="op">,</span> <span class="va">key</span><span class="op">)</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> <span class="va">result</span></span></code></pre></div></li>
+<li><p><strong>Data Size and Key Distribution</strong>: The size of our
+data and how keys are spread out will change performance. We should
+watch the size and structure of our keys to help us get better
+results.</p></li>
+<li><p><strong>Considerations for Redis Configuration</strong>: We need
+to make sure our Redis settings are good for our work. We can change
+settings like <code>maxmemory</code> and <code>maxclients</code> so
+Redis can handle retrieval well.</p></li>
+<li><p><strong>Network Latency</strong>: If we are using a distributed
+system or cloud, we should think about the network delay when getting
+keys. Using Redis clusters or replication can help us lower
+latency.</p></li>
+<li><p><strong>Testing and Monitoring</strong>: We should often test how
+our key retrieval works and watch Redis with tools like Redis Insight to
+see performance numbers.</p></li>
+</ul>
+<p>By thinking about these points, we can make retrieving keys in Redis
+that do not match a pattern better. This helps us access and manage our
+data well. For more information on Redis commands, you can check <a
+href="https://bestonlinetutorial.com/redis/how-to-retrieve-all-sets-in-redis.html">how
+to retrieve all sets in Redis</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="how-do-we-get-keys-in-redis-that-do-not-match-a-specific-pattern">1.
+How do we get keys in Redis that do not match a specific pattern?</h3>
+<p>To get keys in Redis that do not match a specific pattern, we can use
+the <code>SCAN</code> command with a way to filter keys. The
+<code>SCAN</code> command helps us go through keys quickly and does not
+block the server. We can write some code to check each key and leave out
+the ones we don’t want.</p>
+<h3 id="can-we-use-lua-scripting-in-redis-to-filter-keys">2. Can we use
+Lua scripting in Redis to filter keys?</h3>
+<p>Yes, we can use Lua scripting to filter keys in Redis. When we write
+a Lua script, we can run our logic on the server. This helps us get keys
+and filter them as we need. It makes things faster because we do not
+have to go back and forth between our app and the Redis server a lot.
+This is a good way to exclude keys that match certain patterns.</p>
+<h3
+id="what-are-the-performance-effects-of-getting-non-matching-keys-in-redis">3.
+What are the performance effects of getting non-matching keys in
+Redis?</h3>
+<p>Getting keys that do not match a specific pattern can take a lot of
+resources, especially with big datasets. We should use the
+<code>SCAN</code> command instead of <code>KEYS</code> because it works
+better and does not block. But we need to make sure our filtering code
+or Lua script runs well to keep the performance good and avoid
+delays.</p>
+<h3 id="how-can-we-add-custom-exclusion-logic-in-our-application">4. How
+can we add custom exclusion logic in our application?</h3>
+<p>We can add custom exclusion logic in our application by first getting
+all the keys we need with the <code>SCAN</code> command. Then we can
+filter the keys in our code by checking each one against the patterns we
+do not want. This way gives us more freedom to apply complex filtering
+rules that fit our needs.</p>
+<h3
+id="are-there-naming-rules-that-help-with-key-exclusions-in-redis">5.
+Are there naming rules that help with key exclusions in Redis?</h3>
+<p>Yes, using clear naming rules for our Redis keys can make the
+exclusion process easier. By adding clear tags or prefixes in our key
+names, we can match patterns quickly. For more tips on naming rules, we
+can read our article on <a
+href="https://bestonlinetutorial.com/redis/what-are-the-best-redis-key-naming-conventions.html">the
+best Redis key naming conventions</a>. This method can make it easier to
+get and exclude keys in our Redis database.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
