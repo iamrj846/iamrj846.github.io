@@ -1,389 +1,372 @@
-Finding the number of unequal triplets in an array is a simple but interesting challenge in math. The goal is to count groups of three different elements from an array. We want to make sure that no two elements in the group are the same. We can solve this problem using different methods. These include basic brute force methods and better ways that use hash maps for faster counting.
+The "Product of Array Except Self" is a popular coding challenge. We need to find the product of all elements in an array except for the one at the current index. This means that for each index, we should get the product of all other elements. We can solve this problem well without using division. This way, we keep the solution fast and use less space.
 
-In this article, we will look into the details of the problem "Number of Unequal Triplets in Array." We will first talk about the brute force method. This method helps us understand the problem better. After that, we will discuss an optimized solution that uses hash maps. We will also show how to implement these solutions in Java, Python, and C++. At the end, we will check the time complexity of our solutions. We will also answer common questions about this topic.
+In this article, we will look into the "Product of Array Except Self" problem closely. We will explain the problem and what we need to do. We will also find a good solution that does not use division. Then, we will show how to implement it in Java, Python, and C++. We will check the space and time complexity of our solutions. We will also look at common edge cases and answer some questions that people often ask about this topic.
 
-- Understanding the Problem of Number of Unequal Triplets in Array - Easy
-- Brute Force Approach for Number of Unequal Triplets in Array
-- Optimized Approach Using Hash Maps for Number of Unequal Triplets in Array
-- Java Implementation for Number of Unequal Triplets in Array
-- Python Implementation for Number of Unequal Triplets in Array
-- C++ Implementation for Number of Unequal Triplets in Array
-- Analyzing Time Complexity for Number of Unequal Triplets in Array
-- Testing and Validating Solutions for Number of Unequal Triplets in Array
+- Understanding Array Product of Array Except Self - Medium
+- Problem Statement and Requirements
+- Optimal Solution Without Division
+- Java Implementation of Product of Array Except Self
+- Python Implementation of Product of Array Except Self
+- C++ Implementation of Product of Array Except Self
+- Space Complexity Analysis of the Solution
+- Time Complexity Analysis of the Solution
+- Common Edge Cases and Their Handling
 - Frequently Asked Questions
 
-If you want more resources about array problems, you can check out articles like [Array Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html) and [Array Contains Duplicate](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html). These articles give more information about different array techniques. They can help us improve our understanding and problem-solving skills in this area.
+## Problem Statement and Requirements
 
-## Brute Force Approach for Number of Unequal Triplets in Array
+The "Product of Array Except Self" problem asks us to create an output array. Each element at index `i` in this output array should be equal to the product of all the numbers in the input array except the number at `i`.
 
-We can use a brute force approach to find how many unequal triplets are in an array. This method means we will make all possible triplets and then count the ones that are not equal. A triplet is a set of three indices \(i, j, k\) where \(0 \leq i < j < k < n\) and the values at these indices are different.
+### Requirements:
+1. We must solve the problem without using division.
+2. Our solution should be good in both time and space.
+3. The input is an array of integers. We need to return an array that has the same length as the input.
 
-### Steps:
-1. We will use three loops to check all possible triplet combinations.
-2. For each triplet, we will check if the values at the indices are different.
-3. If all three values are different, we will count the triplet.
+### Example:
+If we have an input array `nums = [1, 2, 3, 4]`, the output should be:
 
-### Complexity:
-- Time Complexity: \(O(n^3)\). Here \(n\) is the length of the array.
-- Space Complexity: \(O(1)\). We do not need extra space apart from some variables.
-
-### Example Code (Python):
-```python
-def countUnequalTriplets(arr):
-    n = len(arr)
-    count = 0
-    
-    for i in range(n):
-        for j in range(i + 1, n):
-            for k in range(j + 1, n):
-                if arr[i] != arr[j] and arr[j] != arr[k] and arr[i] != arr[k]:
-                    count += 1
-                    
-    return count
-
-# Example Usage
-arr = [1, 2, 3, 4]
-result = countUnequalTriplets(arr)
-print("Number of unequal triplets:", result)
+```
+Output: [24, 12, 8, 6]
 ```
 
-This way is easy to understand but can be slow for larger arrays because it takes more time. If we work with bigger datasets, we can look for better solutions like using hash maps. This can help to make the time quicker.
+- Explanation: 
+  - For `output[0]`: the product is `nums[1] * nums[2] * nums[3]` which is `2 * 3 * 4` = `24`
+  - For `output[1]`: the product is `nums[0] * nums[2] * nums[3]` which is `1 * 3 * 4` = `12`
+  - For `output[2]`: the product is `nums[0] * nums[1] * nums[3]` which is `1 * 2 * 4` = `8`
+  - For `output[3]`: the product is `nums[0] * nums[1] * nums[2]` which is `1 * 2 * 3` = `6`
 
-## Optimized Approach Using Hash Maps for Number of Unequal Triplets in Array
+### Constraints:
+- The input array length must be at least 1 and no more than 10^5.
+- Each number in the input array must be between -30,000 and 30,000.
 
-We can find the number of unequal triplets in an array in a smart way. We use hash maps to count how often each number appears. This method is faster than just checking every possible triplet.
+We can solve this problem well by going through the array two times. We will keep two separate arrays for the left and right products. It is very important to follow the constraints. We should also make our solution fast to work with bigger input sizes.
+
+## Optimal Solution Without Division
+
+To solve the "Product of Array Except Self" problem without using division, we can use two passes through the array. This helps us keep the product of all elements to the left and right of each index. This way, we can get the result in O(n) time and use O(1) space, not counting the output array.
 
 ### Steps:
 
-1. **Count Frequencies**: We will use a hash map to keep track of how many times each number shows up in the array.
-2. **Calculate Total Triplets**: For each unique triplet combination (i, j, k), we make sure that all three indices are different and the elements are not the same.
-3. **Use Combinatorial Counting**: For each element, we will find out how many triplets we can make without using that element more than once.
+1. **Initialize an output array** for the product results.
+2. **First pass (left products)**:
+   - We go through the array from left to right.
+   - We keep a variable to store the product of elements to the left of the current index.
+   - We update the output array with the left product for each index.
 
-### Implementation:
+3. **Second pass (right products)**:
+   - Now, we go through the array from right to left.
+   - We keep another variable for the product of elements to the right of the current index.
+   - We multiply the current value in the output array by the right product.
 
-Here’s the code in Python:
+### Code Implementation
+
+Here is a Python code for the optimal solution:
 
 ```python
-def countUnequalTriplets(arr):
-    from collections import Counter
-    
-    count = Counter(arr)
-    total_triplets = 0
-    n = len(arr)
-    
-    for x in count:
-        # Total pairs excluding the current element
-        pairs = (n - count[x]) * (n - count[x] - 1) // 2
-        total_triplets += pairs * count[x]
+def product_except_self(nums):
+    length = len(nums)
+    output = [1] * length
 
-    return total_triplets
+    # First pass: calculate left products
+    left_product = 1
+    for i in range(length):
+        output[i] = left_product
+        left_product *= nums[i]
 
-# Example usage
-arr = [1, 2, 3, 1, 2]
-print(countUnequalTriplets(arr))  # Output: number of unequal triplets
+    # Second pass: calculate right products
+    right_product = 1
+    for i in range(length - 1, -1, -1):
+        output[i] *= right_product
+        right_product *= nums[i]
+
+    return output
 ```
 
-### Explanation of the Code:
+### Example Usage
 
-We use Python's `Counter` from the `collections` module. It helps us count how many times each number appears in the array. 
+```python
+nums = [1, 2, 3, 4]
+result = product_except_self(nums)
+print(result)  # Output: [24, 12, 8, 6]
+```
 
-For each unique element `x`, we count how many ways we can choose pairs from the other numbers. We do this by using the formula `(n - count[x]) * (n - count[x] - 1) // 2`. This formula helps us find pairs among other different elements. Then, we multiply this by the count of `x` to get the total triplets.
+This solution helps us find the product of all elements except the one at the current index. It does this without using division. This is good for cases where we can’t or don’t want to use division.
 
-This method is quick. It works in `O(n)` time for counting and `O(u)` for going through unique elements. Here, `u` is the number of unique numbers in the array.
+We can use this method in many situations. It is like other problems with arrays. For example, problems like [Array Rotate](https://bestonlinetutorial.com/array/array-rotate-array-medium.html) or [Maximum Subarray](https://bestonlinetutorial.com/array/array-maximum-subarray-easy.html) need good array processing.
 
-For more problems and solutions like this, we can check out [Array Two Sum - Easy](https://bestonlinetutorial.com/array/array-two-sum-easy.html) or [Array Contains Duplicate - Easy](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html).
+## Java Implementation of Product of Array Except Self
 
-## Java Implementation for Number of Unequal Triplets in Array
+We will show how to implement the "Product of Array Except Self" in Java. We will create a function that finds the product of all elements in an array except the one at each index. This solution does not use division. It works in linear time and has O(1) space complexity, not counting the output array.
 
-We want to count the number of unequal triplets in an array using a simple Java solution. Our main goal is to find triplets (i, j, k) where the values at these positions are different. Here is how we can do it:
+Here is our step-by-step approach:
 
-### Java Code
+1. First, we create an output array to store the result.
+2. Then, we go through the input array from left to right. We fill the output array with the products of all elements to the left of each index.
+3. Next, we go through the input array from right to left. We multiply the products in the output array by the products of all elements to the right of each index.
+
+### Java Code Example
 
 ```java
-import java.util.HashMap;
-
-public class UnequalTriplets {
-    public static int countUnequalTriplets(int[] nums) {
-        HashMap<Integer, Integer> frequency = new HashMap<>();
-        for (int num : nums) {
-            frequency.put(num, frequency.getOrDefault(num, 0) + 1);
-        }
-
-        int totalTriplets = 0;
+public class ProductOfArrayExceptSelf {
+    public static int[] productExceptSelf(int[] nums) {
         int n = nums.length;
-
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
-                for (int k = 0; k < n; k++) {
-                    if (i != j && j != k && i != k) {
-                        if (nums[i] != nums[j] && nums[j] != nums[k] && nums[i] != nums[k]) {
-                            totalTriplets++;
-                        }
-                    }
-                }
-            }
+        int[] output = new int[n];
+        
+        // Step 1: Calculate products of elements to the left of each index
+        output[0] = 1; // First element has no left products
+        for (int i = 1; i < n; i++) {
+            output[i] = output[i - 1] * nums[i - 1];
         }
-
-        return totalTriplets;
+        
+        // Step 2: Calculate products of elements to the right of each index
+        int rightProduct = 1; // Start with no right products
+        for (int i = n - 1; i >= 0; i--) {
+            output[i] *= rightProduct; // Multiply with the right product
+            rightProduct *= nums[i]; // Update the right product
+        }
+        
+        return output;
     }
-
+    
     public static void main(String[] args) {
         int[] nums = {1, 2, 3, 4};
-        int result = countUnequalTriplets(nums);
-        System.out.println("Number of unequal triplets: " + result);
+        int[] result = productExceptSelf(nums);
+        System.out.print("Product of Array Except Self: ");
+        for (int value : result) {
+            System.out.print(value + " ");
+        }
     }
 }
+```
+
+### Explanation of the Code
+
+- **Initialization**: We make an array called `output` to store the results.
+- **Left Product Calculation**: In the first loop, we fill the `output` array with products of all elements to the left of each index.
+- **Right Product Calculation**: The second loop updates the `output` array by multiplying it with products of all elements to the right of each index.
+
+This method gives us the result without using division. It also keeps good time and space performance.
+
+If we want to learn more about array techniques, we can check articles like [Array Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html) and [Array Rotate Array](https://bestonlinetutorial.com/array/array-rotate-array-medium.html).
+
+## Python Implementation of Product of Array Except Self
+
+To do the "Product of Array Except Self" in Python, we can use a two-step method. This helps us get the right answer without division. We want to make an output array. Each element at index `i` should be the product of all numbers in the input array, except the number at `i`.
+
+### Implementation
+
+Here is a simple Python code for this solution:
+
+```python
+def product_except_self(nums):
+    length = len(nums)
+    output = [1] * length
+
+    # Calculate products of elements to the left of each index
+    left_product = 1
+    for i in range(length):
+        output[i] = left_product
+        left_product *= nums[i]
+
+    # Calculate products of elements to the right of each index
+    right_product = 1
+    for i in range(length - 1, -1, -1):
+        output[i] *= right_product
+        right_product *= nums[i]
+
+    return output
+
+# Example usage
+nums = [1, 2, 3, 4]
+result = product_except_self(nums)
+print(result)  # Output: [24, 12, 8, 6]
 ```
 
 ### Explanation
 
-1. **Frequency Count**: We make a map to count how many times each number appears in the array. This helps us avoid extra checks later.
+- **Left Product Calculation**: We go through the array from left to right. For each index, we keep the product of all the numbers before it.
+  
+- **Right Product Calculation**: We go through the array from right to left. For each index, we multiply the current value in the output array with the product of all elements after it.
 
-2. **Triple Loop**: We use three loops to look at every combination of indices (i, j, k). The checks make sure the indices are different and the values are not the same.
+This method works in O(n) time and uses O(1) space. We do not use any extra arrays to keep temporary results, except for the output array.
 
-3. **Counting Triplets**: Each time we find a valid triplet where all values are different, we add to our count.
+If you want to learn more about similar problems, you can look at the article on [Array Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html). It gives more tips on how to work with arrays.
 
-### Time Complexity
+## C++ Implementation of Product of Array Except Self
 
-- The time complexity of this method is O(n^3) because we have three nested loops. This method is not the best for big arrays but it is easy to understand the basic idea.
+To solve the "Product of Array Except Self" problem in C++, we can make a good solution without using division. The main idea is to use two passes to get the result.
 
-### Optimization Note
-
-For larger data, we can improve our solution by using a better way with frequency maps. This will help us lower the computing time.
-
-### Related Links
-
-For more problems with arrays, check out [Array: Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html) and [Array: Contains Duplicate](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html).
-
-## Python Implementation for Number of Unequal Triplets in Array
-
-We can solve the problem of counting unequal triplets in an array with a simple and clear solution in Python. We want to find triplets `(i, j, k)` where `nums[i]`, `nums[j]`, and `nums[k]` are all different, and `i < j < k`.
-
-Here is a simple Python code that uses a brute force method to count the unequal triplets:
-
-```python
-def countUnequalTriplets(nums):
-    n = len(nums)
-    count = 0
-    for i in range(n):
-        for j in range(i + 1, n):
-            for k in range(j + 1, n):
-                if nums[i] != nums[j] and nums[j] != nums[k] and nums[i] != nums[k]:
-                    count += 1
-    return count
-
-# Example usage
-nums = [1, 2, 3, 4]
-print(countUnequalTriplets(nums))  # Output: 4
-```
-
-For a better solution, we can use a hash map to count how many times each number appears. This makes the code faster. Here is the optimized way:
-
-```python
-from collections import Counter
-
-def countUnequalTripletsOptimized(nums):
-    count_map = Counter(nums)
-    total_triplets = 0
-    total_pairs = 0
-    total_numbers = len(nums)
-    
-    for value in count_map.values():
-        total_numbers -= value
-        total_triplets += total_pairs * value
-        total_pairs += value * (total_numbers)
-        
-    return total_triplets
-
-# Example usage
-nums = [1, 2, 3, 4]
-print(countUnequalTripletsOptimized(nums))  # Output: 4
-```
-
-### Explanation of the Optimized Approach:
-- **Counter**: We use `Counter` from the `collections` library to count how many times each number appears in the array.
-- **Triplet Counting**: As we look at each unique number, we change the total counts of pairs and remaining numbers to find how many valid triplets we can make.
-
-This method counts the number of unequal triplets in an array. We use math and hash maps, which helps the performance a lot compared to the brute force method.
-
-## C++ Implementation for Number of Unequal Triplets in Array
-
-We can find the number of unequal triplets in an array using a simple method in C++. This algorithm counts all unique triplet combinations `(i, j, k)` where `arr[i]`, `arr[j]`, and `arr[k]` are different and `i < j < k`.
-
-Here is the C++ code for this problem:
+Here is the code:
 
 ```cpp
-#include <iostream>
 #include <vector>
-#include <unordered_map>
 using namespace std;
 
-int countUnequalTriplets(vector<int>& arr) {
-    unordered_map<int, int> freq;
-    int n = arr.size();
-    int totalTriplets = 0;
+vector<int> productExceptSelf(vector<int>& nums) {
+    int n = nums.size();
+    vector<int> result(n, 1);
 
-    // Count how many times each number appears
-    for (int num : arr) {
-        freq[num]++;
+    // Calculate prefix products
+    for (int i = 1; i < n; i++) {
+        result[i] = result[i - 1] * nums[i - 1];
     }
 
-    // Total number of triplets is nC3 = n*(n-1)*(n-2)/6
-    int totalCombinations = n * (n - 1) * (n - 2) / 6;
-
-    // Subtract the combinations where at least two numbers are the same
-    for (auto& entry : freq) {
-        int count = entry.second;
-        if (count >= 2) {
-            totalCombinations -= (count * (count - 1) * (n - count)) / 2; // Choosing 2 from count
-        }
-        if (count >= 3) {
-            totalCombinations -= (count * (count - 1) * (count - 2)) / 6; // Choosing 3 from count
-        }
+    // Calculate suffix products and multiply with prefix products
+    int suffix = 1;
+    for (int i = n - 1; i >= 0; i--) {
+        result[i] *= suffix;
+        suffix *= nums[i];
     }
 
-    return totalCombinations;
-}
-
-int main() {
-    vector<int> arr = {1, 2, 3, 4, 5};
-    int result = countUnequalTriplets(arr);
-    cout << "Number of unequal triplets: " << result << endl;
-    return 0;
+    return result;
 }
 ```
 
 ### Explanation of the Code:
 
-We use an `unordered_map` to count how many times each number appears in the input array. We calculate the total number of triplet combinations using the formula `nC3`. Next, we subtract the combinations where at least two numbers are the same. We do this using simple math based on the frequency counts. Finally, the function gives us the count of unequal triplets.
+1. **Initialization**: We create a result vector and set it to 1.
+2. **First Pass (Prefix Products)**:
+   - We go through the array and save the product of all previous elements in the result array.
+3. **Second Pass (Suffix Products)**:
+   - We start from the end of the array. We keep a running product of elements after the current index and multiply it with the value in the result array.
 
-This code works well and follows the problem rules. We make sure to count only the unequal triplets in the array. For more problems related to arrays, we can check articles like [Array Two Sum](https://bestonlinetutorial.com/array/array-two-sum-easy.html) or [Array Contains Duplicate](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html).
+### Example Usage:
 
-## Analyzing Time Complexity for Number of Unequal Triplets in Array
+```cpp
+#include <iostream>
 
-We will look at the time complexity of finding the number of unequal triplets in an array. We have two main methods: brute force and optimized with hash maps.
-
-### Brute Force Approach
-In the brute force solution, we create all possible triplets in the array. Then we check if they are unequal. If we have an array of size `n`, we can choose 3 elements from it in \( C(n, 3) \) ways. This is calculated as \( \frac{n(n-1)(n-2)}{6} \). The time complexity for this method is:
-
-- **Time Complexity**: \( O(n^3) \)
-
-### Optimized Approach Using Hash Maps
-In the optimized method, we use a hash map. This helps us count how many times each number appears in the array. With this information, we can find the number of unequal triplets without checking each triplet one by one.
-
-1. Count each unique number in the array.
-2. Find the total number of triplets using the counts of unique numbers.
-3. For each unique number, we find how many triplets can include that number with two other different numbers.
-
-The main steps are:
-- Count the frequency of each number: \( O(n) \)
-- Go through unique numbers and find triplet combinations: \( O(u^2) \). Here `u` is the number of unique elements (at most `n`).
-
-So, the total time complexity for the optimized method is:
-
-- **Time Complexity**: \( O(n + u^2) \)
-
-Since \( u \) can be at most \( n \), the worst case stays at \( O(n^2) \).
-
-### Space Complexity
-- **Brute Force**: \( O(1) \) (just a few variables for counting).
-- **Optimized Approach**: \( O(u) \) for keeping the count of each unique number in a hash map.
-
-In real situations, the optimized method is much better than the brute force way. This is especially true for larger arrays.
-
-## Testing and Validating Solutions for Number of Unequal Triplets in Array
-
-To make sure our solutions for counting unequal triplets in an array are correct, we need to test them properly. Here are some important points to think about when we test and validate our solutions.
-
-### Test Cases
-
-1. **Basic Test Cases**:
-   - Input: `[1, 2, 3]` 
-     - Output: `1` (Triplet: (1, 2, 3))
-   - Input: `[1, 1, 2]` 
-     - Output: `0` (No unique triplets)
-   - Input: `[1, 2, 2, 3]` 
-     - Output: `3` (Triplets: (1, 2, 3), (2, 1, 3), (2, 2, 3))
-
-2. **Edge Cases**:
-   - Input: `[]` 
-     - Output: `0` (No elements)
-   - Input: `[1]` 
-     - Output: `0` (Not enough elements)
-   - Input: `[1, 2]` 
-     - Output: `0` (Not enough elements)
-
-3. **Large Input**:
-   - Input: `[1, 2, 3, ..., n]` (where n is big)
-   - Check if the output matches the expected number of unique triplets.
-
-4. **Performance Testing**:
-   - Use arrays with repeated numbers and different sizes to check if the solution works in time limits. For example, an array with 10,000 elements where all are unique or where many are the same.
-
-### Validation Methodology
-
-- **Unit Testing**: We write unit tests for each function in the solution to check if they work correctly by themselves.
-- **Integration Testing**: We test the whole solution with different inputs to see if all parts work together well.
-- **Comparative Analysis**: We run both brute force and optimized methods on the same input and compare results. This helps us check if the optimized method is correct.
-
-### Example Code for Testing in Python
-
-```python
-def count_unequal_triplets(arr):
-    count = 0
-    n = len(arr)
-    for i in range(n):
-        for j in range(i + 1, n):
-            for k in range(j + 1, n):
-                if arr[i] != arr[j] and arr[j] != arr[k] and arr[i] != arr[k]:
-                    count += 1
-    return count
-
-# Test cases
-assert count_unequal_triplets([1, 2, 3]) == 1
-assert count_unequal_triplets([1, 1, 2]) == 0
-assert count_unequal_triplets([1, 2, 2, 3]) == 3
-assert count_unequal_triplets([]) == 0
-assert count_unequal_triplets([1]) == 0
-assert count_unequal_triplets([1, 2]) == 0
-
-print("All tests passed!")
+int main() {
+    vector<int> nums = {1, 2, 3, 4};
+    vector<int> result = productExceptSelf(nums);
+    
+    for (int r : result) {
+        cout << r << " ";
+    }
+    return 0;
+}
 ```
 
-### Testing Frameworks
+### Output:
+For the input `{1, 2, 3, 4}`, the output will be:
+```
+24 12 8 6
+```
 
-We can use testing frameworks like `unittest` in Python or `JUnit` in Java. This helps us test automatically and make sure we check all edge cases and possible problems.
+This solution runs in O(n) time and uses O(1) extra space, not counting the output array. The code solves the "Product of Array Except Self" problem in C++. If we want to read more about similar array problems, we can check [Array Rotate Array - Medium](https://bestonlinetutorial.com/array/array-rotate-array-medium.html).
 
-By using these testing and validation methods, we can make sure our solutions for counting unequal triplets in an array are right and work well.
+## Space Complexity Analysis of the Solution
+
+The space complexity of the "Product of Array Except Self" problem can change based on how we solve it.
+
+1. **Optimal Solution Without Division**:
+   - The best solution needs O(1) extra space if we think about the output array as part of the input. But if we cannot change the input array, we must think about the space used for the output array. In this case, it would be O(n). Here, n is the length of the input array.
+
+2. **Intermediate Arrays**:
+   - If we use extra arrays to keep intermediate results, like left products and right products, the space complexity becomes O(n). This is because we have two extra arrays.
+
+### Space Complexity Breakdown:
+- Using **output array** only: O(n) to store results.
+- Using **two extra arrays** (left and right products): O(n) for both arrays, so total is O(n).
+- Using **in-place modification** with little extra space: O(1) if we do not count the output array.
+
+### Example:
+For an input array `nums = [1, 2, 3, 4]`:
+- The output array would be `[24, 12, 8, 6]` if we store results. This needs O(n) space.
+
+```python
+def productExceptSelf(nums):
+    n = len(nums)
+    output = [1] * n
+    left_product = 1
+    for i in range(n):
+        output[i] = left_product
+        left_product *= nums[i]
+    
+    right_product = 1
+    for i in range(n - 1, -1, -1):
+        output[i] *= right_product
+        right_product *= nums[i]
+    
+    return output
+```
+
+In this example, the output array needs O(n) space. The extra variables `left_product` and `right_product` only need O(1).
+
+In summary, the space complexity analysis of the "Product of Array Except Self" solution depends on if we see the output array as part of the input and if we use extra storage. The best way for space is to calculate the products in-place. This gives O(1) extra space complexity when we include the output array in the input.
+
+## Time Complexity Analysis of the Solution
+
+We can look at the time complexity of the "Product of Array Except Self" problem by looking at the steps in the algorithm we use to find the output array.
+
+1. **Initial Pass to Calculate Prefix Products**:
+   - First, we go through the array one time to find the prefix products. This takes O(n) time. Here, n is the length of the input array.
+
+2. **Second Pass to Calculate Suffix Products**:
+   - Next, we go through the array again to find the suffix products. At the same time, we calculate the final product for each index. This also takes O(n) time.
+
+So, since we do both passes one after the other, the total time complexity is:
+
+- **O(n)**
+
+We get this good time complexity without using division. This makes our method work well even if the array has zeros. The algorithm quickly finds the product of all elements except itself for each index in linear time.
+
+## Common Edge Cases and Their Handling
+
+When we implement the "Product of Array Except Self" algorithm, we need to think about some edge cases. These cases can change if our solution is correct or not. Here are some common edge cases and how we can handle them:
+
+1. **Single Element Array**: 
+   - Input: `[1]`
+   - Output: `[1]` (The product of an empty array is usually 1).
+   - Handling: We return an array of the same size filled with 1.
+
+2. **Array with Zeros**:
+   - Input: `[0, 1, 2, 3]`
+   - Output: `[6, 0, 0, 0]` (Only the product of non-zero numbers).
+   - Handling: We count how many zeros are in the input array. If we have more than one zero, we give an array of zeros. If we have one zero, all places except the zero's position should be zero. The zero's position will have the product of all non-zero numbers.
+
+3. **Array with All Zeros**:
+   - Input: `[0, 0, 0]`
+   - Output: `[0, 0, 0]`.
+   - Handling: Like the last case, we return an array of zeros.
+
+4. **Large Numbers**:
+   - Input: `[100000, 200000, 300000]`
+   - Output: `[60000000000, 30000000000, 20000000000]` (We need to be careful of large integer overflow).
+   - Handling: We use data types that can handle large numbers like `long` in Java or `int` in Python which handles large integers automatically.
+
+5. **Negative Numbers**:
+   - Input: `[-1, -2, -3, -4]`
+   - Output: `[24, 12, 8, 6]` (Negative numbers give a positive product).
+   - Handling: Our algorithm should work the same no matter the sign of the numbers.
+
+6. **Mixed Positive and Negative Numbers**:
+   - Input: `[1, -2, 3, -4]`
+   - Output: `[-24, 12, -8, 6]`.
+   - Handling: We make sure the algorithm calculates products correctly with mixed signs.
+
+7. **Performance Considerations**:
+   - Inputs with a very big size (for example, `Array length = 10^5`).
+   - Handling: Our solution must be O(n) in time and O(1) in space (not counting the output array) to work well with large inputs.
+
+By taking care of these edge cases, we make the "Product of Array Except Self" implementation much stronger. A good function should handle these cases without issues.
+
+For more insights on problems with arrays, you can check the [Array Rotate Array - Medium](https://bestonlinetutorial.com/array/array-rotate-array-medium.html) article.
 
 ## Frequently Asked Questions
 
-### 1. What is the problem of counting unequal triplets in an array?
-The problem of counting unequal triplets in an array is to find all unique groups of three different elements. Here, no two elements can be the same. This is important for many uses, like data analysis and combinatorial algorithms. When we understand this problem, we can better handle similar tasks in making algorithms.
+### 1. What is the "Product of Array Except Self" problem in arrays?
+The "Product of Array Except Self" problem asks us to create an output array. Each element at index `i` in this array is the product of all numbers in the input array except `nums[i]`. We often see this problem in coding interviews. It shows the need for good solutions that do not use division.
 
-### 2. How can I solve the unequal triplets problem using a brute force approach?
-To solve the unequal triplets problem using a brute force method, we use three loops. Each loop goes through the array and checks every possible triplet. If a triplet has three different elements, we add one to a counter. This method is simple but not very fast for big arrays because it has O(n^3) time complexity. For better ways to solve it, we can look at the optimized methods in this article.
+### 2. How can I solve the "Product of Array Except Self" problem without using division?
+To solve the "Product of Array Except Self" problem without division, we can do two passes over the input array. In the first pass, we keep a running product of all elements to the left of each index. In the second pass, we multiply this product with another running product of elements to the right. This way we get an output array with the products we want.
 
-### 3. What are the benefits of using hash maps for counting triplets in an array?
-Using hash maps to count unequal triplets can make things much faster than the brute force way. By saving how many times each element appears, we can quickly find unique triplet combinations. This means we do not need to check every group. It lowers the time complexity to O(n^2). This makes it a better choice for larger data sets.
+### 3. What is the time complexity of the optimal solution for the "Product of Array Except Self"?
+The best solution for the "Product of Array Except Self" problem runs in O(n) time. Here, n is the length of the input array. We do this by making two passes through the array. One pass calculates left products and the other for right products. This makes our solution fast and able to handle large inputs.
 
-### 4. Can you provide an example of how to implement the unequal triplets algorithm in Python?
-Sure! Here is a simple Python code for the unequal triplets problem:
+### 4. Can you explain the space complexity of the "Product of Array Except Self" solution?
+The space complexity for the best solution to the "Product of Array Except Self" problem is O(1), not counting the output array. We only need a small amount of extra space for variables that hold the running products. This makes our algorithm space-efficient.
 
-```python
-def countUnequalTriplets(arr):
-    count = 0
-    n = len(arr)
-    for i in range(n):
-        for j in range(i + 1, n):
-            for k in range(j + 1, n):
-                if arr[i] != arr[j] and arr[j] != arr[k] and arr[i] != arr[k]:
-                    count += 1
-    return count
-```
-This function goes through the array and counts unique triplet combinations in an easy way.
+### 5. What are some common edge cases to consider when implementing the "Product of Array Except Self"?
+When we implement the "Product of Array Except Self," we should think about edge cases. This includes arrays with zeros, negative numbers, or arrays with just one element. For example, if the input array has one zero, the output should show that all other products are zero. If there are many zeros, the output will be all zeros too.
 
-### 5. How do I analyze the time complexity of the unequal triplets problem?
-To analyze the time complexity of the unequal triplets problem, we look at the method used. The brute force way has a time complexity of O(n^3) because of three loops. But if we use an optimized way with hash maps, we can bring it down to O(n^2). This is because it counts frequencies to reduce how many comparisons we need. Knowing these complexities helps us pick the right algorithm for our needs.
-
-For more reading on similar array problems, check out articles like [Array: Two Sum - Easy](https://bestonlinetutorial.com/array/array-two-sum-easy.html) and [Array: Contains Duplicate - Easy](https://bestonlinetutorial.com/array/array-contains-duplicate-easy.html) to improve our algorithm skills.
+For more challenges about arrays, check out the [Array: Two Sum - Easy](https://bestonlinetutorial.com/array/array-two-sum-easy.html) or look at the [Array: Best Time to Buy and Sell Stock - Easy](https://bestonlinetutorial.com/array/array-best-time-to-buy-and-sell-stock-easy.html) for more practice.
