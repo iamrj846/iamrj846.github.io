@@ -1,0 +1,430 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>How to atomically delete keys matching a pattern using Redis - redis</title>
+            <meta name="description" content="Learn how to atomically delete keys matching a pattern in Redis with our step-by-step guide. Optimize your Redis management!">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How to atomically delete keys matching a pattern using Redis - redis</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To delete keys that match a pattern in Redis, we can use Lua
+scripting. This helps us run many commands as one single action. This is
+really helpful when we want to make sure that no other actions happen
+while we delete the keys. By using the <code>SCAN</code> command along
+with a Lua script, we can find and remove keys that fit our pattern.
+This way, we avoid any problems with inconsistent states.</p>
+<p>In this article, we will look at different ways to delete keys in
+Redis safely. We will talk about using Lua scripting for better control.
+We will also discuss Redis keyspace notifications for automatic deletion
+triggers. We will cover using transactions for safe actions and using
+the <code>SCAN</code> command to find keys to delete. Plus, we will
+explain how to create a custom Redis client for atomic deletions. We
+will answer common questions about these methods.</p>
+<ul>
+<li>How can we delete keys matching a pattern using Redis?</li>
+<li>Using Lua Scripting to Delete Keys in Redis</li>
+<li>Using Redis Keyspace Notifications for Pattern-Based Deletion</li>
+<li>Using Redis Transactions for Safe Key Deletion</li>
+<li>Using Redis Scan to Find Keys for Deletion</li>
+<li>Making a Custom Redis Client for Deletion</li>
+<li>Common Questions</li>
+</ul>
+<p>For more information about Redis, we can check out related articles
+like <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">What is
+Redis?</a> and <a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redis-transactions.html">How
+do I use Redis Transactions?</a>.</p>
+<h2 id="using-lua-scripting-to-atomically-delete-keys-in-redis">Using
+Lua Scripting to Atomically Delete Keys in Redis</h2>
+<p>In Redis, we can use Lua scripting for atomic operations. This
+includes deleting keys that match a certain pattern. With Lua, we make
+sure our actions happen without other clients getting in the way. This
+makes it a safe way to delete keys.</p>
+<p>To delete keys that match a pattern in an atomic way, we can use the
+<code>redis.call</code> function. Here is a simple Lua script that shows
+how to delete keys matching a pattern:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode lua"><code class="sourceCode lua"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">local</span> <span class="va">keys</span> <span class="op">=</span> <span class="va">redis</span><span class="op">.</span>call<span class="op">(</span><span class="st">&#39;KEYS&#39;</span><span class="op">,</span> <span class="cn">ARGV</span><span class="op">[</span><span class="dv">1</span><span class="op">])</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> <span class="va">i</span><span class="op">=</span><span class="dv">1</span><span class="op">,#</span><span class="va">keys</span> <span class="cf">do</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">redis</span><span class="op">.</span>call<span class="op">(</span><span class="st">&#39;DEL&#39;</span><span class="op">,</span> <span class="va">keys</span><span class="op">[</span><span class="va">i</span><span class="op">])</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> <span class="op">#</span><span class="va">keys</span></span></code></pre></div>
+<h3 id="explanation">Explanation:</h3>
+<ul>
+<li><code>ARGV[1]</code>: Here we pass the pattern like
+<code>user:*</code> when we run the script.</li>
+<li><code>redis.call('KEYS', ARGV[1])</code>: This command gets all keys
+that match the pattern.</li>
+<li>The <code>for</code> loop goes through the keys we found and deletes
+each one with <code>redis.call('DEL', keys[i])</code>.</li>
+<li>The script gives back the number of keys that were deleted.</li>
+</ul>
+<h3 id="execution-example">Execution Example:</h3>
+<p>To run the Lua script in Redis, we can use this command in the Redis
+CLI:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">EVAL</span> <span class="st">&quot;local keys = redis.call(&#39;KEYS&#39;, ARGV[1]); for i=1,#keys do redis.call(&#39;DEL&#39;, keys[i]) end; return #keys;&quot;</span> 0 <span class="st">&quot;user:*&quot;</span></span></code></pre></div>
+<h3 id="key-considerations">Key Considerations:</h3>
+<ul>
+<li><strong>Performance</strong>: The <code>KEYS</code> command is
+helpful but can be slow with big datasets. For production, we should
+think about using the <code>SCAN</code> command for better speed.</li>
+<li><strong>Atomicity</strong>: The script runs as one atomic operation.
+This means no other actions can mess with it while it runs.</li>
+<li><strong>Limits</strong>: Lua scripts in Redis have a time limit. If
+we delete many keys, we need to keep the script running time within
+those limits.</li>
+</ul>
+<p>Using Lua scripting for atomic key deletion in Redis gives us a
+strong and efficient way to manage keys and keep data safe. For more
+reading and examples, we can look into <a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redis-lua-scripting.html">how
+to use Redis Lua scripting</a>.</p>
+<h2
+id="leveraging-redis-keyspace-notifications-for-pattern-based-deletion">Leveraging
+Redis Keyspace Notifications for Pattern-Based Deletion</h2>
+<p>We can use Redis Keyspace Notifications to listen for changes in the
+keyspace. This includes when keys are deleted. By using these
+notifications, we can create a way to delete keys that match a certain
+pattern all at once.</p>
+<h3 id="enabling-keyspace-notifications">Enabling Keyspace
+Notifications</h3>
+<p>First, we need to make sure that Keyspace Notifications are switched
+on in our Redis settings. We can do this by setting the
+<code>notify-keyspace-events</code> option:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Enable notifications for keyspace events</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">CONFIG</span> SET notify-keyspace-events Ex</span></code></pre></div>
+<p>The <code>Ex</code> option helps us track when keys expire. This is
+important for knowing when keys are deleted.</p>
+<h3 id="subscribing-to-keyspace-notifications">Subscribing to Keyspace
+Notifications</h3>
+<p>We can listen to these notifications using the Redis Pub/Sub feature.
+Here is an example that uses Python with the <code>redis-py</code>
+library:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> keyspace_notification_handler(message):</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Key </span><span class="sc">{</span>message[<span class="st">&#39;data&#39;</span>]<span class="sc">}</span><span class="ss"> was deleted.&quot;</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> redis.StrictRedis(host<span class="op">=</span><span class="st">&#39;localhost&#39;</span>, port<span class="op">=</span><span class="dv">6379</span>, db<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>p <span class="op">=</span> r.pubsub()</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Subscribe to keyspace notifications</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>p.psubscribe(<span class="st">&#39;__keyevent@0__:del&#39;</span>)  <span class="co"># Subscribe to delete events for database 0</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> message <span class="kw">in</span> p.listen():</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> message[<span class="st">&#39;type&#39;</span>] <span class="op">==</span> <span class="st">&#39;pmessage&#39;</span>:</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>        keyspace_notification_handler(message)</span></code></pre></div>
+<h3 id="deleting-keys-based-on-a-pattern">Deleting Keys Based on a
+Pattern</h3>
+<p>To delete keys that fit a certain pattern, we can use the
+<code>SCAN</code> command to find the keys and then delete them. Here is
+how we can do this:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> delete_keys_matching_pattern(pattern):</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    cursor <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        cursor, keys <span class="op">=</span> r.scan(cursor, match<span class="op">=</span>pattern)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> keys:</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>            r.delete(<span class="op">*</span>keys)  <span class="co"># Deletes all keys found in this iteration</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> cursor <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Example usage: Delete all keys matching the pattern &#39;temp:*&#39;</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>delete_keys_matching_pattern(<span class="st">&#39;temp:*&#39;</span>)</span></code></pre></div>
+<p>This script will look through the keys in the database. It will find
+the ones that fit the pattern we want and delete them all at once.</p>
+<h3 id="considerations">Considerations</h3>
+<ul>
+<li><strong>Performance</strong>: We should be careful with how many
+keys we have when using <code>SCAN</code> and <code>DELETE</code>. This
+is especially important in real applications.</li>
+<li><strong>Concurrency</strong>: We must think about race conditions.
+It can happen if other processes delete keys at the same time.</li>
+<li><strong>Redis Version</strong>: We need to make sure our Redis
+version works with Keyspace Notifications.</li>
+</ul>
+<p>By using Redis Keyspace Notifications in the right way, we can
+efficiently delete keys that match specific patterns. This will help us
+manage our application data better.</p>
+<h2 id="using-redis-transactions-for-safe-key-deletion">Using Redis
+Transactions for Safe Key Deletion</h2>
+<p>We can use Redis transactions to run a group of commands as one
+single action. This is very helpful when we want to delete keys that
+match a certain pattern. It makes sure that no other actions mess up our
+process.</p>
+<h3 id="using-multi-and-exec">Using MULTI and EXEC</h3>
+<p>To delete keys safely in Redis, we can use the <code>MULTI</code> and
+<code>EXEC</code> commands. Here is how we can do it:</p>
+<ol type="1">
+<li><strong>Start a Transaction</strong>: We use <code>MULTI</code> to
+begin a transaction.</li>
+<li><strong>Add Commands</strong>: We add the <code>DEL</code> command
+to mark the keys we want to delete.</li>
+<li><strong>Run it</strong>: We use <code>EXEC</code> to run all the
+commands we added.</li>
+</ol>
+<h3 id="example-code">Example Code</h3>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Start transaction</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">MULTI</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Queue delete commands for keys matching a pattern</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">DEL</span> key1</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="ex">DEL</span> key2</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="ex">DEL</span> key3</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Execute the transaction</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="ex">EXEC</span></span></code></pre></div>
+<h3 id="important-points">Important Points</h3>
+<ul>
+<li><strong>Atomicity</strong>: All commands in the <code>MULTI</code>
+block run at once. If there is an error, none of the commands
+happen.</li>
+<li><strong>Error Checking</strong>: After we run the transaction, we
+can check for any errors to fix problems.</li>
+<li><strong>Performance</strong>: Using transactions can be faster than
+running many <code>DEL</code> commands one by one, especially when we
+have a lot of data.</li>
+</ul>
+<h3 id="example-with-lua-scripting">Example with Lua Scripting</h3>
+<p>Sometimes we need to check some conditions before deleting keys. In
+this case, we can use Redis transactions with Lua scripting. This way,
+we can run some checks and delete keys safely.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode lua"><code class="sourceCode lua"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">-- Lua script to delete keys conditionally</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">local</span> <span class="va">keys</span> <span class="op">=</span> <span class="va">redis</span><span class="op">.</span>call<span class="op">(</span><span class="st">&#39;keys&#39;</span><span class="op">,</span> <span class="cn">ARGV</span><span class="op">[</span><span class="dv">1</span><span class="op">])</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> <span class="va">i</span><span class="op">=</span><span class="dv">1</span><span class="op">,#</span><span class="va">keys</span> <span class="cf">do</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="va">redis</span><span class="op">.</span>call<span class="op">(</span><span class="st">&#39;del&#39;</span><span class="op">,</span> <span class="va">keys</span><span class="op">[</span><span class="va">i</span><span class="op">])</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="cf">return</span> <span class="va">keys</span></span></code></pre></div>
+<h3 id="running-the-lua-script">Running the Lua Script</h3>
+<p>We can run the Lua script above with the <code>EVAL</code>
+command:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">EVAL</span> <span class="st">&quot;local keys = redis.call(&#39;keys&#39;, ARGV[1]) for i=1,#keys do redis.call(&#39;del&#39;, keys[i]) end return keys&quot;</span> 0 <span class="st">&quot;pattern:*&quot;</span></span></code></pre></div>
+<p>This script gets all keys that match our pattern and deletes them in
+one go.</p>
+<h3 id="conclusion">Conclusion</h3>
+<p>We can use Redis transactions to delete keys safely. By using
+<code>MULTI</code>, <code>EXEC</code>, and Lua scripts, we can make sure
+our delete operations are safe and fast.</p>
+<p>For more information on Redis transactions, you can check <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-transactions.html">what
+are Redis transactions</a> and <a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redis-transactions.html">how
+do I use Redis transactions</a>.</p>
+<h2 id="using-redis-scan-to-identify-keys-for-deletion">Using Redis Scan
+to Identify Keys for Deletion</h2>
+<p>The <code>SCAN</code> command in Redis helps us find keys that match
+a pattern. It does this without blocking the server. This is great for
+big datasets. Unlike <code>KEYS</code>, which can slow things down and
+block the server, <code>SCAN</code> goes through the keys step by
+step.</p>
+<h3 id="basic-usage-of-scan">Basic Usage of SCAN</h3>
+<p>The <code>SCAN</code> command looks like this:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SCAN</span> cursor [MATCH pattern] [COUNT count]</span></code></pre></div>
+<ul>
+<li><strong>cursor</strong>: Where we start in the keyspace.</li>
+<li><strong>MATCH pattern</strong>: A way to filter the keys (for
+example, <code>user:*</code>).</li>
+<li><strong>COUNT count</strong>: A suggestion to Redis about how many
+keys we want back.</li>
+</ul>
+<h3 id="example-of-using-scan">Example of Using SCAN</h3>
+<p>If we want keys that match <code>user:*</code>, we can run this
+command:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">127.0.0.1:6379</span><span class="op">&gt;</span> SCAN 0 MATCH user:<span class="pp">*</span> COUNT 100</span></code></pre></div>
+<p>This command gives us a cursor and a list of matching keys. We keep
+scanning with the cursor until it shows <code>0</code>. This means we
+reached the end of the keys.</p>
+<h3 id="python-example-with-redis-py">Python Example with Redis-py</h3>
+<p>Here is a simple Python example using the <code>redis-py</code>
+library to scan keys and get them ready for deletion:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> scan_and_delete_keys(pattern):</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    r <span class="op">=</span> redis.Redis(host<span class="op">=</span><span class="st">&#39;localhost&#39;</span>, port<span class="op">=</span><span class="dv">6379</span>, db<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    cursor <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>        cursor, keys <span class="op">=</span> r.scan(cursor, match<span class="op">=</span>pattern, count<span class="op">=</span><span class="dv">100</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> keys:</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>            r.delete(<span class="op">*</span>keys)  <span class="co"># Delete the matched keys</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> cursor <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>scan_and_delete_keys(<span class="st">&#39;user:*&#39;</span>)</span></code></pre></div>
+<p>This script connects to Redis and scans for keys that match
+<code>user:*</code>. It deletes them in groups.</p>
+<h3 id="key-considerations-1">Key Considerations</h3>
+<ul>
+<li><strong>Non-blocking</strong>: <code>SCAN</code> does not block.
+Other operations can still happen while we scan.</li>
+<li><strong>Incomplete results</strong>: Sometimes, <code>SCAN</code>
+may show keys that get added or removed while scanning. We need to
+handle this in our code.</li>
+<li><strong>Performance</strong>: We can change the <code>COUNT</code>
+value to find a good balance between speed and resource use.</li>
+</ul>
+<p>Using <code>SCAN</code> helps us delete keys that match a pattern in
+Redis. It improves speed and lowers the chance of blocking the server.
+For more details on how to use Redis commands, we can check <a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redis-with-python.html">this
+article</a>.</p>
+<h2
+id="implementing-a-custom-redis-client-for-atomic-deletion">Implementing
+a Custom Redis Client for Atomic Deletion</h2>
+<p>We can make a custom Redis client for atomic deletion of keys that
+match a pattern. We will use Python and the <code>redis-py</code>
+library. This way, we can put the logic for scanning and deleting keys
+into one simple function.</p>
+<p>Here is how we do it:</p>
+<ol type="1">
+<li><p><strong>Install the Redis library</strong>:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install redis</span></code></pre></div></li>
+<li><p><strong>Create a custom Redis client for atomic
+deletion</strong>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> CustomRedisClient:</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, host<span class="op">=</span><span class="st">&#39;localhost&#39;</span>, port<span class="op">=</span><span class="dv">6379</span>, db<span class="op">=</span><span class="dv">0</span>):</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.client <span class="op">=</span> redis.StrictRedis(host<span class="op">=</span>host, port<span class="op">=</span>port, db<span class="op">=</span>db)</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> atomic_delete(<span class="va">self</span>, pattern):</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Start a pipeline for atomic operations</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        pipeline <span class="op">=</span> <span class="va">self</span>.client.pipeline()</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        keys <span class="op">=</span> <span class="va">self</span>.client.scan_iter(match<span class="op">=</span>pattern)</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Queue deletion commands</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> key <span class="kw">in</span> keys:</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>            pipeline.delete(key)</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Execute all deletion commands in one atomic operation</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>        pipeline.execute()</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Usage</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">&quot;__main__&quot;</span>:</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    redis_client <span class="op">=</span> CustomRedisClient()</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    redis_client.atomic_delete(<span class="st">&quot;temp:*&quot;</span>)  <span class="co"># Deletes all keys that match the pattern</span></span></code></pre></div></li>
+</ol>
+<p>This custom client connects to a Redis instance. It also has an
+<code>atomic_delete</code> method. This method uses
+<code>scan_iter</code> to find keys that match the pattern we give. It
+puts the deletion commands into a pipeline. This way, all deletions
+happen at the same time.</p>
+<h3 id="key-features">Key Features:</h3>
+<ul>
+<li><strong>Connection Management</strong>: We can easily set the host,
+port, and database.</li>
+<li><strong>Pattern Matching</strong>: It supports matching patterns for
+flexible key choice.</li>
+<li><strong>Atomic Operations</strong>: It uses Redis pipelines to make
+sure deletions are atomic.</li>
+</ul>
+<p>This way gives us a simple but good solution for atomically deleting
+keys that match a pattern in Redis. This helps improve the performance
+and consistency of our Redis tasks. For more details on using Redis with
+Python, we can read <a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redis-with-python.html">this
+guide</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="how-can-we-delete-keys-that-match-a-pattern-in-redis-at-once">1.
+How can we delete keys that match a pattern in Redis at once?</h3>
+<p>To delete keys that match a pattern in Redis at once, we can use Lua
+scripting. Redis lets us run Lua scripts. These scripts can do many
+tasks together in one go. By using the <code>EVAL</code> command, we can
+write a script to look for keys that match our pattern and delete them
+all together. This way, no other actions get in the way.</p>
+<h3
+id="what-are-redis-keyspace-notifications-and-how-can-they-help-us-delete-keys">2.
+What are Redis Keyspace Notifications and how can they help us delete
+keys?</h3>
+<p>Redis Keyspace Notifications help us listen to events in the Redis
+database. This includes when keys get deleted. By turning on
+notifications for keyspace events, we can watch for changes. Then, we
+can start a deletion process based on certain patterns. This is useful
+for keeping our data correct or for setting up automatic cleanup in our
+app.</p>
+<h3 id="can-we-use-redis-transactions-for-deleting-keys">3. Can we use
+Redis transactions for deleting keys?</h3>
+<p>Yes, we can use Redis transactions to delete keys. This makes sure
+that the actions happen all at once. By using the <code>MULTI</code> and
+<code>EXEC</code> commands, we can list several delete actions for some
+keys and run them together. This means that either all keys get deleted
+or none do. This keeps our data safe from problems.</p>
+<h3 id="how-does-the-redis-scan-command-help-us-find-keys-to-delete">4.
+How does the Redis SCAN command help us find keys to delete?</h3>
+<p>The Redis <code>SCAN</code> command is a good way to go through our
+keys without slowing down the server. When we want to delete keys that
+match a pattern, we can use <code>SCAN</code> to find those keys step by
+step. This helps us avoid issues with performance that can happen with
+the <code>KEYS</code> command. The <code>KEYS</code> command can be slow
+when dealing with large data sets. So, using <code>SCAN</code> makes
+deleting keys safer and better.</p>
+<h3
+id="can-we-make-a-custom-redis-client-for-deleting-keys-atomically">5.
+Can we make a custom Redis client for deleting keys atomically?</h3>
+<p>Yes, we can make a custom Redis client in many programming languages
+for atomic key deletion. A good client can use Lua scripting or Redis
+transactions. This way, we can make sure key deletions happen safely and
+quickly. This custom method lets us adjust the functions to fit our
+app’s needs while keeping performance high.</p>
+<p>For more info on how to work with Redis data types, we can read about
+<a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">Redis
+Data Types</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
