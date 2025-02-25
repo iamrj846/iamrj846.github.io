@@ -1,0 +1,518 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>ServiceStack.Net Redis: Storing Related Objects vs. Related Object Ids - redis</title>
+            <meta name="description" content="Discover the best practices for using ServiceStack.Net with Redis: Storing related objects vs. their IDs for optimal performance.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">ServiceStack.Net Redis: Storing Related Objects vs. Related Object Ids - redis</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>ServiceStack.Net Redis gives us strong tools for managing related
+objects. We can choose to store complete objects or just their IDs. This
+choice affects how quickly we can get data and how well our application
+runs. By knowing the differences between storing related objects and
+their IDs in ServiceStack.Net Redis, we can improve our data management
+and make our applications faster.</p>
+<p>In this article, we will look at the important parts of
+ServiceStack.Net Redis for storing related objects and their IDs. We
+will talk about the good things about each method, how they perform, and
+how to put them into practice. We will also share the best ways to store
+related objects and use their IDs. This will help us handle data well in
+Redis. Here’s what we will talk about:</p>
+<ul>
+<li>ServiceStack.Net Redis: Storing Related Objects or Related Object
+Ids?</li>
+<li>Understanding the Benefits of Storing Related Objects</li>
+<li>Exploring the Advantages of Using Related Object Ids</li>
+<li>Performance Considerations for Storing Related Objects vs Related
+Object Ids</li>
+<li>How to Implement Storing Related Objects</li>
+<li>Best Practices for Storing Related Object Ids</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more info on Redis, we can check articles like <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">What is
+Redis?</a> and <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">What
+are Redis Data Types?</a>.</p>
+<h2
+id="understanding-the-benefits-of-storing-related-objects-in-servicestack.net-redis">Understanding
+the Benefits of Storing Related Objects in ServiceStack.Net Redis</h2>
+<p>Storing related objects in ServiceStack.Net Redis has many benefits.
+These benefits help our application work better and keep our data safe.
+Let’s look at some key points.</p>
+<ul>
+<li><strong>Easier Data Retrieval</strong>: When we store related
+objects together, we can get complex data in one call. This means we do
+not need to make many trips to the database. This is really helpful when
+we want to get parent-child relationships.</li>
+</ul>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> User</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> Id <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Name <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> List<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> OrderIds <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> Order</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> Id <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Product <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<ul>
+<li><strong>Atomic Operations</strong>: Storing related objects lets us
+do atomic operations. This helps keep our data consistent. For example,
+we can save a user and their orders in one go.</li>
+</ul>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> <span class="op">(</span><span class="dt">var</span> redisClient <span class="op">=</span> <span class="kw">new</span> <span class="fu">RedisClient</span><span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">))</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    redisClient<span class="op">.</span><span class="fu">Multi</span><span class="op">();</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    redisClient<span class="op">.</span><span class="fu">StoreAsHash</span><span class="op">(</span><span class="st">&quot;user:1&quot;</span><span class="op">,</span> <span class="kw">new</span> User <span class="op">{</span> Id <span class="op">=</span> <span class="dv">1</span><span class="op">,</span> Name <span class="op">=</span> <span class="st">&quot;John&quot;</span><span class="op">,</span> OrderIds <span class="op">=</span> <span class="kw">new</span> List<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> <span class="op">{</span> <span class="dv">101</span><span class="op">,</span> <span class="dv">102</span> <span class="op">}</span> <span class="op">});</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    redisClient<span class="op">.</span><span class="fu">StoreAsHash</span><span class="op">(</span><span class="st">&quot;order:101&quot;</span><span class="op">,</span> <span class="kw">new</span> Order <span class="op">{</span> Id <span class="op">=</span> <span class="dv">101</span><span class="op">,</span> Product <span class="op">=</span> <span class="st">&quot;Laptop&quot;</span> <span class="op">});</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    redisClient<span class="op">.</span><span class="fu">StoreAsHash</span><span class="op">(</span><span class="st">&quot;order:102&quot;</span><span class="op">,</span> <span class="kw">new</span> Order <span class="op">{</span> Id <span class="op">=</span> <span class="dv">102</span><span class="op">,</span> Product <span class="op">=</span> <span class="st">&quot;Mouse&quot;</span> <span class="op">});</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    redisClient<span class="op">.</span><span class="fu">Exec</span><span class="op">();</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<ul>
+<li><strong>Data Integrity</strong>: Keeping related data together helps
+to avoid orphaned records. If we delete a parent object, we can easily
+delete the related objects too.</li>
+</ul>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="dt">void</span> <span class="fu">DeleteUserAndOrders</span><span class="op">(</span><span class="dt">int</span> userId<span class="op">)</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">using</span> <span class="op">(</span><span class="dt">var</span> redisClient <span class="op">=</span> <span class="kw">new</span> <span class="fu">RedisClient</span><span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">))</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> user <span class="op">=</span> redisClient<span class="op">.</span><span class="fu">Get</span><span class="op">&lt;</span>User<span class="op">&gt;(</span><span class="st">&quot;user:&quot;</span> <span class="op">+</span> userId<span class="op">);</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> orderId <span class="kw">in</span> user<span class="op">.</span><span class="fu">OrderIds</span><span class="op">)</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>            redisClient<span class="op">.</span><span class="fu">Remove</span><span class="op">(</span><span class="st">&quot;order:&quot;</span> <span class="op">+</span> orderId<span class="op">);</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        redisClient<span class="op">.</span><span class="fu">Remove</span><span class="op">(</span><span class="st">&quot;user:&quot;</span> <span class="op">+</span> userId<span class="op">);</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<ul>
+<li><p><strong>Simplified Data Model</strong>: Storing related objects
+can make our data model simpler. This helps us understand and maintain
+it better. It also leads to clearer code and less bugs.</p></li>
+<li><p><strong>Performance Optimization</strong>: Redis uses in-memory
+data storage. This makes data access faster and reduces wait times. By
+keeping related objects together, we can make read performance even
+better.</p></li>
+</ul>
+<p>For more about how to use Redis well, we can check out this guide on
+<a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">Redis
+data types</a>.</p>
+<h2
+id="exploring-the-advantages-of-using-related-object-ids-in-servicestack.net-redis">Exploring
+the Advantages of Using Related Object Ids in ServiceStack.Net
+Redis</h2>
+<p>Using related object IDs in ServiceStack.Net Redis can give us many
+benefits. This is really helpful when we work with relationships between
+data. This way, we use memory and bandwidth better while keeping our
+data safe. Here are some main benefits:</p>
+<ul>
+<li><p><strong>Less Memory Usage</strong>: When we store only IDs and
+not whole objects, we use less space in Redis. This is good when we have
+big object graphs. We just keep the important references.</p></li>
+<li><p><strong>Quicker Write Operations</strong>: Updating related
+objects is easier when we only keep the IDs. Instead of changing many
+objects, we just change the ID references. This makes write operations
+faster.</p></li>
+<li><p><strong>Easier Data Management</strong>: Using IDs makes it
+simpler to manage changes in related entities. We can change
+relationships without changing the whole object. This gives us more
+flexible data structures.</p></li>
+<li><p><strong>Better Cache Efficiency</strong>: Caching related object
+IDs helps us use cache better. If we often need an object, we can cache
+its ID. Then we can get any related data when we need it. This improves
+overall performance.</p></li>
+</ul>
+<h3 id="example-implementation">Example Implementation</h3>
+<p>Here is a simple example of how we can use related object IDs in
+ServiceStack.Net Redis:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> User </span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> Id <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Name <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> List<span class="op">&lt;</span><span class="dt">int</span><span class="op">&gt;</span> OrderIds <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span> <span class="co">// Storing related Order IDs</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> Order </span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">int</span> Id <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Product <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="dt">void</span> <span class="fu">StoreUserWithOrderIds</span><span class="op">(</span>User user<span class="op">)</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">using</span> <span class="op">(</span><span class="dt">var</span> redisClient <span class="op">=</span> <span class="kw">new</span> <span class="fu">RedisClient</span><span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">))</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>        redisClient<span class="op">.</span><span class="fu">SetValue</span><span class="op">(</span>$<span class="st">&quot;user:{user.Id}&quot;</span><span class="op">,</span> JsonSerializer<span class="op">.</span><span class="fu">SerializeToString</span><span class="op">(</span>user<span class="op">));</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="dt">void</span> <span class="fu">RetrieveUserWithOrderIds</span><span class="op">(</span><span class="dt">int</span> userId<span class="op">)</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">using</span> <span class="op">(</span><span class="dt">var</span> redisClient <span class="op">=</span> <span class="kw">new</span> <span class="fu">RedisClient</span><span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">))</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> serializedUser <span class="op">=</span> redisClient<span class="op">.</span><span class="fu">GetValue</span><span class="op">(</span>$<span class="st">&quot;user:{userId}&quot;</span><span class="op">);</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>        <span class="dt">var</span> user <span class="op">=</span> JsonSerializer<span class="op">.</span><span class="fu">DeserializeFromString</span><span class="op">&lt;</span>User<span class="op">&gt;(</span>serializedUser<span class="op">);</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Fetch related orders using OrderIds</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>        <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> orderId <span class="kw">in</span> user<span class="op">.</span><span class="fu">OrderIds</span><span class="op">)</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>            <span class="dt">var</span> order <span class="op">=</span> redisClient<span class="op">.</span><span class="fu">GetValue</span><span class="op">(</span>$<span class="st">&quot;order:{orderId}&quot;</span><span class="op">);</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>            <span class="co">// Process order</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>In this example, the <code>User</code> class keeps a list of
+<code>OrderIds</code> instead of complete <code>Order</code> objects.
+When we get a user, we can find their related orders using the stored
+IDs. This shows how using related object IDs in ServiceStack.Net Redis
+can be efficient and simple.</p>
+<p>In conclusion, using related object IDs in ServiceStack.Net Redis can
+help us handle data better and make our applications perform well. For
+more about Redis data types and how to use them, check out <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">What
+are Redis Data Types?</a>.</p>
+<h2
+id="performance-considerations-for-storing-related-objects-vs-related-object-ids-in-servicestack.net-redis">Performance
+Considerations for Storing Related Objects vs Related Object Ids in
+ServiceStack.Net Redis</h2>
+<p>When we think about performance in ServiceStack.Net Redis, the choice
+between storing related objects and storing related object IDs can
+really change how fast we can get data. It also affects how much memory
+we use and how well our application runs.</p>
+<h3 id="storing-related-objects">Storing Related Objects</h3>
+<p>When we store complete objects in Redis, we usually get faster read
+times. This is because all related data is in one place. But there are
+some things to think about:</p>
+<ul>
+<li><strong>Memory Use</strong>: Bigger objects take more memory. If we
+often update these objects, we might end up with more memory
+problems.</li>
+<li><strong>Time for Serialization/Deserialization</strong>: Changing
+objects into a format to save and back again can slow us down. This is
+especially true for complex objects.</li>
+</ul>
+<p><strong>Example of Storing Related Objects</strong>:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> user <span class="op">=</span> <span class="kw">new</span> User <span class="op">{</span> Id <span class="op">=</span> <span class="dv">1</span><span class="op">,</span> Name <span class="op">=</span> <span class="st">&quot;John Doe&quot;</span><span class="op">,</span> Address <span class="op">=</span> <span class="kw">new</span> Address <span class="op">{</span> City <span class="op">=</span> <span class="st">&quot;New York&quot;</span><span class="op">,</span> ZipCode <span class="op">=</span> <span class="st">&quot;10001&quot;</span> <span class="op">}</span> <span class="op">};</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>redisClient<span class="op">.</span><span class="fu">SetValue</span><span class="op">(</span><span class="st">&quot;user:1&quot;</span><span class="op">,</span> user<span class="op">.</span><span class="fu">ToJson</span><span class="op">());</span></span></code></pre></div>
+<h3 id="storing-related-object-ids">Storing Related Object Ids</h3>
+<p>If we only store the IDs of related objects, we can save memory and
+write data faster. This is because updates to IDs are easier.</p>
+<ul>
+<li><strong>Less Data Transfer</strong>: We only store the ID. This
+makes the data smaller when we send it.</li>
+<li><strong>Less Complexity</strong>: The application needs to get the
+related objects. This can mean extra calls to Redis.</li>
+</ul>
+<p><strong>Example of Storing Related Object IDs</strong>:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> user <span class="op">=</span> <span class="kw">new</span> User <span class="op">{</span> Id <span class="op">=</span> <span class="dv">1</span><span class="op">,</span> Name <span class="op">=</span> <span class="st">&quot;John Doe&quot;</span><span class="op">,</span> AddressId <span class="op">=</span> <span class="dv">101</span> <span class="op">};</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>redisClient<span class="op">.</span><span class="fu">SetValue</span><span class="op">(</span><span class="st">&quot;user:1&quot;</span><span class="op">,</span> user<span class="op">.</span><span class="fu">ToJson</span><span class="op">());</span></span></code></pre></div>
+<h3 id="performance-trade-offs">Performance Trade-offs</h3>
+<ol type="1">
+<li><p><strong>Read Performance</strong>: Storing related objects gives
+us quicker reads since we can get all data at once. But with IDs, we
+need more calls to get related data.</p></li>
+<li><p><strong>Write Performance</strong>: Storing IDs makes write
+operations faster. We only store and update IDs, which means less data
+to move.</p></li>
+<li><p><strong>Data Integrity</strong>: When using IDs, we need extra
+logic to keep data accurate. This is important if we delete or change
+objects.</p></li>
+<li><p><strong>Caching Strategies</strong>: We can think about using
+caching for related objects that we use a lot. This can help reduce the
+performance impact when we get data using IDs.</p></li>
+</ol>
+<h3 id="benchmarking">Benchmarking</h3>
+<p>To make a good choice, we should run tests with real data. We need to
+measure: - How long it takes to read and write data. - How much memory
+we use. - Latency when many users access at the same time.</p>
+<h3 id="conclusion">Conclusion</h3>
+<p>Choosing between storing related objects and related object IDs in
+ServiceStack.Net Redis is very important for performance. We should look
+at the needs of our application and think about the trade-offs in
+read/write speed and memory use. This will help us make our Redis setup
+better.</p>
+<h2
+id="how-to-implement-storing-related-objects-in-servicestack.net-redis">How
+to Implement Storing Related Objects in ServiceStack.Net Redis</h2>
+<p>To store related objects in ServiceStack.Net Redis, we can use the
+<code>RedisClient</code>. This client helps us save and get complex data
+easily. We need to change related objects into a format that Redis can
+save. This can be JSON or binary format. Below is a simple way to do it
+using C# with ServiceStack.</p>
+<h3 id="step-1-define-your-models">Step 1: Define Your Models</h3>
+<p>First, we need to define the data models we want to save in Redis.
+For example, we can use these models:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> User</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Id <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Name <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> List<span class="op">&lt;</span>Post<span class="op">&gt;</span> Posts <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> Post</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Id <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">string</span> Content <span class="op">{</span> <span class="kw">get</span><span class="op">;</span> <span class="kw">set</span><span class="op">;</span> <span class="op">}</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="step-2-configure-redis">Step 2: Configure Redis</h3>
+<p>Next, we set up the Redis connection in our app:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> redisManager <span class="op">=</span> <span class="kw">new</span> <span class="fu">PooledRedisClientManager</span><span class="op">(</span><span class="st">&quot;localhost:6379&quot;</span><span class="op">);</span></span></code></pre></div>
+<h3 id="step-3-store-related-objects">Step 3: Store Related Objects</h3>
+<p>Now, we can use the <code>SetValue</code> method to store related
+objects. Here is an example of how to save a user with their posts:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> <span class="op">(</span><span class="dt">var</span> redis <span class="op">=</span> redisManager<span class="op">.</span><span class="fu">GetClient</span><span class="op">())</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> user <span class="op">=</span> <span class="kw">new</span> User</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">{</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>        Id <span class="op">=</span> <span class="st">&quot;user:1&quot;</span><span class="op">,</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        Name <span class="op">=</span> <span class="st">&quot;John Doe&quot;</span><span class="op">,</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>        Posts <span class="op">=</span> <span class="kw">new</span> List<span class="op">&lt;</span>Post<span class="op">&gt;</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">new</span> Post <span class="op">{</span> Id <span class="op">=</span> <span class="st">&quot;post:1&quot;</span><span class="op">,</span> Content <span class="op">=</span> <span class="st">&quot;Hello World!&quot;</span> <span class="op">},</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>            <span class="kw">new</span> Post <span class="op">{</span> Id <span class="op">=</span> <span class="st">&quot;post:2&quot;</span><span class="op">,</span> Content <span class="op">=</span> <span class="st">&quot;Redis is great!&quot;</span> <span class="op">}</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    redis<span class="op">.</span><span class="fu">SetValue</span><span class="op">(</span>user<span class="op">.</span><span class="fu">Id</span><span class="op">,</span> user<span class="op">.</span><span class="fu">ToJson</span><span class="op">());</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="step-4-retrieve-related-objects">Step 4: Retrieve Related
+Objects</h3>
+<p>To get the user and their posts back, we need to change the JSON back
+into our object structure:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> <span class="op">(</span><span class="dt">var</span> redis <span class="op">=</span> redisManager<span class="op">.</span><span class="fu">GetClient</span><span class="op">())</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> userJson <span class="op">=</span> redis<span class="op">.</span><span class="fu">GetValue</span><span class="op">(</span><span class="st">&quot;user:1&quot;</span><span class="op">);</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> user <span class="op">=</span> userJson<span class="op">.</span><span class="fu">FromJson</span><span class="op">&lt;</span>User<span class="op">&gt;();</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="step-5-handling-nested-objects">Step 5: Handling Nested
+Objects</h3>
+<p>When we handle nested objects, we must serialize the whole object
+graph. If we want to store posts separately, we can do it like this:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> post <span class="kw">in</span> user<span class="op">.</span><span class="fu">Posts</span><span class="op">)</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    redis<span class="op">.</span><span class="fu">SetValue</span><span class="op">(</span>post<span class="op">.</span><span class="fu">Id</span><span class="op">,</span> post<span class="op">.</span><span class="fu">ToJson</span><span class="op">());</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="note-on-serialization">Note on Serialization</h3>
+<p>ServiceStack has built-in methods like <code>ToJson()</code> and
+<code>FromJson()</code>. These methods make it easy to change between
+objects and JSON.</p>
+<h3 id="example-of-related-object-retrieval">Example of Related Object
+Retrieval</h3>
+<p>If we store posts separately, we can get them back like this:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> postId <span class="kw">in</span> user<span class="op">.</span><span class="fu">Posts</span><span class="op">.</span><span class="fu">Select</span><span class="op">(</span>p <span class="op">=&gt;</span> p<span class="op">.</span><span class="fu">Id</span><span class="op">))</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> postJson <span class="op">=</span> redis<span class="op">.</span><span class="fu">GetValue</span><span class="op">(</span>postId<span class="op">);</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">var</span> post <span class="op">=</span> postJson<span class="op">.</span><span class="fu">FromJson</span><span class="op">&lt;</span>Post<span class="op">&gt;();</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Do something with post</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>This way, we can keep our data model relationships while using Redis
+for fast access and storage of related objects. For more info on Redis
+and how it handles data, you can check out <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">what
+are Redis data types</a>.</p>
+<h2
+id="best-practices-for-storing-related-object-ids-in-servicestack.net-redis">Best
+Practices for Storing Related Object Ids in ServiceStack.Net Redis</h2>
+<p>When we work with related object IDs in ServiceStack.Net Redis, it is
+important to follow best practices. This helps us manage and get data
+easily. Here are some simple guides:</p>
+<ol type="1">
+<li><strong>Use Consistent Naming Conventions</strong>:
+<ul>
+<li><p>We should keep a uniform naming style for our related object IDs.
+For example, we can use a prefix to show the type of entity:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="dt">string</span> userIdKey <span class="op">=</span> <span class="st">&quot;user:123&quot;</span><span class="op">;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="dt">string</span> orderIdKey <span class="op">=</span> <span class="st">&quot;order:456&quot;</span><span class="op">;</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Utilize Hashes for Related Objects</strong>:
+<ul>
+<li><p>We can store related object IDs in a Redis hash. This groups
+related IDs together well. For example:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> db <span class="op">=</span> redis<span class="op">.</span><span class="fu">RedisManager</span><span class="op">.</span><span class="fu">GetClient</span><span class="op">();</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>db<span class="op">.</span><span class="fu">HSet</span><span class="op">(</span><span class="st">&quot;user:123:orders&quot;</span><span class="op">,</span> <span class="st">&quot;order:456&quot;</span><span class="op">,</span> <span class="st">&quot;order:789&quot;</span><span class="op">);</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Leverage Sets for Unique Relationships</strong>:
+<ul>
+<li><p>We should use Redis sets to keep unique relationships between
+objects. This stops duplicate IDs:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>db<span class="op">.</span><span class="fu">SAdd</span><span class="op">(</span><span class="st">&quot;user:123:friends&quot;</span><span class="op">,</span> <span class="st">&quot;user:124&quot;</span><span class="op">,</span> <span class="st">&quot;user:125&quot;</span><span class="op">);</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Implement Expiration Policies</strong>:
+<ul>
+<li><p>We need to set expiration times for related object ID entries if
+they are temporary. This stops old data:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>db<span class="op">.</span><span class="fu">Set</span><span class="op">(</span><span class="st">&quot;session:abc&quot;</span><span class="op">,</span> <span class="st">&quot;user:123&quot;</span><span class="op">,</span> TimeSpan<span class="op">.</span><span class="fu">FromMinutes</span><span class="op">(</span><span class="dv">30</span><span class="op">));</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Batch Operations</strong>:
+<ul>
+<li><p>When we add or update related object IDs, we can use batch
+operations. This reduces network trips. For example:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> <span class="op">(</span><span class="dt">var</span> trans <span class="op">=</span> db<span class="op">.</span><span class="fu">CreateTransaction</span><span class="op">())</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    trans<span class="op">.</span><span class="fu">SAdd</span><span class="op">(</span><span class="st">&quot;user:123:friends&quot;</span><span class="op">,</span> <span class="st">&quot;user:124&quot;</span><span class="op">);</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    trans<span class="op">.</span><span class="fu">SAdd</span><span class="op">(</span><span class="st">&quot;user:123:friends&quot;</span><span class="op">,</span> <span class="st">&quot;user:125&quot;</span><span class="op">);</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    trans<span class="op">.</span><span class="fu">Execute</span><span class="op">();</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Use JSON Serialization for Complex Objects</strong>:
+<ul>
+<li><p>For complex related objects, we can serialize them to JSON before
+we store the ID:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="dt">var</span> user <span class="op">=</span> <span class="kw">new</span> User <span class="op">{</span> Id <span class="op">=</span> <span class="dv">123</span><span class="op">,</span> Name <span class="op">=</span> <span class="st">&quot;John Doe&quot;</span> <span class="op">};</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>db<span class="op">.</span><span class="fu">Set</span><span class="op">(</span><span class="st">&quot;user:123&quot;</span><span class="op">,</span> JsonSerializer<span class="op">.</span><span class="fu">SerializeToString</span><span class="op">(</span>user<span class="op">));</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Indexing with Sorted Sets</strong>:
+<ul>
+<li><p>If we need to keep order among related IDs, we can use sorted
+sets. This makes range queries efficient:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>db<span class="op">.</span><span class="fu">ZAdd</span><span class="op">(</span><span class="st">&quot;user:123:orders&quot;</span><span class="op">,</span> <span class="dv">1</span><span class="op">,</span> <span class="st">&quot;order:456&quot;</span><span class="op">);</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>db<span class="op">.</span><span class="fu">ZAdd</span><span class="op">(</span><span class="st">&quot;user:123:orders&quot;</span><span class="op">,</span> <span class="dv">2</span><span class="op">,</span> <span class="st">&quot;order:789&quot;</span><span class="op">);</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Monitor Key Usage</strong>:
+<ul>
+<li>We should check the usage of keys that are related to object IDs.
+This helps us find unused keys that we can clean up.</li>
+</ul></li>
+<li><strong>Documentation and Comments</strong>:
+<ul>
+<li>We need to write down the purpose of related object ID entries in
+our code. This helps future developers understand and maintain the code
+easier.</li>
+</ul></li>
+<li><strong>Testing and Validation</strong>:</li>
+</ol>
+<ul>
+<li>We must implement unit tests for getting and changing related object
+IDs. This checks if everything works as expected.</li>
+</ul>
+<p>By following these best practices, we can manage related object IDs
+in ServiceStack.Net Redis well. This helps us with performance and
+scaling. If you want to learn more about Redis, we can check this
+article on <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">Redis
+Data Types</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="what-is-the-difference-between-storing-related-objects-and-related-object-ids-in-servicestack.net-redis">1.
+What is the difference between storing related objects and related
+object IDs in ServiceStack.Net Redis?</h3>
+<p>We store related objects by saving the whole object in Redis. This
+way, all needed data is easy to get. On the other hand, when we store
+related object IDs, we only keep links. This means we need to do extra
+lookups to get the full objects. Choosing between these methods in
+ServiceStack.Net Redis will depend on how your application needs to
+perform and retrieve data. For more details, check our article on <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">what is
+Redis</a>.</p>
+<h3
+id="how-does-storing-related-objects-impact-performance-in-servicestack.net-redis">2.
+How does storing related objects impact performance in ServiceStack.Net
+Redis?</h3>
+<p>Storing related objects can give better performance for apps that
+read a lot. All necessary data is ready in one call. But it can use more
+memory and make writing slower. Using related object IDs might use less
+memory but can make access slower because of the extra lookups. We need
+to understand these trade-offs to make our ServiceStack.Net Redis work
+better.</p>
+<h3
+id="can-i-efficiently-manage-relationships-between-objects-in-servicestack.net-redis">3.
+Can I efficiently manage relationships between objects in
+ServiceStack.Net Redis?</h3>
+<p>Yes, we can manage relationships well in ServiceStack.Net Redis. We
+can use data structures like hashes or sets for related objects. This
+way, we can group related data together and keep links to other objects.
+For more on Redis data types and how to use them, see our guide on <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">what
+are Redis data types</a>.</p>
+<h3
+id="what-are-the-best-practices-for-storing-related-object-ids-in-servicestack.net-redis">4.
+What are the best practices for storing related object IDs in
+ServiceStack.Net Redis?</h3>
+<p>When we store related object IDs in ServiceStack.Net Redis, we should
+keep a clear naming style for our keys. We need to use steady patterns
+for storing related object IDs and make sure we have good indexing for
+fast lookups. Also, we can think about using caching strategies to lower
+the number of lookups. This can help improve performance. For more on
+caching with Redis, visit our article on <a
+href="https://bestonlinetutorial.com/redis/how-do-i-cache-data-with-redis.html">how
+do I cache data with Redis</a>.</p>
+<h3
+id="how-can-i-implement-related-object-storage-in-servicestack.net-redis">5.
+How can I implement related object storage in ServiceStack.Net
+Redis?</h3>
+<p>To store related objects in ServiceStack.Net Redis, we should clearly
+define our object models. Then, we can use ServiceStack’s APIs to save
+the complete objects. We can use methods like <code>SetValue</code> for
+storing key-value pairs. It is important to manage the lifecycle of our
+objects to keep data safe. For more examples, check our resource on <a
+href="https://bestonlinetutorial.com/redis/how-do-i-work-with-redis-strings.html">how
+do I work with Redis strings</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
