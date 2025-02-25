@@ -20,15 +20,6 @@ document.addEventListener("DOMContentLoaded", function() {
       .catch(error => console.error("Error loading footer:", error));
 });
 
-document.addEventListener("DOMContentLoaded", function () {
-    fetch('/assets/head.html')
-    .then(response => response.text())
-    .then(data => {
-        document.head.innerHTML = data + document.head.innerHTML;
-    }).catch(error => console.error("Error loading head:", error));
-});
-
-
 document.addEventListener('DOMContentLoaded', function () {
     document.body.addEventListener('click', function (event) {
         // Handle job card link clicks
