@@ -1,0 +1,499 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>Can I Connect to a Redis Server Directly from JavaScript in a Browser?</title>
+            <meta name="description" content="Discover if you can connect to a Redis server directly from JavaScript in a browser. Learn about security, limitations, and alternatives.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Can I Connect to a Redis Server Directly from JavaScript in a Browser?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Connecting to a Redis server from JavaScript in a browser is not
+easy. This is because of security rules and how web technologies work.
+Browsers do not support TCP protocol. This means we cannot connect
+directly to a Redis database using client-side JavaScript.</p>
+<p>Instead, we often use tools like WebSockets or Node.js backends.
+These tools help us talk to Redis in a safe way.</p>
+<p>In this article, we will look at different ways to access a Redis
+server from JavaScript apps. We will talk about why direct connections
+are not good. We will also see how WebSockets can help. Using a Node.js
+backend has many benefits too. We will explain how to use REST APIs to
+communicate with Redis. We will also show how to use serverless
+functions to access Redis. Finally, we will answer some common questions
+about this topic.</p>
+<ul>
+<li>Understanding the Limits of Direct Redis Connections in
+JavaScript</li>
+<li>Exploring WebSockets as a Solution for Redis Access in the
+Browser</li>
+<li>Using a Node.js Backend to Connect to Redis from JavaScript</li>
+<li>Implementing a REST API to Interact with Redis from the Browser</li>
+<li>Leveraging Serverless Functions to Access Redis from JavaScript</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2
+id="understanding-the-limits-of-direct-redis-connections-in-javascript">Understanding
+the Limits of Direct Redis Connections in JavaScript</h2>
+<p>We cannot connect directly to a Redis server from JavaScript that
+runs in a browser. There are a few important reasons for this.</p>
+<ul>
+<li><p><strong>Security Risks</strong>: If we expose Redis to the
+internet, it can be very risky. Redis does not have built-in security.
+This means that anyone could access it and change data without
+permission.</p></li>
+<li><p><strong>CORS Restrictions</strong>: Browsers have rules called
+Cross-Origin Resource Sharing (CORS). These rules usually block direct
+connections from web clients to services like Redis that do not use
+HTTP.</p></li>
+<li><p><strong>Protocol Compatibility</strong>: Redis uses a special way
+to talk called a binary protocol. This is not the same as HTTP. Browsers
+use HTTP/HTTPS to talk to servers. So, we cannot talk to Redis directly
+without another layer in between.</p></li>
+<li><p><strong>Network Environment</strong>: Browsers work in a
+client-side area. Here, things like firewalls can stop us from reaching
+Redis servers. These servers are often only available in a secure and
+controlled setting.</p></li>
+<li><p><strong>Latency and Performance</strong>: If we try to connect
+directly, we might face delays and slow performance. Browsers are not
+designed for long-lasting socket connections that Redis needs.</p></li>
+</ul>
+<p>Because of these reasons, we should use middle solutions. These
+include WebSockets, Node.js backends, REST APIs, or serverless
+functions. They help us talk between the browser and a Redis server.</p>
+<h2
+id="exploring-websockets-as-a-solution-for-redis-access-in-the-browser">Exploring
+WebSockets as a Solution for Redis Access in the Browser</h2>
+<p>Connecting to a Redis server from a browser using JavaScript can be
+tricky. It has security issues and limits because of CORS and Redis
+being a TCP-based protocol. But we can use WebSockets to help with
+real-time communication between the browser and Redis server in a safe
+way.</p>
+<h3 id="implementing-websocket-communication">Implementing WebSocket
+Communication</h3>
+<ol type="1">
+<li><p><strong>Set Up a WebSocket Server</strong>: We will use Node.js
+to make a WebSocket server that talks to Redis.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> <span class="bu">WebSocket</span> <span class="op">=</span> <span class="pp">require</span>(<span class="st">&#39;ws&#39;</span>)<span class="op">;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> redis <span class="op">=</span> <span class="pp">require</span>(<span class="st">&#39;redis&#39;</span>)<span class="op">;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> wss <span class="op">=</span> <span class="kw">new</span> <span class="bu">WebSocket</span><span class="op">.</span><span class="fu">Server</span>({ <span class="dt">port</span><span class="op">:</span> <span class="dv">8080</span> })<span class="op">;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> redisClient <span class="op">=</span> redis<span class="op">.</span><span class="fu">createClient</span>()<span class="op">;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>wss<span class="op">.</span><span class="fu">on</span>(<span class="st">&#39;connection&#39;</span><span class="op">,</span> (ws) <span class="kw">=&gt;</span> {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;Client connected&#39;</span>)<span class="op">;</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    ws<span class="op">.</span><span class="fu">on</span>(<span class="st">&#39;message&#39;</span><span class="op">,</span> (message) <span class="kw">=&gt;</span> {</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Handle incoming messages from the client</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        <span class="kw">const</span> data <span class="op">=</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">parse</span>(message)<span class="op">;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (data<span class="op">.</span><span class="at">action</span> <span class="op">===</span> <span class="st">&#39;get&#39;</span>) {</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>            redisClient<span class="op">.</span><span class="fu">get</span>(data<span class="op">.</span><span class="at">key</span><span class="op">,</span> (err<span class="op">,</span> result) <span class="kw">=&gt;</span> {</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> (err) {</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>                    ws<span class="op">.</span><span class="fu">send</span>(<span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>({ <span class="dt">error</span><span class="op">:</span> err<span class="op">.</span><span class="at">message</span> }))<span class="op">;</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>                } <span class="cf">else</span> {</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>                    ws<span class="op">.</span><span class="fu">send</span>(<span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>({ <span class="dt">key</span><span class="op">:</span> data<span class="op">.</span><span class="at">key</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> result }))<span class="op">;</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>                }</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>            })<span class="op">;</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    ws<span class="op">.</span><span class="fu">on</span>(<span class="st">&#39;close&#39;</span><span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>        <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;Client disconnected&#39;</span>)<span class="op">;</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span></code></pre></div></li>
+<li><p><strong>Client-Side WebSocket Connection</strong>: In your
+browser’s JavaScript, we need to create a WebSocket connection to the
+server.</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> ws <span class="op">=</span> <span class="kw">new</span> <span class="bu">WebSocket</span>(<span class="st">&#39;ws://localhost:8080&#39;</span>)<span class="op">;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>ws<span class="op">.</span><span class="at">onopen</span> <span class="op">=</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;Connected to WebSocket server&#39;</span>)<span class="op">;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Example of sending a request to get a value from Redis</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    ws<span class="op">.</span><span class="fu">send</span>(<span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>({ <span class="dt">action</span><span class="op">:</span> <span class="st">&#39;get&#39;</span><span class="op">,</span> <span class="dt">key</span><span class="op">:</span> <span class="st">&#39;myKey&#39;</span> }))<span class="op">;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>ws<span class="op">.</span><span class="at">onmessage</span> <span class="op">=</span> (<span class="bu">event</span>) <span class="kw">=&gt;</span> {</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> data <span class="op">=</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">parse</span>(<span class="bu">event</span><span class="op">.</span><span class="at">data</span>)<span class="op">;</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (data<span class="op">.</span><span class="at">error</span>) {</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        <span class="bu">console</span><span class="op">.</span><span class="fu">error</span>(<span class="st">&#39;Error:&#39;</span><span class="op">,</span> data<span class="op">.</span><span class="at">error</span>)<span class="op">;</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="vs">`Key: </span><span class="sc">${</span>data<span class="op">.</span><span class="at">key</span><span class="sc">}</span><span class="vs">, Value: </span><span class="sc">${</span>data<span class="op">.</span><span class="at">value</span><span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>ws<span class="op">.</span><span class="at">onclose</span> <span class="op">=</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;Disconnected from WebSocket server&#39;</span>)<span class="op">;</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span></code></pre></div></li>
+</ol>
+<h3 id="advantages-of-using-websockets">Advantages of Using
+WebSockets</h3>
+<ul>
+<li><strong>Real-Time Communication</strong>: WebSockets keep a constant
+connection. This helps get real-time updates from Redis server to the
+browser.</li>
+<li><strong>Reduced Latency</strong>: WebSockets are faster than regular
+HTTP requests because they do not need to set up a new connection each
+time.</li>
+<li><strong>Bidirectional Communication</strong>: Both server and client
+can send messages at the same time. This makes applications more
+interactive.</li>
+</ul>
+<p>By using WebSockets with a Node.js backend, we can access Redis data
+from the browser safely and quickly. For more information about Redis,
+we can check out <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">what
+Redis is</a> and <a
+href="https://bestonlinetutorial.com/redis/how-do-i-install-redis.html">how
+to install Redis</a>.</p>
+<h2
+id="using-a-node.js-backend-to-connect-to-redis-from-javascript">Using a
+Node.js Backend to Connect to Redis from JavaScript</h2>
+<p>We cannot connect to a Redis server directly from JavaScript in a
+browser. This is because of security and design issues. Instead, we use
+a Node.js backend to connect to Redis. Here is a simple guide on how to
+set this up.</p>
+<h3 id="setting-up-the-node.js-backend">Setting Up the Node.js
+Backend</h3>
+<ol type="1">
+<li><p><strong>Initialize a Node.js Project</strong>:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> redis-backend</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> redis-backend</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> init <span class="at">-y</span></span></code></pre></div></li>
+<li><p><strong>Install Required Packages</strong>: We need the
+<code>express</code> framework and the <code>redis</code> client for
+Node.js.</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> install express redis</span></code></pre></div></li>
+<li><p><strong>Create the Server</strong>: We create an
+<code>index.js</code> file. Then we set up an Express server that
+connects to Redis.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> express <span class="op">=</span> <span class="pp">require</span>(<span class="st">&#39;express&#39;</span>)<span class="op">;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> redis <span class="op">=</span> <span class="pp">require</span>(<span class="st">&#39;redis&#39;</span>)<span class="op">;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> app <span class="op">=</span> <span class="fu">express</span>()<span class="op">;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> port <span class="op">=</span> <span class="dv">3000</span><span class="op">;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">// Create Redis client</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> client <span class="op">=</span> redis<span class="op">.</span><span class="fu">createClient</span>()<span class="op">;</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>client<span class="op">.</span><span class="fu">on</span>(<span class="st">&#39;error&#39;</span><span class="op">,</span> (err) <span class="kw">=&gt;</span> <span class="bu">console</span><span class="op">.</span><span class="fu">error</span>(<span class="st">&#39;Redis Client Error&#39;</span><span class="op">,</span> err))<span class="op">;</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co">// Middleware to parse JSON requests</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>app<span class="op">.</span><span class="fu">use</span>(express<span class="op">.</span><span class="fu">json</span>())<span class="op">;</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co">// Example route to set a key in Redis</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>app<span class="op">.</span><span class="fu">post</span>(<span class="st">&#39;/set&#39;</span><span class="op">,</span> (req<span class="op">,</span> res) <span class="kw">=&gt;</span> {</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> { key<span class="op">,</span> value } <span class="op">=</span> req<span class="op">.</span><span class="at">body</span><span class="op">;</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    client<span class="op">.</span><span class="fu">set</span>(key<span class="op">,</span> value<span class="op">,</span> (err<span class="op">,</span> reply) <span class="kw">=&gt;</span> {</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (err) <span class="cf">return</span> res<span class="op">.</span><span class="fu">status</span>(<span class="dv">500</span>)<span class="op">.</span><span class="fu">send</span>(err)<span class="op">;</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        res<span class="op">.</span><span class="fu">send</span>(<span class="vs">`Key </span><span class="sc">${</span>key<span class="sc">}</span><span class="vs"> set with value </span><span class="sc">${</span>value<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="co">// Example route to get a key from Redis</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>app<span class="op">.</span><span class="fu">get</span>(<span class="st">&#39;/get/:key&#39;</span><span class="op">,</span> (req<span class="op">,</span> res) <span class="kw">=&gt;</span> {</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> key <span class="op">=</span> req<span class="op">.</span><span class="at">params</span><span class="op">.</span><span class="at">key</span><span class="op">;</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    client<span class="op">.</span><span class="fu">get</span>(key<span class="op">,</span> (err<span class="op">,</span> value) <span class="kw">=&gt;</span> {</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (err) <span class="cf">return</span> res<span class="op">.</span><span class="fu">status</span>(<span class="dv">500</span>)<span class="op">.</span><span class="fu">send</span>(err)<span class="op">;</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>        res<span class="op">.</span><span class="fu">send</span>(<span class="vs">`Value for key </span><span class="sc">${</span>key<span class="sc">}</span><span class="vs">: </span><span class="sc">${</span>value<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a><span class="co">// Start the server</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>app<span class="op">.</span><span class="fu">listen</span>(port<span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="vs">`Server running at http://localhost:</span><span class="sc">${</span>port<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span></code></pre></div></li>
+<li><p><strong>Run the Server</strong>: We start the server with:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> index.js</span></code></pre></div></li>
+</ol>
+<h3 id="connecting-from-the-browser">Connecting from the Browser</h3>
+<p>We can connect to our Node.js server from JavaScript in the browser
+using <code>fetch</code>:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Set a key-value pair in Redis</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">fetch</span>(<span class="st">&#39;http://localhost:3000/set&#39;</span><span class="op">,</span> {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">method</span><span class="op">:</span> <span class="st">&#39;POST&#39;</span><span class="op">,</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> {</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">&#39;Content-Type&#39;</span><span class="op">:</span> <span class="st">&#39;application/json&#39;</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    }<span class="op">,</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">body</span><span class="op">:</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>({ <span class="dt">key</span><span class="op">:</span> <span class="st">&#39;myKey&#39;</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="st">&#39;myValue&#39;</span> })</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="op">.</span><span class="fu">then</span>(response <span class="kw">=&gt;</span> response<span class="op">.</span><span class="fu">text</span>())</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="op">.</span><span class="fu">then</span>(data <span class="kw">=&gt;</span> <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(data))</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="op">.</span><span class="fu">catch</span>(error <span class="kw">=&gt;</span> <span class="bu">console</span><span class="op">.</span><span class="fu">error</span>(<span class="st">&#39;Error:&#39;</span><span class="op">,</span> error))<span class="op">;</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">// Get a value from Redis</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="fu">fetch</span>(<span class="st">&#39;http://localhost:3000/get/myKey&#39;</span>)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">then</span>(response <span class="kw">=&gt;</span> response<span class="op">.</span><span class="fu">text</span>())</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">then</span>(data <span class="kw">=&gt;</span> <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(data))</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">catch</span>(error <span class="kw">=&gt;</span> <span class="bu">console</span><span class="op">.</span><span class="fu">error</span>(<span class="st">&#39;Error:&#39;</span><span class="op">,</span> error))<span class="op">;</span></span></code></pre></div>
+<h3 id="conclusion">Conclusion</h3>
+<p>By setting up a Node.js backend, we can easily interact with a Redis
+server. This way, we keep our setup secure and use Redis features
+without exposing the Redis server to the client-side code. For more
+details on using Redis with Node.js, we can check this <a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redis-with-node-js.html">guide
+on using Redis with Node.js</a>.</p>
+<h2
+id="implementing-a-rest-api-to-interact-with-redis-from-the-browser">Implementing
+a REST API to Interact with Redis from the Browser</h2>
+<p>To connect to a Redis server from a web browser, we usually create a
+REST API with a backend tool like Node.js. This API helps our JavaScript
+code in the browser to send HTTP requests to the backend. The backend
+then talks to the Redis server.</p>
+<h3 id="setting-up-a-node.js-server">Setting Up a Node.js Server</h3>
+<ol type="1">
+<li><p><strong>Install Dependencies</strong>: First, we need to check if
+we have Node.js installed. Then, we create a new project and install the
+needed packages.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> redis-api</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> redis-api</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> init <span class="at">-y</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> install express redis cors</span></code></pre></div></li>
+<li><p><strong>Create the Server</strong>: We create a file called
+<code>server.js</code>:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> express <span class="op">=</span> <span class="pp">require</span>(<span class="st">&#39;express&#39;</span>)<span class="op">;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> redis <span class="op">=</span> <span class="pp">require</span>(<span class="st">&#39;redis&#39;</span>)<span class="op">;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> cors <span class="op">=</span> <span class="pp">require</span>(<span class="st">&#39;cors&#39;</span>)<span class="op">;</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> app <span class="op">=</span> <span class="fu">express</span>()<span class="op">;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> port <span class="op">=</span> <span class="dv">3000</span><span class="op">;</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>app<span class="op">.</span><span class="fu">use</span>(<span class="fu">cors</span>())<span class="op">;</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>app<span class="op">.</span><span class="fu">use</span>(express<span class="op">.</span><span class="fu">json</span>())<span class="op">;</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> redisClient <span class="op">=</span> redis<span class="op">.</span><span class="fu">createClient</span>()<span class="op">;</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>redisClient<span class="op">.</span><span class="fu">on</span>(<span class="st">&#39;error&#39;</span><span class="op">,</span> (err) <span class="kw">=&gt;</span> {</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="bu">console</span><span class="op">.</span><span class="fu">error</span>(<span class="st">&#39;Redis error: &#39;</span><span class="op">,</span> err)<span class="op">;</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="co">// GET endpoint to fetch data from Redis</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>app<span class="op">.</span><span class="fu">get</span>(<span class="st">&#39;/get/:key&#39;</span><span class="op">,</span> (req<span class="op">,</span> res) <span class="kw">=&gt;</span> {</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    redisClient<span class="op">.</span><span class="fu">get</span>(req<span class="op">.</span><span class="at">params</span><span class="op">.</span><span class="at">key</span><span class="op">,</span> (err<span class="op">,</span> reply) <span class="kw">=&gt;</span> {</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (err) <span class="cf">return</span> res<span class="op">.</span><span class="fu">status</span>(<span class="dv">500</span>)<span class="op">.</span><span class="fu">send</span>(err)<span class="op">;</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>        res<span class="op">.</span><span class="fu">send</span>({ <span class="dt">key</span><span class="op">:</span> req<span class="op">.</span><span class="at">params</span><span class="op">.</span><span class="at">key</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> reply })<span class="op">;</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="co">// POST endpoint to set data in Redis</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>app<span class="op">.</span><span class="fu">post</span>(<span class="st">&#39;/set&#39;</span><span class="op">,</span> (req<span class="op">,</span> res) <span class="kw">=&gt;</span> {</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> { key<span class="op">,</span> value } <span class="op">=</span> req<span class="op">.</span><span class="at">body</span><span class="op">;</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    redisClient<span class="op">.</span><span class="fu">set</span>(key<span class="op">,</span> value<span class="op">,</span> (err<span class="op">,</span> reply) <span class="kw">=&gt;</span> {</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (err) <span class="cf">return</span> res<span class="op">.</span><span class="fu">status</span>(<span class="dv">500</span>)<span class="op">.</span><span class="fu">send</span>(err)<span class="op">;</span></span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>        res<span class="op">.</span><span class="fu">send</span>({ key<span class="op">,</span> value<span class="op">,</span> <span class="dt">status</span><span class="op">:</span> <span class="st">&#39;OK&#39;</span> })<span class="op">;</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>app<span class="op">.</span><span class="fu">listen</span>(port<span class="op">,</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>    <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="vs">`Server running at http://localhost:</span><span class="sc">${</span>port<span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span></code></pre></div></li>
+</ol>
+<h3 id="running-your-server">Running Your Server</h3>
+<p>We run this command to start our Node.js server:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">node</span> server.js</span></code></pre></div>
+<h3 id="making-requests-from-javascript-in-the-browser">Making Requests
+from JavaScript in the Browser</h3>
+<p>Now, we can use the Fetch API to talk to our REST API from the
+browser. Here is an example of how to set and get values from Redis:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Set a value in Redis</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">fetch</span>(<span class="st">&#39;http://localhost:3000/set&#39;</span><span class="op">,</span> {</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">method</span><span class="op">:</span> <span class="st">&#39;POST&#39;</span><span class="op">,</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> {</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">&#39;Content-Type&#39;</span><span class="op">:</span> <span class="st">&#39;application/json&#39;</span><span class="op">,</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    }<span class="op">,</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">body</span><span class="op">:</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>({ <span class="dt">key</span><span class="op">:</span> <span class="st">&#39;myKey&#39;</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="st">&#39;myValue&#39;</span> })<span class="op">,</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>})</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="op">.</span><span class="fu">then</span>(response <span class="kw">=&gt;</span> response<span class="op">.</span><span class="fu">json</span>())</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="op">.</span><span class="fu">then</span>(data <span class="kw">=&gt;</span> <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(data))<span class="op">;</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="co">// Get a value from Redis</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="fu">fetch</span>(<span class="st">&#39;http://localhost:3000/get/myKey&#39;</span>)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">then</span>(response <span class="kw">=&gt;</span> response<span class="op">.</span><span class="fu">json</span>())</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">then</span>(data <span class="kw">=&gt;</span> <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(data))<span class="op">;</span></span></code></pre></div>
+<h3 id="important-considerations">Important Considerations</h3>
+<ul>
+<li><strong>CORS</strong>: We must enable CORS on our server if our
+frontend is on a different domain or port.</li>
+<li><strong>Security</strong>: We always need to add authentication and
+validation for our API to stop unauthorized access.</li>
+</ul>
+<p>This way, our JavaScript app in the browser can safely connect with a
+Redis server using a REST API. It helps us link client-side code with
+server-side data storage.</p>
+<h2
+id="leveraging-serverless-functions-to-access-redis-from-javascript">Leveraging
+Serverless Functions to Access Redis from JavaScript</h2>
+<p>Serverless functions give us a flexible way to reach Redis from
+JavaScript in the browser. With serverless functions like AWS Lambda,
+Azure Functions, or Google Cloud Functions, we can build a safe and
+effective setup. This setup lets our frontend talk to Redis without
+showing it directly.</p>
+<h3 id="setting-up-a-serverless-function">Setting Up a Serverless
+Function</h3>
+<ol type="1">
+<li><p><strong>Choose a Cloud Provider</strong>: Pick a provider like
+AWS, Azure, or Google Cloud.</p></li>
+<li><p><strong>Create a Function</strong>: Use the provider’s console or
+CLI to start a new serverless function. For example, with AWS
+Lambda:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> lambda create-function <span class="at">--function-name</span> RedisAccessFunction <span class="at">--runtime</span> nodejs14.x <span class="at">--role</span> arn:aws:iam::account-id:role/execution_role <span class="at">--handler</span> index.handler <span class="at">--zip-file</span> fileb://function.zip</span></code></pre></div></li>
+<li><p><strong>Install Redis Client</strong>: In the code of your
+function, add the Redis client. For Node.js, we can use the
+<code>ioredis</code> library:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">npm</span> install ioredis</span></code></pre></div></li>
+</ol>
+<h3 id="example-function-code">Example Function Code</h3>
+<p>Here is a simple example of a serverless function that works with
+Redis:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> Redis <span class="op">=</span> <span class="pp">require</span>(<span class="st">&#39;ioredis&#39;</span>)<span class="op">;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> redis <span class="op">=</span> <span class="kw">new</span> <span class="fu">Redis</span>({</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">host</span><span class="op">:</span> <span class="st">&#39;your-redis-host&#39;</span><span class="op">,</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">port</span><span class="op">:</span> <span class="dv">6379</span><span class="op">,</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">password</span><span class="op">:</span> <span class="st">&#39;your-redis-password&#39;</span><span class="op">,</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>exports<span class="op">.</span><span class="at">handler</span> <span class="op">=</span> <span class="kw">async</span> (<span class="bu">event</span>) <span class="kw">=&gt;</span> {</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> key <span class="op">=</span> <span class="bu">event</span><span class="op">.</span><span class="fu">key</span><span class="op">;</span> <span class="co">// key is passed in event</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> value <span class="op">=</span> <span class="cf">await</span> redis<span class="op">.</span><span class="fu">get</span>(key)<span class="op">;</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="dt">statusCode</span><span class="op">:</span> <span class="dv">200</span><span class="op">,</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">body</span><span class="op">:</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>({ value })<span class="op">,</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>  }<span class="op">;</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>}<span class="op">;</span></span></code></pre></div>
+<h3 id="deploying-the-function">Deploying the Function</h3>
+<p>We can use the cloud provider’s CLI or web console to send your
+function live. For AWS Lambda:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">aws</span> lambda update-function-code <span class="at">--function-name</span> RedisAccessFunction <span class="at">--zip-file</span> fileb://function.zip</span></code></pre></div>
+<h3 id="frontend-javascript-code">Frontend JavaScript Code</h3>
+<p>To call our serverless function from JavaScript in the browser, we
+can use the Fetch API:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">async</span> <span class="kw">function</span> <span class="fu">fetchRedisValue</span>(key) {</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> response <span class="op">=</span> <span class="cf">await</span> <span class="fu">fetch</span>(<span class="st">&#39;https://your-api-endpoint&#39;</span><span class="op">,</span> {</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">method</span><span class="op">:</span> <span class="st">&#39;POST&#39;</span><span class="op">,</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> {</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>      <span class="st">&#39;Content-Type&#39;</span><span class="op">:</span> <span class="st">&#39;application/json&#39;</span><span class="op">,</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    }<span class="op">,</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>    <span class="dt">body</span><span class="op">:</span> <span class="bu">JSON</span><span class="op">.</span><span class="fu">stringify</span>({ key })<span class="op">,</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>  })<span class="op">;</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> data <span class="op">=</span> <span class="cf">await</span> response<span class="op">.</span><span class="fu">json</span>()<span class="op">;</span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a>  <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(data<span class="op">.</span><span class="at">value</span>)<span class="op">;</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>This way, we make sure that our Redis server is only accessed through
+the serverless function. This keeps it safer from possible threats while
+letting our JavaScript in the browser get data when needed.</p>
+<p>Using serverless functions for Redis access is a good practice for
+modern web apps. It gives us scalability, security, and less management
+work. For more info on using Redis with different platforms, check out
+<a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redis-with-node-js.html">how
+to use Redis with Node.js</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="can-we-connect-to-a-redis-server-directly-from-javascript-in-a-browser">Can
+we connect to a Redis server directly from JavaScript in a browser?</h3>
+<p>No, we cannot connect to a Redis server directly from JavaScript in a
+browser. This is because of security issues and network limits. Browsers
+do not allow raw TCP socket connections that Redis needs. Instead, we
+can use a Node.js backend or WebSockets. This way, we can make a secure
+connection and let our browser-based JavaScript talk to the Redis
+server.</p>
+<h3
+id="why-cant-we-connect-to-redis-directly-from-client-side-javascript">Why
+can’t we connect to Redis directly from client-side JavaScript?</h3>
+<p>Connecting directly to Redis from client-side JavaScript is risky. It
+can expose our database credentials and allow bad actors to attack our
+system. Browsers block raw TCP connections to keep us safe. So, it is
+better to use a server-side tool like a Node.js server to connect to
+Redis securely.</p>
+<h3
+id="what-are-the-alternatives-to-accessing-redis-from-javascript-in-the-browser">What
+are the alternatives to accessing Redis from JavaScript in the
+browser?</h3>
+<p>The best ways to access Redis from JavaScript in the browser are
+using WebSockets, a Node.js backend, or a REST API. These options help
+us keep our communication secure. They also allow our browser-based apps
+to work with Redis without directly connecting to it. This keeps our
+database safe and gives us the functions we need.</p>
+<h3 id="can-we-use-websockets-to-connect-to-redis">Can we use WebSockets
+to connect to Redis?</h3>
+<p>Yes, we can use WebSockets to connect to a Redis server in a
+roundabout way. By making a WebSocket server with Node.js, we can set up
+real-time communication between our browser and the server. Our
+JavaScript can send and receive messages while the Node.js server
+handles the connection to Redis. This makes data handling easier and
+faster.</p>
+<h3
+id="how-can-we-implement-a-rest-api-to-interact-with-redis-from-javascript">How
+can we implement a REST API to interact with Redis from JavaScript?</h3>
+<p>To make a REST API for Redis, we can set up a Node.js server with
+tools like Express. This server will manage incoming HTTP requests from
+our JavaScript in the browser. It will do the needed tasks on the Redis
+server and send back responses. This way, we hide the Redis connection
+and make it safe and easy for our client-side JavaScript.</p>
+<p>For more information on working with Redis, we can check out articles
+like <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">What is
+Redis?</a> or <a
+href="https://bestonlinetutorial.com/redis/how-do-i-install-redis.html">How
+do I install Redis?</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

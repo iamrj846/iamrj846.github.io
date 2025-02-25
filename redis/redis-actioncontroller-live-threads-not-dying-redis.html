@@ -1,0 +1,462 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>Redis + ActionController::Live threads not dying - redis</title>
+            <meta name="description" content="Learn how to manage Redis and ActionController::Live threads effectively, ensuring optimal performance and resource management.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Redis + ActionController::Live threads not dying - redis</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To fix problems with Redis and ActionController::Live where threads
+do not stop as they should, we need to manage threads well. We should
+also use the built-in timeout features. When we manage long-running
+requests correctly, we can stop thread leakage. This will help our
+application run better. Also, monitoring and debugging threads will make
+our environment more stable when using Redis.</p>
+<p>In this article, we will look at different ways to solve the problem
+of Redis and ActionController::Live threads not stopping. We will talk
+about good thread management methods. We will also look at the built-in
+timeout features in ActionController::Live. It’s important to use Redis
+connection pooling too. We will share the best ways to handle
+long-running requests and give tips on how to monitor and debug threads
+well. Here are the solutions we will talk about:<br />
+- Good Thread Management for Redis in ActionController::Live<br />
+- Using Built-In Timeout Features for ActionController::Live
+Threads<br />
+- Using Redis Connection Pooling to Stop Thread Leakage<br />
+- Monitoring and Debugging Threads in ActionController::Live with
+Redis<br />
+- Best Ways to Handle Long-Running Requests in
+ActionController::Live</p>
+<h2
+id="implementing-proper-thread-management-for-redis-in-actioncontrollerlive">Implementing
+Proper Thread Management for Redis in ActionController::Live</h2>
+<p>In an ActionController::Live app that uses Redis for real-time data,
+we need good thread management. It helps to stop thread leakage and
+makes sure threads finish correctly after their tasks. Here are some
+easy ways to manage threads when we use Redis in
+ActionController::Live.</p>
+<h3 id="thread-safety">Thread Safety</h3>
+<p>We must make sure our Redis connections are safe for threads. We can
+use a connection pool to handle Redis connections well. The
+<code>connection_pool</code> gem helps us with this.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Gemfile</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>gem <span class="vs">&#39;connection_pool&#39;</span></span></code></pre></div>
+<h3 id="basic-configuration">Basic Configuration</h3>
+<p>Let’s set up a connection pool for Redis in our Rails app:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># config/initializers/redis.rb</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="va">$redis</span> <span class="kw">=</span> <span class="dt">ConnectionPool</span><span class="at">.new</span>(<span class="wa">size: </span><span class="dv">5</span>, <span class="wa">timeout: </span><span class="dv">5</span>) <span class="kw">{</span> <span class="dt">Redis</span><span class="at">.new</span> <span class="kw">}</span></span></code></pre></div>
+<h3 id="thread-management-in-actioncontrollerlive">Thread Management in
+ActionController::Live</h3>
+<p>When we use ActionController::Live, we need to manage threads well in
+the live streaming action. Here is a simple example:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="cf">class</span> <span class="dt">LiveController</span> <span class="kw">&lt;</span> <span class="dt">ApplicationController</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">include</span> <span class="dt">ActionController</span><span class="kw">::</span><span class="dt">Live</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">def</span> stream_data</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    response<span class="at">.headers</span><span class="kw">[</span><span class="vs">&#39;Content-Type&#39;</span><span class="kw">]</span> <span class="kw">=</span> <span class="vs">&#39;text/event-stream&#39;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    response<span class="at">.headers</span><span class="kw">[</span><span class="vs">&#39;Cache-Control&#39;</span><span class="kw">]</span> <span class="kw">=</span> <span class="vs">&#39;no-cache&#39;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Thread</span><span class="at">.new</span> <span class="cf">do</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>      <span class="cf">begin</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">$redis</span><span class="at">.with</span> <span class="cf">do</span> <span class="kw">|</span>conn<span class="kw">|</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>          conn<span class="at">.subscribe</span>(<span class="vs">&#39;some_channel&#39;</span>) <span class="cf">do</span> <span class="kw">|</span>on<span class="kw">|</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>            on<span class="at">.message</span> <span class="cf">do</span> <span class="kw">|</span>channel, msg<span class="kw">|</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>              response<span class="at">.stream.write</span> <span class="st">&quot;data: </span><span class="sc">#{</span>msg<span class="sc">}</span><span class="st">\n\n&quot;</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>            <span class="cf">end</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>          <span class="cf">end</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">end</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>      <span class="cf">rescue</span> <span class="kw">=&gt;</span> e</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>        logger<span class="at">.error</span> <span class="st">&quot;Error in thread: </span><span class="sc">#{</span>e<span class="at">.message</span><span class="sc">}</span><span class="st">&quot;</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>      <span class="cf">ensure</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>        response<span class="at">.stream.close</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>      <span class="cf">end</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div>
+<h3 id="handling-thread-termination">Handling Thread Termination</h3>
+<p>We must make sure our threads end correctly when the request is done.
+We can use <code>ensure</code> blocks to make sure that streams close.
+This helps to avoid memory leaks.</p>
+<h3 id="monitoring-active-threads">Monitoring Active Threads</h3>
+<p>We should watch active threads so we can find any that are not
+closing. We can use <code>Thread.list</code> to see all active threads
+and log their statuses.</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Thread</span><span class="at">.list.each</span> <span class="cf">do</span> <span class="kw">|</span>thread<span class="kw">|</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  logger<span class="at">.info</span> <span class="st">&quot;Thread ID: </span><span class="sc">#{</span>thread<span class="at">.object_id</span><span class="sc">}</span><span class="st">, Status: </span><span class="sc">#{</span>thread<span class="at">.status</span><span class="sc">}</span><span class="st">&quot;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div>
+<h3 id="use-of-thread.abort_on_exception">Use of
+<code>Thread.abort_on_exception</code></h3>
+<p>We can set <code>Thread.abort_on_exception</code> to true. This helps
+to stop threads if they have errors. This way, we avoid orphaned
+threads.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Thread</span><span class="at">.abort_on_exception</span> <span class="kw">=</span> <span class="dv">true</span></span></code></pre></div>
+<p>By using these easy strategies for thread management, we can make
+sure our Redis connections in ActionController::Live work well. This
+reduces the chance of threads not closing and helps our app perform
+better.</p>
+<h2
+id="utilizing-built-in-timeout-features-for-actioncontrollerlive-threads">Utilizing
+Built-In Timeout Features for ActionController::Live Threads</h2>
+<p>We need to manage long requests in
+<code>ActionController::Live</code> when we use Redis. It is important
+to use built-in timeout features well. This will help stop threads from
+staying open for too long. It also makes sure that we free up resources
+properly.</p>
+<p>In Rails, we can set a timeout for a response stream. We do this by
+using the <code>ActionController::Live</code> module. The
+<code>#stream</code> method lets us set a timeout value.</p>
+<p>Here is how we can do it:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="cf">class</span> <span class="dt">LiveController</span> <span class="kw">&lt;</span> <span class="dt">ApplicationController</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">include</span> <span class="dt">ActionController</span><span class="kw">::</span><span class="dt">Live</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">def</span> stream_data</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    response<span class="at">.headers</span><span class="kw">[</span><span class="vs">&#39;Content-Type&#39;</span><span class="kw">]</span> <span class="kw">=</span> <span class="vs">&#39;text/event-stream&#39;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    response<span class="at">.headers</span><span class="kw">[</span><span class="vs">&#39;Cache-Control&#39;</span><span class="kw">]</span> <span class="kw">=</span> <span class="vs">&#39;no-cache&#39;</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">begin</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>      timeout(<span class="dv">10</span>) <span class="cf">do</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        sse <span class="kw">=</span> <span class="cn">SSE</span><span class="at">.new</span>(response<span class="at">.stream</span>)</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        <span class="fu">loop</span> <span class="cf">do</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>          sse<span class="at">.write</span>(<span class="kw">{</span> <span class="wa">message: </span><span class="vs">&#39;Hello World&#39;</span>, <span class="wa">time: </span><span class="dt">Time</span><span class="at">.now</span> <span class="kw">}</span><span class="at">.to_json</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>          <span class="fu">sleep</span> <span class="dv">1</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">end</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>      <span class="cf">end</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">rescue</span> <span class="dt">Timeout</span><span class="kw">::</span><span class="dt">Error</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>      response<span class="at">.stream.write</span>(<span class="st">&quot;Timeout occurred&quot;</span>)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">ensure</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>      response<span class="at">.stream.close</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div>
+<p>In this example, we use the <code>timeout(10)</code> method. This
+sets a limit of 10 seconds for the streaming process. If it takes longer
+than this, a <code>Timeout::Error</code> happens. We can handle this
+error by logging it or sending a message back to the client.</p>
+<p>Also, we need to make sure the <code>timeout</code> gem is in our
+Gemfile:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>gem <span class="vs">&#39;timeout&#39;</span></span></code></pre></div>
+<p>We should run <code>bundle install</code> to get the gem.</p>
+<p>By using built-in timeout features well, we can manage Redis
+connections and threads in <code>ActionController::Live</code>. This
+helps keep our app responsive and saves resources. For more details on
+live connections, we can check <a
+href="https://bestonlinetutorial.com/redis/how-do-i-use-redis-with-ruby.html">this
+guide on Redis and ActionController::Live</a>.</p>
+<h2
+id="leveraging-redis-connection-pooling-to-avoid-thread-leakage">Leveraging
+Redis Connection Pooling to Avoid Thread Leakage</h2>
+<p>We need to implement connection pooling when we work with Redis in
+our Rails apps using <code>ActionController::Live</code>. This is very
+important to stop thread leakage. Thread leakage happens when we do not
+manage threads well. This can lead to using up all our resources. By
+using connection pooling, we can manage Redis connections better and
+make sure that threads close properly after we use them.</p>
+<p>To set up Redis connection pooling, we can use the
+<code>connection_pool</code> gem. Here is a simple setup:</p>
+<ol type="1">
+<li><p><strong>Add the <code>connection_pool</code> gem to your
+Gemfile:</strong></p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>gem <span class="vs">&#39;connection_pool&#39;</span></span></code></pre></div></li>
+<li><p><strong>Configure Redis with Connection Pooling:</strong></p>
+<p>We can create a Redis connection pool in an initializer. For example,
+we can use <code>config/initializers/redis.rb</code>:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">require</span> <span class="vs">&#39;connection_pool&#39;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">require</span> <span class="vs">&#39;redis&#39;</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="va">$redis</span> <span class="kw">=</span> <span class="dt">ConnectionPool</span><span class="at">.new</span>(<span class="wa">size: </span><span class="dv">5</span>, <span class="wa">timeout: </span><span class="dv">5</span>) <span class="kw">{</span> <span class="dt">Redis</span><span class="at">.new</span>(<span class="wa">url: </span><span class="cn">ENV</span><span class="kw">[</span><span class="vs">&#39;REDIS_URL&#39;</span><span class="kw">]</span>) <span class="kw">}</span></span></code></pre></div></li>
+<li><p><strong>Use the Connection Pool in
+ActionController::Live:</strong></p>
+<p>When we process requests with <code>ActionController::Live</code>, we
+must check out the connection pool properly to stop thread leakage.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="cf">class</span> <span class="dt">LiveController</span> <span class="kw">&lt;</span> <span class="dt">ApplicationController</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">include</span> <span class="dt">ActionController</span><span class="kw">::</span><span class="dt">Live</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">def</span> stream_data</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    response<span class="at">.headers</span><span class="kw">[</span><span class="vs">&#39;Content-Type&#39;</span><span class="kw">]</span> <span class="kw">=</span> <span class="vs">&#39;text/event-stream&#39;</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    response<span class="at">.headers</span><span class="kw">[</span><span class="vs">&#39;Cache-Control&#39;</span><span class="kw">]</span> <span class="kw">=</span> <span class="vs">&#39;no-cache&#39;</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="dv">10</span><span class="at">.times</span> <span class="cf">do</span> <span class="kw">|</span>i<span class="kw">|</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">$redis</span><span class="at">.with</span> <span class="cf">do</span> <span class="kw">|</span>redis<span class="kw">|</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        redis<span class="at">.publish</span>(<span class="vs">&#39;channel&#39;</span>, <span class="st">&quot;Message #</span><span class="sc">#{</span>i<span class="sc">}</span><span class="st">&quot;</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>      <span class="cf">end</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>      response<span class="at">.stream.write</span>(<span class="st">&quot;data: Message #</span><span class="sc">#{</span>i<span class="sc">}</span><span class="st">\n\n&quot;</span>)</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>      <span class="fu">sleep</span> <span class="dv">1</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>  <span class="cf">ensure</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>    response<span class="at">.stream.close</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div></li>
+<li><p><strong>Configuring Timeout Settings:</strong></p>
+<p>We can also set timeout options in our connection pool to make sure
+threads do not hang for too long.</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="va">$redis</span> <span class="kw">=</span> <span class="dt">ConnectionPool</span><span class="at">.new</span>(<span class="wa">size: </span><span class="dv">5</span>, <span class="wa">timeout: </span><span class="dv">5</span>) <span class="kw">{</span> <span class="dt">Redis</span><span class="at">.new</span>(<span class="wa">url: </span><span class="cn">ENV</span><span class="kw">[</span><span class="vs">&#39;REDIS_URL&#39;</span><span class="kw">]</span>, <span class="wa">timeout: </span><span class="dv">1</span>) <span class="kw">}</span></span></code></pre></div></li>
+</ol>
+<p>Using connection pooling helps us manage Redis connections well. This
+way, we lower the risk of thread leakage when we have long-running
+requests. For more details about using Redis, we can look at <a
+href="https://bestonlinetutorial.com/redis/how-do-i-work-with-redis-strings.html">How
+do I work with Redis strings?</a>.</p>
+<h2
+id="monitoring-and-debugging-threads-in-actioncontrollerlive-with-redis">Monitoring
+and Debugging Threads in ActionController::Live with Redis</h2>
+<p>Monitoring and debugging threads in
+<code>ActionController::Live</code> with Redis can be hard. This is
+because of how threads work in an asynchronous way. We can use some
+simple strategies to help us monitor and debug these threads better.</p>
+<ol type="1">
+<li><p><strong>Use Logging</strong>: We should log important moments in
+our thread’s life. This includes when threads start and when they end.
+We can also log any errors. Let’s use Rails’ built-in logger.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>logger<span class="at">.info</span> <span class="st">&quot;Thread started for request ID: </span><span class="sc">#{</span>request<span class="at">.object_id</span><span class="sc">}</span><span class="st">&quot;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>logger<span class="at">.info</span> <span class="st">&quot;Thread finished for request ID: </span><span class="sc">#{</span>request<span class="at">.object_id</span><span class="sc">}</span><span class="st">&quot;</span></span></code></pre></div></li>
+<li><p><strong>Thread Safety</strong>: We need to make sure Redis
+connections are safe to use with threads. The <code>redis-rb</code> gem
+is good for this. Always start a new Redis connection inside the
+thread.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Thread</span><span class="at">.new</span> <span class="cf">do</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  redis <span class="kw">=</span> <span class="dt">Redis</span><span class="at">.new</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Your Redis operations here</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div></li>
+<li><p><strong>Monitor Thread Count</strong>: We can use Ruby’s
+<code>Thread.list</code> to see how many threads are running. This helps
+us find any thread leaks.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>logger<span class="at">.info</span> <span class="st">&quot;Active threads: </span><span class="sc">#{</span><span class="dt">Thread</span><span class="at">.list.size</span><span class="sc">}</span><span class="st">&quot;</span></span></code></pre></div></li>
+<li><p><strong>Use Timeout</strong>: We should set time limits for
+threads that run too long. This stops them from getting stuck. We can
+use <code>Timeout::timeout</code> for this.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">require</span> <span class="vs">&#39;timeout&#39;</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="cf">begin</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Timeout</span><span class="kw">::</span><span class="at">timeout</span>(<span class="dv">5</span>) <span class="cf">do</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Your long-running Redis operation</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="cf">rescue</span> <span class="dt">Timeout</span><span class="kw">::</span><span class="dt">Error</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>  logger<span class="at">.error</span> <span class="st">&quot;Thread timed out for request ID: </span><span class="sc">#{</span>request<span class="at">.object_id</span><span class="sc">}</span><span class="st">&quot;</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div></li>
+<li><p><strong>Integration with Monitoring Tools</strong>: We can
+connect with tools like New Relic or Datadog. They help us see how
+threads and Redis operations are doing in real-time.</p></li>
+<li><p><strong>Redis Monitoring Commands</strong>: We can use Redis
+commands like <code>MONITOR</code>. This lets us see the commands that
+the Redis server is processing. It helps us understand how our threads
+work with Redis.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">redis-cli</span> MONITOR</span></code></pre></div></li>
+<li><p><strong>Debugging with Pry</strong>: For debugging, we can use
+the <code>pry</code> gem. It lets us pause the program and check the
+state of threads or Redis.</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">require</span> <span class="vs">&#39;pry&#39;</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">binding</span><span class="at">.pry</span></span></code></pre></div></li>
+<li><p><strong>Error Handling</strong>: We should have strong error
+handling in our threads. This helps us catch mistakes and log them
+properly.</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="cf">begin</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Redis operation</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="cf">rescue</span> <span class="kw">=&gt;</span> e</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  logger<span class="at">.error</span> <span class="st">&quot;Error in thread: </span><span class="sc">#{</span>e<span class="at">.message</span><span class="sc">}</span><span class="st">&quot;</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div></li>
+</ol>
+<p>By using these simple strategies, we can monitor and debug threads in
+<code>ActionController::Live</code> with Redis. This helps our
+application stay responsive and work well. If we want to learn more
+about Redis, we can check out <a
+href="https://bestonlinetutorial.com/redis/how-do-i-monitor-redis-performance.html">how
+to monitor Redis performance</a>.</p>
+<h2
+id="best-practices-for-handling-long-running-requests-in-actioncontrollerlive">Best
+Practices for Handling Long-Running Requests in
+ActionController::Live</h2>
+<p>Handling long-running requests in <code>ActionController::Live</code>
+with Redis can cause thread management problems if we don’t manage it
+well. Here are some best practices to help us handle these requests
+efficiently.</p>
+<ol type="1">
+<li><p><strong>Use a Dedicated Thread for Each Request</strong>: We
+should give each long-running request its own thread. This way, we avoid
+blocking the main thread. Each request can then handle I/O operations on
+its own.</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="cf">class</span> <span class="dt">LiveController</span> <span class="kw">&lt;</span> <span class="dt">ApplicationController</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">include</span> <span class="dt">ActionController</span><span class="kw">::</span><span class="dt">Live</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">def</span> stream_data</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    response<span class="at">.headers</span><span class="kw">[</span><span class="vs">&#39;Content-Type&#39;</span><span class="kw">]</span> <span class="kw">=</span> <span class="vs">&#39;text/event-stream&#39;</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    response<span class="at">.headers</span><span class="kw">[</span><span class="vs">&#39;Cache-Control&#39;</span><span class="kw">]</span> <span class="kw">=</span> <span class="vs">&#39;no-cache&#39;</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    <span class="dt">Thread</span><span class="at">.new</span> <span class="cf">do</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>      <span class="cf">begin</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Simulate long-running process</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>        <span class="dv">10</span><span class="at">.times</span> <span class="cf">do</span> <span class="kw">|</span>i<span class="kw">|</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>          response<span class="at">.stream.write</span> <span class="st">&quot;data: Message </span><span class="sc">#{</span>i<span class="sc">}</span><span class="st">\n\n&quot;</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>          <span class="fu">sleep</span> <span class="dv">1</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">end</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>      <span class="cf">ensure</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>        response<span class="at">.stream.close</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>      <span class="cf">end</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div></li>
+<li><p><strong>Timeout Configuration</strong>: We need to set timeouts
+for long-running requests. This helps to stop blocking that lasts too
+long. We can use the <code>timeout</code> option in
+ActionController:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="dt">ActionController</span><span class="kw">::</span><span class="dt">Live</span><span class="kw">::</span><span class="dt">Timeout</span><span class="at">.timeout</span> <span class="kw">=</span> <span class="dv">30</span> <span class="co"># seconds</span></span></code></pre></div></li>
+<li><p><strong>Graceful Shutdown</strong>: When we stop a request, we
+must also close any threads properly. This helps prevent leaks of
+resources. We should always use <code>ensure</code> blocks to clean
+up.</p></li>
+<li><p><strong>Monitor Long-Running Processes</strong>: We should add
+logging and monitoring for these long-running processes. This helps us
+find slow parts and problems with thread management.</p></li>
+<li><p><strong>Connection Pooling</strong>: We can use Redis connection
+pooling to manage connections better. This stops us from making too many
+connections that can exhaust our threads.</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Redis</span><span class="at">.current</span> <span class="kw">=</span> <span class="dt">ConnectionPool</span><span class="at">.new</span>(<span class="wa">size: </span><span class="dv">5</span>, <span class="wa">timeout: </span><span class="dv">5</span>) <span class="kw">{</span> <span class="dt">Redis</span><span class="at">.new</span> <span class="kw">}</span></span></code></pre></div></li>
+<li><p><strong>Use Background Jobs</strong>: For very long tasks, we can
+use background jobs with tools like Sidekiq or Resque. Then, we can send
+updates back to the client.</p></li>
+<li><p><strong>Rate Limiting</strong>: We should use rate limiting to
+control how many long-running requests happen at the same time. We can
+use Redis to track how many requests we get.</p></li>
+<li><p><strong>Client-Side Handling</strong>: We must make sure the
+client can handle partial responses and reconnect if needed. We can use
+JavaScript EventSource or similar tools for this.</p></li>
+<li><p><strong>Testing Under Load</strong>: We need to test how our app
+works under load with long-running requests. We can use tools like
+Apache JMeter or Gatling to create high load tests.</p></li>
+<li><p><strong>Documentation and Code Comments</strong>: We should keep
+good documentation and comments in the code for long-running requests.
+This helps other developers understand how we handle threads and any
+special settings we use.</p></li>
+</ol>
+<p>By using these best practices, we can manage long-running requests in
+<code>ActionController::Live</code> well. This gives users a smooth
+experience and helps us avoid common issues with thread management.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="what-are-common-issues-with-redis-and-actioncontrollerlive-threads-not-dying">1.
+What are common issues with Redis and ActionController::Live threads not
+dying?</h3>
+<p>When we use Redis with ActionController::Live, we can face a problem
+where threads do not stop properly. This can cause leaks of resources
+and slow down performance. This usually happens because of poor thread
+management or not handling long requests well. To fix this, we need to
+manage threads correctly and use timeout features that are built-in. For
+more details, read our article on <a href="#">implementing proper thread
+management for Redis in ActionController::Live</a>.</p>
+<h3
+id="how-can-i-manage-redis-connections-effectively-in-actioncontrollerlive">2.
+How can I manage Redis connections effectively in
+ActionController::Live?</h3>
+<p>Managing Redis connections well in ActionController::Live is very
+important to stop thread leaks. We can use a Redis connection pool to
+help manage the life of connections. This way, we can reuse connections
+and not spend too much time making new ones. It also helps save
+resources. For more tips on connection pooling, check our guide on <a
+href="#">leveraging Redis connection pooling</a>.</p>
+<h3
+id="what-timeout-settings-should-i-use-for-actioncontrollerlive-threads">3.
+What timeout settings should I use for ActionController::Live
+threads?</h3>
+<p>We need to set good timeout values for ActionController::Live
+threads. This stops requests that hang from using resources forever.
+Usually, a timeout of 30 to 60 seconds is good, but it can change based
+on what our application needs. Using the built-in timeout features helps
+us stop threads that go over these limits. You can learn more about
+timeout settings in our article on <a href="#">utilizing built-in
+timeout features</a>.</p>
+<h3
+id="how-do-i-monitor-and-debug-threads-in-actioncontrollerlive-with-redis">4.
+How do I monitor and debug threads in ActionController::Live with
+Redis?</h3>
+<p>We can monitor and debug threads in ActionController::Live with Redis
+using different tools and logging methods. Performance monitoring tools
+help us see the state of threads and find any that do not stop as they
+should. Also, adding logging in our application code can give us more
+details about thread life. For more strategies on monitoring, see our
+article on <a href="#">monitoring and debugging threads</a>.</p>
+<h3
+id="what-are-the-best-practices-for-handling-long-running-requests-in-actioncontrollerlive-with-redis">5.
+What are the best practices for handling long-running requests in
+ActionController::Live with Redis?</h3>
+<p>To handle long requests in ActionController::Live with Redis, we need
+to mix good timeout management, connection pooling, and smart threading.
+We should have a plan to stop requests nicely and watch their
+performance. This way, our application stays responsive. For a full
+overview of best practices, check our guide on <a href="#">best
+practices for handling long-running requests</a>.</p>
+<p>These FAQs try to answer the most common questions about Redis and
+ActionController::Live thread management. By following the solutions and
+best practices, we can make our application work better and avoid
+problems. For more reading, look at extra resources on Redis, like how
+to <a
+href="https://bestonlinetutorial.com/redis/how-do-i-install-redis.html">install
+Redis</a> and the different <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">Redis
+data types</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
