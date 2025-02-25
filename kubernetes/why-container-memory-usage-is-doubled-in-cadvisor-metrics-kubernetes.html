@@ -1,0 +1,511 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>Why container memory usage is doubled in cAdvisor metrics? - kubernetes</title>
+            <meta name="description" content="Discover why container memory usage appears doubled in cAdvisor metrics on Kubernetes and learn to interpret the data accurately.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Why container memory usage is doubled in cAdvisor metrics? - kubernetes</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p><strong>Why Container Memory Usage Looks Doubled in cAdvisor Metrics
+for Kubernetes</strong></p>
+<p>To understand why the memory usage of containers seems doubled in
+cAdvisor metrics for Kubernetes, we need to look at how cAdvisor reports
+memory. It shows memory usage based on two things: resident set size
+(RSS) and cache. This can make the numbers look bigger than they really
+are. It can be confusing when we check container performance and how we
+use resources. If we can read these metrics correctly, we can manage our
+resources better and improve memory usage.</p>
+<p>In this article, we will look at how cAdvisor shows memory usage in
+Kubernetes. We will talk about how cAdvisor calculates memory, what
+memory allocation means, and some common issues with the metrics. We
+will also give tips on how to use memory better in Kubernetes
+containers. We will explain how to set up cAdvisor for good metrics and
+answer some common questions about memory metrics in Kubernetes.</p>
+<ul>
+<li>Why is container memory usage doubled in cAdvisor metrics for
+Kubernetes?</li>
+<li>How cAdvisor calculates memory usage in Kubernetes</li>
+<li>Understanding memory allocation in Kubernetes and its effect on
+cAdvisor metrics</li>
+<li>Analyzing cAdvisor memory metrics problems in Kubernetes</li>
+<li>Best tips for using memory in Kubernetes containers</li>
+<li>How to set up cAdvisor for good memory metrics</li>
+<li>Common Questions</li>
+</ul>
+<h2 id="how-cadvisor-calculates-memory-usage-in-kubernetes">How cAdvisor
+calculates memory usage in Kubernetes</h2>
+<p>cAdvisor (Container Advisor) is a tool that helps us monitor
+container applications. It collects and shares many metrics. One
+important metric is memory usage. Sometimes, this memory usage can look
+doubled in Kubernetes. So, it is important to know how cAdvisor
+calculates memory usage. This helps us monitor and fix problems
+better.</p>
+<h3 id="memory-usage-calculation">Memory Usage Calculation</h3>
+<p>cAdvisor calculates memory usage using different metrics from the
+cgroup filesystem. The main parts of memory usage are:</p>
+<ul>
+<li><strong>Working Set</strong>: This is the memory that a container is
+using right now. We find it by adding RSS (Resident Set Size) and Cache
+memory.</li>
+<li><strong>RSS (Resident Set Size)</strong>: This is the memory a
+process uses that is stored in RAM. It does not count memory that is
+swapped out.</li>
+<li><strong>Cache Memory</strong>: This is memory that the kernel uses
+to store files and processes. Applications can take this memory back if
+they need it.</li>
+</ul>
+<h3 id="memory-metrics-in-cadvisor">Memory Metrics in cAdvisor</h3>
+<p>cAdvisor shows us these main memory metrics:</p>
+<ul>
+<li><code>container_memory_usage_bytes</code>: This is the total memory
+used by the container.</li>
+<li><code>container_memory_working_set_bytes</code>: This is the memory
+that the container is using right now.</li>
+<li><code>container_memory_rss</code>: This shows the resident memory
+size.</li>
+<li><code>container_memory_cache</code>: This is the memory used for
+caching.</li>
+</ul>
+<h3 id="example-of-memory-metrics">Example of Memory Metrics</h3>
+<p>To show how we can get these metrics, here is a cURL command that
+asks for metrics from a running cAdvisor:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://<span class="op">&lt;</span>CADVISOR_IP<span class="op">&gt;</span>:8080/metrics</span></code></pre></div>
+<p>This command will give us many metrics including memory usage data.
+You might see something like this:</p>
+<pre><code># HELP container_memory_usage_bytes Total memory usage in bytes.
+# TYPE container_memory_usage_bytes gauge
+container_memory_usage_bytes{container_name=&quot;my-container&quot;} 52428800</code></pre>
+<h3 id="common-issues-with-memory-metrics">Common Issues with Memory
+Metrics</h3>
+<ul>
+<li><strong>Double Counting</strong>: Memory usage can look doubled if
+we look at the working set and cache separately. We must understand that
+they can overlap.</li>
+<li><strong>Cgroups Configuration</strong>: If we set up cgroups wrong,
+we can get wrong readings. We need to make sure the cgroup limits are
+set correctly for memory usage.</li>
+</ul>
+<h3 id="kubernetes-integration">Kubernetes Integration</h3>
+<p>In Kubernetes, cAdvisor works automatically with each Kubelet. This
+helps us collect metrics for every pod and container easily. To get
+cAdvisor metrics through the Kubernetes API, we use:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-n</span> kube-system <span class="at">-o</span> wide</span></code></pre></div>
+<p>This command lists all pods in the kube-system namespace. We can get
+cAdvisor metrics from the Kubelet’s endpoint.</p>
+<p>By knowing how cAdvisor calculates memory usage in Kubernetes, we can
+analyze metrics better. This helps us use resources well in our
+container applications.</p>
+<h2
+id="understanding-memory-allocation-in-kubernetes-and-its-impact-on-cadvisor-metrics">Understanding
+memory allocation in Kubernetes and its impact on cAdvisor metrics</h2>
+<p>In Kubernetes, we manage memory for containers using resource
+requests and limits. When we set up a Pod, we can say how much memory a
+container will use (request) and the highest amount it can use (limit).
+This choice affects how cAdvisor shows memory usage.</p>
+<h3 id="memory-requests-and-limits">Memory Requests and Limits</h3>
+<ul>
+<li><strong>Requests</strong>: This is the memory that Kubernetes
+promises to give to the container. If the node does not have enough
+memory for the request, the container won’t run on that node.</li>
+<li><strong>Limits</strong>: This is the most memory that the container
+can use. If it tries to use more than this limit, the kernel will stop
+the container. This causes an OutOfMemory (OOM) error.</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1Gi&quot;</span></span></code></pre></div>
+<h3 id="impact-on-cadvisor-metrics">Impact on cAdvisor Metrics</h3>
+<p>cAdvisor collects memory usage data and shows it based on how we set
+up the containers. We can see the impact of memory allocation in
+Kubernetes in two main metrics:</p>
+<ol type="1">
+<li><strong>Working Set</strong>: This shows the memory that the
+container is using right now. It tells us about the active memory the
+application needs.</li>
+<li><strong>RSS (Resident Set Size)</strong>: This includes all memory
+the container has taken, even if it is not actively used.</li>
+</ol>
+<h3 id="memory-usage-doubling">Memory Usage Doubling</h3>
+<p>Sometimes, we see memory usage metrics in cAdvisor double. This can
+happen because of:</p>
+<ul>
+<li><strong>Kernel Overhead</strong>: The operating system may use extra
+memory for managing containers. This can make cAdvisor show higher
+usage.</li>
+<li><strong>Memory Fragmentation</strong>: When containers take and
+release memory, it can cause fragmentation. This means more memory is
+reserved than is actually used.</li>
+<li><strong>Measurement Delay</strong>: cAdvisor collects memory usage
+data over time. This can cause short spikes in the numbers that look
+like they have doubled during busy times.</li>
+</ul>
+<h3 id="monitoring-and-optimizing-memory-usage">Monitoring and
+Optimizing Memory Usage</h3>
+<p>To get a clear view of memory usage, we need to watch both memory
+requests and limits closely. We can use tools like Prometheus and
+Grafana for a better look at memory usage trends over time.</p>
+<p>To sum up, it is important to understand how Kubernetes allocates
+memory and how this relates to cAdvisor metrics. This helps us use
+resources better and keep our applications stable. For more information
+on managing Kubernetes resources, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-resource-limits-and-requests-in-kubernetes.html">how
+do I manage resource limits and requests in Kubernetes</a>.</p>
+<h2
+id="analyzing-cadvisor-memory-metrics-anomalies-in-kubernetes">Analyzing
+cAdvisor Memory Metrics Anomalies in Kubernetes</h2>
+<p>When we look at cAdvisor memory metrics in Kubernetes, we need to
+know about some problems that can confuse us about real memory use.
+cAdvisor gives us clear stats about how containers use resources. But
+sometimes, it shows memory use that seems too high. This can happen for
+several reasons.</p>
+<ol type="1">
+<li><p><strong>Memory Accounting Methods</strong>: cAdvisor uses
+different ways to show memory use. The main two ways are:</p>
+<ul>
+<li><strong>RSS (Resident Set Size)</strong>: This is how much memory a
+process uses that is kept in RAM.</li>
+<li><strong>Working Set</strong>: This is the memory pages that the
+container is using right now.</li>
+</ul>
+<p>For instance, if a container’s RSS is 200MiB and its working set is
+150MiB, cAdvisor will show both numbers. This can make memory use look
+like it is doubled if we do not understand it well.</p></li>
+<li><p><strong>Kernel Overhead</strong>: The Linux kernel can take
+memory for extra processes or buffers that do not directly belong to the
+container. This can make the memory numbers from cAdvisor look
+higher.</p></li>
+<li><p><strong>Page Cache</strong>: Memory used for caching can also
+raise reported memory use. Containers might use page cache that is
+shared with other containers. This makes the numbers look
+higher.</p></li>
+<li><p><strong>Memory Limits and Requests</strong>: If we set memory
+limits too high, cAdvisor may show high memory use because it counts
+unused memory. This can make it look like the application needs more
+memory than it really does.</p></li>
+<li><p><strong>Metrics Scraping Intervals</strong>: How often cAdvisor
+scrapes metrics can cause problems too. If scraping happens too often,
+it can show sudden spikes in memory use when it catches temporary
+states.</p></li>
+</ol>
+<p>To fix these problems, we should look at cAdvisor’s memory metrics
+along with how the application works and system-level metrics. Also, we
+can use these settings to improve accuracy:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cadvisor</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cadvisor</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> google/cadvisor:latest</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;256Mi&quot;</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /cadvisor</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cadvisor-storage</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cadvisor-storage</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">emptyDir</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
+<p>Using this setup for cAdvisor makes sure it has enough resources.
+This helps us get good memory metrics.</p>
+<p>For more information about setting up and understanding Kubernetes
+metrics, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-my-kubernetes-cluster.html">how
+do I monitor my Kubernetes cluster</a>.</p>
+<h2
+id="best-practices-for-optimizing-memory-usage-in-kubernetes-containers">Best
+practices for optimizing memory usage in Kubernetes containers</h2>
+<p>We can optimize memory usage in Kubernetes containers by following
+these simple tips:</p>
+<ol type="1">
+<li><p><strong>Define Resource Requests and Limits</strong>: We should
+specify resource requests and limits in our pod specs. This helps
+containers get the resources they need while stopping them from using
+too much.</p>
+<p>Example YAML configuration:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;256Mi&quot;</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span></code></pre></div></li>
+<li><p><strong>Use Vertical Pod Autoscaler (VPA)</strong>: We can use
+VPA to change resource requests and limits automatically. It helps based
+on what we actually use. This way, we get the best memory
+allocation.</p>
+<p>Example configuration for VPA:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling.k8s.io/v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> VerticalPodAutoscaler</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-vpa</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">targetRef</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">updatePolicy</span><span class="kw">:</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">updateMode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Auto&quot;</span></span></code></pre></div></li>
+<li><p><strong>Monitor Memory Usage</strong>: We should use tools like
+Prometheus and Grafana. They help us track memory usage trends and see
+any problems. This is good for managing resources better.</p></li>
+<li><p><strong>Optimize Application Code</strong>: It is important to
+check and improve our application code for memory use. We can use memory
+profiling tools to find memory leaks or areas that use a lot of
+memory.</p></li>
+<li><p><strong>Use Init Containers</strong>: We can use init containers
+for tasks that need a lot of resources but don’t need to run with the
+main application containers. This helps keep memory use
+separate.</p></li>
+<li><p><strong>Limit Number of Running Pods</strong>: We should avoid
+running too many pods on a node. By capping the number of pods, we can
+make sure memory resources are not too stretched.</p></li>
+<li><p><strong>Configure Garbage Collection</strong>: For languages that
+have garbage collection like Java or Go, we need to set garbage
+collection settings properly. This helps manage memory well.</p></li>
+<li><p><strong>Use Memory-efficient Images</strong>: We can choose
+lightweight base images like Alpine Linux. This helps to reduce memory
+overhead.</p></li>
+<li><p><strong>Avoid Over-provisioning</strong>: We should set realistic
+memory requests and limits based on our past data and performance tests.
+This helps to stop wasting resources.</p></li>
+<li><p><strong>Leverage Kubernetes QoS Classes</strong>: We can use
+Quality of Service (QoS) classes. They help prioritize resource
+allocation based on our requests and limits. This makes performance
+better when resources are tight.</p></li>
+</ol>
+<p>When we follow these best practices, we can improve memory usage in
+our Kubernetes containers. This also helps our application run better.
+For more reading about Kubernetes resource management, check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-resource-limits-and-requests-in-kubernetes.html">how
+do I manage resource limits and requests in Kubernetes</a>.</p>
+<h2 id="how-to-configure-cadvisor-for-accurate-memory-metrics">How to
+configure cAdvisor for accurate memory metrics</h2>
+<p>To configure cAdvisor for accurate memory metrics in Kubernetes, we
+can follow these steps.</p>
+<ol type="1">
+<li><p><strong>Deploy cAdvisor in Kubernetes:</strong> We can deploy
+cAdvisor as a standalone pod or as a DaemonSet. Here is a simple YAML
+configuration to deploy cAdvisor as a DaemonSet:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> DaemonSet</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cadvisor</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cadvisor</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cadvisor</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cadvisor</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cadvisor</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> google/cadvisor:latest</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">hostPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> varrun</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/run</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> varlibdocker</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/lib/docker</span></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sys</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /sys</span></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dev</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /dev</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100Mi&quot;</span></span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100m&quot;</span></span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> varrun</span></span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /var/run</span></span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> varlibdocker</span></span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /var/lib/docker</span></span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sys</span></span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /sys</span></span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dev</span></span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /dev</span></span></code></pre></div></li>
+<li><p><strong>Memory Metrics Configuration:</strong> We need to make
+sure cAdvisor is collecting memory metrics correctly. By default,
+cAdvisor collects memory usage from the container’s cgroup. We can
+change the settings to respect resource limits and requests.</p></li>
+<li><p><strong>Setting Resource Limits:</strong> We should define
+resource requests and limits in our pod specs for better memory
+reporting. Here is an example:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;256Mi&quot;</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span></code></pre></div></li>
+<li><p><strong>Annotations for Metrics:</strong> We can use annotations
+to give extra info for our pods. This helps in processing metrics
+better. For example:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">prometheus.io/scrape</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">prometheus.io/port</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;8080&quot;</span></span></code></pre></div></li>
+<li><p><strong>Accessing cAdvisor Metrics:</strong> We can access
+cAdvisor metrics from its endpoint. If we deployed it as a DaemonSet, we
+can use this command to get the IP addresses of the pods:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods <span class="at">-l</span> app=cadvisor <span class="at">-o</span> wide</span></code></pre></div>
+<p>Then we can go to
+<code>http://&lt;CADVISOR_IP&gt;:8080/metrics</code> to see the
+metrics.</p></li>
+<li><p><strong>Integrating with Monitoring Tools:</strong> We should
+think about integrating cAdvisor with Prometheus for better monitoring.
+We can update the Prometheus configuration to scrape metrics from
+cAdvisor:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">scrape_configs</span><span class="kw">:</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">job_name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;cadvisor&#39;</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">static_configs</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">targets</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;&lt;CADVISOR_IP&gt;:8080&#39;</span><span class="kw">]</span></span></code></pre></div></li>
+<li><p><strong>Validate Configuration:</strong> After we deploy, we
+should check the configuration. We can look at the memory metrics in
+cAdvisor’s UI or through Prometheus queries.</p></li>
+</ol>
+<p>By following these steps, we can make sure cAdvisor collects accurate
+memory metrics in our Kubernetes environment. For more insights into
+Kubernetes resource management, we might find this article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-optimize-resource-usage-with-vertical-pod-autoscaler-vpa.html">how
+to optimize resource usage in Kubernetes</a> helpful.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="why-does-cadvisor-show-container-memory-usage-as-doubled-in-kubernetes-metrics">1.
+Why does cAdvisor show container memory usage as doubled in Kubernetes
+metrics?</h3>
+<p>We see container memory usage as doubled in cAdvisor metrics because
+of how Kubernetes manages memory. Kubernetes shows memory usage for both
+containers and pods. This can cause some confusion and make the numbers
+look high. cAdvisor also adds up data from different containers. Knowing
+how cAdvisor’s metrics work helps us understand this issue better.</p>
+<h3 id="how-does-cadvisor-find-out-memory-usage-in-kubernetes">2. How
+does cAdvisor find out memory usage in Kubernetes?</h3>
+<p>cAdvisor finds memory usage in Kubernetes by getting data from the
+cgroup file system. This system checks how much resources each container
+uses. It looks at both the container and the host system. This way of
+tracking can create some differences in the numbers. Sometimes, it shows
+double the memory usage, especially when containers share resources in
+pods. We need to know this process for good memory checks.</p>
+<h3
+id="what-can-we-do-to-optimize-memory-usage-in-kubernetes-containers">3.
+What can we do to optimize memory usage in Kubernetes containers?</h3>
+<p>To make memory usage better in Kubernetes containers, we need to set
+the right memory limits and requests in our pod specs. We can use
+resource quotas to manage memory well across namespaces. Also, we can
+use tools like Vertical Pod Autoscaler (VPA) to change resources based
+on real usage. Checking cAdvisor metrics often helps us find and fix
+memory problems.</p>
+<h3 id="how-can-we-set-up-cadvisor-for-correct-memory-metrics">4. How
+can we set up cAdvisor for correct memory metrics?</h3>
+<p>To set up cAdvisor for correct memory metrics, we must make sure it
+works well with our Kubernetes cluster. We need to check that cAdvisor
+collects metrics from the right cgroup paths for our containers. We can
+change cAdvisor’s settings to ignore unnecessary metrics and focus on
+the important data we need. For more complex setups, we can link
+cAdvisor with Prometheus for better visuals and alerts.</p>
+<h3
+id="what-are-usual-issues-in-cadvisor-memory-metrics-for-kubernetes-and-how-can-we-check-them">5.
+What are usual issues in cAdvisor memory metrics for Kubernetes, and how
+can we check them?</h3>
+<p>Usual issues in cAdvisor memory metrics for Kubernetes are sudden
+increases in memory usage and seeing double memory use. To check these
+issues, we can compare cAdvisor data with Kubernetes resource metrics
+using tools like Prometheus and Grafana. We should look at the memory
+limits and requests set for our pods and the overall workload. Finding
+the cause helps us change resource settings and improve performance.</p>
+<p>For more information on managing Kubernetes resources and learning
+about its parts, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">this
+article on Kubernetes components</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-resource-limits-and-requests-in-kubernetes.html">this
+guide on optimizing resource usage</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

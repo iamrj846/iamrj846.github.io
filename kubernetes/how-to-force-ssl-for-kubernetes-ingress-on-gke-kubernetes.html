@@ -1,0 +1,469 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>How to force SSL for Kubernetes Ingress on GKE - kubernetes</title>
+            <meta name="description" content="Learn how to enforce SSL for Kubernetes Ingress on GKE with our step-by-step guide. Secure your applications easily!">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How to force SSL for Kubernetes Ingress on GKE - kubernetes</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To force SSL for Kubernetes Ingress on Google Kubernetes Engine
+(GKE), we need to set up our Ingress resource. This will redirect HTTP
+traffic to HTTPS. We do this by adding some annotations and rules. This
+way, we make sure all incoming requests are safe. It helps to improve
+the security of our apps on GKE. When we use SSL redirection, we protect
+the data as it travels. It also makes our apps look more trustworthy
+because users will always connect over a secure link.</p>
+<p>In this article, we will look at different ways to enforce SSL on
+Kubernetes Ingress in GKE. We will show how to create a Kubernetes
+Ingress resource with SSL redirection. We will also explain how to use
+annotations to make SSL work. Plus, we will talk about how to set up a
+Global Load Balancer for SSL on Kubernetes Ingress. We will cover how to
+set up HTTP to HTTPS redirection using custom middleware. We will help
+you troubleshoot common SSL problems. Lastly, we will answer some
+frequent questions about SSL in GKE.</p>
+<ul>
+<li>How to create a Kubernetes Ingress resource with SSL redirection on
+GKE</li>
+<li>How to use annotations to enforce SSL in GKE Ingress</li>
+<li>How to configure a Global Load Balancer for SSL on Kubernetes
+Ingress in GKE</li>
+<li>How to set up HTTP to HTTPS redirection using a custom middleware in
+GKE</li>
+<li>How to troubleshoot SSL issues with Kubernetes Ingress on GKE</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more info on Kubernetes and how to manage its applications, we
+can check out articles like <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">What
+is Kubernetes and how does it simplify container management?</a> or <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-a-kubernetes-cluster-on-google-cloud-gke.html">How
+do I set up a Kubernetes cluster on Google Cloud GKE?</a>.</p>
+<h2
+id="how-to-create-a-kubernetes-ingress-resource-with-ssl-redirection-on-gke">How
+to create a Kubernetes Ingress resource with SSL redirection on GKE</h2>
+<p>To create a Kubernetes Ingress resource with SSL redirection on
+Google Kubernetes Engine (GKE), we need to define an Ingress resource in
+YAML. This will tell the system about the backend service and the SSL
+setup. Here is an example of how to set up SSL redirection.</p>
+<ol type="1">
+<li><strong>Prerequisites</strong>: First, we should have a valid SSL
+certificate stored in a Kubernetes secret.</li>
+</ol>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> create secret tls my-tls-secret <span class="dt">\</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cert</span><span class="op">=</span>path/to/tls.crt <span class="dt">\</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--key</span><span class="op">=</span>path/to/tls.key</span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Define the Ingress Resource</strong>: Now, we create a YAML
+file called <code>ingress.yaml</code>. This file will describe the
+Ingress resource and set up SSL redirection from HTTP to HTTPS.</li>
+</ol>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-ingress</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kubernetes.io/ingress.class</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;gce&quot;</span><span class="co"> # Use the GCE Ingress</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">nginx.ingress.kubernetes.io/force-ssl-redirect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span><span class="co"> # Force SSL redirection</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">tls</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">hosts</span><span class="kw">:</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> yourdomain.com</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">secretName</span><span class="kw">:</span><span class="at"> my-tls-secret</span><span class="co"> # The secret that has the SSL certificate</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">host</span><span class="kw">:</span><span class="at"> yourdomain.com</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<ol start="3" type="1">
+<li><strong>Deploy the Ingress</strong>: Next, we apply the YAML file to
+create the Ingress resource.</li>
+</ol>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> ingress.yaml</span></code></pre></div>
+<ol start="4" type="1">
+<li><strong>Verify the Ingress</strong>: Finally, we check if the
+Ingress was created successfully. We also want to make sure it is
+routing traffic properly.</li>
+</ol>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get ingress my-ingress</span></code></pre></div>
+<p>This setup will redirect all HTTP traffic to HTTPS. It will also
+serve traffic securely using the SSL certificate we set up. We must
+ensure our DNS settings point to the Ingress IP for
+<code>yourdomain.com</code>. For more details on setting up Ingress in
+Kubernetes, we can look at the <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html">Kubernetes
+documentation on Ingress</a>.</p>
+<h2 id="how-to-use-annotations-to-enforce-ssl-in-gke-ingress">How to use
+annotations to enforce SSL in GKE Ingress</h2>
+<p>To enforce SSL in Google Kubernetes Engine (GKE) Ingress, we can use
+special annotations. These annotations help to redirect HTTP traffic to
+HTTPS. Let’s see how to do this.</p>
+<h3 id="setting-up-annotations-in-your-ingress-resource">Setting Up
+Annotations in Your Ingress Resource</h3>
+<p>We need to add annotations in our Ingress resource YAML file. Here is
+an example to enforce SSL redirection with annotations:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-ingress</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kubernetes.io/ingress.class</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;gce&quot;</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">networking.gke.io/ssl-redirect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">host</span><span class="kw">:</span><span class="at"> example.com</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">paths</span><span class="kw">:</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">backend</span><span class="kw">:</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">service</span><span class="kw">:</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<h3 id="key-annotations-explained">Key Annotations Explained</h3>
+<ul>
+<li><strong>kubernetes.io/ingress.class</strong>: This tells which
+Ingress controller we use. For GKE, we usually set it to
+<code>gce</code>.</li>
+<li><strong>networking.gke.io/ssl-redirect</strong>: When we set this to
+<code>true</code>, it makes sure to redirect from HTTP to HTTPS.</li>
+</ul>
+<h3 id="deploying-the-ingress-resource">Deploying the Ingress
+Resource</h3>
+<p>After we add the right annotations, we apply the configuration with
+kubectl:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> my-ingress.yaml</span></code></pre></div>
+<h3 id="verifying-ssl-redirection">Verifying SSL Redirection</h3>
+<p>To check if SSL redirection is working, we try to access our service
+via HTTP (http://example.com). We should see it redirect to HTTPS
+(https://example.com). We can use tools like <code>curl</code> to
+confirm the redirection:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-I</span> http://example.com</span></code></pre></div>
+<p>We should see an HTTP response with a
+<code>301 Moved Permanently</code> status. The <code>Location</code>
+header should point to the HTTPS URL.</p>
+<h3 id="useful-links">Useful Links</h3>
+<p>For more information on how to configure Ingress in Kubernetes, we
+can check this article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html">how
+to configure ingress for external access to applications</a>.</p>
+<h2
+id="how-to-configure-a-global-load-balancer-for-ssl-on-kubernetes-ingress-in-gke">How
+to configure a Global Load Balancer for SSL on Kubernetes Ingress in
+GKE</h2>
+<p>We will show you how to set up a Global Load Balancer for SSL on
+Kubernetes Ingress in Google Kubernetes Engine (GKE). Just follow these
+steps.</p>
+<ol type="1">
+<li><p><strong>Enable API</strong>: First, we need to make sure that the
+Google Cloud Load Balancing API is on in our Google Cloud project. We
+can do this by running:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">gcloud</span> services enable compute.googleapis.com</span></code></pre></div></li>
+<li><p><strong>Create a Secret for SSL Certificate</strong>: Next, we
+will keep our SSL certificate and private key in a Kubernetes secret. We
+create it with:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> create secret tls my-tls-secret <span class="at">--cert</span><span class="op">=</span>path/to/tls.crt <span class="at">--key</span><span class="op">=</span>path/to/tls.key</span></code></pre></div></li>
+<li><p><strong>Define Ingress Resource</strong>: Now we create an
+Ingress resource that uses the Global Load Balancer. Here is an example
+of the YAML setup:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-ingress</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kubernetes.io/ingress.class</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;gce&quot;</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">networking.gke.io/managed-certificates</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;my-managed-cert&quot;</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">tls</span><span class="kw">:</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">secretName</span><span class="kw">:</span><span class="at"> my-tls-secret</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">host</span><span class="kw">:</span><span class="at"> myapp.example.com</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">paths</span><span class="kw">:</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">backend</span><span class="kw">:</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">service</span><span class="kw">:</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div></li>
+<li><p><strong>Deploy Ingress</strong>: After that, we apply the Ingress
+resource to our cluster. We do this with:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> my-ingress.yaml</span></code></pre></div></li>
+<li><p><strong>Verify Load Balancer Creation</strong>: Now we check the
+status of our Ingress and the Load Balancer that is made. We run:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get ingress my-ingress</span></code></pre></div></li>
+<li><p><strong>Configure Firewall Rules</strong>: Next, we need to make
+sure that the firewall rules let traffic go through on HTTPS (port 443)
+to our Load Balancer. We can create a rule like this:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">gcloud</span> compute firewall-rules create allow-https <span class="at">--allow</span> tcp:443 <span class="at">--target-tags</span><span class="op">=</span>my-internal-tag <span class="at">--source-ranges</span><span class="op">=</span>0.0.0.0/0</span></code></pre></div></li>
+<li><p><strong>Test SSL Configuration</strong>: When the Load Balancer
+is ready, we can test the SSL setup by going to our application using
+HTTPS:</p>
+<pre><code>https://myapp.example.com</code></pre></li>
+</ol>
+<p>By doing these steps, we can set up a Global Load Balancer for SSL on
+Kubernetes Ingress in GKE. This will help us keep our applications
+secure.</p>
+<h2
+id="how-to-set-up-http-to-https-redirection-using-a-custom-middleware-in-gke">How
+to set up HTTP to HTTPS redirection using a custom middleware in
+GKE</h2>
+<p>We can set up HTTP to HTTPS redirection in Google Kubernetes Engine
+(GKE) using custom middleware. We will use Kubernetes Ingress with an
+NGINX Ingress Controller. This setup lets us create middleware that will
+manage the redirection. Let’s follow these steps to do it.</p>
+<ol type="1">
+<li><strong>Install the NGINX Ingress Controller</strong> (if it is not
+installed yet):</li>
+</ol>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml</span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Create an Ingress Resource with Middleware</strong>:</li>
+</ol>
+<p>We need to make a YAML file (like <code>ingress.yaml</code>) for our
+Ingress resource. This file must include the right annotations for
+redirection.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-ingress</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">nginx.ingress.kubernetes.io/ssl-redirect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="fu">    nginx.ingress.kubernetes.io/configuration-snippet</span><span class="kw">: </span><span class="ch">|</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>      if ($scheme = http) {</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>        return 301 https://$host$request_uri;</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">host</span><span class="kw">:</span><span class="at"> myapp.example.com</span></span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /</span></span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-service</span></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">tls</span><span class="kw">:</span></span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">hosts</span><span class="kw">:</span></span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> myapp.example.com</span></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">secretName</span><span class="kw">:</span><span class="at"> my-tls-secret</span><span class="co">  # We assume your TLS secret is already created</span></span></code></pre></div>
+<ol start="3" type="1">
+<li><strong>Apply the Ingress Resource</strong>:</li>
+</ol>
+<p>Now we need to deploy the Ingress resource with this command:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> ingress.yaml</span></code></pre></div>
+<ol start="4" type="1">
+<li><strong>Configure TLS Secret</strong>:</li>
+</ol>
+<p>We must have a TLS secret for our domain. If we need to create one,
+we can use this command:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> create secret tls my-tls-secret <span class="at">--cert</span><span class="op">=</span>path/to/tls.crt <span class="at">--key</span><span class="op">=</span>path/to/tls.key</span></code></pre></div>
+<ol start="5" type="1">
+<li><strong>Test the Configuration</strong>:</li>
+</ol>
+<p>After we apply the Ingress, let’s test it. We can access
+<code>http://myapp.example.com</code>. We should see a redirection to
+<code>https://myapp.example.com</code>.</p>
+<p>By following these steps, we can set up HTTP to HTTPS redirection
+with custom middleware in GKE. This way, all traffic to our application
+will be secured with SSL. For more details on Kubernetes Ingress, you
+can read this <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html">article</a>.</p>
+<h2
+id="how-to-troubleshoot-ssl-issues-with-kubernetes-ingress-on-gke">How
+to troubleshoot SSL issues with Kubernetes Ingress on GKE</h2>
+<p>When we work with Kubernetes Ingress on Google Kubernetes Engine
+(GKE), we can face SSL issues. These problems can happen for many
+reasons. Here are some steps to help us fix these problems.</p>
+<ol type="1">
+<li><p><strong>Check Ingress Resource Configuration</strong>:<br />
+We need to make sure our Ingress resource is set up right for SSL. Check
+that we have the TLS section with the correct secret name and hosts.</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-ingress</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">tls</span><span class="kw">:</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">hosts</span><span class="kw">:</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> yourdomain.com</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">secretName</span><span class="kw">:</span><span class="at"> your-tls-secret</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">host</span><span class="kw">:</span><span class="at"> yourdomain.com</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> your-service</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div></li>
+<li><p><strong>Verify TLS Secret</strong>:<br />
+We should check if the TLS secret is there in the same namespace as the
+Ingress. The secret must have valid certificates.</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get secrets your-tls-secret <span class="at">-o</span> yaml</span></code></pre></div></li>
+<li><p><strong>Check Load Balancer Configuration</strong>:<br />
+We need to look at the Google Cloud Load Balancer settings related to
+our Ingress. Let’s ensure it is set up correctly and that the SSL
+certificate is applied the right way.</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">gcloud</span> compute ssl-certificates list</span></code></pre></div></li>
+<li><p><strong>Inspect Logs</strong>:<br />
+We can check the logs of the Ingress controller for any error messages.
+These messages might help us understand the issue. If we are using NGINX
+Ingress Controller, we can get the logs like this:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="at">-n</span> kube-system <span class="op">&lt;</span>nginx-ingress-controller-pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Test SSL Configuration</strong>:<br />
+We can use tools like <code>openssl</code> to test the SSL setup and
+check if the certificate is valid.</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">openssl</span> s_client <span class="at">-connect</span> yourdomain.com:443</span></code></pre></div></li>
+<li><p><strong>Check Firewall Rules</strong>:<br />
+We should make sure that the firewall rules in Google Cloud allow
+traffic on port 443 for our Ingress.</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">gcloud</span> compute firewall-rules list <span class="at">--filter</span><span class="op">=</span><span class="st">&quot;name~&#39;your-firewall-rule&#39;&quot;</span></span></code></pre></div></li>
+<li><p><strong>DNS Configuration</strong>:<br />
+We need to check if our DNS is set up right. It should point to the
+correct IP address of the Load Balancer.</p></li>
+<li><p><strong>CORS Issues</strong>:<br />
+If we see mixed content errors or blocked requests, we need to look at
+our CORS configuration. We should make sure the right headers are
+sent.</p></li>
+<li><p><strong>Health Checks</strong>:<br />
+We must check that the health checks for the Load Balancer are set up
+correctly. Our application should respond as expected.</p></li>
+</ol>
+<p>These steps will help us troubleshoot and fix SSL issues with our
+Kubernetes Ingress on GKE. For more details about managing Kubernetes
+Ingress, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html">how
+to configure Ingress for external access to applications</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="how-do-we-force-ssl-on-kubernetes-ingress-in-gke">1. How do we
+force SSL on Kubernetes Ingress in GKE?</h3>
+<p>To force SSL on Kubernetes Ingress in GKE, we need to set up our
+Ingress resource with the right annotations and rules. We usually add an
+annotation like
+<code>nginx.ingress.kubernetes.io/force-ssl-redirect: "true"</code> to
+our Ingress resource. This setup makes sure that all HTTP traffic goes
+to HTTPS. This helps keep our applications more secure.</p>
+<h3 id="what-annotations-do-we-need-to-enforce-ssl-in-gke-ingress">2.
+What annotations do we need to enforce SSL in GKE Ingress?</h3>
+<p>In GKE, we can enforce SSL redirection by using annotations in our
+Ingress resource. The main annotation is
+<code>nginx.ingress.kubernetes.io/force-ssl-redirect: "true"</code>.
+This tells the Ingress controller to redirect HTTP traffic to HTTPS. We
+can also add
+<code>nginx.ingress.kubernetes.io/ssl-redirect: "true"</code> to make
+SSL redirection stronger.</p>
+<h3
+id="how-can-we-troubleshoot-ssl-issues-with-kubernetes-ingress-on-gke">3.
+How can we troubleshoot SSL issues with Kubernetes Ingress on GKE?</h3>
+<p>To troubleshoot SSL issues with Kubernetes Ingress on GKE, we start
+by checking the Ingress resource for the correct SSL setup. We can run
+<code>kubectl describe ingress &lt;ingress-name&gt;</code> to look for
+any errors or problems. We should also look at logs from the Ingress
+controller for more error details. We need to make sure our TLS
+certificates are valid and set up correctly.</p>
+<h3
+id="how-do-we-set-up-http-to-https-redirection-using-a-custom-middleware-in-gke">4.
+How do we set up HTTP to HTTPS redirection using a custom middleware in
+GKE?</h3>
+<p>To set up HTTP to HTTPS redirection using custom middleware in GKE,
+we create an Ingress resource with the right rules and annotations. We
+need to make a middleware configuration that handles the redirection.
+This is usually done with a reverse proxy like NGINX. We must test our
+configuration to confirm that all traffic goes from HTTP to HTTPS.</p>
+<h3
+id="how-do-we-configure-a-global-load-balancer-for-ssl-on-kubernetes-ingress-in-gke">5.
+How do we configure a Global Load Balancer for SSL on Kubernetes Ingress
+in GKE?</h3>
+<p>Configuring a Global Load Balancer for SSL on Kubernetes Ingress in
+GKE means we create an Ingress resource that has
+<code>backendConfig</code> for SSL settings. We should have a valid SSL
+certificate in Google Cloud and attach it to our Ingress. We can use
+GKE’s built-in features to manage traffic routing and SSL termination
+well. This helps improve the security and performance of our
+applications.</p>
+<p>By following these tips and looking at related articles, like <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html">how
+to configure ingress for external access to my applications</a>, we can
+successfully set up and fix SSL for Kubernetes Ingress on GKE.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

@@ -1,0 +1,468 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>Service located in another namespace - kubernetes</title>
+            <meta name="description" content="Discover how to configure services in a different namespace in Kubernetes. Enhance your cluster management and efficiency!">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Service located in another namespace - kubernetes</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>In Kubernetes, we can access a service in another namespace using
+fully qualified domain names (FQDNs) or by setting up network policies
+and service mesh solutions. When we use the FQDN format
+<code>&lt;service-name&gt;.&lt;namespace&gt;.svc.cluster.local</code>,
+our pods can talk to each other across different namespaces easily. This
+way, we can find and use services without too much setup or needing
+outside help.</p>
+<p>In this article, we will look at different ways to access services
+across namespaces in Kubernetes. We will talk about using fully
+qualified domain names for communication between namespaces. We will
+also see how to set up network policies, use ExternalName services for
+communication, and use service mesh solutions. Lastly, we will check how
+to make sure we have the right RBAC permissions for service access.
+Here’s a short overview of what we will cover:</p>
+<ul>
+<li>How to access a service in another namespace in Kubernetes</li>
+<li>Using Fully Qualified Domain Names for Services in Different
+Kubernetes Namespaces</li>
+<li>Setting up Network Policies for Cross Namespace Service Access in
+Kubernetes</li>
+<li>Using Kubernetes ExternalName Services for Cross Namespace
+Communication</li>
+<li>Using Service Mesh for Communication Between Namespaces in
+Kubernetes</li>
+<li>Accessing Services Across Namespaces with RBAC Permissions in
+Kubernetes</li>
+</ul>
+<p>If you want to learn more about Kubernetes and its parts, you can
+read more about <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">what
+Kubernetes is and how it helps manage containers</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-networking-work.html">how
+Kubernetes networking works</a>.</p>
+<h2
+id="using-fully-qualified-domain-names-for-services-in-different-kubernetes-namespaces">Using
+Fully Qualified Domain Names for Services in Different Kubernetes
+Namespaces</h2>
+<p>In Kubernetes, we usually access services by their names. But if
+services are in different namespaces, we must use Fully Qualified Domain
+Names (FQDN) to reach them. The FQDN format for a service looks like
+this:</p>
+<pre><code>&lt;service-name&gt;.&lt;namespace&gt;.svc.cluster.local</code></pre>
+<h3 id="example">Example</h3>
+<p>Let’s say we have a service called <code>my-service</code> in the
+namespace <code>my-namespace</code>. If we want to access it from
+another namespace, we would write:</p>
+<pre><code>my-service.my-namespace.svc.cluster.local</code></pre>
+<h3 id="accessing-a-service">Accessing a Service</h3>
+<p>To access the service in our application, we can make a request like
+this:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://my-service.my-namespace.svc.cluster.local</span></code></pre></div>
+<p>This way, we can easily communicate between services in different
+namespaces. We do not need to change the service definitions or set up
+extra routing.</p>
+<h3 id="important-notes">Important Notes</h3>
+<ul>
+<li>We need to make sure our cluster DNS is set up correctly. This helps
+FQDN resolution work smoothly.</li>
+<li>Using FQDNs helps us avoid naming issues and keeps our services
+organized across namespaces.</li>
+<li>We can also use environment variables in Pods to point to other
+services with FQDNs.</li>
+</ul>
+<p>By using Fully Qualified Domain Names, Kubernetes makes it easy for
+services to talk to each other across namespaces. This helps with
+service discovery and access management.</p>
+<h2
+id="configuring-network-policies-for-cross-namespace-service-access-in-kubernetes">Configuring
+Network Policies for Cross Namespace Service Access in Kubernetes</h2>
+<p>We can enable secure communication between different namespaces in
+Kubernetes by using Network Policies. Network Policies help us control
+the traffic between Pods. They let us set rules for incoming and
+outgoing traffic within a namespace or between different namespaces.</p>
+<h3 id="example-of-a-network-policy-for-cross-namespace-access">Example
+of a Network Policy for Cross-Namespace Access</h3>
+<p>Let’s say we have two namespaces: <code>namespace-a</code> and
+<code>namespace-b</code>. We want to let Pods in
+<code>namespace-b</code> talk to Pods in <code>namespace-a</code>. Here
+is how we create a Network Policy in <code>namespace-a</code> to allow
+this access.</p>
+<ol type="1">
+<li><strong>Define the Network Policy in
+<code>namespace-a</code>:</strong></li>
+</ol>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> allow-namespace-b</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> namespace-a</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> your-app</span><span class="co">   # Change this to your app&#39;s label</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">from</span><span class="kw">:</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">namespaceSelector</span><span class="kw">:</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> namespace-b</span><span class="co">   # Check that namespace-b has this label</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Label <code>namespace-b</code>:</strong></li>
+</ol>
+<p>We need to make sure that <code>namespace-b</code> has the right
+label. We can run this command:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> label namespace namespace-b name=namespace-b</span></code></pre></div>
+<h3 id="applying-the-policy">Applying the Policy</h3>
+<p>To apply the Network Policy, we save the YAML configuration in a file
+called <code>network-policy.yaml</code>. Then we run:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> network-policy.yaml</span></code></pre></div>
+<h3 id="important-considerations">Important Considerations</h3>
+<ul>
+<li>We need to confirm that our cluster’s network provider can use
+Network Policies.</li>
+<li>We should be careful with existing policies because they can change
+or conflict with our new policy.</li>
+<li>We must test our policies to make sure that only the traffic we want
+is allowed.</li>
+</ul>
+<p>By setting up Network Policies correctly, we can create secure and
+controlled communication between namespaces in Kubernetes. For more
+information on Kubernetes networking, you can read about <a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-networking-work.html">how
+does Kubernetes networking work</a>.</p>
+<h2
+id="leveraging-kubernetes-externalname-services-for-cross-namespace-communication">Leveraging
+Kubernetes ExternalName Services for Cross Namespace Communication</h2>
+<p>Kubernetes ExternalName Services let us access services in different
+namespaces or even outside our cluster using DNS. This helps us
+communicate between namespaces without changing network rules or service
+settings a lot.</p>
+<h3 id="creating-an-externalname-service">Creating an ExternalName
+Service</h3>
+<p>To make an ExternalName service, we can write it in a YAML file. Here
+is a simple example to connect to a service in another namespace:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-service</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> namespace-a</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> ExternalName</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">externalName</span><span class="kw">:</span><span class="at"> service-b.namespace-b.svc.cluster.local</span></span></code></pre></div>
+<p>In this example, <code>service-b</code> is the name of the service in
+<code>namespace-b</code>. <code>namespace-a</code> is where we define
+our external service. This setup allows pods in <code>namespace-a</code>
+to reach <code>service-b</code> using the DNS name
+<code>external-service</code>.</p>
+<h3 id="accessing-the-externalname-service">Accessing the ExternalName
+Service</h3>
+<p>After we create the ExternalName service, we can access it from any
+pod in <code>namespace-a</code> like this:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://external-service</span></code></pre></div>
+<p>The DNS will send the request to the real service in
+<code>namespace-b</code>. This makes communication easy across
+namespaces.</p>
+<h3 id="use-cases">Use Cases</h3>
+<ul>
+<li><strong>Microservices Communication</strong>: When we have many
+microservices in different namespaces, ExternalName services help us
+talk to each other easily.</li>
+<li><strong>Legacy System Integration</strong>: If we need to connect to
+old systems or services outside our Kubernetes cluster, ExternalName
+services can help us do that.</li>
+</ul>
+<h3 id="limitations">Limitations</h3>
+<ul>
+<li><strong>No Load Balancing</strong>: ExternalName services do not
+balance the load. They just send DNS requests to the given external
+name.</li>
+<li><strong>Must be DNS Accessible</strong>: The external service must
+work with DNS. The ExternalName service needs DNS to function.</li>
+</ul>
+<p>For more info on Kubernetes services and how they help expose
+applications, check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-services-and-how-do-they-expose-applications.html">What
+are Kubernetes Services and How Do They Expose Applications?</a>.</p>
+<h2
+id="using-service-mesh-for-inter-namespace-communication-in-kubernetes">Using
+Service Mesh for Inter-Namespace Communication in Kubernetes</h2>
+<p>We can use Service Mesh to manage communication between services in
+Kubernetes. This is important when services are in different namespaces.
+Service Mesh helps us by hiding the communication details from the
+application. This lets us focus on the main business logic. We can also
+use features like load balancing, service discovery, and traffic
+management.</p>
+<p>To set up a Service Mesh for communication across namespaces in
+Kubernetes, we can use tools like Istio or Linkerd. Here is how we can
+set up Istio for this purpose:</p>
+<ol type="1">
+<li><p><strong>Install Istio</strong>: We should follow the official <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-install-and-configure-istio.html">Istio
+installation guide</a> to install Istio in our Kubernetes
+cluster.</p></li>
+<li><p><strong>Enable Sidecar Injection</strong>: We need to make sure
+that automatic sidecar injection is on for the namespaces that will use
+the service mesh.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> label namespace <span class="op">&lt;</span>namespace-1<span class="op">&gt;</span> istio-injection=enabled</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> label namespace <span class="op">&lt;</span>namespace-2<span class="op">&gt;</span> istio-injection=enabled</span></code></pre></div></li>
+<li><p><strong>Deploy Services</strong>: We will deploy our applications
+in different namespaces. For example:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-a</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> namespace-1</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> app-a</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> app-a</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-a</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> &lt;your-app-a-image&gt;</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-b</span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> namespace-2</span></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> app-b</span></span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> app-b</span></span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-35"><a href="#cb10-35" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb10-36"><a href="#cb10-36" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-b</span></span>
+<span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> &lt;your-app-b-image&gt;</span></span></code></pre></div></li>
+<li><p><strong>Service Definitions</strong>: We create services for both
+apps in their namespaces.</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-a</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> namespace-1</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> app-a</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-b</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> namespace-2</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> app-b</span></span></code></pre></div></li>
+<li><p><strong>Accessing Services across Namespaces</strong>: We can use
+the FQDN (Fully Qualified Domain Name) to reach services in other
+namespaces. For example, from <code>app-b</code> in
+<code>namespace-2</code>, we can call
+<code>http://app-a.namespace-1.svc.cluster.local</code>.</p></li>
+<li><p><strong>Traffic Management</strong>: We can use Istio’s traffic
+management tools like VirtualServices and DestinationRules to manage the
+traffic between services in different namespaces.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.istio.io/v1beta1</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> VirtualService</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-a-vs</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> namespace-2</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hosts</span><span class="kw">:</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> app-a.namespace-1.svc.cluster.local</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">route</span><span class="kw">:</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">destination</span><span class="kw">:</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">host</span><span class="kw">:</span><span class="at"> app-a.namespace-1.svc.cluster.local</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div></li>
+</ol>
+<p>We see that using a Service Mesh like Istio helps us with easy
+communication between namespaces in Kubernetes. It gives us strong tools
+to manage service interactions. For more information, we can check the
+<a
+href="https://bestonlinetutorial.com/kubernetes/what-is-a-service-mesh-and-how-does-it-relate-to-kubernetes.html">Service
+Mesh documentation</a>.</p>
+<h2
+id="accessing-services-across-namespaces-with-rbac-permissions-in-kubernetes">Accessing
+Services Across Namespaces with RBAC Permissions in Kubernetes</h2>
+<p>In Kubernetes, we use Role-Based Access Control (RBAC) to manage
+permissions. This helps us make sure that only authorized users and
+services can access resources in different namespaces. If we want a
+service in one namespace to use a service in another namespace, we need
+to set up RBAC rules correctly.</p>
+<h3 id="steps-to-access-services-across-namespaces">Steps to Access
+Services Across Namespaces</h3>
+<ol type="1">
+<li><p><strong>Create a Role or ClusterRole</strong>: First, we need to
+define the permissions to access the service in the target
+namespace.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> target-namespace</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service-access-role</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;services&quot;</span><span class="kw">]</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">]</span></span></code></pre></div></li>
+<li><p><strong>Create a RoleBinding or ClusterRoleBinding</strong>:
+Next, we need to bind the role to a user, group, or service account that
+will use the service.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> RoleBinding</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service-access-binding</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> target-namespace</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">subjects</span><span class="kw">:</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> accessing-service-account</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> source-namespace</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="fu">roleRef</span><span class="kw">:</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service-access-role</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div></li>
+<li><p><strong>Accessing the Service</strong>: After that, we use the
+fully qualified domain name (FQDN) to reach the service from the source
+namespace.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://service-name.target-namespace.svc.cluster.local</span></code></pre></div></li>
+</ol>
+<h3 id="important-considerations-1">Important Considerations</h3>
+<ul>
+<li>Check that the service account we use has the right permissions to
+send requests to the service in the target namespace.</li>
+<li>We can use <code>ClusterRole</code> and
+<code>ClusterRoleBinding</code> if we need permissions that cover all
+namespaces.</li>
+<li>We have to plan RBAC policies well to prevent giving unauthorized
+access to services.</li>
+</ul>
+<p>For more details on RBAC, we can look at the article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-implement-role-based-access-control-rbac-in-kubernetes.html">implementing
+Role-Based Access Control (RBAC) in Kubernetes</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="how-can-we-access-a-service-in-another-namespace-in-kubernetes">1.
+How can we access a service in another namespace in Kubernetes?</h3>
+<p>To access a service in another namespace in Kubernetes, we can use
+the fully qualified domain name (FQDN) format. It looks like this:
+<code>&lt;service-name&gt;.&lt;namespace&gt;.svc.cluster.local</code>.
+This way, pods in one namespace can talk to services in another
+namespace easily. We need to make sure the service is set up to allow
+communication between namespaces.</p>
+<h3
+id="what-are-the-security-risks-of-accessing-services-across-namespaces-in-kubernetes">2.
+What are the security risks of accessing services across namespaces in
+Kubernetes?</h3>
+<p>Accessing services across namespaces can bring security risks. It may
+let unauthorized users access sensitive services. We can use Role-Based
+Access Control (RBAC) and Network Policies to reduce these risks. They
+help us control which users and pods can talk to services in different
+namespaces. We can learn more about <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-implement-role-based-access-control-rbac-in-kubernetes.html">implementing
+RBAC in Kubernetes</a>.</p>
+<h3
+id="can-we-use-externalname-services-for-cross-namespace-communication">3.
+Can we use ExternalName services for cross-namespace communication?</h3>
+<p>Yes, we can use Kubernetes ExternalName services for communication
+between namespaces. By creating an ExternalName service, we can point to
+a service in another namespace. This makes it easy to access the service
+without needing to know its IP address. This is helpful for using
+external services or managing complex microservices setups.</p>
+<h3
+id="what-is-the-best-way-to-set-up-network-policies-for-communication-between-namespaces">4.
+What is the best way to set up Network Policies for communication
+between namespaces?</h3>
+<p>To set up Network Policies for communication between namespaces in
+Kubernetes, we need to define rules that allow traffic from certain
+source namespaces. We should specify pod selectors and ingress/egress
+rules. These rules tell which pods can talk to each other across
+namespaces. For more details on Network Policies, we can check this
+article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-use-network-policies-to-control-traffic-in-kubernetes.html">using
+network policies to control traffic</a>.</p>
+<h3
+id="how-does-a-service-mesh-help-communication-between-namespaces-in-kubernetes">5.
+How does a service mesh help communication between namespaces in
+Kubernetes?</h3>
+<p>A service mesh like Istio makes communication easier between services
+in different namespaces. It gives us advanced features like traffic
+management, security, and observability. It hides the complexity of
+service-to-service communication. This way, we can focus on building our
+applications instead of worrying about connectivity. To learn how to use
+Istio with Kubernetes, we can visit this article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-use-a-service-mesh-e-g-istio-with-kubernetes.html">using
+a service mesh with Kubernetes</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

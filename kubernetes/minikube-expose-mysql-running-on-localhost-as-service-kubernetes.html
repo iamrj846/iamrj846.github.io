@@ -1,0 +1,382 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            
+            <title>Minikube expose MySQL running on localhost as service - kubernetes</title>
+            <meta name="description" content="Learn how to expose MySQL on localhost with Minikube in Kubernetes. Step-by-step guide for seamless database access!">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Minikube expose MySQL running on localhost as service - kubernetes</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To expose a MySQL database on localhost as a service in Kubernetes
+with Minikube, we can follow a simple process. First, we need to make
+sure that we have Minikube set up and running on our computer. We will
+create a Kubernetes deployment for MySQL and expose it as a service.
+This will let us access our database from outside. This guide will help
+us with the important steps to make our MySQL service reachable from our
+local machine.</p>
+<p>In this article, we will talk about how to expose MySQL running on
+localhost as a service in Kubernetes. We will look at these topics:</p>
+<ul>
+<li>Setting Up MySQL on Localhost for Minikube Access</li>
+<li>Creating a Kubernetes Deployment for MySQL in Minikube</li>
+<li>Exposing MySQL Service in Minikube Using NodePort</li>
+<li>Accessing MySQL from Localhost Through Minikube Tunnel</li>
+<li>Using Port Forwarding to Connect to MySQL in Minikube</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>By the end of this article, we will understand how to expose our
+MySQL service in a Kubernetes environment using Minikube. This will help
+us manage our database easily.</p>
+<h2 id="setting-up-mysql-on-localhost-for-minikube-access">Setting Up
+MySQL on Localhost for Minikube Access</h2>
+<p>To set up MySQL on our localhost for Minikube, we can follow these
+simple steps.</p>
+<ol type="1">
+<li><p><strong>Install MySQL</strong>: First, we need to install MySQL
+on our localhost. We can use package managers or download it from the
+MySQL website. If we are on Ubuntu, we can run:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt update</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install mysql-server</span></code></pre></div></li>
+<li><p><strong>Start MySQL Service</strong>: Next, we should start the
+MySQL service if it is not running yet:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> service mysql start</span></code></pre></div></li>
+<li><p><strong>Secure MySQL Installation</strong>: We need to run a
+security script. This will help us set the root password and secure our
+MySQL installation:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> mysql_secure_installation</span></code></pre></div></li>
+<li><p><strong>Create a Database and User</strong>: Now, let’s access
+the MySQL shell. We will create a database and a user for Kubernetes
+access:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mysql</span> <span class="at">-u</span> root <span class="at">-p</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">CREATE</span> DATABASE mydatabase<span class="kw">;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ex">CREATE</span> USER <span class="st">&#39;k8suser&#39;</span>@<span class="st">&#39;%&#39;</span> IDENTIFIED BY <span class="st">&#39;password&#39;</span><span class="kw">;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">GRANT</span> ALL PRIVILEGES ON mydatabase.<span class="pp">*</span> TO <span class="st">&#39;k8suser&#39;</span>@<span class="st">&#39;%&#39;</span><span class="kw">;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">FLUSH</span> PRIVILEGES<span class="kw">;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="ex">EXIT</span><span class="kw">;</span></span></code></pre></div></li>
+<li><p><strong>Configure MySQL to Allow Remote Access</strong>: We need
+to change the MySQL configuration file. This file is usually at
+<code>/etc/mysql/mysql.conf.d/mysqld.cnf</code> or
+<code>/etc/my.cnf</code>. We will allow connections from any host:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[mysqld]</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="dt">bind-address </span><span class="ot">=</span><span class="st"> 0.0.0.0</span></span></code></pre></div>
+<p>After that, we need to restart MySQL so the changes can take
+effect:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> service mysql restart</span></code></pre></div></li>
+<li><p><strong>Check Firewall Settings</strong>: We should check that
+our firewall allows traffic on the MySQL port. The default is 3306:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ufw allow 3306</span></code></pre></div></li>
+<li><p><strong>Test MySQL Access</strong>: Finally, we can test if we
+can access MySQL from another machine or container. We will use the user
+we created:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mysql</span> <span class="at">-u</span> k8suser <span class="at">-p</span> <span class="at">-h</span> <span class="op">&lt;</span>your-local-ip<span class="op">&gt;</span> mydatabase</span></code></pre></div></li>
+</ol>
+<p>Now we can connect to our MySQL instance on localhost from our
+Minikube environment. This makes it easy to work with databases for our
+Kubernetes apps.</p>
+<h2 id="creating-a-kubernetes-deployment-for-mysql-in-minikube">Creating
+a Kubernetes Deployment for MySQL in Minikube</h2>
+<p>To create a Kubernetes deployment for MySQL in Minikube, we need to
+define a Deployment resource in a YAML file. Here is an example
+configuration that shows a MySQL deployment:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-deployment</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql:5.7</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MYSQL_ROOT_PASSWORD</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">value</span><span class="kw">:</span><span class="at"> rootpassword</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MYSQL_DATABASE</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">value</span><span class="kw">:</span><span class="at"> mydatabase</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MYSQL_USER</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">value</span><span class="kw">:</span><span class="at"> user</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MYSQL_PASSWORD</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">value</span><span class="kw">:</span><span class="at"> userpassword</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span></code></pre></div>
+<p>Save this YAML configuration in a file with name
+<code>mysql-deployment.yaml</code>.</p>
+<p>To create the deployment, we run this command:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> mysql-deployment.yaml</span></code></pre></div>
+<p>This command creates a MySQL deployment with one replica. It uses the
+MySQL 5.7 image. The environment variables set the root password,
+database name, user, and user password.</p>
+<p>To check the status of our deployment, we can use:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get deployments</span></code></pre></div>
+<p>And to see the pods that we created with this deployment, we run:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods</span></code></pre></div>
+<p>If we want to see the logs for the MySQL pod, we can do this:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="op">&lt;</span>pod-name<span class="op">&gt;</span></span></code></pre></div>
+<p>Just replace <code>&lt;pod-name&gt;</code> with the name of the MySQL
+pod you got from the previous command. This setup helps us to deploy
+MySQL on Minikube easily and manage it with Kubernetes. For more details
+on managing deployments, you can look at <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html">this
+article</a>.</p>
+<h2 id="exposing-mysql-service-in-minikube-using-nodeport">Exposing
+MySQL Service in Minikube Using NodePort</h2>
+<p>We want to expose a MySQL service in Minikube with NodePort. To do
+this, we need to create a Kubernetes Service of type NodePort. This will
+help us access the MySQL database that runs inside our Minikube cluster.
+Here are the steps to expose the MySQL service.</p>
+<ol type="1">
+<li><strong>Create a Service YAML file</strong> (for example,
+<code>mysql-service.yaml</code>):</li>
+</ol>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-service</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> NodePort</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">nodePort</span><span class="kw">:</span><span class="at"> </span><span class="dv">30006</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Apply the Service configuration</strong>:</li>
+</ol>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> mysql-service.yaml</span></code></pre></div>
+<ol start="3" type="1">
+<li><strong>Check if Service is created</strong>:</li>
+</ol>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get services</span></code></pre></div>
+<p>You will see an output that includes <code>mysql-service</code>. The
+<code>NodePort</code> should be <code>30006</code>.</p>
+<ol start="4" type="1">
+<li><strong>Access MySQL from your local computer</strong>:</li>
+</ol>
+<p>Now we can connect to the MySQL database using the Minikube IP and
+the NodePort. First, we need to get the Minikube IP:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">minikube</span> ip</span></code></pre></div>
+<p>Then we connect to MySQL using a MySQL client:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mysql</span> <span class="at">-h</span> <span class="op">&lt;</span>minikube-ip<span class="op">&gt;</span> -P 30006 <span class="at">-u</span> <span class="op">&lt;</span>username<span class="op">&gt;</span> -p</span></code></pre></div>
+<p>Replace <code>&lt;minikube-ip&gt;</code> with the IP we got from the
+last command. Also, put your MySQL username in place of
+<code>&lt;username&gt;</code>.</p>
+<p>By following these steps, we expose the MySQL service running in
+Minikube using NodePort. Now we can access the database from
+outside.</p>
+<h2
+id="accessing-mysql-from-localhost-through-minikube-tunnel">Accessing
+MySQL from Localhost Through Minikube Tunnel</h2>
+<p>We can access MySQL that runs in our Minikube cluster from localhost
+by using the Minikube tunnel. This method helps us expose the MySQL
+service. Then we can connect to it directly with a local port.</p>
+<ol type="1">
+<li><p><strong>Start Minikube Tunnel</strong>: First, we need to open a
+terminal. Then we run the command below to start the tunnel. This
+command sets up a tunnel for our Minikube services.</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">minikube</span> tunnel</span></code></pre></div>
+<p>It will ask us for our system password. This is because it needs
+elevated privileges.</p></li>
+<li><p><strong>Create MySQL Service</strong>: We need to make sure we
+have a Kubernetes service for our MySQL deployment. If we do not have
+one, we should create a service YAML file. We can name it
+<code>mysql-service.yaml</code>:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> LoadBalancer</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span></code></pre></div>
+<p>Now we apply this configuration with the command below:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> mysql-service.yaml</span></code></pre></div></li>
+<li><p><strong>Get the MySQL Service IP</strong>: After we apply the
+service, we need to get the external IP for our MySQL service. We do
+this by running:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get services</span></code></pre></div>
+<p>We should look for the <code>EXTERNAL-IP</code> of the
+<code>mysql</code> service. It must be reachable on port
+<code>3306</code>.</p></li>
+<li><p><strong>Connect to MySQL</strong>: Next, we use a MySQL client to
+connect to the MySQL database. We do this using the external IP and
+port. For example:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mysql</span> <span class="at">-h</span> <span class="op">&lt;</span>EXTERNAL-IP<span class="op">&gt;</span> -P 3306 <span class="at">-u</span> root <span class="at">-p</span></span></code></pre></div>
+<p>We enter our password when it asks us.</p></li>
+</ol>
+<p>By following these steps, we can access our MySQL database that runs
+in Minikube from our local machine using the Minikube tunnel. This way
+is easy to work with services in our Kubernetes cluster without needing
+extra network setup. For more information on managing services in
+Kubernetes, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-services-and-how-do-they-expose-applications.html">this
+article on Kubernetes services</a>.</p>
+<h2 id="using-port-forwarding-to-connect-to-mysql-in-minikube">Using
+Port Forwarding to Connect to MySQL in Minikube</h2>
+<p>We can use port forwarding in Minikube to reach our MySQL service
+that runs in a Kubernetes cluster. This way helps us debug or access
+services without showing them to everyone.</p>
+<p>To connect to our MySQL service with port forwarding, we should
+follow these steps:</p>
+<ol type="1">
+<li><p><strong>Find the MySQL Pod Name</strong>: First, we need to know
+the name of the MySQL pod in our Minikube cluster. We can find this by
+using this command:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods</span></code></pre></div>
+<p>We should look for the pod name that matches our MySQL
+deployment.</p></li>
+<li><p><strong>Set Up Port Forwarding</strong>: Next, we use the
+<code>kubectl port-forward</code> command to send a port from our local
+machine to the MySQL pod. We replace <code>&lt;mysql-pod-name&gt;</code>
+with the real pod name and set the local port (like 3306):</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> port-forward <span class="op">&lt;</span>mysql-pod-name<span class="op">&gt;</span> 3306:3306</span></code></pre></div>
+<p>This command sends the local port 3306 to the pod’s port
+3306.</p></li>
+<li><p><strong>Connect to MySQL</strong>: After we set up port
+forwarding, we can connect to MySQL using our favorite MySQL client. For
+example, in the command line, we run:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mysql</span> <span class="at">-h</span> 127.0.0.1 <span class="at">-P</span> 3306 <span class="at">-u</span> <span class="op">&lt;</span>username<span class="op">&gt;</span> -p</span></code></pre></div>
+<p>We replace <code>&lt;username&gt;</code> with our MySQL username. We
+enter the password when it asks.</p></li>
+<li><p><strong>Accessing the Database</strong>: Now, after we connect,
+we can run MySQL commands like we are connected to a local MySQL
+server.</p></li>
+</ol>
+<p>This way is fast for us to access our MySQL service in Minikube
+without making it public. For more info on managing services in
+Kubernetes, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-services-and-how-do-they-expose-applications.html">this
+guide on Kubernetes services</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="how-do-we-expose-mysql-running-on-minikube">1. How do we expose
+MySQL running on Minikube?</h3>
+<p>To expose MySQL on Minikube, we can create a Kubernetes service with
+type NodePort. This lets outside users access our MySQL instance through
+a certain port. We define this service in a YAML file. Then we apply it
+using <code>kubectl apply -f &lt;filename&gt;.yaml</code>. This way, we
+can connect to MySQL from our localhost or any other client.</p>
+<h3 id="what-are-the-steps-to-set-up-mysql-on-localhost-for-minikube">2.
+What are the steps to set up MySQL on localhost for Minikube?</h3>
+<p>To set up MySQL on localhost for Minikube, we first install MySQL on
+our local machine. Then we create a Kubernetes deployment in Minikube.
+We need to define the MySQL deployment in a YAML file. We should specify
+the image and the environment variables for the MySQL root password.
+After that, we use <code>kubectl apply -f &lt;filename&gt;.yaml</code>
+to deploy it. For more details, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-a-stateful-application-e-g-mysql-on-kubernetes.html">how
+do I deploy a stateful application e.g. MySQL on Kubernetes</a>.</p>
+<h3 id="can-we-access-mysql-in-minikube-using-port-forwarding">3. Can we
+access MySQL in Minikube using port forwarding?</h3>
+<p>Yes, we can access MySQL in Minikube using port forwarding. We use
+the command
+<code>kubectl port-forward svc/&lt;mysql-service-name&gt; &lt;local-port&gt;:&lt;mysql-port&gt;</code>.
+This command forwards traffic from our local machine to the MySQL
+service in Minikube. This means we can connect to MySQL directly from
+our localhost without using a NodePort service.</p>
+<h3
+id="what-is-the-difference-between-nodeport-and-clusterip-services-in-kubernetes">4.
+What is the difference between NodePort and ClusterIP services in
+Kubernetes?</h3>
+<p>NodePort and ClusterIP are two kinds of Kubernetes services. A
+ClusterIP service exposes the service on a cluster-internal IP. This
+means it is only available inside the cluster. On the other hand, a
+NodePort service exposes the service on each node’s IP at a fixed port.
+This allows outside traffic to reach it. For more information, we can
+look at <a
+href="https://bestonlinetutorial.com/kubernetes/difference-between-clusterip-nodeport-and-loadbalancer-service-types-in-kubernetes-kubernetes.html">the
+difference between ClusterIP, NodePort, and LoadBalancer service types
+in Kubernetes</a>.</p>
+<h3
+id="how-can-we-connect-to-mysql-from-localhost-when-using-minikube">5.
+How can we connect to MySQL from localhost when using Minikube?</h3>
+<p>To connect to MySQL from localhost while using Minikube, we can use
+either port forwarding or a Minikube tunnel. With port forwarding, we
+run
+<code>kubectl port-forward svc/&lt;mysql-service-name&gt; &lt;local-port&gt;:&lt;mysql-port&gt;</code>.
+If we want to use a Minikube tunnel, we can run
+<code>minikube tunnel</code>. This will expose the MySQL service and let
+us access it via the NodePort. This helps us manage our database easily
+from our local setup.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
