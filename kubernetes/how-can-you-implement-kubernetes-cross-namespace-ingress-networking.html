@@ -1,0 +1,525 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How Can You Implement Kubernetes Cross Namespace Ingress Networking?</title>
+            <meta name="description" content="Discover how to implement Kubernetes cross-namespace ingress networking effectively. Enhance your cluster's connectivity today!">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Can You Implement Kubernetes Cross Namespace Ingress Networking?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To set up Kubernetes cross namespace ingress networking well, we need
+to configure ingress resources. These resources let services in
+different namespaces talk to each other. By using Kubernetes Ingress
+controllers, we can create rules. These rules send traffic from one
+external IP to services in many namespaces. This way, we can access and
+manage our applications easily. This method helps us grow and organize
+our Kubernetes setup. It also keeps a clear line between different
+namespaces.</p>
+<p>In this article, we will look at different parts of setting up
+Kubernetes cross namespace ingress networking. We will talk about what
+Kubernetes Ingress does. We will also learn how to set up ingress
+resources for cross-namespace access. Plus, we will see how to use
+ExternalDNS to help with service discovery. We will cover how to make
+network policies for safe communication. Lastly, we will give some tips
+for fixing common problems that can happen. We will cover these
+topics:</p>
+<ul>
+<li>Understanding Kubernetes Ingress and Its Role in Cross Namespace
+Networking</li>
+<li>Configuring Ingress Resources for Cross Namespace Access</li>
+<li>Utilizing ExternalDNS for Cross Namespace Ingress Networking</li>
+<li>Implementing Network Policies for Secure Cross Namespace
+Communication</li>
+<li>Troubleshooting Common Issues in Cross Namespace Ingress
+Networking</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2
+id="understanding-kubernetes-ingress-and-its-role-in-cross-namespace-networking">Understanding
+Kubernetes Ingress and Its Role in Cross Namespace Networking</h2>
+<p>Kubernetes Ingress is a tool that helps us control external access to
+services in a cluster. It usually works with HTTP. Ingress gives us a
+simple way to set up rules for routing traffic to different applications
+in various namespaces. This helps with communication across
+namespaces.</p>
+<h3 id="role-of-ingress-in-cross-namespace-networking">Role of Ingress
+in Cross Namespace Networking</h3>
+<ul>
+<li><p><strong>Routing Traffic</strong>: With Ingress, we can set rules
+for directing external HTTP/S traffic to different services. We do this
+based on hostnames and paths. This makes it easy to access applications
+in many namespaces.</p></li>
+<li><p><strong>Centralized Management</strong>: Using Ingress lets us
+keep all our routing rules in one spot. This makes it easier to set up
+and manage cross namespace access.</p></li>
+<li><p><strong>TLS Termination</strong>: Ingress can take care of TLS
+termination. This means we can have secure communication for services
+across namespaces. Each service does not need to handle its own
+certificates.</p></li>
+</ul>
+<h3 id="example-of-ingress-resource-for-cross-namespace-access">Example
+of Ingress Resource for Cross Namespace Access</h3>
+<p>To set up an Ingress resource for cross namespace access, we need to
+specify the service in the target namespace. Here is an example YAML
+configuration:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-ingress</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> ingress-namespace</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">host</span><span class="kw">:</span><span class="at"> example.com</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">paths</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /service</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">backend</span><span class="kw">:</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">service</span><span class="kw">:</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<p>In this example, we define the Ingress resource in the
+<code>ingress-namespace</code>. It routes requests to
+<code>my-service</code>, which is in a different namespace.</p>
+<h3 id="important-considerations">Important Considerations</h3>
+<ul>
+<li><p><strong>Service Account Permissions</strong>: We need to make
+sure that the Ingress controller has the right permissions to access
+services across namespaces. This might mean setting up Role-Based Access
+Control (RBAC).</p></li>
+<li><p><strong>Ingress Controller</strong>: We should deploy a suitable
+Ingress controller like NGINX or Traefik. This is important for
+supporting cross namespace routing.</p></li>
+<li><p><strong>DNS Configuration</strong>: If we use external DNS, we
+have to check that the DNS records are set up correctly. They should
+point to the Ingress controller’s external IP.</p></li>
+</ul>
+<p>By using Kubernetes Ingress, we can manage cross namespace networking
+well. This allows different applications to talk to each other easily
+while keeping our architecture secure and organized. For more details on
+how to set up Ingress for external access, we can look at this article
+on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html">how
+to configure ingress for external access to my applications</a>.</p>
+<h2
+id="configuring-ingress-resources-for-cross-namespace-access">Configuring
+Ingress Resources for Cross Namespace Access</h2>
+<p>We need to set up cross namespace access in Kubernetes using Ingress
+resources. This means we have to create Ingress rules that send traffic
+to services in different namespaces. Here is a simple guide to help us
+do this:</p>
+<ol type="1">
+<li><p><strong>Define Your Services</strong>: First, we check that we
+have services running in different namespaces. For example, we can have
+a service called <code>backend-service</code> in the namespace
+<code>backend</code>. We can also have a service called
+<code>frontend-service</code> in the namespace
+<code>frontend</code>.</p></li>
+<li><p><strong>Create Ingress Resource</strong>: Next, we create an
+Ingress resource in the namespace where we want to manage incoming
+traffic. For example, we can use <code>frontend</code>.</p></li>
+</ol>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cross-namespace-ingress</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> frontend</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">host</span><span class="kw">:</span><span class="at"> example.com</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /api</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> backend-service</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<ol start="3" type="1">
+<li><p><strong>Reference Services Across Namespaces</strong>: We need to
+make sure that the Ingress resource can reach services in other
+namespaces. We do this by specifying the service name and the
+port.</p></li>
+<li><p><strong>Update External DNS</strong>: If we use an external DNS
+service, we have to make sure it points to the Ingress controller’s IP
+address.</p></li>
+<li><p><strong>Verify Ingress Controller</strong>: We need to check that
+our Kubernetes cluster has an Ingress controller, like the NGINX Ingress
+Controller. It should be deployed and set up to manage the Ingress
+rules.</p></li>
+<li><p><strong>Network Policies</strong>: If we have network policies,
+we must ensure they allow traffic from the Ingress controller to the
+services in other namespaces.</p></li>
+<li><p><strong>Testing</strong>: After we apply the Ingress
+configuration, we test the access using curl or a web browser:</p></li>
+</ol>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://example.com/api</span></code></pre></div>
+<p>By following these steps, we can set up Ingress resources for cross
+namespace access in our Kubernetes cluster. We can change the host and
+path according to what our application needs. For more information on
+Kubernetes Ingress, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/configure-ingress-for-external-access-to-my-applications.html">this
+article</a>.</p>
+<h2
+id="utilizing-externaldns-for-cross-namespace-ingress-networking">Utilizing
+ExternalDNS for Cross Namespace Ingress Networking</h2>
+<p>To use Kubernetes Cross Namespace Ingress Networking well, we can use
+ExternalDNS. ExternalDNS helps us manage DNS records for our Kubernetes
+services. This makes it easy to access services from different
+namespaces.</p>
+<h3 id="prerequisites">Prerequisites</h3>
+<ul>
+<li>First, we need a running Kubernetes cluster.</li>
+<li>Next, we install ExternalDNS in our cluster. We can do it using Helm
+or kubectl.</li>
+</ul>
+<h3 id="installing-externaldns">Installing ExternalDNS</h3>
+<p>Using Helm:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> repo add bitnami https://charts.bitnami.com/bitnami</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> install external-dns bitnami/external-dns <span class="at">--set</span> provider=aws <span class="at">--set</span> aws.zoneType=public</span></code></pre></div>
+<h3 id="configuring-externaldns-for-cross-namespace-access">Configuring
+ExternalDNS for Cross Namespace Access</h3>
+<ol type="1">
+<li><strong>Set Up Annotations</strong>: We need to add annotations to
+our Ingress resources in each namespace. This tells ExternalDNS what DNS
+records we want.</li>
+</ol>
+<p>Example Ingress in <code>namespace-a</code>:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-ingress</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> namespace-a</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">external-dns.alpha.kubernetes.io/hostname</span><span class="kw">:</span><span class="at"> myapp.example.com</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">host</span><span class="kw">:</span><span class="at"> myapp.example.com</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Deploy ExternalDNS</strong>: Now we need to make sure
+ExternalDNS can read Ingress resources in all namespaces. We might need
+to create a ClusterRole and ClusterRoleBinding.</li>
+</ol>
+<p>ClusterRole example:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-dns</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;networking.k8s.io&quot;</span><span class="kw">]</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;ingresses&quot;</span><span class="kw">]</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">]</span></span></code></pre></div>
+<ol start="3" type="1">
+<li><strong>Service Account</strong>: We also need to create a Service
+Account for ExternalDNS.</li>
+</ol>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-dns</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span></code></pre></div>
+<ol start="4" type="1">
+<li><strong>ClusterRoleBinding</strong>:</li>
+</ol>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-dns</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">roleRef</span><span class="kw">:</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-dns</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="fu">subjects</span><span class="kw">:</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-dns</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span></code></pre></div>
+<h3 id="verifying-dns-records">Verifying DNS Records</h3>
+<p>After we deploy ExternalDNS, we need to check if the DNS records are
+made correctly. We can do this by looking at our DNS provider or by
+using the <code>dig</code> command:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dig</span> myapp.example.com</span></code></pre></div>
+<p>This way, we get automatic DNS updates when Ingress resources change.
+It helps with cross-namespace access in Kubernetes. For more details on
+setting up and managing Ingress, we can visit <a
+href="https://bestonlinetutorial.com/kubernetes/configure-ingress-for-external-access-to-my-applications.html">this
+guide on Ingress in Kubernetes</a>.</p>
+<h2
+id="implementing-network-policies-for-secure-cross-namespace-communication">Implementing
+Network Policies for Secure Cross Namespace Communication</h2>
+<p>We can make sure that services talk safely across different
+namespaces in Kubernetes by using Network Policies. Network Policies
+help us control the traffic flow at the IP address or port level. This
+way, we can decide which pods can talk to each other.</p>
+<h3 id="creating-network-policies">Creating Network Policies</h3>
+<p>When we create a Network Policy, we need to define the
+<code>podSelector</code>, <code>ingress</code>, and <code>egress</code>
+rules. These rules tell how traffic is allowed to move. Here is a simple
+example of a Network Policy that lets ingress traffic from a specific
+namespace.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> allow-cross-namespace</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> target-namespace</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">from</span><span class="kw">:</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">namespaceSelector</span><span class="kw">:</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> source-namespace</span></span></code></pre></div>
+<p>In this example: - The <code>namespaceSelector</code> tells which
+namespace can send traffic. - The <code>matchLabels</code> under
+<code>podSelector</code> shows which pods in the target namespace this
+policy affects.</p>
+<h3 id="denying-all-traffic-by-default">Denying All Traffic by
+Default</h3>
+<p>To make sure only allowed traffic can come in, we must create a
+default deny policy in each namespace. We can do this with the following
+setup:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> deny-all</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> target-namespace</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">policyTypes</span><span class="kw">:</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> Ingress</span></span></code></pre></div>
+<h3 id="applying-network-policies">Applying Network Policies</h3>
+<p>To use the above configurations, we save them in <code>.yaml</code>
+files. Then we run the <code>kubectl apply</code> command:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> allow-cross-namespace.yaml</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> deny-all.yaml</span></code></pre></div>
+<h3 id="testing-network-policies">Testing Network Policies</h3>
+<p>After we set up Network Policies, we can check if pods in different
+namespaces can connect. We can use <code>kubectl exec</code> for this.
+For example, to see if a pod in <code>source-namespace</code> can talk
+to a pod in <code>target-namespace</code>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> exec <span class="at">-it</span> <span class="op">&lt;</span>source-pod<span class="op">&gt;</span> -n source-namespace <span class="at">--</span> curl http://<span class="op">&lt;</span>target-pod-ip<span class="op">&gt;</span>:<span class="op">&lt;</span>port<span class="op">&gt;</span></span></code></pre></div>
+<p>We should make sure that the communication works as we expect based
+on the Network Policies we defined.</p>
+<p>For more details on managing traffic in Kubernetes, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-use-network-policies-to-control-traffic-in-kubernetes.html">how
+to use network policies to control traffic in Kubernetes</a>.</p>
+<h2
+id="troubleshooting-common-issues-in-cross-namespace-ingress-networking">Troubleshooting
+Common Issues in Cross Namespace Ingress Networking</h2>
+<p>Kubernetes cross namespace ingress networking can cause many
+problems. We will look at some common issues and how to fix them.</p>
+<ol type="1">
+<li><p><strong>Ingress Resource Misconfiguration</strong>:<br />
+We need to make sure the ingress resource is correctly pointing to the
+services in the target namespace. The <code>backend</code> section must
+have the right service name and port.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-ingress</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> namespace-a</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">host</span><span class="kw">:</span><span class="at"> example.domain.com</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service-b</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div></li>
+<li><p><strong>Network Policies</strong>:<br />
+We should check if there are any Network Policies that could block
+traffic between namespaces. We need to ensure that the ingress
+controller pods can talk to the service endpoints.</p>
+<p>Example Network Policy to allow ingress traffic:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> allow-ingress</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> namespace-b</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> service-b</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">from</span><span class="kw">:</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">podSelector</span><span class="kw">:</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">app</span><span class="kw">:</span><span class="at"> ingress-controller</span></span></code></pre></div></li>
+<li><p><strong>Service Type</strong>:<br />
+We must check that the service targeted by the ingress is of the right
+type. It can be ClusterIP, NodePort, or LoadBalancer. Usually, ClusterIP
+is used for internal service communication.</p></li>
+<li><p><strong>DNS Resolution</strong>:<br />
+Let’s verify that DNS resolution works well in our cluster. We can use
+this command to test DNS resolution:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> exec <span class="at">-ti</span> <span class="op">&lt;</span>pod-name<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span> -- nslookup <span class="op">&lt;</span>service-name<span class="op">&gt;</span>.<span class="op">&lt;</span>target-namespace<span class="op">&gt;</span>.svc.cluster.local</span></code></pre></div></li>
+<li><p><strong>Ingress Controller Logs</strong>:<br />
+We should check the logs of the ingress controller for any errors or
+warnings. This gives us quick insight into misconfigurations or
+issues.</p>
+<p>Example command to view logs:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs <span class="at">-n</span> kube-system <span class="op">&lt;</span>ingress-controller-pod-name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>TLS Configuration</strong>:<br />
+If we are using HTTPS, we need to ensure that the TLS configuration is
+correct. We should check that the certificates are valid and properly
+referenced in the ingress resource.</p>
+<p>Example TLS configuration:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tls</span><span class="kw">:</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">hosts</span><span class="kw">:</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> example.domain.com</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">secretName</span><span class="kw">:</span><span class="at"> example-tls</span></span></code></pre></div></li>
+<li><p><strong>Ingress Annotations</strong>:<br />
+We must look for any necessary annotations specific to our ingress
+controller. These annotations can change behavior and routing.</p>
+<p>Example annotation for nginx ingress:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">nginx.ingress.kubernetes.io/rewrite-target</span><span class="kw">:</span><span class="at"> /</span></span></code></pre></div></li>
+<li><p><strong>Firewall Rules</strong>:<br />
+In cloud environments, we need to ensure that firewall rules or security
+groups are set up to allow traffic on the needed ports.</p></li>
+</ol>
+<p>By solving these common issues step-by-step, we can troubleshoot
+cross namespace ingress networking problems in our Kubernetes
+environment. For a better understanding of Kubernetes ingress and its
+role in networking, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html">Understanding
+Kubernetes Ingress and Its Role in Cross Namespace Networking</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-kubernetes-cross-namespace-ingress-networking">What is
+Kubernetes Cross Namespace Ingress Networking?</h3>
+<p>Kubernetes Cross Namespace Ingress Networking helps services in one
+namespace to connect with clients in another namespace using Ingress
+resources. This is important for microservices. We often use multiple
+namespaces to keep things organized and secure. Knowing how to set this
+up can make our Kubernetes networking better.</p>
+<h3 id="how-do-i-configure-ingress-for-cross-namespace-access">How do I
+configure Ingress for cross namespace access?</h3>
+<p>To set up Ingress for cross namespace access in Kubernetes, we need
+to create Ingress resources. These resources tell which services are in
+different namespaces. We do this by writing the rules in our Ingress
+resource YAML. Also, we make sure that the Ingress controller knows
+about the namespaces we use. We can follow the rules in the <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html">Kubernetes
+documentation</a> to get this right.</p>
+<h3
+id="how-does-externaldns-facilitate-cross-namespace-ingress-networking">How
+does ExternalDNS facilitate cross namespace ingress networking?</h3>
+<p>ExternalDNS helps us manage DNS entries for our Kubernetes services.
+This includes services that are in different namespaces. When we use
+ExternalDNS with our Ingress resources, it makes sure that DNS records
+are made and updated when services change. This helps with communication
+across namespaces. It is very important for keeping our systems
+accessible.</p>
+<h3
+id="what-network-policies-should-i-implement-for-secure-cross-namespace-communication">What
+network policies should I implement for secure cross namespace
+communication?</h3>
+<p>We need to use Network Policies to keep cross namespace communication
+safe in Kubernetes. We can set rules that control traffic between
+namespaces. This way, only trusted services can talk to each other. We
+can keep our security strong while allowing important interactions. We
+can learn more about <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-security-best-practices.html">security
+best practices</a> for Kubernetes.</p>
+<h3
+id="what-are-common-issues-encountered-in-cross-namespace-ingress-networking">What
+are common issues encountered in cross namespace ingress
+networking?</h3>
+<p>Some common issues in cross namespace ingress networking are wrong
+Ingress resources, DNS problems, and network policy rules that block
+traffic. To fix these issues, we might need to check the logs from the
+Ingress controller. We should also verify service endpoints and look
+over Network Policies. For more help with troubleshooting, we can check
+<a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-troubleshoot-issues-in-my-kubernetes-deployments.html">this
+guide</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

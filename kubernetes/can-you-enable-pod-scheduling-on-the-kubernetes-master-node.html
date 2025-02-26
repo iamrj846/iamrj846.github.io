@@ -1,0 +1,387 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>Can You Enable Pod Scheduling on the Kubernetes Master Node?</title>
+            <meta name="description" content="Discover if you can enable pod scheduling on the Kubernetes master node and optimize your cluster's performance effectively.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Can You Enable Pod Scheduling on the Kubernetes Master Node?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Yes, we can enable pod scheduling on the Kubernetes master node by
+changing its default settings. This lets us use the master node for
+running workloads. This can help us in smaller clusters or when we are
+testing. But we need to be careful with this choice. It can change how
+well our Kubernetes control plane works and how stable it is.</p>
+<p>In this article, we will look at the different parts of enabling pod
+scheduling on the Kubernetes master node. We will check the default way
+Kubernetes handles master node scheduling. We will also see how to
+change the settings on the master node. We will talk about taints and
+tolerations too, and share the best ways to set this up. Also, we will
+answer some common questions to clear up any doubts.</p>
+<ul>
+<li>Understanding the Default Behavior of Kubernetes Master Node
+Scheduling</li>
+<li>How to Modify the Master Node to Allow Pod Scheduling</li>
+<li>Using Taints and Tolerations for Master Node Scheduling</li>
+<li>Configuring Kubernetes to Allow Pods on the Master Node</li>
+<li>Best Practices for Enabling Pod Scheduling on the Master Node</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2
+id="understanding-the-default-behavior-of-kubernetes-master-node-scheduling">Understanding
+the Default Behavior of Kubernetes Master Node Scheduling</h2>
+<p>By default, the Kubernetes master node runs important parts of the
+control plane. These parts include the API server, controller manager,
+and scheduler. So, the master node does not usually run regular pods for
+user applications. We enforce this behavior with taints.</p>
+<p>The default taint on the master node is:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> taint nodes <span class="at">--all</span> node-role.kubernetes.io/master=:NoSchedule</span></code></pre></div>
+<p>This taint stops any pods from being scheduled on the master node
+unless they can tolerate this taint. This means that any pods we deploy
+without the right tolerations will not go on the master node.</p>
+<p>It is important for us to understand this default behavior. If we
+want to use the master node to schedule pods, we need to make some
+changes. For example, if we need to run extra workloads on the master
+node for testing or development, we must adjust the settings to allow
+this.</p>
+<p>To learn more about Kubernetes components, we can check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">what
+are the key components of a Kubernetes cluster</a>.</p>
+<h2 id="how-to-change-the-master-node-to-allow-pod-scheduling">How to
+Change the Master Node to Allow Pod Scheduling</h2>
+<p>By default, Kubernetes does not let us schedule pods on the master
+node. This rule helps keep the control plane steady and running well.
+But we can change this if we need to for testing or development.</p>
+<h3 id="step-1-change-the-kubelet-configuration">Step 1: Change the
+Kubelet Configuration</h3>
+<p>We need to change the kubelet settings on the master node. The
+kubelet has a <code>--register-with-taints</code> option that stops us
+from scheduling pods there. To let pods schedule, we must remove or
+change this setting.</p>
+<ol type="1">
+<li><p>First, open the kubelet configuration file. You can find it at
+<code>/var/lib/kubelet/kubeadm-flags.env</code> or
+<code>/etc/default/kubelet</code>, depending on how you set it
+up.</p></li>
+<li><p>Next, find the line with <code>KUBELET_KUBEADM_ARGS</code>. We
+will change it by removing the taint. It looks like this:</p></li>
+</ol>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="va">KUBELET_KUBEADM_ARGS</span><span class="op">=</span><span class="st">&quot;--kubeconfig-dir=/etc/kubernetes --config=/var/lib/kubelet/config.yaml --register-with-taints=node-role.kubernetes.io/master=:NoSchedule&quot;</span></span></code></pre></div>
+<p>We change it to:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="va">KUBELET_KUBEADM_ARGS</span><span class="op">=</span><span class="st">&quot;--kubeconfig-dir=/etc/kubernetes --config=/var/lib/kubelet/config.yaml&quot;</span></span></code></pre></div>
+<h3 id="step-2-restart-the-kubelet">Step 2: Restart the Kubelet</h3>
+<p>After we change the file, we need to restart the kubelet service to
+make the changes work:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl daemon-reload</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart kubelet</span></code></pre></div>
+<h3 id="step-3-check-the-changes">Step 3: Check the Changes</h3>
+<p>We can check if the master node can now take pods by looking at the
+node conditions:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get nodes</span></code></pre></div>
+<p>We should see the master node listed without the taint that stops
+scheduling.</p>
+<h3 id="step-4-deploy-a-test-pod">Step 4: Deploy a Test Pod</h3>
+<p>Now we can test pod scheduling on the master node by using a simple
+pod:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-pod</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span></code></pre></div>
+<p>We can deploy the pod by using:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> test-pod.yaml</span></code></pre></div>
+<p>Then use <code>kubectl get pods -o wide</code> to see if the pod runs
+on the master node.</p>
+<p>This way, we can schedule pods on the Kubernetes master node. This is
+good for testing or development. But for production, it is best to keep
+workloads on separate worker nodes. This helps the cluster’s control
+plane stay strong.</p>
+<h2 id="using-taints-and-tolerations-for-master-node-scheduling">Using
+Taints and Tolerations for Master Node Scheduling</h2>
+<p>In Kubernetes, we use taints and tolerations to control which pods
+can go on specific nodes. By default, the master node has a taint. This
+stops regular workloads from being scheduled on it. But we can allow
+some pods to tolerate this taint and run on the master node.</p>
+<h3 id="tainting-the-master-node">Tainting the Master Node</h3>
+<p>If we want to let pods on the master node, we need to remove the
+current taint or add a toleration to our pod’s settings.</p>
+<ol type="1">
+<li><p><strong>Check Current Taints on the Master Node:</strong></p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> describe node <span class="op">&lt;</span>master-node-name<span class="op">&gt;</span> <span class="kw">|</span> <span class="fu">grep</span> Taints</span></code></pre></div></li>
+<li><p><strong>Remove the Taint:</strong></p>
+<p>If we want to completely remove the taint from the master node, we
+can run this command:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> taint nodes <span class="op">&lt;</span>master-node-name<span class="op">&gt;</span> node-role.kubernetes.io/master:NoSchedule-</span></code></pre></div></li>
+<li><p><strong>Add a Toleration to Your Pod:</strong></p>
+<p>If we want to keep the taint but still allow some pods to run on the
+master node, we can add a toleration to our pod’s YAML file. Here is an
+example:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pod</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">tolerations</span><span class="kw">:</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;node-role.kubernetes.io/master&quot;</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Exists&quot;</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoSchedule&quot;</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span></code></pre></div></li>
+</ol>
+<h3 id="key-points">Key Points</h3>
+<ul>
+<li><strong>Taint</strong>: This is a quality that makes a node avoid
+pods that do not tolerate the taint.</li>
+<li><strong>Toleration</strong>: This helps a pod to be scheduled on a
+node that has a matching taint.</li>
+</ul>
+<p>This way, we can keep the master node isolated but still let specific
+pods run on it when needed. For more information on managing nodes in
+Kubernetes, we can check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">Kubernetes
+Node Management</a>.</p>
+<h2
+id="configuring-kubernetes-to-allow-pods-on-the-master-node">Configuring
+Kubernetes to Allow Pods on the Master Node</h2>
+<p>To make Kubernetes allow pod scheduling on the master node, we need
+to change some default settings. These settings stop pods from being
+scheduled on the master node. Let’s follow these steps:</p>
+<ol type="1">
+<li><p><strong>Edit the Kubelet Configuration</strong>: On the master
+node, we change the kubelet configuration file to allow pods. You can
+usually find this file at <code>/var/lib/kubelet/config.yaml</code> or
+<code>/etc/systemd/system/kubelet.service.d/10-kubeadm.conf</code>.</p>
+<p>For example, if we are using <code>kubeadm</code>, we edit the
+<code>10-kubeadm.conf</code> file. We need to remove the
+<code>--register-with-taints</code> option or set it like this:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="va">Environment</span><span class="op">=</span><span class="st">&quot;KUBELET_EXTRA_ARGS=--register-with-taints=node-role.kubernetes.io/master=:NoSchedule&quot;</span></span></code></pre></div>
+<p>We change it to:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="va">Environment</span><span class="op">=</span><span class="st">&quot;KUBELET_EXTRA_ARGS=--register-with-taints=&quot;</span></span></code></pre></div></li>
+<li><p><strong>Remove the Taint</strong>: If we already applied the
+taint to the master node, we have to remove it. We can run this
+command:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> taint nodes <span class="at">--all</span> node-role.kubernetes.io/master-</span></code></pre></div>
+<p>This command takes away the taint that stops scheduling on the master
+node.</p></li>
+<li><p><strong>Restart Kubelet</strong>: After we make the changes, we
+restart the kubelet service. This will apply the new configuration.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl daemon-reload</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart kubelet</span></code></pre></div></li>
+<li><p><strong>Verify Configuration</strong>: To check if the master
+node can accept pods now, we can run this command:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get nodes</span></code></pre></div>
+<p>We should make sure that the master node does not have any taints. We
+can also check by scheduling a test pod:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-pod</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span></code></pre></div>
+<p>We apply this configuration with:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> test-pod.yaml</span></code></pre></div>
+<p>Then we check the status of the pod:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pods</span></code></pre></div></li>
+</ol>
+<p>By following these steps, we can configure Kubernetes to allow pods
+on the master node. This helps us use resources better in our cluster.
+For more information on Kubernetes parts and settings, we can look at
+this guide on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">Kubernetes
+key components</a>.</p>
+<h2
+id="best-practices-for-enabling-pod-scheduling-on-the-master-node">Best
+Practices for Enabling Pod Scheduling on the Master Node</h2>
+<p>When we enable pod scheduling on the Kubernetes master node, it is
+important to follow some best practices. This will help us keep our
+cluster stable, fast, and secure. Here are the key tips we should
+remember:</p>
+<ol type="1">
+<li><p><strong>Use Taints and Tolerations</strong>: We can apply taints
+on the master node. This will stop non-critical workloads from being
+scheduled unless they can tolerate the taint. For example, we can taint
+our master node like this:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> taint nodes <span class="op">&lt;</span>master-node-name<span class="op">&gt;</span> key=value:NoSchedule</span></code></pre></div>
+<p>Then, we need to add tolerations to our pod specifications:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tolerations</span><span class="kw">:</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;key&quot;</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Equal&quot;</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;value&quot;</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoSchedule&quot;</span></span></code></pre></div></li>
+<li><p><strong>Limit Resource Usage</strong>: We should set limits for
+resources on pods that run on the master node. This helps to prevent
+using all resources. We can define requests and limits in our pod
+specifications:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;256Mi&quot;</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span></code></pre></div></li>
+<li><p><strong>Run Non-Critical Workloads</strong>: We should only
+deploy non-critical workloads on the master node. This way, we avoid
+affecting cluster management components. We can use the master node for
+workloads that can handle some interruptions.</p></li>
+<li><p><strong>Monitor Resource Utilization</strong>: It is good to
+check CPU, memory, and network usage on the master node regularly. We
+can use tools like Prometheus or Grafana to monitor in real-time. This
+helps us find resource problems quickly.</p></li>
+<li><p><strong>Backup the Master Node</strong>: We need to have a backup
+plan for our master node. We should back up etcd data and Kubernetes
+settings often. This will help us avoid losing data if something goes
+wrong.</p></li>
+<li><p><strong>Isolate Control Plane Components</strong>: We should keep
+control plane things like the API server and etcd separate from user
+workloads. We can do this with node-affinity rules or by using different
+nodes just for control planes.</p></li>
+<li><p><strong>Review Pod Security Policies</strong>: We should put in
+place Pod Security Policies. This helps us set rules for the pods that
+can run on the master node. This can lower security risks when running
+extra workloads.</p></li>
+<li><p><strong>Consider High Availability</strong>: If we enable pod
+scheduling on the master node, we should think about setting up a highly
+available (HA) control plane. This will help us spread the workload
+across multiple master nodes. This way, we can improve fault
+tolerance.</p></li>
+</ol>
+<p>By following these best practices, we can enable pod scheduling on
+the Kubernetes master node. This helps us keep our Kubernetes cluster
+healthy and performing well. For more information about Kubernetes and
+its parts, we can check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">this
+guide on Kubernetes components</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="can-we-run-pods-on-the-kubernetes-master-node">1. Can we run
+pods on the Kubernetes master node?</h3>
+<p>Yes, we can enable pod scheduling on the Kubernetes master node.
+Normally, Kubernetes stops pods from running on the master to keep it
+stable. But we can change this by removing the taints on the master node
+or by using tolerations in our pod settings. If you want to know more,
+check our article on <a
+href="https://bestonlinetutorial.com/kubernetes/best-practices-for-enabling-pod-scheduling-on-the-master-node.html">best
+practices for enabling pod scheduling on the master node</a>.</p>
+<h3 id="what-are-the-risks-of-scheduling-pods-on-the-master-node">2.
+What are the risks of scheduling pods on the master node?</h3>
+<p>If we schedule pods on the master node, it can cause resource issues.
+This may hurt the control plane’s performance and stability. If the
+master node gets too busy, it can affect important services like the API
+server, scheduler, and controller manager. We should check our cluster’s
+capacity and workload before allowing pods on the master node to keep
+everything running well.</p>
+<h3 id="how-do-we-remove-taints-from-the-kubernetes-master-node">3. How
+do we remove taints from the Kubernetes master node?</h3>
+<p>To let pods run on the Kubernetes master node, we must remove the
+taint that stops them from scheduling there. We can do this with the
+<code>kubectl</code> command:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> taint nodes <span class="at">--all</span> node-role.kubernetes.io/master-</span></code></pre></div>
+<p>This command will take away the taint from all nodes marked as
+master. This lets pods be scheduled. For more details, visit our guide
+on <a
+href="https://bestonlinetutorial.com/kubernetes/using-taints-and-tolerations-for-master-node-scheduling.html">using
+taints and tolerations</a>.</p>
+<h3
+id="what-is-the-default-behavior-of-kubernetes-about-master-node-scheduling">4.
+What is the default behavior of Kubernetes about master node
+scheduling?</h3>
+<p>By default, Kubernetes does not allow pods on the master node. This
+is to keep the control plane performing well and stable. This setup
+makes sure that important parts stay working without problems from user
+workloads. For a better understanding, see our article on <a
+href="https://bestonlinetutorial.com/kubernetes/understanding-the-default-behavior-of-kubernetes-master-node-scheduling.html">understanding
+the default behavior of Kubernetes master node scheduling</a>.</p>
+<h3
+id="how-can-we-configure-kubernetes-to-allow-pod-scheduling-on-the-master-node">5.
+How can we configure Kubernetes to allow pod scheduling on the master
+node?</h3>
+<p>To set up Kubernetes for pod scheduling on the master node, we can
+either remove the taints or add tolerations to our pod settings. We can
+do this by editing the deployment YAML file to add tolerations or by
+running the right <code>kubectl</code> commands. For more on this, see
+our article on <a
+href="https://bestonlinetutorial.com/kubernetes/configuring-kubernetes-to-allow-pods-on-the-master-node.html">configuring
+Kubernetes to allow pods on the master node</a>.</p>
+<p>By answering these FAQs, we want to help clear up common questions
+about enabling pod scheduling on the Kubernetes master node and guide us
+through best practices to keep our Kubernetes environment stable.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

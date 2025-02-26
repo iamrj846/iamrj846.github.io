@@ -1,0 +1,528 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>Can You Target Multiple Pods with a Single Request in a Kubernetes Cluster?</title>
+            <meta name="description" content="Discover how to target multiple pods with a single request in Kubernetes. Enhance your cluster management and optimize performance!">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Can You Target Multiple Pods with a Single Request in a Kubernetes Cluster?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Yes, we can target many pods with just one request in a Kubernetes
+cluster. We do this by using services, load balancers, and other
+networking tools. Kubernetes services hide the details of the pods. This
+means we can send requests to one service endpoint. The service can then
+send the traffic to many pods in a smart way. This helps us keep our
+applications running well and balance the load. It also lets our
+applications grow while sharing the traffic among the pods.</p>
+<p>In this article, we will look at different ways to target multiple
+pods with one request in Kubernetes. We will talk about load balancers.
+We will explain how to use service mesh. We will also cover StatefulSets
+and the good things about headless services. Plus, we will discuss how
+to use Custom Resource Definitions (CRDs) for more tricky situations.
+Here are the topics we will cover:</p>
+<ul>
+<li>Understanding Load Balancer for Targeting Multiple Pods in
+Kubernetes</li>
+<li>Using Service Mesh to Target Multiple Pods in a Kubernetes
+Cluster</li>
+<li>Implementing StatefulSets to Target Multiple Pods in Kubernetes</li>
+<li>Exploring Headless Services for Targeting Multiple Pods in
+Kubernetes</li>
+<li>Using Custom Resource Definitions for Targeting Multiple Pods in
+Kubernetes</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2
+id="understanding-load-balancer-for-targeting-multiple-pods-in-kubernetes-cluster">Understanding
+Load Balancer for Targeting Multiple Pods in Kubernetes Cluster</h2>
+<p>In a Kubernetes cluster, we can target multiple pods by using a
+<strong>Load Balancer</strong>. A Load Balancer service helps to share
+incoming traffic across the pods in a service. This way, we make sure
+requests are balanced well. It gives us high availability and
+reliability.</p>
+<h3 id="loadbalancer-service-type">LoadBalancer Service Type</h3>
+<p>To set up a Load Balancer in Kubernetes, we create a service with the
+type <code>LoadBalancer</code>. This type makes an external load
+balancer that sends traffic to the pods we have.</p>
+<p>Here is an example of how to create a LoadBalancer service:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-loadbalancer-service</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> LoadBalancer</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div>
+<h3 id="key-properties">Key Properties</h3>
+<ul>
+<li><strong>selector</strong>: This tells us which labels to match the
+pods that the service targets. All pods with the matching labels will
+get traffic.</li>
+<li><strong>ports</strong>: This shows the port setup. The
+<code>port</code> is open to the outside, while the
+<code>targetPort</code> is the port on the pod.</li>
+</ul>
+<h3 id="example-of-a-deployment-and-service">Example of a Deployment and
+Service</h3>
+<p>Let’s say we have a deployment running multiple pods:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-container</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app-image</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div>
+<p>This deployment makes 3 copies of our application. The LoadBalancer
+service we defined above will send traffic to these pods based on the
+selector.</p>
+<h3 id="accessing-the-load-balancer">Accessing the Load Balancer</h3>
+<p>After we deploy the LoadBalancer service, we can reach it using the
+external IP given by our cloud provider. We can check the status of the
+service by using:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get services</span></code></pre></div>
+<h3 id="considerations">Considerations</h3>
+<ul>
+<li>We must check that our cloud provider supports LoadBalancer
+services.</li>
+<li>We need to know about any costs for using LoadBalancer services
+since they may charge based on usage.</li>
+</ul>
+<p>Using a Load Balancer in Kubernetes makes it easier to target
+multiple pods. It helps us distribute load well and improve application
+availability. For more details on Kubernetes services, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-services-and-how-do-they-expose-applications.html">What
+Are Kubernetes Services and How Do They Expose Applications?</a>.</p>
+<h2
+id="using-service-mesh-to-target-multiple-pods-in-a-kubernetes-cluster">Using
+Service Mesh to Target Multiple Pods in a Kubernetes Cluster</h2>
+<p>A service mesh is a special layer that helps manage communication
+between services in a microservices setup. It makes it easy to target
+many pods at the same time in a Kubernetes cluster. Service meshes offer
+features like traffic management, security, and observability. This way,
+we have better control over how requests go to different pods.</p>
+<h3 id="key-features-for-targeting-multiple-pods">Key Features for
+Targeting Multiple Pods</h3>
+<ol type="1">
+<li><strong>Traffic Routing</strong>: Service meshes can smartly send
+requests to different pods based on things like load, version, or user
+identity.</li>
+<li><strong>Load Balancing</strong>: They spread incoming requests
+across many pods. This keeps the load even and ensures that services are
+always available.</li>
+<li><strong>Retries and Failover</strong>: Service meshes can
+automatically retry requests that fail. They can also send traffic to
+healthy pods if there are problems.</li>
+<li><strong>Policy Enforcement</strong>: We can set rules for routing
+and controlling access.</li>
+</ol>
+<h3 id="example-with-istio">Example with Istio</h3>
+<p>Here is how we can use Istio to target multiple pods with a
+VirtualService and DestinationRule:</p>
+<ol type="1">
+<li><p><strong>Install Istio</strong>: We can follow the <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-install-and-configure-istio.html">installation
+guide</a>.</p></li>
+<li><p><strong>Define a Service</strong>:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div></li>
+<li><p><strong>Create a VirtualService</strong>:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.istio.io/v1beta1</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> VirtualService</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hosts</span><span class="kw">:</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> my-app</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">route</span><span class="kw">:</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">destination</span><span class="kw">:</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">host</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">subset</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">destination</span><span class="kw">:</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">host</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">subset</span><span class="kw">:</span><span class="at"> v2</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span></code></pre></div></li>
+<li><p><strong>Create a DestinationRule</strong>:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.istio.io/v1beta1</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> DestinationRule</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">host</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">subsets</span><span class="kw">:</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">version</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> v2</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">version</span><span class="kw">:</span><span class="at"> v2</span></span></code></pre></div></li>
+</ol>
+<p>In this setup, requests to <code>my-app</code> will go to two groups
+of pods based on the weights we set. This helps us target multiple pods
+with one request and control how traffic is shared.</p>
+<p>Using a service mesh like Istio makes managing microservices in a
+Kubernetes cluster easier. It also helps our applications to be more
+reliable and scalable. For more info on how a service mesh works with
+Kubernetes, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-a-service-mesh-and-how-does-it-relate-to-kubernetes.html">this
+article</a>.</p>
+<h2
+id="implementing-statefulsets-to-target-multiple-pods-in-kubernetes">Implementing
+StatefulSets to Target Multiple Pods in Kubernetes</h2>
+<p>In Kubernetes, we use StatefulSets to manage stateful applications.
+They help us deploy and scale multiple Pods with stable identities. Each
+Pod in a StatefulSet has a unique identity and storage. This makes it
+good for apps that need stable network identifiers or storage that
+lasts.</p>
+<h3 id="key-features-of-statefulsets">Key Features of StatefulSets</h3>
+<ul>
+<li><strong>Stable Network Identity</strong>: Each Pod in a StatefulSet
+gets its own DNS name. This gives us predictable network
+identities.</li>
+<li><strong>Persistent Storage</strong>: StatefulSets can work with
+PersistentVolumeClaims (PVCs). This helps us keep data even when Pods
+restart.</li>
+<li><strong>Ordered Deployment and Scaling</strong>: Pods get created,
+deleted, and scaled in a specific order. This ensures we have a
+controlled deployment process.</li>
+</ul>
+<h3 id="example-statefulset-configuration">Example StatefulSet
+Configuration</h3>
+<p>Here is a simple YAML configuration for a StatefulSet that deploys a
+MySQL database:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">serviceName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;mysql&quot;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql:5.7</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MYSQL_ROOT_PASSWORD</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> root_password</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-storage</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/lib/mysql</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumeClaimTemplates</span><span class="kw">:</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-storage</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">accessModes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;ReadWriteOnce&quot;</span><span class="at"> </span><span class="kw">]</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 1Gi</span></span></code></pre></div>
+<h3 id="accessing-statefulset-pods">Accessing StatefulSet Pods</h3>
+<p>We can access StatefulSet Pods using their stable DNS names. They
+follow this pattern:
+<code>&lt;statefulset-name&gt;-&lt;ordinal&gt;.&lt;service-name&gt;</code>.
+For our example, we can access the Pods as:</p>
+<ul>
+<li>mysql-0.mysql</li>
+<li>mysql-1.mysql</li>
+<li>mysql-2.mysql</li>
+</ul>
+<h3 id="managing-statefulsets">Managing StatefulSets</h3>
+<ul>
+<li><strong>Scaling</strong>: We can scale the StatefulSet with this
+command:</li>
+</ul>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> scale statefulset mysql <span class="at">--replicas</span><span class="op">=</span>5</span></code></pre></div>
+<ul>
+<li><strong>Upgrading</strong>: To change the image of the Pods in a
+StatefulSet, we just change the image in the YAML and apply the
+changes:</li>
+</ul>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> statefulset.yaml</span></code></pre></div>
+<p>StatefulSets are great for apps that need stable identities and
+persistent storage. They help us manage multiple Pods smoothly in a
+Kubernetes cluster. For more reading on Kubernetes workloads and how to
+manage them, we can check this link: <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-stateful-applications-with-statefulsets.html">how
+do I manage stateful applications with StatefulSets</a>.</p>
+<h2
+id="exploring-headless-services-for-targeting-multiple-pods-in-kubernetes">Exploring
+Headless Services for Targeting Multiple Pods in Kubernetes</h2>
+<p>Headless services in Kubernetes help us connect directly to many
+pods. We do not need to send traffic through one IP address. This is
+good for when we need direct communication between pods. It also helps
+when we want to use smart load balancing.</p>
+<p>To make a headless service, we set the <code>clusterIP</code> field
+to <code>None</code> in the service definition. This makes Kubernetes
+give us the IPs of each pod. We do not get just one virtual IP.</p>
+<h3 id="example-of-a-headless-service">Example of a Headless
+Service</h3>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-headless-service</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> None</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div>
+<h3 id="how-to-access-pods-through-a-headless-service">How to Access
+Pods through a Headless Service</h3>
+<p>With a headless service, the DNS resolution gives us A records for
+all the pods that match the service’s selector. We can reach each pod
+using its DNS name:</p>
+<ul>
+<li>Format:
+<code>&lt;service-name&gt;.&lt;namespace&gt;.svc.cluster.local</code></li>
+<li>Example:
+<code>my-headless-service.default.svc.cluster.local</code></li>
+</ul>
+<h3 id="use-cases-for-headless-services">Use Cases for Headless
+Services</h3>
+<ul>
+<li><strong>Stateful Applications</strong>: Good for applications that
+need stable network identities, like databases (for example, Cassandra
+or MongoDB).</li>
+<li><strong>Service Discovery</strong>: Helps applications find and
+connect to many service instances directly.</li>
+<li><strong>Custom Load Balancing</strong>: Lets us use our own load
+balancing methods by sharing requests among many pods.</li>
+</ul>
+<p>Using headless services can make communication better in our
+Kubernetes cluster. It gives us direct access to many pods and more
+options for managing services. For more information on how Kubernetes
+services work and their benefits, check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-services-and-how-do-they-expose-applications.html">this
+article on Kubernetes services</a>.</p>
+<h2
+id="leveraging-custom-resource-definitions-for-targeting-multiple-pods-in-kubernetes">Leveraging
+Custom Resource Definitions for Targeting Multiple Pods in
+Kubernetes</h2>
+<p>Custom Resource Definitions (CRDs) in Kubernetes help us change the
+Kubernetes API to fit our needs. They let us create custom resources
+that can manage many pods easily. When we create CRDs, we can build the
+rules we need to target multiple pods using custom controllers or
+operators.</p>
+<h3 id="creating-a-custom-resource-definition">Creating a Custom
+Resource Definition</h3>
+<p>First, we need to define a CRD that shows what resource we want. Here
+is an example of a CRD definition for a <code>MyApp</code> resource that
+manages multiple pods:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiextensions.k8s.io/v1</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> CustomResourceDefinition</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myapps.mycompany.com</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">group</span><span class="kw">:</span><span class="at"> mycompany.com</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">names</span><span class="kw">:</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> MyApp</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">listKind</span><span class="kw">:</span><span class="at"> MyAppList</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">plural</span><span class="kw">:</span><span class="at"> myapps</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">singular</span><span class="kw">:</span><span class="at"> myapp</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scope</span><span class="kw">:</span><span class="at"> Namespaced</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">versions</span><span class="kw">:</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">served</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">schema</span><span class="kw">:</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">properties</span><span class="kw">:</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">properties</span><span class="kw">:</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">replicas</span><span class="kw">:</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">image</span><span class="kw">:</span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span></code></pre></div>
+<h3 id="implementing-a-controller-for-the-crd">Implementing a Controller
+for the CRD</h3>
+<p>Next, we need to make a controller. This controller watches for
+changes to <code>MyApp</code> resources and manages the pods that go
+with them. Here is a simple pseudocode for the controller:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> kubernetes <span class="im">import</span> client, config, watch</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>config.load_kube_config()</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>v1 <span class="op">=</span> client.AppsV1Api()</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>w <span class="op">=</span> watch.Watch()</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> event <span class="kw">in</span> w.stream(v1.list_namespaced_deployment, namespace<span class="op">=</span><span class="st">&#39;default&#39;</span>):</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> event[<span class="st">&#39;type&#39;</span>] <span class="op">==</span> <span class="st">&#39;ADDED&#39;</span>:</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>        my_app <span class="op">=</span> event[<span class="st">&#39;object&#39;</span>]</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Logic to create pods based on the my_app specification</span></span></code></pre></div>
+<h3 id="managing-multiple-pods">Managing Multiple Pods</h3>
+<p>In the controller, we can use logic to manage many pods based on the
+<code>spec.replicas</code> field in our CRD. For example, we can create
+or delete pods based on how many replicas we need.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(my_app.spec.replicas):</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create a pod for each replica</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    pod_manifest <span class="op">=</span> {</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;apiVersion&quot;</span>: <span class="st">&quot;v1&quot;</span>,</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;kind&quot;</span>: <span class="st">&quot;Pod&quot;</span>,</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;metadata&quot;</span>: {</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;name&quot;</span>: <span class="ss">f&quot;</span><span class="sc">{</span>my_app<span class="sc">.</span>metadata<span class="sc">.</span>name<span class="sc">}</span><span class="ss">-pod-</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>,</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;spec&quot;</span>: {</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>            <span class="st">&quot;containers&quot;</span>: [{</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;name&quot;</span>: <span class="st">&quot;myapp-container&quot;</span>,</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>                <span class="st">&quot;image&quot;</span>: my_app.spec.image,</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>            }]</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    v1.create_namespaced_pod(namespace<span class="op">=</span><span class="st">&#39;default&#39;</span>, body<span class="op">=</span>pod_manifest)</span></code></pre></div>
+<h3 id="advantages-of-using-crds">Advantages of Using CRDs</h3>
+<ul>
+<li><strong>Custom Logic</strong>: We can build custom logic that fits
+our application needs.</li>
+<li><strong>Extended API</strong>: CRDs let us extend the Kubernetes API
+with new resource types.</li>
+<li><strong>Dynamic Management</strong>: We can manage many pods
+automatically based on our application rules.</li>
+</ul>
+<p>Using CRDs well helps us target multiple pods with one request in a
+Kubernetes cluster. We can put the management logic inside a custom
+resource and its controller. For more information on CRDs and how to use
+them, you can see <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-custom-resource-definitions-crds-in-kubernetes.html">what
+are Custom Resource Definitions (CRDs) in Kubernetes</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="can-we-send-a-single-request-to-many-pods-in-kubernetes">1. Can
+we send a single request to many Pods in Kubernetes?</h3>
+<p>In Kubernetes, we cannot send one request to many Pods directly. But
+we can use Services to balance requests across many Pods. By creating a
+Service with LoadBalancer or ClusterIP type, we can send traffic to many
+Pods easily. This helps us share requests better.</p>
+<h3 id="what-does-a-load-balancer-do-for-targeting-many-pods">2. What
+does a Load Balancer do for targeting many Pods?</h3>
+<p>A Load Balancer in Kubernetes is a middleman that shares incoming
+network traffic among many Pods. This way, no single Pod gets too many
+requests. It makes our application more reliable and faster. With a Load
+Balancer, we can handle traffic better and make our services more
+available.</p>
+<h3 id="how-do-service-meshes-help-in-targeting-many-pods">3. How do
+Service Meshes help in targeting many Pods?</h3>
+<p>Service Meshes like Istio help us manage traffic between services in
+a Kubernetes cluster. They give us better routing and monitoring for our
+requests to many Pods. This helps us set traffic rules and balance loads
+well. The result is better security, resilience, and tracking of service
+communication.</p>
+<h3 id="what-are-statefulsets-and-how-do-they-help-with-pods">4. What
+are StatefulSets, and how do they help with Pods?</h3>
+<p>StatefulSets in Kubernetes are for managing applications that need to
+keep their state. Each Pod has a special identity. They let us deploy
+and scale Pods with stable network names and storage. StatefulSets do
+not send one request to many Pods, but they keep the Pods’ identity and
+state. This is important for apps like databases.</p>
+<h3
+id="how-can-we-use-headless-services-for-targeting-pods-in-kubernetes">5.
+How can we use Headless Services for targeting Pods in Kubernetes?</h3>
+<p>Headless Services in Kubernetes let us talk to Pods directly without
+a virtual IP. This means we can reach each Pod one by one. This is very
+useful for stateful apps that need direct access. By using Headless
+Services, we can target many Pods separately, giving us better control
+over traffic.</p>
+<p>For more information on Kubernetes and its features, we can check
+these <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">key
+parts of a Kubernetes cluster</a> or learn about <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-services-and-how-do-they-expose-applications.html">Kubernetes
+Services and how they show applications</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

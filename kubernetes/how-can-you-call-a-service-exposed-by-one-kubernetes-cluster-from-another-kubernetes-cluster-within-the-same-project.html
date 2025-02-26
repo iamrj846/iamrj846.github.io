@@ -1,0 +1,495 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How can you call a service exposed by one Kubernetes cluster from another Kubernetes cluster within the same project?</title>
+            <meta name="description" content="Learn how to securely call services between Kubernetes clusters in the same project with our step-by-step guide.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How can you call a service exposed by one Kubernetes cluster from another Kubernetes cluster within the same project?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To call a service from one Kubernetes cluster to another in the same
+project, we can use some networking methods like VPNs, service meshes,
+and load balancers. These methods help us communicate smoothly between
+clusters. This way, services are reachable no matter where they are. It
+is important to learn how to use these methods for good communication
+between clusters in Kubernetes.</p>
+<p>In this article, we will look at different ways to call a service
+from one Kubernetes cluster to another in the same project. We will talk
+about:</p>
+<ul>
+<li>Understanding the Networking Between Kubernetes Clusters</li>
+<li>Setting Up Inter-Cluster Communication with VPN</li>
+<li>Using Service Mesh to Call a Service Across Clusters</li>
+<li>Accessing Services with Load Balancer Between Kubernetes
+Clusters</li>
+<li>Setting Up Ingress Controllers for Cross-Cluster Requests</li>
+<li>Common Questions</li>
+</ul>
+<p>By looking into these topics, we will understand the best ways to
+manage communication between clusters.</p>
+<h2
+id="understanding-the-networking-between-kubernetes-clusters">Understanding
+the Networking Between Kubernetes Clusters</h2>
+<p>Kubernetes clusters usually work in separate networking spaces. We
+need to set up the networking correctly so that services can talk to
+each other across different clusters. Here are some important points and
+ways to do this:</p>
+<ol type="1">
+<li><p><strong>Service Discovery</strong>: Each Kubernetes cluster has
+its own DNS system. For services to find each other in different
+clusters, we can use outside DNS services. These services let us resolve
+service names from one cluster in another.</p></li>
+<li><p><strong>Network Policies</strong>: We should use network policies
+to control how traffic moves. Kubernetes Network Policies let us set
+rules for what traffic is allowed between pods and services in different
+clusters.</p></li>
+<li><p><strong>IP Address Management</strong>: It is important that the
+IP address ranges for clusters do not overlap. Using different CIDR
+blocks for each cluster helps us avoid IP conflicts.</p></li>
+<li><p><strong>Routing</strong>: We can use cloud-native networking
+tools like Calico or Weave. These tools help with routing between
+clusters. This way, services in one cluster can easily communicate with
+services in another cluster.</p></li>
+<li><p><strong>VPN or Direct Connect</strong>: We can set up a VPN or a
+special network connection like AWS Direct Connect or Azure
+ExpressRoute. This helps to secure and stabilize the network connection
+between the clusters.</p></li>
+<li><p><strong>Service Mesh</strong>: We can use a service mesh like
+Istio or Linkerd. This helps us manage the complexity of
+service-to-service communication. It works well even across many
+clusters. This gives us better traffic management, security, and
+visibility.</p></li>
+<li><p><strong>Cluster Federation</strong>: We can use Kubernetes
+Federation to manage many clusters. This allows us to deploy resources
+across clusters while keeping a consistent way to discover
+services.</p></li>
+</ol>
+<p>Here is an example of a simple external DNS setup to resolve a
+service in another cluster:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-service</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> example-namespace</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> ExternalName</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">externalName</span><span class="kw">:</span><span class="at"> service-name.other-cluster.svc.cluster.local</span></span></code></pre></div>
+<p>By knowing the networking methods and planning our setup well, we can
+call a service from one Kubernetes cluster to another in the same
+project.</p>
+<h2 id="configuring-inter-cluster-communication-with-vpn">Configuring
+Inter-Cluster Communication with VPN</h2>
+<p>We want to set up a way for two Kubernetes clusters to talk to each
+other using a VPN. This VPN will help us have safe communication over
+the internet. Here is how we can do it:</p>
+<ol type="1">
+<li><p><strong>Choose a VPN Solution</strong>: Some popular choices are
+OpenVPN, WireGuard, or Istio that can work with VPN.</p></li>
+<li><p><strong>Set Up VPN Servers</strong>: We need to install the VPN
+server on both Kubernetes clusters. For example, to install OpenVPN:</p>
+<ul>
+<li><strong>On Cluster A</strong>:</li>
+</ul>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">apt-get</span> install openvpn easy-rsa</span></code></pre></div>
+<ul>
+<li><strong>On Cluster B</strong>:</li>
+</ul>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">apt-get</span> install openvpn easy-rsa</span></code></pre></div></li>
+<li><p><strong>Generate VPN Certificates</strong>:</p>
+<ul>
+<li>We will use Easy-RSA to make a Certificate Authority (CA) and create
+server and client certificates.</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /etc/openvpn/easy-rsa</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./easyrsa</span> init-pki</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">./easyrsa</span> build-ca</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ex">./easyrsa</span> gen-req server nopass</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">./easyrsa</span> sign-req server server</span></code></pre></div></li>
+<li><p><strong>Configure the VPN Server</strong>:</p>
+<ul>
+<li>We need to change the OpenVPN server configuration file
+(<code>/etc/openvpn/server.conf</code>):</li>
+</ul>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="dt">port 1194</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="dt">proto udp</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="dt">dev tun</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="dt">ca ca.crt</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="dt">cert server.crt</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="dt">key server.key</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="dt">dh dh.pem</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="dt">server 10.8.0.0 255.255.255.0</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="dt">ifconfig-pool-persist ipp.txt</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="dt">keepalive 10 120</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="dt">cipher AES-256-CBC</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="dt">user nobody</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="dt">group nogroup</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="dt">persist-key</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="dt">persist-tun</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="dt">status openvpn-status.log</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="dt">verb 3</span></span></code></pre></div></li>
+<li><p><strong>Start the OpenVPN Service</strong>:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">systemctl</span> start openvpn@server</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">systemctl</span> enable openvpn@server</span></code></pre></div></li>
+<li><p><strong>Configure Firewall Rules</strong>:</p>
+<ul>
+<li>We need to make sure that UDP port 1194 is open on both
+clusters.</li>
+</ul>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ufw</span> allow 1194/udp</span></code></pre></div></li>
+<li><p><strong>Set Up VPN Clients</strong>:</p>
+<ul>
+<li>On both clusters, we will create a client configuration file
+(<code>client.ovpn</code>):</li>
+</ul>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="dt">client</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="dt">dev tun</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="dt">proto udp</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="dt">remote &lt;Cluster_A_IP&gt; 1194</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="dt">resolv-retry infinite</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="dt">nobind</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="dt">persist-key</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="dt">persist-tun</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="dt">remote-cert-tls server</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="dt">ca ca.crt</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="dt">cert client.crt</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="dt">key client.key</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="dt">cipher AES-256-CBC</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="dt">verb 3</span></span></code></pre></div></li>
+<li><p><strong>Connect to the VPN</strong>:</p>
+<ul>
+<li>We need to run the OpenVPN client on both clusters:</li>
+</ul>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">openvpn</span> <span class="at">--config</span> client.ovpn</span></code></pre></div></li>
+<li><p><strong>Test Connectivity</strong>:</p>
+<ul>
+<li>We should check if pods in Cluster A can reach services in Cluster B
+and the other way around using their internal IP addresses.</li>
+</ul></li>
+</ol>
+<p>By doing these steps, we will have made a safe VPN connection between
+the two Kubernetes clusters. This will help us with easy communication
+between them. For more help about Kubernetes networking, please look at
+this <a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-networking-work.html">Kubernetes
+networking article</a>.</p>
+<h2 id="using-service-mesh-to-call-a-service-across-clusters">Using
+Service Mesh to Call a Service Across Clusters</h2>
+<p>We can call a service across Kubernetes clusters in the same project
+by using a service mesh. A service mesh like Istio or Linkerd helps with
+service-to-service communication. It also makes cross-cluster calls
+easier. With a service mesh, we get better visibility, security, and
+reliability.</p>
+<h3 id="setup">Setup</h3>
+<ol type="1">
+<li><p><strong>Install Istio</strong> (example for Istio):</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-L</span> https://istio.io/downloadIstio <span class="kw">|</span> <span class="fu">sh</span> <span class="at">-</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> istio-<span class="pp">*</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PATH</span><span class="op">=</span><span class="va">$PWD</span>/bin:<span class="va">$PATH</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="ex">istioctl</span> install <span class="at">--set</span> profile=demo <span class="at">-y</span></span></code></pre></div></li>
+<li><p><strong>Deploy the Services</strong>: We need to deploy our
+applications or services in both clusters. Each service must be exposed
+using a Kubernetes service.</p></li>
+<li><p><strong>Configure Service Entries</strong>: We create
+ServiceEntry resources in Istio. This allows access to services in the
+other cluster.</p>
+<p>Here is an example ServiceEntry for a service in another cluster:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.istio.io/v1alpha3</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceEntry</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-service</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hosts</span><span class="kw">:</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> external-service.example.com</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> http</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> HTTP</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resolution</span><span class="kw">:</span><span class="at"> DNS</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">endpoints</span><span class="kw">:</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">address</span><span class="kw">:</span><span class="at"> &lt;external-ip-of-service&gt;</span></span></code></pre></div></li>
+<li><p><strong>Virtual Services</strong>: We create VirtualService
+resources. They help manage traffic routing to the external service.</p>
+<p>Here is an example VirtualService:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.istio.io/v1alpha3</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> VirtualService</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-virtual-service</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hosts</span><span class="kw">:</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> external-service.example.com</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">route</span><span class="kw">:</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">destination</span><span class="kw">:</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">host</span><span class="kw">:</span><span class="at"> external-service.example.com</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div></li>
+<li><p><strong>Enable mTLS</strong>: We need to make sure that mutual
+TLS is on. This keeps our communication secure between services across
+clusters.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> security.istio.io/v1beta1</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PeerAuthentication</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> default</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">mtls</span><span class="kw">:</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> STRICT</span></span></code></pre></div></li>
+<li><p><strong>DNS Resolution</strong>: We check that DNS resolution is
+set up right. This helps services find the external service name to its
+IP address across clusters.</p></li>
+</ol>
+<p>By doing these steps, we can use a service mesh to call services
+across Kubernetes clusters. This makes our inter-cluster communication
+more secure and easier to manage. For more information on Kubernetes
+networking, you can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-networking-work.html">how
+does Kubernetes networking work</a>.</p>
+<h2
+id="accessing-services-via-load-balancer-across-kubernetes-clusters">Accessing
+Services via Load Balancer Across Kubernetes Clusters</h2>
+<p>To access a service from one Kubernetes cluster in another Kubernetes
+cluster within the same project, we can use a LoadBalancer type service.
+This lets us expose the service to an external IP address. Then, other
+clusters can access it. Here are the steps to set this up:</p>
+<ol type="1">
+<li><strong>Create a LoadBalancer Service</strong> in the source
+cluster:</li>
+</ol>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> LoadBalancer</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><p><strong>Deploy your application</strong> in the source cluster.
+Make sure it has the right labels that match the selector
+above.</p></li>
+<li><p><strong>Get the external IP</strong> of the LoadBalancer service
+after it is running. We can use this command:</p></li>
+</ol>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get services</span></code></pre></div>
+<ol start="4" type="1">
+<li><strong>Access the service</strong> from the target cluster using
+the external IP we got in the last step. For example, if we want to call
+the service with <code>curl</code>:</li>
+</ol>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://<span class="op">&lt;</span>EXTERNAL_IP<span class="op">&gt;</span></span></code></pre></div>
+<ol start="5" type="1">
+<li><p><strong>Networking Considerations</strong>: We should check any
+firewall rules or security groups. They must allow traffic between the
+two clusters on the ports we used.</p></li>
+<li><p><strong>DNS Integration</strong> (optional): To make access
+easier, we can create a DNS record that points to the LoadBalancer’s
+external IP. This way, we can use a hostname instead of the IP
+address.</p></li>
+<li><p><strong>Testing</strong>: We can check connectivity by deploying
+a simple pod in the target cluster. Then we try to reach the
+LoadBalancer service.</p></li>
+</ol>
+<p>By following these steps, we can access services exposed by one
+Kubernetes cluster from another using LoadBalancer services. This way,
+we make sure communication is smooth and secure between clusters in the
+same project. For more information on Kubernetes services and how they
+work, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-services-and-how-do-they-expose-applications.html">this
+article</a>.</p>
+<h2
+id="setting-up-ingress-controllers-for-cross-cluster-requests">Setting
+Up Ingress Controllers for Cross-Cluster Requests</h2>
+<p>To set up ingress controllers for cross-cluster service requests in
+Kubernetes, we can follow these steps:</p>
+<ol type="1">
+<li><p><strong>Deploy Ingress Controllers</strong>: We need to deploy an
+ingress controller in both Kubernetes clusters. Good choices are NGINX
+Ingress Controller or Traefik. Here is how to deploy the NGINX Ingress
+Controller using Helm:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> repo add ingress-nginx https://charts.ingress-nginx.io</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> repo update</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> install nginx-ingress ingress-nginx/ingress-nginx</span></code></pre></div></li>
+<li><p><strong>Expose Services</strong>: Make sure that the services we
+want to access are exposed through the ingress. We define an ingress
+resource in the cluster where the service is hosted:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service-ingress</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">nginx.ingress.kubernetes.io/rewrite-target</span><span class="kw">:</span><span class="at"> /</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">host</span><span class="kw">:</span><span class="at"> my-service.example.com</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div></li>
+<li><p><strong>DNS Configuration</strong>: We need to set up DNS records
+to send requests from the other Kubernetes cluster to the ingress
+controller’s external IP or domain name. We can use services like
+Route53, Cloud DNS, or any DNS provider.</p></li>
+<li><p><strong>Network Connectivity</strong>: We must ensure that both
+clusters can talk to each other over the needed ports. This may need us
+to set up firewalls or security groups to allow traffic between the
+clusters.</p></li>
+<li><p><strong>Cross-Cluster Service Access</strong>: In the second
+Kubernetes cluster, we create a service that points to the ingress
+endpoint. We can do this with a <code>Service</code> of type
+<code>ExternalName</code>:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-external-service</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> ExternalName</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">externalName</span><span class="kw">:</span><span class="at"> my-service.example.com</span></span></code></pre></div></li>
+<li><p><strong>Testing</strong>: We can check if the service can be
+accessed from the second cluster using curl or any HTTP client:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://my-external-service</span></code></pre></div></li>
+</ol>
+<p>By following these steps, we can call services across Kubernetes
+clusters using ingress controllers. For more details on setting up
+Ingress controllers, we can look at the <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html">Kubernetes
+documentation on Ingress</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="how-can-services-in-separate-kubernetes-clusters-communicate-securely">1.
+How can services in separate Kubernetes clusters communicate
+securely?</h3>
+<p>We can make services in different Kubernetes clusters talk to each
+other safely. One way to do this is by creating a VPN connection. This
+will allow encrypted traffic between the clusters. So, when one cluster
+sends a request to another, it stays secure and reliable. For more steps
+on how to set up a VPN for this, please check our guide on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-set-up-a-kubernetes-cluster-on-aws-eks.html">Configuring
+Inter-Cluster Communication with VPN</a>.</p>
+<h3
+id="what-is-a-service-mesh-and-how-can-it-help-cross-cluster-communication">2.
+What is a service mesh and how can it help cross-cluster
+communication?</h3>
+<p>A service mesh like Istio helps manage how services talk to each
+other across Kubernetes clusters. It gives us useful features like
+traffic management and security. By using a service mesh, we can easily
+call services from one Kubernetes cluster to another. This makes the
+interaction smooth. For more information about service meshes, look at
+our article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-a-service-mesh-and-how-does-it-relate-to-kubernetes.html">What
+is a Service Mesh and How Does it Relate to Kubernetes?</a>.</p>
+<h3
+id="can-i-use-a-loadbalancer-service-type-for-inter-cluster-communication">3.
+Can I use a LoadBalancer service type for inter-cluster
+communication?</h3>
+<p>Yes, we can use the LoadBalancer service type to make services in one
+Kubernetes cluster available to another cluster. This way, we can set up
+a public IP for external clients or other clusters to reach the service.
+Remember to set up the firewall rules right to allow traffic. For more
+details, visit <a
+href="https://bestonlinetutorial.com/kubernetes/difference-between-clusterip-nodeport-and-loadbalancer-service-types-in-kubernetes-kubernetes.html">Accessing
+Services via Load Balancer Across Kubernetes Clusters</a>.</p>
+<h3
+id="what-are-the-best-practices-for-setting-up-ingress-controllers-for-cross-cluster-requests">4.
+What are the best practices for setting up Ingress controllers for
+cross-cluster requests?</h3>
+<p>When we set up Ingress controllers for cross-cluster requests, we
+need to make sure the Ingress resource is set up right to send traffic
+to the right services in the target cluster. Also, we should use proper
+authentication and SSL termination to keep connections safe. For a
+complete guide, check our article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html">Configuring
+Ingress for External Access to My Applications</a>.</p>
+<h3
+id="how-do-i-troubleshoot-communication-issues-between-kubernetes-clusters">5.
+How do I troubleshoot communication issues between Kubernetes
+clusters?</h3>
+<p>To find problems with communication between Kubernetes clusters, we
+should first check network settings, firewall rules, and if services are
+visible. We can use tools like <code>kubectl</code> to look at service
+endpoints and logs. If needed, we can use service meshes for better
+visibility. For more tips on troubleshooting, check our guide on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-troubleshoot-issues-in-my-kubernetes-deployments.html">How
+Do I Troubleshoot Issues in My Kubernetes Deployments?</a>.</p>
+<p>By answering these common questions, we can manage cross-cluster
+service calls in our Kubernetes setups. This helps to keep communication
+smooth and safe between different clusters in the same project.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
