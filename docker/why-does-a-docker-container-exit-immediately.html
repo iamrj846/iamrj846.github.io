@@ -1,0 +1,429 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>Why Does a Docker Container Exit Immediately?</title>
+            <meta name="description" content="Discover why your Docker container exits immediately and learn how to troubleshoot common issues in our comprehensive guide.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Why Does a Docker Container Exit Immediately?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To stop a Docker container from stopping right away, we need to make
+sure that our application runs in the foreground. This is very
+important. When the main process in a Docker container finishes, the
+container stops too. We can keep the container running by setting up our
+application correctly or using the <code>-it</code> flag. This way, the
+container stays active as long as we want.</p>
+<p>In this article, we will look at why a Docker container might exit
+quickly. We will give simple solutions to keep it running. We will talk
+about common reasons for exits, how to run containers in the foreground,
+ways to troubleshoot containers that have exited, and logging options to
+help diagnose exit problems. We will also see how to use a Dockerfile to
+stop immediate exits. Here are the solutions we will talk about:</p>
+<ul>
+<li>Understanding how Docker containers exit</li>
+<li>Common reasons for quick exits of Docker containers</li>
+<li>Running Docker containers in the foreground</li>
+<li>Troubleshooting exited containers</li>
+<li>Logging options for exit issues</li>
+<li>Using a Dockerfile to avoid immediate container exit</li>
+</ul>
+<p>For more understanding of Docker and how it works, we can check
+articles like <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">What
+is Docker and Why Should You Use It?</a> and <a
+href="https://bestonlinetutorial.com/docker/what-is-a-docker-container-and-how-does-it-operate.html">What
+is a Docker Container and How Does It Operate?</a>.</p>
+<h2
+id="what-are-the-common-reasons-for-docker-container-exiting-immediately">What
+Are the Common Reasons for Docker Container Exiting Immediately?</h2>
+<p>Docker containers can exit right away for many reasons. Knowing these
+reasons can help us fix issues and make sure our containers run well.
+Here are some common reasons:</p>
+<ol type="1">
+<li><p><strong>Command Completion</strong>: If the container runs a
+command that finishes fast, it will exit. For example:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run ubuntu:latest echo <span class="st">&quot;Hello, World!&quot;</span></span></code></pre></div>
+<p>This command runs and exits right after showing the message.</p></li>
+<li><p><strong>Errors in the Application</strong>: If the app inside the
+container has an error, it will stop. We should check app logs for error
+messages:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="op">&lt;</span>container_id<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Missing Entry Point</strong>: If the Dockerfile does not
+have a valid <code>CMD</code> or <code>ENTRYPOINT</code>, the container
+will exit right away. We need to make sure we have:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ubuntu:latest</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;your_command&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>Non-Interactive Shell</strong>: Containers that start
+without an interactive shell (<code>-it</code> flag) will exit after
+running the command. For example, using:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run ubuntu:latest /bin/bash</span></code></pre></div>
+<p>will keep the container running until <code>/bin/bash</code>
+exits.</p></li>
+<li><p><strong>Resource Limits</strong>: Containers can exit if they use
+more resources than limits set by flags like <code>--memory</code> or
+<code>--cpus</code>. We should check if limits were applied.</p></li>
+<li><p><strong>Environment Variables</strong>: Missing or wrong
+environment variables that the app needs can cause an immediate exit. We
+need to check the environment setup using:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-e</span> VAR_NAME=value your_image</span></code></pre></div></li>
+<li><p><strong>Dependency Issues</strong>: If the app depends on other
+services (like databases) that are not running, it may not start. We
+should ensure all dependencies are ready.</p></li>
+<li><p><strong>File Permissions</strong>: If there are no permissions to
+access needed files, apps can crash. We need to change permissions if
+needed.</p></li>
+<li><p><strong>Health Check Failures</strong>: If a health check fails
+and the container is set to restart on failure, it may exit right away.
+We should check health status with:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> inspect <span class="op">&lt;</span>container_id<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Networking Issues</strong>: If the container cannot reach
+necessary network resources (like APIs), it might exit. We need to check
+network settings.</p></li>
+</ol>
+<p>By knowing these common reasons, we can troubleshoot and stop Docker
+containers from exiting immediately. For more information, we can look
+at <a
+href="https://bestonlinetutorial.com/docker/what-is-a-docker-container-and-how-does-it-operate.html">what
+is a Docker container and how does it operate</a>.</p>
+<h2 id="how-to-keep-a-docker-container-running-in-the-foreground">How to
+Keep a Docker Container Running in the Foreground?</h2>
+<p>We can keep a Docker container running in the foreground by using the
+<code>-it</code> option with the <code>docker run</code> command. This
+option helps us interact with the container. It stays active until we
+stop it manually.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-it</span> <span class="op">&lt;</span>image_name<span class="op">&gt;</span> <span class="op">&lt;</span>command<span class="op">&gt;</span></span></code></pre></div>
+<p>For example, if we want to run a shell inside a container, we can
+use:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-it</span> ubuntu /bin/bash</span></code></pre></div>
+<p>The container stays active as long as the shell session is open.</p>
+<p>We can also add the <code>--rm</code> option. This option will remove
+the container automatically when it exits:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-it</span> <span class="at">--rm</span> <span class="op">&lt;</span>image_name<span class="op">&gt;</span> <span class="op">&lt;</span>command<span class="op">&gt;</span></span></code></pre></div>
+<p>If we want our container to run a specific process that does not exit
+right away, we need to make sure that this process is the main one in
+the container. For example, we can use a long-running service or a
+command that keeps running:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-it</span> <span class="op">&lt;</span>image_name<span class="op">&gt;</span> tail <span class="at">-f</span> /dev/null</span></code></pre></div>
+<p>This command keeps the container running forever by following an
+empty file.</p>
+<p>Another way to keep the container running is by using Docker Compose.
+In our <code>docker-compose.yml</code>, we can write the command under
+our service:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">my_service</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> &lt;image_name&gt;</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> tail -f /dev/null</span></span></code></pre></div>
+<p>When we run <code>docker-compose up</code>, the container will stay
+active until we stop it.</p>
+<p>To check if our container is running, we can use:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> ps</span></code></pre></div>
+<p>This command shows all running containers. Keeping a Docker container
+running in the foreground is important for interactive apps or
+debugging.</p>
+<h2 id="how-to-troubleshoot-exited-docker-containers-effectively">How to
+Troubleshoot Exited Docker Containers Effectively?</h2>
+<p>To troubleshoot exited Docker containers, we can follow these simple
+steps. They help us find out why the container exited and how to fix
+it.</p>
+<ol type="1">
+<li><p><strong>Check Container Status</strong>: We can use this command
+to see all containers, even the exited ones:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> ps <span class="at">-a</span></span></code></pre></div></li>
+<li><p><strong>Inspect the Container</strong>: Next, we need to inspect
+the exited container. This shows us detailed information, including the
+exit code:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> inspect <span class="op">&lt;</span>container_id<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Examine Exit Code</strong>: The exit code tells us what
+happened:</p>
+<ul>
+<li><code>0</code>: This means it stopped successfully.</li>
+<li><code>1</code>: This means there were general errors.</li>
+<li><code>137</code>: This means the container was killed, maybe because
+it ran out of memory.</li>
+<li><code>126</code>: This means the command could not run.</li>
+<li><code>127</code>: This means the command was not found.</li>
+</ul></li>
+<li><p><strong>View Logs</strong>: We should check the logs of the
+exited container. This gives us more details about the problem:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="op">&lt;</span>container_id<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Run in Interactive Mode</strong>: If we need to
+troubleshoot more, we can run the container in interactive mode to test
+the command:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-it</span> <span class="op">&lt;</span>image_name<span class="op">&gt;</span> /bin/bash</span></code></pre></div></li>
+<li><p><strong>Check Resource Limits</strong>: We need to see if there
+were limits on resources that might have caused the container to exit.
+We can use:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> inspect <span class="op">&lt;</span>container_id<span class="op">&gt;</span> <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-i</span> <span class="st">&quot;memory&quot;</span></span></code></pre></div></li>
+<li><p><strong>Review Docker Events</strong>: Checking Docker events can
+help us see any messages around the time the container exited:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> events <span class="at">--since</span> <span class="st">&#39;1h&#39;</span></span></code></pre></div></li>
+<li><p><strong>Use Docker Health Checks</strong>: If we can, we should
+add health checks in our Dockerfile. This helps restart containers that
+fail automatically:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">HEALTHCHECK</span> <span class="kw">CMD</span> <span class="ex">curl</span> <span class="at">--fail</span> http://localhost/ <span class="kw">||</span> <span class="bu">exit</span> 1</span></code></pre></div></li>
+<li><p><strong>Check Docker Daemon Logs</strong>: Finally, we should
+look at the Docker daemon logs for any critical errors:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">journalctl</span> <span class="at">-u</span> docker.service</span></code></pre></div></li>
+</ol>
+<p>By following these steps, we can troubleshoot and find issues with
+exited Docker containers. For more tips on managing Docker containers,
+we can check out <a
+href="https://bestonlinetutorial.com/docker/how-to-manage-docker-container-logs.html">how
+to manage Docker container logs</a>.</p>
+<h2
+id="what-logging-options-can-help-diagnose-docker-container-exit-issues">What
+Logging Options Can Help Diagnose Docker Container Exit Issues?</h2>
+<p>To understand why a Docker container stops right away, logging is a
+very important tool. Docker has many logging options that help us see
+what happens inside the container. Here are the main logging methods we
+can use:</p>
+<ol type="1">
+<li><p><strong>Docker Logs Command</strong>: The easiest way to check a
+container’s logs is to use this command. It shows the logs created by
+the container’s application.</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="op">&lt;</span>container_id<span class="op">&gt;</span></span></code></pre></div>
+<p>We can add the <code>-f</code> option to follow the logs as they
+happen:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="at">-f</span> <span class="op">&lt;</span>container_id<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Log Drivers</strong>: Docker has different log drivers.
+These drivers can send logs to places like local files, syslog, or other
+logging systems. To choose a log driver when we run a container, we
+use:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--log-driver</span><span class="op">=&lt;</span>driver_name<span class="op">&gt;</span> <span class="op">&lt;</span>image_name<span class="op">&gt;</span></span></code></pre></div>
+<p>Some common log drivers are:</p>
+<ul>
+<li><code>json-file</code> (this is the default)</li>
+<li><code>syslog</code></li>
+<li><code>journald</code></li>
+<li><code>gelf</code></li>
+<li><code>fluentd</code></li>
+</ul></li>
+<li><p><strong>Inspecting Container State</strong>: We can use the
+<code>docker inspect</code> command to get detailed info about the
+container’s state. This includes exit codes, which help us understand
+why a container stopped.</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> inspect <span class="op">&lt;</span>container_id<span class="op">&gt;</span></span></code></pre></div>
+<p>In the output, we should check the <code>State</code> section. Look
+at the <code>ExitCode</code> and <code>Error</code> fields.</p></li>
+<li><p><strong>Using the Docker API</strong>: For more advanced logging
+and monitoring, we can use the Docker Remote API. This lets us access
+logs and container states programmatically. It helps us connect with
+other monitoring tools.</p></li>
+<li><p><strong>Centralized Logging Solutions</strong>: We can connect
+Docker with centralized logging tools like ELK Stack (Elasticsearch,
+Logstash, Kibana) or Grafana Loki. This way, we can gather logs from
+many containers and analyze them better. Setting up a logging driver for
+these tools improves our logging abilities.</p></li>
+<li><p><strong>Environment Variables for Logging</strong>: Some
+applications need special environment variables to log properly. We must
+make sure our application is set to log errors and other outputs
+correctly. For example:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-e</span> LOG_LEVEL=debug <span class="op">&lt;</span>image_name<span class="op">&gt;</span></span></code></pre></div></li>
+</ol>
+<p>By using these logging options, we can better understand why Docker
+containers exit and take steps to fix the issues. For more help on
+managing Docker logs, check out <a
+href="https://bestonlinetutorial.com/docker/how-to-manage-docker-container-logs.html">how
+to manage Docker container logs</a>.</p>
+<h2 id="how-to-use-a-dockerfile-to-prevent-immediate-container-exit">How
+to Use a Dockerfile to Prevent Immediate Container Exit?</h2>
+<p>To stop a Docker container from exiting right away, we can set up our
+Dockerfile the right way. Here are some simple steps:</p>
+<ol type="1">
+<li><p><strong>Specify a Long-Running Command</strong>: We should use
+commands that do not finish quickly. A command that keeps the container
+alive works well. For example, using a shell or a service that runs
+forever is a good choice.</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ubuntu:latest</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Install necessary packages</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apt-get</span> update <span class="kw">&amp;&amp;</span> <span class="ex">apt-get</span> install <span class="at">-y</span> <span class="dt">\</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    curl <span class="dt">\</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">&amp;&amp;</span> <span class="fu">rm</span> <span class="at">-rf</span> /var/lib/apt/lists/<span class="pp">*</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Set the command to run</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;tail&quot;</span>, <span class="st">&quot;-f&quot;</span>, <span class="st">&quot;/dev/null&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>Use <code>ENTRYPOINT</code></strong>: By setting the
+<code>ENTRYPOINT</code>, we can define a command that runs when the
+container starts. This helps to make sure it does not exit right
+away.</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Install dependencies</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Set entrypoint to keep container running</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="kw">ENTRYPOINT</span> [<span class="st">&quot;npm&quot;</span>, <span class="st">&quot;start&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>Environment Variables</strong>: We can pass environment
+variables that help the application to run in a way that keeps it alive.
+For example, we can enable a server mode.</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> python:3.9</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Install dependencies</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">pip</span> install <span class="at">-r</span> requirements.txt</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Set environment variable</span></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> FLASK_ENV=development</span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;flask&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;--host=0.0.0.0&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>Health Checks</strong>: We can add health checks in our
+Dockerfile using the <code>HEALTHCHECK</code> command. This helps to
+make sure the container stays working. If it becomes unhealthy, we can
+restart it.</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">HEALTHCHECK</span> <span class="op">--interval=30s</span> <span class="op">--timeout=10s</span> <span class="op">--retries=3</span> <span class="kw">CMD</span> <span class="ex">curl</span> <span class="at">-f</span> http://localhost/ <span class="kw">||</span> <span class="bu">exit</span> 1</span></code></pre></div></li>
+<li><p><strong>Use of Supervisors</strong>: If our container needs to
+run many services, we should think about using a process manager like
+<code>supervisord</code>.</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ubuntu:latest</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apt-get</span> update <span class="kw">&amp;&amp;</span> <span class="ex">apt-get</span> install <span class="at">-y</span> supervisor</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> supervisord.conf /etc/supervisor/conf.d/supervisord.conf</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;/usr/bin/supervisord&quot;</span>]</span></code></pre></div></li>
+</ol>
+<p>By using these steps in our Dockerfile, we can keep our Docker
+container running. This way, it does not exit right after it starts. For
+more details about Dockerfile commands, check out <a
+href="https://bestonlinetutorial.com/docker/what-is-the-dockerfile-and-how-do-you-create-one.html">what
+is a Dockerfile and how do you create one</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="why-does-my-docker-container-exit-immediately-after-starting">1.
+Why does my Docker container exit immediately after starting?</h3>
+<p>Our Docker containers can exit right away for many reasons. It may be
+due to running a command that finishes quickly. It can also happen
+because of wrong entry points or missing dependencies. When the main
+process of the container ends, Docker stops the container automatically.
+To fix this, we can check the logs of the container by using
+<code>docker logs &lt;container_id&gt;</code>. This helps us find the
+problem and change our Dockerfile or command if needed.</p>
+<h3 id="how-can-i-prevent-my-docker-container-from-exiting">2. How can I
+prevent my Docker container from exiting?</h3>
+<p>To stop your Docker container from exiting fast, we need to make sure
+the main process runs in the foreground and does not end. We can use
+interactive mode by running
+<code>docker run -it &lt;image_name&gt;</code>. Another way is to run a
+command that keeps the container alive, like a web server or a script
+that runs for a long time. This way, the Docker container stays active
+in the foreground.</p>
+<h3 id="what-are-the-common-reasons-for-docker-containers-exiting">3.
+What are the common reasons for Docker containers exiting?</h3>
+<p>Some common reasons why Docker containers exit are: the main process
+finishes running, wrong command syntax, missing environment variables,
+and unmet dependencies. If the container runs a quick command without
+any ongoing process, it will exit. We should always make sure our
+commands are set up to keep the container alive.</p>
+<h3 id="how-can-i-troubleshoot-exited-docker-containers-effectively">4.
+How can I troubleshoot exited Docker containers effectively?</h3>
+<p>To troubleshoot exited Docker containers, we can use
+<code>docker ps -a</code> to see all containers and find the ones that
+exited. Then we can check the logs with
+<code>docker logs &lt;container_id&gt;</code> to know why the container
+stopped. We can also look at the container’s details using
+<code>docker inspect &lt;container_id&gt;</code> to get more information
+about its setup and environment.</p>
+<h3 id="how-can-i-keep-a-docker-container-running-in-the-foreground">5.
+How can I keep a Docker container running in the foreground?</h3>
+<p>To keep a Docker container running in the foreground, we must ensure
+that the command in the Dockerfile (<code>CMD</code> or
+<code>ENTRYPOINT</code>) is set to run continuously. For example, if we
+run a web server, it should listen forever. Another option is to run the
+container interactively with
+<code>docker run -it &lt;image_name&gt;</code>, so we can manage the
+process and stop it from exiting right away.</p>
+<p>We can learn more about managing Docker containers and keeping them
+running by reading our article on <a
+href="https://bestonlinetutorial.com/docker/how-to-create-a-docker-container-from-an-image.html">how
+to create a Docker container from an image</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

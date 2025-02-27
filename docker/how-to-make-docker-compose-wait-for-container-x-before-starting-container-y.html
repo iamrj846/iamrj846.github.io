@@ -1,0 +1,477 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How to Make Docker Compose Wait for Container X Before Starting Container Y?</title>
+            <meta name="description" content="Learn how to make Docker Compose wait for Container X to start before launching Container Y with our step-by-step guide.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How to Make Docker Compose Wait for Container X Before Starting Container Y?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To make Docker Compose wait for Container X before starting Container
+Y, we can use some simple methods. These include health checks,
+wait-for-it scripts, and the restart policies in Docker Compose. These
+ways help to ensure that Container Y does not start until Container X is
+ready. This makes things work better and reduces mistakes while starting
+up dependencies. Using these methods can make our multi-container
+applications more reliable.</p>
+<p>In this article, we will look at some good solutions for making
+Docker Compose wait for one container before starting another. We will
+talk about understanding container dependencies, using health checks for
+startup control, using a wait-for-it script to delay, using Docker
+Compose’s wait-for script for timing, and using restart policies for a
+smooth startup. Here are the solutions we will discuss:</p>
+<ul>
+<li>Understanding Container Dependencies in Docker Compose</li>
+<li>Using Health Checks to Control Container Startup Order</li>
+<li>Implementing Wait-for-it Script to Delay Container Y</li>
+<li>Leveraging Docker Compose Wait-for Script for Synchronization</li>
+<li>Using Docker Compose Restart Policies for Graceful Startup</li>
+</ul>
+<p>For more information on Docker and what it can do, check out <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">what
+is Docker and why should you use it</a> and <a
+href="https://bestonlinetutorial.com/docker/how-does-docker-differ-from-virtual-machines.html">how
+Docker differs from virtual machines</a>.</p>
+<h2
+id="understanding-container-dependencies-in-docker-compose">Understanding
+Container Dependencies in Docker Compose</h2>
+<p>In Docker Compose, container dependencies are very important for
+managing how services start. When one container relies on another, it
+must wait until the other container is fully running. This is very
+important in microservices setups where services often talk to each
+other.</p>
+<h3 id="configuring-dependencies-using-depends_on">Configuring
+Dependencies Using <code>depends_on</code></h3>
+<p>We can set service dependencies in our
+<code>docker-compose.yml</code> file with the <code>depends_on</code>
+property. This makes sure Docker Compose starts the containers that are
+depended on first. But <code>depends_on</code> does not wait for the
+container to be “ready.” It just makes sure the container is
+started.</p>
+<p>Here is an example setup:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.7&#39;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">db</span><span class="kw">:</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> postgres:latest</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_USER</span><span class="kw">:</span><span class="at"> user</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_PASSWORD</span><span class="kw">:</span><span class="at"> password</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myapp:latest</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> db</span></span></code></pre></div>
+<h3 id="using-health-checks">Using Health Checks</h3>
+<p>To make Docker Compose wait for a container to be fully ready, we can
+use health checks. Health checks let us define rules to check if a
+container is healthy.</p>
+<p>Here is an example setup with health checks:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.7&#39;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">db</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> postgres:latest</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_USER</span><span class="kw">:</span><span class="at"> user</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_PASSWORD</span><span class="kw">:</span><span class="at"> password</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">healthcheck</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">test</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;CMD-SHELL&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;pg_isready -U user&quot;</span><span class="kw">]</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">interval</span><span class="kw">:</span><span class="at"> 10s</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 5s</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">retries</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myapp:latest</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">db</span><span class="kw">:</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">condition</span><span class="kw">:</span><span class="at"> service_healthy</span></span></code></pre></div>
+<h3 id="summary-of-key-points">Summary of Key Points</h3>
+<ul>
+<li>We use <code>depends_on</code> to set the startup order.</li>
+<li>We should use health checks to make sure dependent services are
+fully running before starting.</li>
+<li>The <code>condition: service_healthy</code> setting with
+<code>depends_on</code> is important for making sure services are
+ready.</li>
+</ul>
+<p>For more information on Docker Compose and how to manage container
+dependencies, check <a
+href="https://bestonlinetutorial.com/docker/how-to-use-docker-compose-for-development-and-testing.html">this
+resource</a>.</p>
+<h2 id="using-health-checks-to-control-container-startup-order">Using
+Health Checks to Control Container Startup Order</h2>
+<p>We can use health checks in Docker Compose to make sure one container
+(Container X) is ready and healthy before we start another container
+(Container Y). This is very important for apps where some parts need to
+be fully ready before others can work well.</p>
+<h3 id="configuration-example">Configuration Example</h3>
+<p>We can define health checks in our <code>docker-compose.yml</code>
+file like this:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.7&#39;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">database</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> postgres</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">healthcheck</span><span class="kw">:</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">test</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;CMD&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;pg_isready&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-U&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;postgres&quot;</span><span class="kw">]</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">interval</span><span class="kw">:</span><span class="at"> 10s</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 5s</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">retries</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myapp</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">database</span><span class="kw">:</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">condition</span><span class="kw">:</span><span class="at"> service_healthy</span></span></code></pre></div>
+<p>In this example: - The <code>database</code> service uses the
+<code>pg_isready</code> command to check if PostgreSQL can accept
+connections. - The <code>app</code> service relies on the
+<code>database</code> service and will only start if the
+<code>database</code> service is healthy.</p>
+<h3 id="key-properties">Key Properties</h3>
+<ul>
+<li><strong>test</strong>: This tells which command to run to check the
+container’s health.</li>
+<li><strong>interval</strong>: This shows how often the health check
+happens.</li>
+<li><strong>timeout</strong>: This is how long to wait for the health
+check to work.</li>
+<li><strong>retries</strong>: This shows how many times it fails before
+we say the container is unhealthy.</li>
+</ul>
+<p>We use health checks to control the order that our containers start.
+This way, services that rely on others do not start until their needed
+parts are completely working. For more information on Docker health
+checks, check the <a
+href="https://docs.docker.com/engine/reference/builder/#healthcheck">official
+Docker documentation</a>.</p>
+<h2
+id="implementing-wait-for-it-script-to-delay-container-y">Implementing
+Wait-for-it Script to Delay Container Y</h2>
+<p>To make sure that Container Y waits for Container X to be fully
+running, we can use the <code>wait-for-it</code> script. This script is
+a simple shell script. It blocks until a specified host and port are
+ready. Here is how we can use it in our Docker Compose setup.</p>
+<h3 id="step-1-add-wait-for-it.sh-script">Step 1: Add
+<code>wait-for-it.sh</code> Script</h3>
+<p>First, we need to download the <code>wait-for-it.sh</code> script. We
+can find it in its <a
+href="https://github.com/vishnubob/wait-for-it">GitHub
+repository</a>.</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-o</span> wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x wait-for-it.sh</span></code></pre></div>
+<h3 id="step-2-dockerfile-configuration">Step 2: Dockerfile
+Configuration</h3>
+<p>Next, we must copy the <code>wait-for-it.sh</code> script into our
+Docker image for Container Y. We will update our Dockerfile like
+this:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> your-container-y-base-image</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> wait-for-it.sh /usr/local/bin/wait-for-it</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="fu">chmod</span> +x /usr/local/bin/wait-for-it</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># More Dockerfile commands</span></span></code></pre></div>
+<h3 id="step-3-modify-docker-compose.yml">Step 3: Modify
+<code>docker-compose.yml</code></h3>
+<p>Now, in our <code>docker-compose.yml</code>, we will change Container
+Y’s command to use <code>wait-for-it</code> to wait for Container X.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">container_x</span><span class="kw">:</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> your-container-x-image</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">    # more config for container_x</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">container_y</span><span class="kw">:</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> your-container-y-image</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> container_x</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;wait-for-it&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;container_x:your_port&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;your_start_command&quot;</span><span class="kw">]</span></span></code></pre></div>
+<p>We should replace <code>"your_port"</code> with the port that
+Container X uses. Also, replace <code>"your_start_command"</code> with
+the command that starts your application in Container Y.</p>
+<h3 id="example">Example</h3>
+<p>Here is a full example of how our <code>docker-compose.yml</code>
+might look:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">database</span><span class="kw">:</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> postgres:latest</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_DB</span><span class="kw">:</span><span class="at"> mydatabase</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_USER</span><span class="kw">:</span><span class="at"> user</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_PASSWORD</span><span class="kw">:</span><span class="at"> password</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">build</span><span class="kw">:</span><span class="at"> ./app</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> database</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;wait-for-it&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;database:5432&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;npm&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;start&quot;</span><span class="kw">]</span></span></code></pre></div>
+<p>In this example, Container Y (the app) will wait for Container X (the
+database) to be ready on port 5432. Then it will run the
+<code>npm start</code> command. This setup helps to make sure that our
+application does not try to connect to the database until it is
+ready.</p>
+<p>By using the <code>wait-for-it</code> script, we can control the
+order in which our containers start. This way, we can ensure that all
+dependencies are met before a service starts.</p>
+<h2
+id="leveraging-docker-compose-wait-for-script-for-synchronization">Leveraging
+Docker Compose Wait-for Script for Synchronization</h2>
+<p>We can make Docker Compose wait for one container (Container X)
+before starting another (Container Y) by using a “wait-for-it” script.
+This script checks if Container X is ready before starting Container Y.
+Here is how we can do it:</p>
+<ol type="1">
+<li><p><strong>Download the wait-for-it script</strong>: First, we need
+to download the <code>wait-for-it.sh</code> script to our project
+folder.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-o</span> wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x wait-for-it.sh</span></code></pre></div></li>
+<li><p><strong>Modify your <code>docker-compose.yml</code></strong>: We
+use the wait-for-it script in the command for Container Y. This way, it
+waits for Container X to be ready.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">container_x</span><span class="kw">:</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> your_image_x</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;8080:8080&quot;</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">container_y</span><span class="kw">:</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> your_image_y</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> container_x</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;./wait-for-it.sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;container_x:8080&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;your-start-command&quot;</span><span class="kw">]</span></span></code></pre></div>
+<p>In this example, <code>container_y</code> waits for
+<code>container_x</code> to be available on port 8080 before it runs its
+start command.</p></li>
+<li><p><strong>Environment Variables</strong>: We can also give
+environment variables to the wait-for-it script if needed.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> DATABASE_URL=container_x:5432</span></span></code></pre></div></li>
+<li><p><strong>Run Docker Compose</strong>: At last, we run our Docker
+Compose setup.</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> up</span></code></pre></div></li>
+</ol>
+<p>Using the wait-for-it script helps to make sure Container Y does not
+start until Container X is fully running. This allows for good
+synchronization between our services. This is very helpful in
+microservices systems where services need each other to work well.</p>
+<p>For more information on Docker Compose and managing services, check
+out <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html">what
+is Docker Compose and how does it simplify multi-container
+applications</a>.</p>
+<h2 id="using-docker-compose-restart-policies-for-smooth-startup">Using
+Docker Compose Restart Policies for Smooth Startup</h2>
+<p>In Docker Compose, we can use restart policies to control how
+containers start up. This helps us make sure that Container Y waits for
+Container X to be ready before it starts. This is very important for
+apps where one service needs another. For example, a web app may need a
+database to be ready first.</p>
+<h3 id="restart-policies">Restart Policies</h3>
+<p>We can set restart policies in our <code>docker-compose.yml</code>
+file with the <code>restart</code> option. The restart policies we can
+use are:</p>
+<ul>
+<li><code>no</code>: This means we do not restart the container
+automatically (this is the default).</li>
+<li><code>always</code>: This will restart the container if it
+stops.</li>
+<li><code>unless-stopped</code>: This will restart the container unless
+we stop it on purpose.</li>
+<li><code>on-failure</code>: This restarts the container only if it
+exits with a non-zero status.</li>
+</ul>
+<h3 id="example-docker-compose-configuration">Example Docker Compose
+Configuration</h3>
+<p>Here is an example of <code>docker-compose.yml</code> configuration
+that uses restart policies for a web service that needs a database
+service:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">db</span><span class="kw">:</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> postgres:latest</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_DB</span><span class="kw">:</span><span class="at"> exampledb</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_USER</span><span class="kw">:</span><span class="at"> user</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_PASSWORD</span><span class="kw">:</span><span class="at"> password</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">web</span><span class="kw">:</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-web-app:latest</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> on-failure</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> db</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;80:80&quot;</span></span></code></pre></div>
+<h3 id="explanation">Explanation</h3>
+<ul>
+<li>The <code>db</code> service is set to always restart. This makes
+sure it will be ready when we need it.</li>
+<li>The <code>web</code> service uses <code>on-failure</code> for its
+restart policy. This means it will restart if it crashes but will not
+restart if it stops normally. The <code>depends_on</code> tells Docker
+Compose to start the <code>db</code> service before the <code>web</code>
+service. But it does not check if the <code>db</code> is healthy.</li>
+</ul>
+<h3 id="combining-with-health-checks">Combining with Health Checks</h3>
+<p>To make sure that the <code>web</code> service starts only after the
+<code>db</code> is ready, we can use restart policies with health
+checks. Here is an example:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">db</span><span class="kw">:</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> postgres:latest</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">healthcheck</span><span class="kw">:</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">test</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;CMD&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;pg_isready&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-U&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;user&quot;</span><span class="kw">]</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">interval</span><span class="kw">:</span><span class="at"> 10s</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 5s</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">retries</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">web</span><span class="kw">:</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-web-app:latest</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> on-failure</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">db</span><span class="kw">:</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">condition</span><span class="kw">:</span><span class="at"> service_healthy</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;80:80&quot;</span></span></code></pre></div>
+<h3 id="key-points">Key Points</h3>
+<ul>
+<li>The <code>healthcheck</code> setup for the <code>db</code> service
+makes sure Docker checks if the database is ready.</li>
+<li>The <code>depends_on</code> condition is set to
+<code>service_healthy</code>. This makes the <code>web</code> service
+wait until the <code>db</code> service is healthy before it starts.</li>
+</ul>
+<p>Using Docker Compose restart policies with health checks helps us
+manage container dependencies well. It also ensures a smooth startup of
+services. For more on managing Docker services, check out <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">this
+article on Docker networking</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="how-can-we-specify-container-dependencies-in-docker-compose">1.
+How can we specify container dependencies in Docker Compose?</h3>
+<p>In Docker Compose, we can specify container dependencies with the
+<code>depends_on</code> option in our <code>docker-compose.yml</code>
+file. This option makes sure that container Y starts only after
+container X has started. But, <code>depends_on</code> does not wait for
+container X to be fully ready. It only checks if it has started. For
+better control, we can use health checks or wait-for-it scripts.</p>
+<h3
+id="what-are-health-checks-in-docker-compose-and-how-do-they-work">2.
+What are health checks in Docker Compose, and how do they work?</h3>
+<p>Health checks in Docker Compose help us check the health status of a
+container. We define them with the <code>healthcheck</code> key in our
+<code>docker-compose.yml</code>. When we specify a command to check the
+container’s status, Docker makes sure that dependent containers do not
+start until the health check passes. This is very important when
+Container Y needs Container X to be fully working before it starts.</p>
+<h3 id="how-do-we-implement-a-wait-for-it-script-in-docker-compose">3.
+How do we implement a wait-for-it script in Docker Compose?</h3>
+<p>A wait-for-it script is a simple shell script. We can use it to delay
+the start of Container Y until Container X is ready. We can include this
+script in our Dockerfile or as part of our project and reference it in
+the <code>command</code> section of our <code>docker-compose.yml</code>.
+Here is a common command:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;./wait-for-it.sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;container_x:port&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;your_command_here&quot;</span><span class="kw">]</span></span></code></pre></div>
+<p>This makes sure that Container Y waits for Container X to be
+available.</p>
+<h3
+id="can-we-use-docker-compose-restart-policies-to-control-startup-order">4.
+Can we use Docker Compose restart policies to control startup
+order?</h3>
+<p>Docker Compose restart policies help us manage the lifecycle of our
+containers. But they do not directly control the startup order. By
+setting a restart policy, we can ensure that Container Y will restart if
+it fails because Container X is not ready. However, it is better to use
+this with <code>depends_on</code> and health checks for better control
+over container startup.</p>
+<h3 id="where-can-we-learn-more-about-docker-and-its-components">5.
+Where can we learn more about Docker and its components?</h3>
+<p>For beginners in Docker or those who want to learn more, we can find
+many resources. Articles like <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">What
+is Docker and Why Should You Use It?</a> and <a
+href="https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html">How
+to Install Docker on Different Operating Systems</a> give us good
+basics. Also, learning about <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html">Docker
+Compose</a> can help us manage multi-container applications much
+better.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

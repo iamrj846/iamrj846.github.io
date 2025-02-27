@@ -1,0 +1,445 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How to Resolve 'Docker Not Found' Error When Building Docker Images in a Jenkins Pipeline?</title>
+            <meta name="description" content="Learn how to fix the 'Docker Not Found' error in Jenkins pipelines with our step-by-step guide to building Docker images.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How to Resolve 'Docker Not Found' Error When Building Docker Images in a Jenkins Pipeline?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To fix the ‘Docker Not Found’ error when we build Docker images in a
+Jenkins pipeline, we need to make sure that Docker is installed and can
+be accessed from our Jenkins environment. First, we should check if
+Docker is installed on our Jenkins server. Next, we need to confirm that
+the Jenkins user has the right permissions to run Docker commands.
+Lastly, we should set up our Jenkins pipeline to use Docker correctly.
+If we follow these steps, we can get rid of the ‘Docker Not Found’ error
+and make our CI/CD process easier.</p>
+<p>In this article, we will look at important ways to troubleshoot and
+fix the ‘Docker Not Found’ error during Jenkins pipeline runs. We will
+talk about checking Docker installation, setting up Docker in our
+Jenkins pipeline, using Docker agents the right way, checking user
+permissions, and solving problems with Docker daemon connection. The
+main solutions we will cover are:</p>
+<ul>
+<li>Verify Docker Installation in Jenkins Environment</li>
+<li>Configure Docker in Jenkins Pipeline for Successful Builds</li>
+<li>Use Docker Agent in Jenkins Pipeline to Avoid Errors</li>
+<li>Check Jenkins User Permissions for Docker Access</li>
+<li>Troubleshoot Docker Daemon Connection Issues in Jenkins</li>
+</ul>
+<p>By using these solutions, we can have a better Docker experience in
+our Jenkins pipeline.</p>
+<h2 id="verify-docker-installation-in-jenkins-environment">Verify Docker
+Installation in Jenkins Environment</h2>
+<p>To fix the ‘Docker Not Found’ error in a Jenkins pipeline, we need to
+check if Docker is installed correctly in our Jenkins environment. Let’s
+follow these steps to make sure everything is set up right.</p>
+<ol type="1">
+<li><p><strong>Check Docker Installation:</strong> We should log into
+the Jenkins server and run this command to see if Docker is
+installed:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> <span class="at">--version</span></span></code></pre></div>
+<p>If Docker is there, this command will show the version. If it is not
+there, we will need to <a
+href="https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html">install
+Docker</a> on our machine.</p></li>
+<li><p><strong>Verify Docker Daemon:</strong> We must check if the
+Docker daemon is running. We can use this command:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl status docker</span></code></pre></div>
+<p>If the Docker service is not active, we can start it with:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl start docker</span></code></pre></div></li>
+<li><p><strong>Environment Variables:</strong> Next, we need to check if
+the Docker socket is available. The Jenkins user should have access to
+the Docker socket:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-l</span> /var/run/docker.sock</span></code></pre></div>
+<p>The output should show that the <code>docker</code> group has access.
+If our Jenkins user is not in the <code>docker</code> group, we should
+add it:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> usermod <span class="at">-aG</span> docker jenkins</span></code></pre></div>
+<p>After adding the Jenkins user to the docker group, let’s restart
+Jenkins to apply the changes.</p></li>
+<li><p><strong>Jenkins Configuration:</strong> We need to make sure the
+Jenkins pipeline is set up to use Docker. We can use this snippet in our
+Jenkinsfile to check Docker:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    agent any</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Verify Docker&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>                script <span class="op">{</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>                    sh <span class="st">&#39;docker --version&#39;</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Install Docker Plugin:</strong> If Docker is installed
+but Jenkins cannot find it, we must check if the Docker plugin is
+installed in Jenkins. We go to <code>Manage Jenkins</code> &gt;
+<code>Manage Plugins</code> &gt; <code>Available</code> and search for
+“Docker”. We install the plugin if it is not there.</p></li>
+</ol>
+<p>By following these steps, we can make sure that Docker is set up
+correctly in our Jenkins environment. This is very important for
+building Docker images successfully in our Jenkins pipeline.</p>
+<h2
+id="configure-docker-in-jenkins-pipeline-for-successful-builds">Configure
+Docker in Jenkins Pipeline for Successful Builds</h2>
+<p>To set up Docker in our Jenkins pipeline, we can follow these simple
+steps. This will help us make sure that the Docker environment is ready
+for building images.</p>
+<ol type="1">
+<li><p><strong>Install Docker on Jenkins Nodes</strong>: First, we need
+to check that Docker is installed and running on the Jenkins node. We
+can do this by running this command:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> <span class="at">--version</span></span></code></pre></div></li>
+<li><p><strong>Jenkins Docker Plugin</strong>: Next, we should install
+the Docker Pipeline plugin from the Jenkins plugin manager. This plugin
+helps Jenkins to work well with Docker containers and images.</p></li>
+<li><p><strong>Configure Docker in Jenkins</strong>:</p>
+<ul>
+<li><p>We go to <strong>Manage Jenkins</strong> and then
+<strong>Configure System</strong>.</p></li>
+<li><p>We scroll down to the <strong>Docker</strong> section. Here, we
+need to set the Docker host URL. If Docker runs on the same host, we
+use:</p>
+<pre><code>unix:///var/run/docker.sock</code></pre></li>
+</ul></li>
+<li><p><strong>Pipeline Configuration</strong>: We can use the Jenkins
+pipeline syntax below to make a stage that builds a Docker image:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    agent any</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Build Docker Image&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>                script <span class="op">{</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>                    docker<span class="op">.</span><span class="fu">build</span><span class="op">(</span><span class="st">&quot;my-image:</span><span class="ss">${</span>env<span class="op">.</span>BUILD_ID<span class="ss">}</span><span class="st">&quot;</span><span class="op">)</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Environment Variables</strong>: We can set any needed
+environment variables in our Jenkinsfile to change the Docker build
+context or arguments. For example:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>environment <span class="op">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    DOCKER_IMAGE_NAME <span class="op">=</span> <span class="st">&quot;my-image&quot;</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Dockerfile Location</strong>: We need to make sure our
+Dockerfile is in the right place compared to our Jenkins workspace.
+Usually, it is at the root of our repository. But we can also specify
+the path in the build command:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>docker<span class="op">.</span><span class="fu">build</span><span class="op">(</span><span class="st">&quot;my-image:</span><span class="ss">${</span>env<span class="op">.</span>BUILD_ID<span class="ss">}</span><span class="st">&quot;</span><span class="op">,</span> <span class="st">&quot;./path/to/Dockerfile&quot;</span><span class="op">)</span></span></code></pre></div></li>
+<li><p><strong>Use Docker-in-Docker (DinD)</strong>: If we want to use
+Docker inside Docker, we might need to set the Jenkins agent to run with
+privileged mode. We should change our Jenkins agent Docker settings to
+add:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">--privileged</span></span></code></pre></div></li>
+<li><p><strong>Test the Configuration</strong>: After we set up the
+pipeline, we should run a build to check if the Docker commands work
+well and if the image builds without any problems.</p></li>
+</ol>
+<p>By following these steps, we can set up Docker in our Jenkins
+pipeline. This will help us create successful builds and integrate
+containerization smoothly into our CI/CD processes.</p>
+<h2 id="use-docker-agent-in-jenkins-pipeline-to-avoid-errors">Use Docker
+Agent in Jenkins Pipeline to Avoid Errors</h2>
+<p>Using a Docker agent in our Jenkins pipeline can help us reduce the
+‘Docker Not Found’ error when we build images. By setting a Docker
+agent, Jenkins can use the Docker environment directly. This way, all
+Docker commands run in the right context.</p>
+<p>To set up a Docker agent, we can use this syntax in our
+<code>Jenkinsfile</code>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    agent <span class="op">{</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>        docker <span class="op">{</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>            image <span class="st">&#39;your-docker-image:tag&#39;</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>            args <span class="st">&#39;-v /var/run/docker.sock:/var/run/docker.sock&#39;</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Build&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>                script <span class="op">{</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>                    <span class="co">// Example of building a Docker image</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>                    sh <span class="st">&#39;docker build -t your-image-name .&#39;</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Test&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>                script <span class="op">{</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>                    <span class="co">// Example of running tests on the Docker image</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>                    sh <span class="st">&#39;docker run --rm your-image-name test-command&#39;</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="key-notes">Key Notes:</h3>
+<ul>
+<li><strong>Docker Image</strong>: Change
+<code>'your-docker-image:tag'</code> to the Docker image you want to
+use.</li>
+<li><strong>Volume Binding</strong>: The argument
+<code>-v /var/run/docker.sock:/var/run/docker.sock</code> helps Jenkins
+talk to the Docker daemon on the host. This stops permission problems
+with Docker commands.</li>
+<li><strong>Pipeline Stages</strong>: We can change the stages to fit
+our project needs. Each Docker command should run in the context of the
+Docker agent we defined.</li>
+</ul>
+<p>By setting this up, we can avoid ‘Docker Not Found’ errors. It also
+makes our CI/CD process better by creating a steady and isolated space
+for our builds. For more help on how to connect Docker with Jenkins,
+check this <a
+href="https://bestonlinetutorial.com/docker/how-to-integrate-docker-with-jenkins-for-continuous-integration.html">Docker
+and Jenkins integration tutorial</a>.</p>
+<h2 id="check-jenkins-user-permissions-for-docker-access">Check Jenkins
+User Permissions for Docker Access</h2>
+<p>To fix the ‘Docker Not Found’ error when we build Docker images in a
+Jenkins pipeline, it is important to check user permissions for Docker
+access. By default, the Jenkins user may not have the needed permissions
+to run Docker commands.</p>
+<h3 id="steps-to-check-and-grant-permissions">Steps to Check and Grant
+Permissions:</h3>
+<ol type="1">
+<li><p><strong>Verify Jenkins User</strong>: First, we need to find out
+which user Jenkins is running as. This is usually the
+<code>jenkins</code> user. We can check this by running:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ps</span> <span class="at">-ef</span> <span class="kw">|</span> <span class="fu">grep</span> jenkins</span></code></pre></div></li>
+<li><p><strong>Add Jenkins User to Docker Group</strong>: Next, we
+should make sure the Jenkins user is in the <code>docker</code> group.
+We can do this by running this command:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> usermod <span class="at">-aG</span> docker jenkins</span></code></pre></div></li>
+<li><p><strong>Restart Jenkins</strong>: After we add the user to the
+Docker group, we need to restart Jenkins to apply the changes:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart jenkins</span></code></pre></div></li>
+<li><p><strong>Verify Permissions</strong>: To check if the Jenkins user
+has the right permissions, we can run a Docker command from the Jenkins
+pipeline:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>    agent any</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Test Docker Access&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                script <span class="op">{</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>                    sh <span class="st">&#39;docker info&#39;</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Check Permissions</strong>: If we still have problems, we
+should make sure the Docker daemon is running and the Jenkins user can
+access it. We can test this by running:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> ps</span></code></pre></div></li>
+</ol>
+<p>By making sure the Jenkins user has the right permissions to access
+Docker, we can fix the ‘Docker Not Found’ error when building images in
+our Jenkins pipeline. For more details on using Docker with Jenkins for
+continuous integration, check this article on <a
+href="https://bestonlinetutorial.com/docker/how-to-integrate-docker-with-jenkins-for-continuous-integration.html">integrating
+Docker with Jenkins</a>.</p>
+<h2
+id="troubleshoot-docker-daemon-connection-issues-in-jenkins">Troubleshoot
+Docker Daemon Connection Issues in Jenkins</h2>
+<p>When we face Docker daemon connection problems in a Jenkins pipeline,
+we should follow these steps to find and fix them.</p>
+<ol type="1">
+<li><p><strong>Check Docker Daemon Status</strong>: First, we need to
+make sure the Docker daemon is running on the Jenkins server. We can
+check this by running this command in the terminal:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">systemctl</span> status docker</span></code></pre></div>
+<p>If it is not active, we can start it by using:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl start docker</span></code></pre></div></li>
+<li><p><strong>Examine Jenkins Configuration</strong>: Next, we should
+look at the Jenkins configuration. We need to check if the Docker
+installation path is set correctly. In Jenkins, we go to
+<code>Manage Jenkins</code> &gt; <code>Configure System</code> and check
+the Docker settings.</p></li>
+<li><p><strong>Inspect Jenkins Logs</strong>: We also need to check the
+Jenkins logs for any errors about Docker. We can usually find logs in
+<code>/var/log/jenkins/jenkins.log</code>. We should look for messages
+about connection problems or permission issues.</p></li>
+<li><p><strong>Validate Docker Socket Permissions</strong>: We must make
+sure the Jenkins user can access the Docker socket. The Docker socket is
+usually at <code>/var/run/docker.sock</code>. We can set the right
+permissions with:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chown jenkins:docker /var/run/docker.sock</span></code></pre></div>
+<p>This command gives the Jenkins user access to the Docker
+socket.</p></li>
+<li><p><strong>Use Docker in Pipeline Configuration</strong>: It is
+important that our Jenkins pipeline is set up to use Docker correctly.
+For example, we can use this pipeline snippet to check that Docker
+commands run well:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    agent any</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Build&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>                script <span class="op">{</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>                    docker<span class="op">.</span><span class="fu">image</span><span class="op">(</span><span class="st">&#39;your-image&#39;</span><span class="op">).</span><span class="fu">inside</span> <span class="op">{</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>                        sh <span class="st">&#39;echo Docker is running!&#39;</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>                    <span class="op">}</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Network Configuration</strong>: If Jenkins is running in
+a container, we should ensure that the Docker daemon is reachable from
+inside the Jenkins container. We may need to set up the Docker host or
+run Jenkins with the <code>--privileged</code> flag.</p></li>
+<li><p><strong>Firewall and Security Group Settings</strong>: Finally,
+we should check that any firewalls or security groups allow traffic on
+the Docker daemon port. The default ports are TCP 2375 for unsecured and
+2376 for secured.</p></li>
+</ol>
+<p>By following these steps, we can troubleshoot and fix any Docker
+daemon connection issues in a Jenkins pipeline. For more information on
+how to connect Docker with Jenkins, we can check this article on <a
+href="https://bestonlinetutorial.com/docker/how-to-integrate-docker-with-jenkins-for-continuous-integration.html">how
+to integrate Docker with Jenkins for continuous integration</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-makes-the-docker-not-found-error-happen-in-jenkins">1. What
+makes the ‘Docker Not Found’ error happen in Jenkins?</h3>
+<p>The ‘Docker Not Found’ error in Jenkins happens when Jenkins cannot
+find the Docker program. This can be because Docker is not installed
+right, the path is wrong, or Jenkins is running under a user that can’t
+access Docker. We need to make sure Docker is installed properly. Also,
+we should check that Jenkins can reach it.</p>
+<h3
+id="how-can-i-check-if-docker-is-installed-in-the-jenkins-environment">2.
+How can I check if Docker is installed in the Jenkins environment?</h3>
+<p>To check if Docker is installed in our Jenkins environment, we can
+run a simple command in the Jenkins pipeline script. Use this command in
+a build step:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> <span class="at">--version</span></span></code></pre></div>
+<p>If Docker is installed right, this command will show the version of
+Docker. If it does not work, we have to look at the Docker installation
+and see if Jenkins has the right permissions.</p>
+<h3 id="what-permissions-does-the-jenkins-user-need-to-access-docker">3.
+What permissions does the Jenkins user need to access Docker?</h3>
+<p>The Jenkins user needs to be in the Docker group to run Docker
+commands without using sudo. We can add the Jenkins user to the Docker
+group by running:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> usermod <span class="at">-aG</span> docker jenkins</span></code></pre></div>
+<p>After we do this, we should restart the Jenkins service. We also need
+to make sure that the user session updates for the changes to work.</p>
+<h3
+id="how-do-i-set-up-docker-in-a-jenkins-pipeline-to-avoid-problems">4.
+How do I set up Docker in a Jenkins pipeline to avoid problems?</h3>
+<p>To set up Docker in a Jenkins pipeline, we need to write the Docker
+commands in our Jenkinsfile and use the right agent. We can use the
+<code>docker</code> block in our Jenkinsfile to define Docker build and
+run commands like this:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode groovy"><code class="sourceCode groovy"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">{</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>    agent any</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    stages <span class="op">{</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>        <span class="fu">stage</span><span class="op">(</span><span class="st">&#39;Build&#39;</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>            steps <span class="op">{</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>                script <span class="op">{</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>                    docker<span class="op">.</span><span class="fu">build</span><span class="op">(</span><span class="st">&#39;my-image&#39;</span><span class="op">)</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>                <span class="op">}</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>This way, the Docker environment is ready during the build
+process.</p>
+<h3
+id="what-should-i-do-if-jenkins-cant-connect-to-the-docker-daemon">5.
+What should I do if Jenkins can’t connect to the Docker daemon?</h3>
+<p>If Jenkins can’t connect to the Docker daemon, we should check if the
+Docker service is running on the host machine. We can do this with the
+command:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl status docker</span></code></pre></div>
+<p>Also, we need to make sure the Docker daemon is listening on the
+right socket, which is usually <code>/var/run/docker.sock</code>. If
+there are any permission problems, we should check if the Jenkins user
+can access this socket.</p>
+<p>By fixing these common problems, we can solve the ‘Docker Not Found’
+error when building Docker images in a Jenkins pipeline. For more
+information about Docker and Jenkins, check out <a
+href="https://bestonlinetutorial.com/docker/how-to-integrate-docker-with-jenkins-for-continuous-integration.html">How
+to Integrate Docker with Jenkins for Continuous Integration</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

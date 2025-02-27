@@ -1,0 +1,351 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How Can You Use SSH Keys Inside a Docker Container?</title>
+            <meta name="description" content="Learn how to securely use SSH keys in Docker containers for seamless access and enhanced security in your development workflow.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Can You Use SSH Keys Inside a Docker Container?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Using SSH keys inside a Docker container is very important for secure
+communication with remote servers. This lets us run commands and manage
+services without showing sensitive information. To use SSH keys
+correctly, we can copy them directly into a container, mount them from
+the host, or use Docker secrets for more security. These ways help keep
+our SSH keys safe while giving us easy access to the services we
+need.</p>
+<p>In this article, we will look at different ways to use SSH keys
+inside a Docker container. We will share some best practices for
+security and how to make it easy to use. We will talk about how to copy
+SSH keys into a container, mount them from our host system, use Docker
+secrets, and set up SSH agent forwarding. By the end, we will know how
+to manage SSH keys well in our Docker environments.</p>
+<ul>
+<li>How to Use SSH Keys Inside a Docker Container</li>
+<li>Why Should You Use SSH Keys Inside a Docker Container?</li>
+<li>How Can You Copy SSH Keys Into a Docker Container?</li>
+<li>How Can You Mount SSH Keys Into a Docker Container?</li>
+<li>How Can You Use Docker Secrets for SSH Keys?</li>
+<li>How Can You Use SSH Agent Forwarding in a Docker Container?</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2 id="why-should-we-use-ssh-keys-inside-a-docker-container">Why Should
+We Use SSH Keys Inside a Docker Container?</h2>
+<p>Using SSH keys inside a Docker container helps keep our systems safe
+and makes it easier to log in to remote systems. Here are some good
+reasons to use SSH keys in our Docker containers:</p>
+<ol type="1">
+<li><p><strong>Better Security</strong>: SSH keys are safer than
+passwords. They are hard to crack with brute-force attacks. We can also
+easily take them away if needed.</p></li>
+<li><p><strong>Easier Access</strong>: When we need to deploy and manage
+applications, we often need to reach remote servers. SSH keys let us
+access these servers without typing passwords. This makes our work
+smoother.</p></li>
+<li><p><strong>Keeping Credentials Safe</strong>: SSH keys help us keep
+sensitive information away from our application code. This means we
+lower the chance of exposing important data in our Docker
+image.</p></li>
+<li><p><strong>Simple with CI/CD</strong>: CI/CD pipelines can use SSH
+keys for automatic deployments. We can set up our Docker container to
+use SSH keys for logging in to remote repositories or servers.</p></li>
+<li><p><strong>Control Access</strong>: We can easily handle and change
+SSH keys. This gives us better control over who can access our Docker
+applications.</p></li>
+<li><p><strong>Consistent Across Environments</strong>: Using SSH keys
+means our access methods are the same in different environments like
+development, staging, and production. This makes management easier and
+cuts down on mistakes.</p></li>
+<li><p><strong>Support for Many Hosts</strong>: SSH keys can be set up
+to allow access to many hosts. This helps us manage Docker containers
+that work with different services in various environments.</p></li>
+</ol>
+<p>To use SSH keys well in Docker containers, we should think about how
+to copy or mount our keys. We will explain this more in the next
+sections.</p>
+<h2 id="how-can-we-copy-ssh-keys-into-a-docker-container">How Can We
+Copy SSH Keys Into a Docker Container?</h2>
+<p>To copy SSH keys into a Docker container, we can use the
+<code>docker cp</code> command or add the keys when we build the image
+in the Dockerfile. Let us look at both methods.</p>
+<h3 id="using-docker-cp">Using <code>docker cp</code></h3>
+<ol type="1">
+<li><p>First, we need to make sure our container is running. We can
+start a container with this command:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--name</span> mycontainer ubuntu</span></code></pre></div></li>
+<li><p>Next, we copy the SSH key from our host machine to the running
+container:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> cp /path/to/your/ssh_key mycontainer:/root/.ssh/id_rsa</span></code></pre></div></li>
+<li><p>Now, we have to set the right permissions for the SSH key inside
+the container:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> exec mycontainer chmod 600 /root/.ssh/id_rsa</span></code></pre></div></li>
+</ol>
+<h3 id="using-dockerfile">Using Dockerfile</h3>
+<p>We can also copy SSH keys when we build the image by using a
+Dockerfile. Here is an example:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ubuntu:latest</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Create the .ssh directory</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="fu">mkdir</span> <span class="at">-p</span> /root/.ssh</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Copy the SSH key into the container</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> /path/to/your/ssh_key /root/.ssh/id_rsa</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Set the correct permissions</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="fu">chmod</span> 600 /root/.ssh/id_rsa</span></code></pre></div>
+<p>We build the image with this command:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> myimage .</span></code></pre></div>
+<h3 id="best-practices">Best Practices</h3>
+<ul>
+<li>We should not copy SSH keys directly into images that we will share
+or deploy.</li>
+<li>We can use Docker Secrets or other safe ways to manage sensitive
+keys.</li>
+<li>We must make sure the SSH key is not open to non-privileged users
+inside the container.</li>
+</ul>
+<h2 id="how-can-we-mount-ssh-keys-into-a-docker-container">How Can We
+Mount SSH Keys Into a Docker Container?</h2>
+<p>Mounting SSH keys into a Docker container helps us access remote
+servers safely from inside the container. We can do this with a bind
+mount or a volume. Here are the ways to mount SSH keys into a Docker
+container.</p>
+<h3 id="using-bind-mounts">Using Bind Mounts</h3>
+<ol type="1">
+<li><p><strong>Find SSH Key Location</strong>: Make sure our SSH keys
+are on our host system. They are usually in
+<code>~/.ssh/</code>.</p></li>
+<li><p><strong>Run Docker with Bind Mount</strong>: We can mount our SSH
+key directly into the container using the <code>-v</code> flag.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-v</span> ~/.ssh/id_rsa:/root/.ssh/id_rsa <span class="at">-v</span> ~/.ssh/known_hosts:/root/.ssh/known_hosts my-docker-image</span></code></pre></div>
+<p>This command mounts the private SSH key and the known hosts file from
+our host to the container. This allows SSH access.</p></li>
+</ol>
+<h3 id="using-docker-volumes">Using Docker Volumes</h3>
+<ol type="1">
+<li><p><strong>Create a Docker Volume</strong>: If we want to use Docker
+volumes, we first need to create a volume:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> volume create ssh_keys</span></code></pre></div></li>
+<li><p><strong>Copy SSH Keys to the Volume</strong>: We can copy our SSH
+keys into the volume using a temporary container:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> <span class="at">-v</span> ssh_keys:/ssh_keys <span class="at">-v</span> ~/.ssh/id_rsa:/id_rsa busybox cp /id_rsa /ssh_keys/id_rsa</span></code></pre></div></li>
+<li><p><strong>Run the Container with Volume</strong>: Now we run our
+container and mount the volume:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-v</span> ssh_keys:/root/.ssh my-docker-image</span></code></pre></div></li>
+</ol>
+<h3 id="security-considerations">Security Considerations</h3>
+<ul>
+<li>We need to check that the permissions on our SSH keys are set right
+(like <code>chmod 600 ~/.ssh/id_rsa</code>).</li>
+<li>If we can, we should use the <code>--read-only</code> flag when
+running our container. This helps to stop any unauthorized changes.</li>
+</ul>
+<p>This setup lets our Docker container access SSH services safely using
+the mounted SSH keys. For more details on Docker volumes, we can check
+out <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-volumes-and-how-do-they-work.html">Docker
+Volumes</a>.</p>
+<h2 id="how-can-we-use-docker-secrets-for-ssh-keys">How Can We Use
+Docker Secrets for SSH Keys?</h2>
+<p>Docker Secrets help us manage sensitive data like SSH keys in Docker
+Swarm services safely. By using Docker Secrets, we make sure that SSH
+keys are not hardcoded in our images or stored openly in our containers.
+Here is how we can use Docker Secrets for SSH keys:</p>
+<ol type="1">
+<li><p><strong>Creating a Docker Secret</strong>: First, we need to
+create a Docker Secret from our SSH private key. We can do this with the
+Docker CLI:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;your-private-ssh-key&quot;</span> <span class="kw">|</span> <span class="ex">docker</span> secret create my_ssh_key <span class="at">-</span></span></code></pre></div>
+<p>We must replace <code>"your-private-ssh-key"</code> with the real
+content of our SSH private key.</p></li>
+<li><p><strong>Using the Secret in a Service</strong>: When we start a
+Docker Swarm service, we can tell it to use the secret. Here is an
+example of how to create a service that uses the SSH key secret:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> service create <span class="dt">\</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--name</span> my_service <span class="dt">\</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--secret</span> my_ssh_key <span class="dt">\</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  my_image</span></code></pre></div></li>
+<li><p><strong>Accessing the Secret Inside the Container</strong>:
+Docker Secrets are available as files in the <code>/run/secrets/</code>
+folder in the container. We can access our SSH key in our running
+service like this:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> /run/secrets/my_ssh_key</span></code></pre></div>
+<p>We must make sure that our app or script uses this key for SSH
+tasks.</p></li>
+<li><p><strong>Setting Permissions</strong>: It is very important to set
+the right permissions on the SSH private key file to stop unauthorized
+access. We can do this by changing the file permissions inside the
+container:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 /run/secrets/my_ssh_key</span></code></pre></div></li>
+<li><p><strong>Using SSH Commands</strong>: Now that we have the SSH key
+safely, we can use it for SSH commands in our container. For
+example:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-i</span> /run/secrets/my_ssh_key user@hostname</span></code></pre></div></li>
+</ol>
+<p>Using Docker Secrets for SSH keys makes our security better. It helps
+us manage sensitive information in Docker containers correctly. For more
+details on Docker Secrets management, we can check <a
+href="https://bestonlinetutorial.com/docker/how-to-use-docker-secrets-for-sensitive-data-storage.html">this
+article</a>.</p>
+<h2 id="how-can-you-use-ssh-agent-forwarding-in-a-docker-container">How
+Can You Use SSH Agent Forwarding in a Docker Container?</h2>
+<p>SSH agent forwarding helps a Docker container use your local SSH
+keys. This is good because it keeps your sensitive keys safe. We do not
+need to copy them into the container. To set up SSH agent forwarding in
+a Docker container, we can follow these steps:</p>
+<ol type="1">
+<li><p><strong>Start the SSH Agent</strong>:<br />
+First, we need to make sure our SSH agent is running on our host
+machine. We can start it with this command:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="bu">eval</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">ssh-agent</span> <span class="at">-s</span><span class="va">)</span><span class="st">&quot;</span></span></code></pre></div></li>
+<li><p><strong>Add Your SSH Key</strong>:<br />
+Next, we will add our SSH key to the agent. We do this with:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-add</span> ~/.ssh/id_rsa</span></code></pre></div></li>
+<li><p><strong>Run Your Docker Container with Forwarding</strong>:<br />
+Now, we need to run our Docker container with forwarding. We use the
+<code>-v</code> option to mount the SSH socket from the host. We also
+pass the <code>SSH_AUTH_SOCK</code> environment variable. Here is the
+command:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-it</span> <span class="dt">\</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-v</span> <span class="va">$SSH_AUTH_SOCK</span>:/ssh-agent <span class="dt">\</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> SSH_AUTH_SOCK=/ssh-agent <span class="dt">\</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  your-docker-image</span></code></pre></div></li>
+<li><p><strong>Verify SSH Access</strong>:<br />
+Finally, inside the container, we need to check if we can access our SSH
+keys. We can do this by running:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-add</span> <span class="at">-l</span></span></code></pre></div></li>
+</ol>
+<p>If everything is good, this command should list our SSH keys. This
+means that SSH agent forwarding is set up correctly. With this setup, we
+can connect to remote servers from our Docker container using our local
+SSH keys. This keeps our environment clean and secure.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="what-are-ssh-keys-and-why-are-they-important-for-docker-containers">1.
+What are SSH keys and why are they important for Docker containers?</h3>
+<p>SSH keys are special keys that help us communicate safely over the
+SSH (Secure Shell) protocol. They are important for Docker containers
+because they allow us to access remote servers securely without using
+passwords. This is very helpful for automated tasks like deployments. It
+makes everything safer and faster. For more information on secure Docker
+practices, you can check <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-security-best-practices.html">Docker
+Security Best Practices</a>.</p>
+<h3 id="how-do-i-securely-copy-ssh-keys-into-a-docker-container">2. How
+do I securely copy SSH keys into a Docker container?</h3>
+<p>To copy SSH keys safely into a Docker container, we can use the
+<code>docker cp</code> command. This command helps us copy files from
+our host system directly into the running container. For example, to
+copy an SSH key, we can use:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> cp /path/to/your/id_rsa container_name:/root/.ssh/id_rsa</span></code></pre></div>
+<p>Don’t forget to set the right permissions on the key inside the
+container. This helps stop unauthorized access.</p>
+<h3 id="can-i-mount-ssh-keys-into-a-docker-container-using-volumes">3.
+Can I mount SSH keys into a Docker container using volumes?</h3>
+<p>Yes, we can mount SSH keys into a Docker container using volumes.
+This way is better because it keeps our keys on the host and lets the
+container access them right away. We use the <code>-v</code> option when
+we run our container like this:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-v</span> /path/to/ssh:/root/.ssh your_image</span></code></pre></div>
+<p>This method keeps our SSH keys safe and easy to manage.</p>
+<h3 id="what-is-ssh-agent-forwarding-and-how-can-i-use-it-in-docker">4.
+What is SSH agent forwarding and how can I use it in Docker?</h3>
+<p>SSH agent forwarding helps a Docker container use the SSH keys on the
+host machine without copying them into the container. To do this, we
+need to run our container with the <code>-v</code> option to mount the
+SSH agent socket:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-v</span> <span class="va">$SSH_AUTH_SOCK</span>:/ssh-agent <span class="at">-e</span> SSH_AUTH_SOCK=/ssh-agent your_image</span></code></pre></div>
+<p>This way, the container can securely use the host’s SSH keys for
+authentication.</p>
+<h3 id="how-can-i-use-docker-secrets-to-manage-ssh-keys-securely">5. How
+can I use Docker secrets to manage SSH keys securely?</h3>
+<p>Docker secrets give us a safe way to manage important information
+like SSH keys in our Docker containers. We can create a secret with this
+command:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;your_ssh_key_content&quot;</span> <span class="kw">|</span> <span class="ex">docker</span> secret create my_ssh_key <span class="at">-</span></span></code></pre></div>
+<p>Then, we can use this secret in our services by adding it in our
+Docker Compose file or Swarm. This way, our SSH keys stay encrypted and
+only authorized containers can access them. This makes security
+better.</p>
+<p>These FAQs help us understand common questions about using SSH keys
+in Docker containers. They give us ideas about safe practices and good
+management. For more help with Docker, we can read articles like <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">What
+is Docker and Why Should You Use It?</a> and <a
+href="https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html">How
+to Install Docker on Different Operating Systems</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

@@ -1,0 +1,460 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How to Check if MySQL Connection is Ready in Docker-Compose?</title>
+            <meta name="description" content="Learn how to check MySQL connection readiness in Docker-Compose. Ensure seamless database connectivity for your applications!">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How to Check if MySQL Connection is Ready in Docker-Compose?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To check if your MySQL connection is ready in Docker-Compose, we can
+use health checks, custom wait scripts, or the well-known “wait-for-it”
+script. These methods help us connect to the MySQL database only when it
+is fully running. This way, we avoid connection errors and make our
+application more stable. Using these techniques will make our
+development process easier and improve the reliability of our database
+connections in Docker.</p>
+<p>In this article, we will look at different ways to check if our MySQL
+connection is ready in Docker-Compose. We will talk about why connection
+checks are important. We will also see how to use health checks well and
+how to create custom wait scripts. Plus, we will explore the
+“wait-for-it” script and how to set up retry logic for MySQL
+connections. Here’s a quick look at the solutions we will discuss:</p>
+<ul>
+<li>How to check if MySQL connection is ready in Docker-Compose</li>
+<li>Why checking MySQL connection is important in Docker-Compose</li>
+<li>How to use health checks to monitor MySQL connection in
+Docker-Compose</li>
+<li>How to implement a custom wait script for MySQL in
+Docker-Compose</li>
+<li>How to use Docker Compose wait-for-it script for MySQL
+connection</li>
+<li>How to set up retry logic for MySQL connection in
+Docker-Compose</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>By learning these techniques, we can make our Docker-Compose setup
+much better. We can have a smoother time when we work with MySQL. For
+more information about Docker and how it works, we can check out
+articles like <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">What
+is Docker and Why Should You Use It?</a> and <a
+href="https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html">How
+to Install Docker on Different Operating Systems</a>.</p>
+<h2
+id="why-is-checking-mysql-connection-important-in-docker-compose">Why is
+Checking MySQL Connection Important in Docker-Compose</h2>
+<p>Checking the MySQL connection in Docker-Compose is very important. It
+helps make sure that our application can work with the database without
+any problem. Here are some reasons why we should check the
+connection:</p>
+<ol type="1">
+<li><p><strong>Service Dependency Management</strong>: In a setup with
+many containers, services rely on each other. We need to make sure MySQL
+is ready before our application tries to connect. This way we can stop
+runtime errors.</p></li>
+<li><p><strong>Error Handling</strong>: If our application tries to
+connect to a MySQL database that is not ready, it can cause connection
+failures. This might crash the application or make it behave
+unexpectedly.</p></li>
+<li><p><strong>Application Performance</strong>: By checking that the
+MySQL database is ready, we can make our application start faster. We
+avoid wasting time on retries or delays due to failed
+connections.</p></li>
+<li><p><strong>Automated Deployment</strong>: In CI/CD pipelines, we
+must check that all services are ready before running tests or deploying
+applications. This is very important for a smooth process.</p></li>
+<li><p><strong>Health Monitoring</strong>: Checking the MySQL connection
+regularly can help us monitor its health. If the connection fails, it
+could mean there are problems with the database service.</p></li>
+</ol>
+<p>To do these checks well in Docker-Compose, we can use health checks
+or custom scripts. This will make sure the MySQL service is fully ready
+before other services try to connect. This practice helps us build
+stronger applications in Docker environments.</p>
+<p>For more information on Docker and its features, you can check <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">what
+is Docker and why should you use it</a>.</p>
+<h2
+id="how-to-use-healthchecks-to-monitor-mysql-connection-in-docker-compose">How
+to Use Healthchecks to Monitor MySQL Connection in Docker-Compose</h2>
+<p>To make sure that our MySQL connection is ready and works well in a
+Docker-Compose setup, we can use Docker’s health checks. This method
+lets us define a command that runs regularly to check the health of the
+MySQL service. If the service is not healthy, other services can wait
+until MySQL is ready.</p>
+<p>Let’s see how to set up health checks in our
+<code>docker-compose.yml</code> file:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">mysql</span><span class="kw">:</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql:5.7</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_ROOT_PASSWORD</span><span class="kw">:</span><span class="at"> example</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_DATABASE</span><span class="kw">:</span><span class="at"> exampledb</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">healthcheck</span><span class="kw">:</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">test</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;CMD&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;mysqladmin&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;ping&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-h&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;localhost&quot;</span><span class="kw">]</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">interval</span><span class="kw">:</span><span class="at"> 30s</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 10s</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">retries</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<h3 id="explanation-of-the-configuration">Explanation of the
+Configuration:</h3>
+<ul>
+<li><strong>test</strong>: This is the command that Docker runs to check
+health. Here, it uses <code>mysqladmin ping</code> to see if MySQL is
+responding.</li>
+<li><strong>interval</strong>: This shows how often we run the health
+check. It is every 30 seconds.</li>
+<li><strong>timeout</strong>: This is the maximum time we wait for the
+health check to succeed. It is 10 seconds.</li>
+<li><strong>retries</strong>: This is how many times it fails before we
+say the container is unhealthy. We set it to 5 retries.</li>
+</ul>
+<p>With this setup, we can also set dependencies for other services. For
+example, if we have a web application that needs MySQL, we can make sure
+it only starts when MySQL is healthy:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">webapp</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-web-app</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">mysql</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">condition</span><span class="kw">:</span><span class="at"> service_healthy</span></span></code></pre></div>
+<p>This setup makes sure that our web application starts only after
+MySQL is fully ready. This way, we avoid connection errors when starting
+up. For more details on Docker health checks, we can check the <a
+href="https://docs.docker.com/engine/reference/builder/#healthcheck">official
+Docker documentation</a>.</p>
+<p>Using health checks is a good way to monitor MySQL connections in
+Docker-Compose. It helps our application to run smoothly and connect to
+the database without problems.</p>
+<h2
+id="how-to-implement-a-custom-wait-script-for-mysql-in-docker-compose">How
+to Implement a Custom Wait Script for MySQL in Docker-Compose</h2>
+<p>To make sure our application starts only when the MySQL service is
+ready, we can use a custom wait script in our Docker-Compose setup. This
+script will check the MySQL connection until it is available.</p>
+<p>First, we need to create a shell script called
+<code>wait-for-mysql.sh</code>:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-e</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="va">host</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$1</span><span class="st">&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="bu">shift</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="va">cmd</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$@</span><span class="st">&quot;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="cf">until</span> <span class="ex">mysql</span> <span class="at">-h</span> <span class="st">&quot;</span><span class="va">$host</span><span class="st">&quot;</span> <span class="at">-u</span> <span class="st">&quot;</span><span class="va">$MYSQL_USER</span><span class="st">&quot;</span> <span class="at">-p</span><span class="st">&quot;</span><span class="va">$MYSQL_PASSWORD</span><span class="st">&quot;</span> <span class="at">-e</span> <span class="st">&#39;SELECT 1&#39;</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;&amp;</span><span class="dv">2</span> <span class="bu">echo</span> <span class="st">&quot;MySQL is unavailable - sleeping&quot;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sleep</span> 5</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&amp;</span><span class="dv">2</span> <span class="bu">echo</span> <span class="st">&quot;MySQL is up - executing command&quot;</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="bu">exec</span> <span class="va">$cmd</span></span></code></pre></div>
+<p>Next, we should give execution permissions to the script:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x wait-for-mysql.sh</span></code></pre></div>
+<p>Now we need to change our <code>docker-compose.yml</code> file to use
+this script. Here is an example setup:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">mysql</span><span class="kw">:</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql:5.7</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_ROOT_PASSWORD</span><span class="kw">:</span><span class="at"> root</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_DATABASE</span><span class="kw">:</span><span class="at"> mydb</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_USER</span><span class="kw">:</span><span class="at"> user</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_PASSWORD</span><span class="kw">:</span><span class="at"> password</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;3306:3306&quot;</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">networks</span><span class="kw">:</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> mynetwork</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">build</span><span class="kw">:</span><span class="at"> .</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> mysql</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">entrypoint</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;./wait-for-mysql.sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;mysql&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;your_app_command&quot;</span><span class="kw">]</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_USER</span><span class="kw">:</span><span class="at"> user</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_PASSWORD</span><span class="kw">:</span><span class="at"> password</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">networks</span><span class="kw">:</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> mynetwork</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="fu">networks</span><span class="kw">:</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">mynetwork</span><span class="kw">:</span></span></code></pre></div>
+<p>In this example, the <code>app</code> service waits for the
+<code>mysql</code> service to be ready before it runs
+<code>your_app_command</code>. The script checks the MySQL connection
+with the given credentials. It will sleep until MySQL is ready. Remember
+to change <code>your_app_command</code> to the command that starts your
+application.</p>
+<p>This method helps us manage dependencies between services in
+Docker-Compose. It makes sure that our application starts only when the
+MySQL connection is ready. For more information on Docker-Compose, we
+can look at <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html">what
+is Docker Compose</a>.</p>
+<h2
+id="how-to-use-docker-compose-wait-for-it-script-for-mysql-connection">How
+to Use Docker Compose Wait-for-it Script for MySQL Connection</h2>
+<p>To make sure that your MySQL service is ready before your app tries
+to connect, we can use the <code>wait-for-it</code> script in Docker
+Compose. This script will pause the app until the MySQL service accepts
+connections.</p>
+<h3 id="step-1-add-the-wait-for-it-script-to-your-project">Step 1: Add
+the <code>wait-for-it</code> Script to Your Project</h3>
+<p>First, download the <code>wait-for-it</code> script from its <a
+href="https://github.com/vishnubob/wait-for-it">GitHub page</a> and put
+it in your project folder.</p>
+<h3 id="step-2-change-your-docker-compose.yml">Step 2: Change Your
+<code>docker-compose.yml</code></h3>
+<p>Next, we need to update the <code>docker-compose.yml</code> file.
+This will include the <code>wait-for-it</code> script in your app
+service. Here is an example of how to set it up:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">db</span><span class="kw">:</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql:5.7</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_ROOT_PASSWORD</span><span class="kw">:</span><span class="at"> root</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_DATABASE</span><span class="kw">:</span><span class="at"> mydb</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;3306:3306&quot;</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">context</span><span class="kw">:</span><span class="at"> .</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">dockerfile</span><span class="kw">:</span><span class="at"> Dockerfile</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> db</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;./wait-for-it.sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;db:3306&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;npm&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;start&quot;</span><span class="kw">]</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> .:/app</span></span></code></pre></div>
+<h3 id="step-3-make-sure-the-script-is-executable">Step 3: Make Sure the
+Script is Executable</h3>
+<p>We need to check that the <code>wait-for-it.sh</code> script can be
+executed. You can do this by running:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x wait-for-it.sh</span></code></pre></div>
+<h3 id="step-4-running-your-docker-compose">Step 4: Running Your Docker
+Compose</h3>
+<p>Now, we can start the app with Docker Compose:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> up</span></code></pre></div>
+<p>The <code>wait-for-it</code> script will block the app service until
+the MySQL service is ready to accept connections.</p>
+<h3 id="benefits-of-using-wait-for-it">Benefits of Using
+<code>wait-for-it</code></h3>
+<ul>
+<li>It makes sure your app does not fail because the database is not
+ready.</li>
+<li>It makes service dependencies easier in a Docker Compose setup.</li>
+<li>It gives a simple way to manage service availability.</li>
+</ul>
+<p>Using the <code>wait-for-it</code> script is a good way to handle
+MySQL connections in Docker Compose. It helps to avoid connection errors
+when starting up. For more details about Docker Compose, you can read <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html">this
+article</a>.</p>
+<h2
+id="how-to-set-up-retry-logic-for-mysql-connection-in-docker-compose">How
+to Set Up Retry Logic for MySQL Connection in Docker-Compose</h2>
+<p>To make sure we have a strong MySQL connection in Docker-Compose, we
+need to add retry logic. This will help our application deal with
+connection issues when it starts. Here’s how to set up retry logic for
+MySQL connections in our <code>docker-compose.yml</code>.</p>
+<ol type="1">
+<li><strong>Modify <code>docker-compose.yml</code></strong>: We will add
+a retry method using <code>depends_on</code> and a small script to check
+the connection.</li>
+</ol>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">mysql</span><span class="kw">:</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql:5.7</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_ROOT_PASSWORD</span><span class="kw">:</span><span class="at"> example</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_DATABASE</span><span class="kw">:</span><span class="at"> mydb</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;3306:3306&quot;</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">healthcheck</span><span class="kw">:</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">test</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;CMD&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;mysqladmin&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;ping&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-h&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;localhost&quot;</span><span class="kw">]</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">interval</span><span class="kw">:</span><span class="at"> 10s</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 5s</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">retries</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">build</span><span class="kw">:</span><span class="at"> .</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">mysql</span><span class="kw">:</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">condition</span><span class="kw">:</span><span class="at"> service_healthy</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">DATABASE_URL</span><span class="kw">:</span><span class="at"> mysql://root:example@mysql/mydb</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;until nc -z mysql 3306; do echo waiting for mysql; sleep 2; done; exec your_start_command&quot;</span><span class="kw">]</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Explanation</strong>:
+<ul>
+<li>The <code>healthcheck</code> for the MySQL service checks if MySQL
+is ready by using <code>mysqladmin ping</code>.</li>
+<li>In the <code>app</code> service, the <code>command</code> uses a
+shell script that waits for the MySQL service to be ready. It uses
+<code>nc</code> (netcat) to check if the port is open. This script tries
+every 2 seconds until the MySQL connection works.</li>
+</ul></li>
+<li><strong>Using a Custom Wait Script</strong>: If we want a better
+wait method, we can make a custom wait script:</li>
+</ol>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-e</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="cf">until</span> <span class="ex">mysql</span> <span class="at">-h</span> mysql <span class="at">-u</span> root <span class="at">-pexample</span> <span class="at">-e</span> <span class="st">&quot;SELECT 1&quot;</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="op">&gt;&amp;</span><span class="dv">2</span> <span class="bu">echo</span> <span class="st">&quot;MySQL is unavailable - sleeping&quot;</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sleep</span> 5</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&amp;</span><span class="dv">2</span> <span class="bu">echo</span> <span class="st">&quot;MySQL is up - executing command&quot;</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="bu">exec</span> <span class="st">&quot;</span><span class="va">$@</span><span class="st">&quot;</span></span></code></pre></div>
+<ol start="4" type="1">
+<li><strong>Integrate the Wait Script</strong>: We need to change our
+<code>docker-compose.yml</code> to use this script.</li>
+</ol>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">build</span><span class="kw">:</span><span class="at"> .</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">mysql</span><span class="kw">:</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">condition</span><span class="kw">:</span><span class="at"> service_healthy</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;./wait-for-mysql.sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;your_start_command&quot;</span><span class="kw">]</span></span></code></pre></div>
+<p>This setup makes sure our application waits for MySQL to be ready
+before it tries to connect. It helps to handle any temporary connection
+problems when the app starts. For more details on Docker-Compose
+settings, we can check out <a
+href="https://bestonlinetutorial.com/docker/how-to-write-a-simple-docker-compose-yml-file.html">this
+article on Docker Compose</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="how-can-we-make-sure-our-mysql-connection-is-set-up-right-in-docker-compose">1.
+How can we make sure our MySQL connection is set up right in Docker
+Compose?</h3>
+<p>To make sure our MySQL connection is set up right in Docker Compose,
+we can add health checks for our MySQL service in the
+<code>docker-compose.yml</code> file. This helps Docker Compose check if
+MySQL is running before other services start. Or we can use a custom
+wait script or Docker’s wait-for-it script to hold off the startup of
+other services until MySQL is ready.</p>
+<h3
+id="what-should-we-do-if-our-application-cannot-connect-to-mysql-in-docker-compose">2.
+What should we do if our application cannot connect to MySQL in Docker
+Compose?</h3>
+<p>If our application cannot connect to MySQL in Docker Compose, we
+should first check if the MySQL service is running. We can do this by
+running <code>docker-compose ps</code> to see the containers’ status. If
+MySQL is running, we need to make sure our application is set up with
+the right credentials. Also, check if the network settings in our
+<code>docker-compose.yml</code> file are correct.</p>
+<h3 id="how-do-we-set-up-health-checks-for-mysql-in-docker-compose">3.
+How do we set up health checks for MySQL in Docker Compose?</h3>
+<p>We can set up health checks for MySQL in our
+<code>docker-compose.yml</code> by adding a <code>healthcheck</code>
+section under the MySQL service settings. This section tells a command
+to run to check MySQL’s status. We also add parameters like
+<code>interval</code>, <code>timeout</code>, and <code>retries</code>.
+Here is an example setup:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">mysql</span><span class="kw">:</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql:latest</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">MYSQL_ROOT_PASSWORD</span><span class="kw">:</span><span class="at"> example</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">healthcheck</span><span class="kw">:</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">test</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;CMD&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;mysqladmin&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;ping&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-h&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;localhost&quot;</span><span class="kw">]</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">interval</span><span class="kw">:</span><span class="at"> 30s</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 10s</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">retries</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<h3 id="can-we-use-a-wait-for-it-script-with-mysql-in-docker-compose">4.
+Can we use a wait-for-it script with MySQL in Docker Compose?</h3>
+<p>Yes, we can use a wait-for-it script with MySQL in Docker Compose.
+This will help our application wait until MySQL is fully ready before it
+starts. We can add the wait-for-it script to our application service’s
+command or entrypoint. This way, it waits for MySQL to respond on its
+port before it moves on.</p>
+<h3
+id="what-is-the-best-way-to-manage-mysql-connection-retries-in-docker-compose">5.
+What is the best way to manage MySQL connection retries in Docker
+Compose?</h3>
+<p>A good way to manage MySQL connection retries in Docker Compose is to
+add retry logic in our application code. We should set our application
+to try to reconnect a few times with a delay if the first connection
+fails. Also, using health checks in our <code>docker-compose.yml</code>
+can make sure our application starts only after MySQL is ready. This
+reduces unnecessary connection attempts.</p>
+<p>By answering these common questions, we can better handle MySQL
+connections in Docker Compose. This will help us have a smoother
+development and deployment experience. If we want to learn more about
+Docker and its parts, we can check out this <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">guide
+on Docker networking</a> to improve our understanding.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

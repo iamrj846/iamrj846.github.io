@@ -1,0 +1,387 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>Why Does a Docker Container Automatically Stop After Running "docker run -d"?</title>
+            <meta name="description" content="Discover why Docker containers stop automatically after "docker run -d" and learn how to keep them running effectively.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Why Does a Docker Container Automatically Stop After Running "docker run -d"?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p><strong>Why Docker Containers Stop Automatically</strong></p>
+<p>When we run a Docker container with the command
+<code>docker run -d</code>, it can stop by itself. This often happens if
+the main process in the container finishes its job. A container usually
+runs a specific app or script that can finish quickly. So, it exits
+right away. To stop this from happening, we must make sure the container
+runs a process that lasts longer or set it up correctly to stay
+alive.</p>
+<p>In this article, we will look at why Docker containers stop
+automatically when we run them in detached mode. We will also talk about
+different ways to keep them running. We will cover things like how
+Docker containers behave by default, how to keep them running, how to
+find out why they shut down, and how to use Docker restart policies. The
+solutions we will discuss are:</p>
+<ul>
+<li>Knowing how Docker containers work by default.</li>
+<li>Using a process that runs for a long time in Docker containers.</li>
+<li>Keeping a Docker container running when it’s in detached mode.</li>
+<li>Finding out why a Docker container shuts down.</li>
+<li>Using Docker restart policies to stop it from stopping.</li>
+</ul>
+<h2
+id="understanding-the-default-behavior-of-docker-containers">Understanding
+the Default Behavior of Docker Containers</h2>
+<p>Docker containers run one process in their own space. When we use the
+command <code>docker run -d</code>, we tell Docker to start a container
+in detached mode. But sometimes the container stops by itself after it
+runs. This usually happens for a few reasons.</p>
+<ol type="1">
+<li><p><strong>Main Process Exits</strong>: A Docker container runs the
+command from the Docker image. If that command finishes, the container
+stops. For example, if we run a container from an image that only runs a
+script that ends right away, the container will stop.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> ubuntu /bin/true</span></code></pre></div>
+<p>Here, the <code>/bin/true</code> command ends right away, so the
+container stops.</p></li>
+<li><p><strong>No Long-Running Process</strong>: Containers need a
+process that keeps going to stay active. If the command in the container
+is not a long-running one, like a web server, the container will stop
+when the command is done.</p></li>
+<li><p><strong>Exit Codes</strong>: If the process in the container
+exits with a code that is not zero, it may show an error. This can make
+the container stop. We can check logs with:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="op">&lt;</span>container_id<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Detached Mode</strong>: When we run in detached mode, the
+container works in the background. If the main process exits, the
+container stops even if we cannot see Docker.</p></li>
+</ol>
+<p>To keep a Docker container running, we must make sure that the
+process inside it is long-lived or always active. Knowing how Docker
+behaves by default helps us manage and use containers better.</p>
+<h2 id="how-to-keep-a-docker-container-running-in-detached-mode">How to
+Keep a Docker Container Running in Detached Mode</h2>
+<p>To keep a Docker container running in detached mode, we need to make
+sure the container runs a long process. By default, when the main
+process of a container stops, the container also stops. Here are steps
+and tips to do this:</p>
+<ol type="1">
+<li><p><strong>Use a Long-Running Process</strong>:<br />
+Make sure your container runs a command that does not finish quickly.
+For example, using <code>tail -f /dev/null</code> helps the container
+stay running forever.</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> my-image tail <span class="at">-f</span> /dev/null</span></code></pre></div></li>
+<li><p><strong>Utilizing EntryPoint</strong>:<br />
+Change your Dockerfile to set a long command as the ENTRYPOINT.</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> my-base-image</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">ENTRYPOINT</span> [<span class="st">&quot;tail&quot;</span>, <span class="st">&quot;-f&quot;</span>, <span class="st">&quot;/dev/null&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>Foreground Process</strong>:<br />
+If your app runs in the foreground, make sure it does not exit right
+after it starts. For example, if we use a web server, we must set it to
+run in the foreground.</p></li>
+<li><p><strong>Keep Container Interactive</strong>:<br />
+If we want to keep the shell open, we can run it interactively with the
+<code>-it</code> flags. This allows for interaction.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-dit</span> my-image /bin/bash</span></code></pre></div></li>
+<li><p><strong>Use Docker Compose</strong>:<br />
+When we use Docker Compose, we should specify a service with a
+long-running command in our <code>docker-compose.yml</code> file.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">my-service</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> tail -f /dev/null</span></span></code></pre></div></li>
+<li><p><strong>Check Container Status</strong>:<br />
+We can use this command to check if our container is running:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> ps</span></code></pre></div></li>
+<li><p><strong>Docker Restart Policies</strong>:<br />
+We can set restart policies if we want the container to restart
+automatically when it stops.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--restart</span> unless-stopped my-image</span></code></pre></div></li>
+</ol>
+<p>By following these tips, we can keep our Docker containers running in
+detached mode. This way, they do not stop right after they start. For
+more info on Docker container behavior, check out <a
+href="https://bestonlinetutorial.com/docker/why-does-a-docker-container-exit-immediately.html">this
+article</a>.</p>
+<h2 id="diagnosing-the-cause-of-docker-container-shutdown">Diagnosing
+the Cause of Docker Container Shutdown</h2>
+<p>When a Docker container stops without warning after we use
+<code>docker run -d</code>, it is important for us to find out why. A
+container can stop for many reasons. Knowing these reasons can help us
+avoid problems in the future.</p>
+<ol type="1">
+<li><p><strong>Check Container Logs</strong>: The first thing we need to
+do is check the logs of the stopped container. We can do this by
+running:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="op">&lt;</span>container_id<span class="op">&gt;</span></span></code></pre></div>
+<p>We replace <code>&lt;container_id&gt;</code> with the real ID or name
+of our container. This command shows us what happened before the
+container stopped.</p></li>
+<li><p><strong>Inspect Container Exit Code</strong>: Each container has
+an exit code that tells us why it stopped. We can check the exit code by
+using:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> inspect <span class="op">&lt;</span>container_id<span class="op">&gt;</span> --format=<span class="st">&#39;{{.State.ExitCode}}&#39;</span></span></code></pre></div>
+<p>Here are some common exit codes:</p>
+<ul>
+<li><code>0</code>: It finished successfully.</li>
+<li><code>1</code>: There was a general error. This usually means the
+application failed.</li>
+<li><code>137</code>: The container was killed, often because it ran out
+of memory.</li>
+</ul></li>
+<li><p><strong>Verify Command and Entrypoint</strong>: We should make
+sure that the command or entrypoint we set in the Dockerfile or during
+<code>docker run</code> is correct. If the command finishes right away,
+the container will stop. For example:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> my_image /bin/bash <span class="at">-c</span> <span class="st">&quot;sleep 10&quot;</span></span></code></pre></div>
+<p>In this case, the container will exit after 10 seconds since the
+command is done.</p></li>
+<li><p><strong>Check Resource Limits</strong>: If we set resource limits
+like CPU or memory, and the container goes over these limits, Docker may
+kill it. We can set resource limits using <code>--memory</code> and
+<code>--cpus</code> flags:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--memory</span><span class="op">=</span><span class="st">&quot;256m&quot;</span> <span class="at">--cpus</span><span class="op">=</span><span class="st">&quot;1&quot;</span> my_image</span></code></pre></div></li>
+<li><p><strong>Use Docker Events for Monitoring</strong>: We can watch
+Docker events to get real-time updates about container states, including
+when they stop:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> events <span class="at">--filter</span> <span class="st">&#39;event=stop&#39;</span></span></code></pre></div></li>
+<li><p><strong>Review Application Behavior</strong>: Sometimes, the
+application in the container does not handle certain situations well,
+which can cause it to crash. We need to make sure our application is
+strong and has error handling.</p></li>
+<li><p><strong>Inspect Dependencies</strong>: If our application needs
+external services or databases, we should make sure they are reachable.
+If it fails to connect to a service it needs, it can cause the
+application to exit.</p></li>
+</ol>
+<p>By following these steps, we can find out why a Docker container
+stops after we run <code>docker run -d</code>. For more information on
+Docker container behavior, we can check resources like <a
+href="https://bestonlinetutorial.com/docker/why-doesn-t-my-python-app-print-output-when-running-in-a-detached-docker-container.html">Why
+Doesn’t My Python App Print Output When Running in a Detached Docker
+Container?</a>.</p>
+<h2 id="using-a-long-running-process-in-docker-containers">Using a
+Long-Running Process in Docker Containers</h2>
+<p>To keep a Docker container running, we need to make sure that the
+main process in the container does not exit. By default, Docker
+containers run one process. They stop when that process finishes. We can
+use a long-running process or a command that keeps the container alive.
+Here are some easy ways to do this:</p>
+<ol type="1">
+<li><p><strong>Use a Shell or Keep-Alive Command</strong>:<br />
+We can run a shell or a command that keeps the container alive. One
+example is <code>tail -f /dev/null</code>. This command waits
+forever.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> your-image tail <span class="at">-f</span> /dev/null</span></code></pre></div></li>
+<li><p><strong>Run a Background Service</strong>:<br />
+When we create a Docker container, we can run a service that is meant to
+run all the time. For example, we can run a web server or a database
+service.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> nginx</span></code></pre></div></li>
+<li><p><strong>Set Up a Custom Entrypoint</strong>:<br />
+We can change the Dockerfile to use a script that starts our app and
+keeps the container alive. For example, we can add a command like
+<code>wait</code> at the end of our script.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> your-base-image</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> your-script.sh /usr/local/bin/</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;/usr/local/bin/your-script.sh&quot;</span>]</span></code></pre></div>
+<p>We should make sure <code>your-script.sh</code> has a process that
+runs forever or has a wait command at the end.</p></li>
+<li><p><strong>Use Supervisord</strong>:<br />
+If our app needs many processes, we can use a process supervisor like
+<code>supervisord</code>. This helps us manage many processes in one
+container.</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> your-base-image</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apt-get</span> update <span class="kw">&amp;&amp;</span> <span class="ex">apt-get</span> install <span class="at">-y</span> supervisor</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> supervisord.conf /etc/supervisor/conf.d/supervisord.conf</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;/usr/bin/supervisord&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>Docker Compose for Multi-Container
+Applications</strong>:<br />
+When we deploy apps with many containers, we can use Docker Compose. It
+helps us define and manage our services. Each service runs on its own,
+but we can set them to restart automatically.</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">web</span><span class="kw">:</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> always</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> your-app</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> tail -f /dev/null</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> always</span></span></code></pre></div></li>
+</ol>
+<p>Using these methods helps our Docker containers stay active. They
+will not stop automatically when the main process exits. If we want to
+learn more about running containers in detached mode, we can check <a
+href="https://bestonlinetutorial.com/docker/how-to-run-a-docker-container-in-detached-mode.html">how
+to run a Docker container in detached mode</a>.</p>
+<h2 id="how-to-use-docker-restart-policies-to-prevent-stopping">How to
+Use Docker Restart Policies to Prevent Stopping</h2>
+<p>Docker has restart policies. They help us to restart containers
+automatically when certain conditions are met. This is helpful to keep
+our Docker containers running and avoid unexpected stops. We can set
+these restart policies when we create or run a container. We use the
+<code>--restart</code> flag for this.</p>
+<h3 id="restart-policy-options">Restart Policy Options</h3>
+<ol type="1">
+<li><strong>No</strong>: This means do not restart the container
+automatically. This is the default.</li>
+<li><strong>Always</strong>: This will always restart the container no
+matter how it stops.</li>
+<li><strong>Unless-stopped</strong>: This will restart the container
+unless we stop it ourselves.</li>
+<li><strong>On-failure</strong>: This will restart the container only if
+it stops with an error. We can also set a maximum number for
+retries.</li>
+</ol>
+<h3 id="example-usage">Example Usage</h3>
+<p>To set a restart policy, we can use the <code>docker run</code>
+command with the <code>--restart</code> flag. Here are some
+examples:</p>
+<ul>
+<li><p><strong>Always restart the container</strong>:
+<code>bash     docker run -d --restart always nginx</code></p></li>
+<li><p><strong>Restart only on failure</strong>:
+<code>bash     docker run -d --restart on-failure:5 nginx</code></p></li>
+<li><p><strong>Restart unless stopped</strong>:
+<code>bash     docker run -d --restart unless-stopped nginx</code></p></li>
+</ul>
+<h3 id="viewing-restart-policies">Viewing Restart Policies</h3>
+<p>We can check the restart policy of a running container by using the
+<code>docker inspect</code> command:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> inspect <span class="at">-f</span> <span class="st">&#39;{{ .HostConfig.RestartPolicy.Name }}&#39;</span> <span class="op">&lt;</span>container_id<span class="op">&gt;</span></span></code></pre></div>
+<h3 id="modifying-restart-policies">Modifying Restart Policies</h3>
+<p>If we want to change the restart policy of a container that is
+already running, we can do it with the <code>docker update</code>
+command:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> update <span class="at">--restart</span> unless-stopped <span class="op">&lt;</span>container_id<span class="op">&gt;</span></span></code></pre></div>
+<p>Using Docker restart policies well helps our containers stay running
+like we want. This reduces downtime and makes our applications more
+reliable. If we want to learn more about Docker container lifecycle, we
+can check <a
+href="https://bestonlinetutorial.com/docker/what-is-a-docker-container-s-lifecycle.html">this
+article</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="why-does-my-docker-container-exit-immediately-after-running-docker-run--d">Why
+does my Docker container exit immediately after running
+<code>docker run -d</code>?</h3>
+<p>When we run a Docker container in detached mode with
+<code>docker run -d</code>, it can exit right away if there is no
+long-running process. Docker containers do tasks, and when the main task
+finishes, the container stops. To avoid this, we need to make sure our
+container runs a process that stays active or a service.</p>
+<h3
+id="how-can-i-check-why-my-docker-container-stopped-after-starting-it">How
+can I check why my Docker container stopped after starting it?</h3>
+<p>To find out why our Docker container stopped after using
+<code>docker run -d</code>, we can use the command
+<code>docker logs &lt;container_id&gt;</code>. This command shows the
+container’s logs. These logs might have error messages or reasons why
+the process ended. Also, we can look at the container details with
+<code>docker inspect &lt;container_id&gt;</code> for more info.</p>
+<h3
+id="what-is-the-difference-between-running-a-container-in-detached-mode-and-interactive-mode">What
+is the difference between running a container in detached mode and
+interactive mode?</h3>
+<p>Running a Docker container in detached mode
+(<code>docker run -d</code>) means the container works in the
+background. We can keep using the terminal for other commands. On the
+other hand, interactive mode (<code>docker run -it</code>) lets us talk
+to the container’s shell directly. We use detached mode for services and
+interactive mode for debugging or doing manual tasks.</p>
+<h3 id="how-can-i-keep-my-docker-container-running-indefinitely">How can
+I keep my Docker container running indefinitely?</h3>
+<p>To keep a Docker container running forever, we can use a long-running
+process like a web server or a command like
+<code>tail -f /dev/null</code>. Another way is to run a shell command
+that keeps the container alive like this:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> my_image tail <span class="at">-f</span> /dev/null</span></code></pre></div>
+<p>This will stop the container from exiting too soon.</p>
+<h3
+id="what-are-docker-restart-policies-and-how-can-they-help-with-my-containers">What
+are Docker restart policies, and how can they help with my
+containers?</h3>
+<p>Docker restart policies let us decide what happens when a container
+exits. We can set policies like <code>always</code>,
+<code>unless-stopped</code>, or <code>on-failure</code> when we run a
+container. This helps our container restart automatically under certain
+conditions. This way, we can keep our services running and reduce
+downtime. For more details on how to set these policies, we can look at
+the official <a
+href="https://bestonlinetutorial.com/docker/how-to-restart-docker-containers-automatically.html">Docker
+documentation</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

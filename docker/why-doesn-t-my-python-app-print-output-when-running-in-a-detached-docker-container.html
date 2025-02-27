@@ -1,0 +1,433 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>Why Doesn't My Python App Print Output When Running in a Detached Docker Container?</title>
+            <meta name="description" content=""Learn why your Python app isn't printing output in a detached Docker container and discover solutions to fix the issue."">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Why Doesn't My Python App Print Output When Running in a Detached Docker Container?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>If your Python app does not show output when it runs in a detached
+Docker container, it could be because of output buffering. By default,
+Python buffers the output in detached mode. So, the output may not show
+up right away in logs or terminal. To fix this, we can run our Python
+script with the <code>-u</code> option. This option makes the stdout and
+stderr streams unbuffered. This way, the output will show as it
+happens.</p>
+<p>In this article, we will look at different things about running
+Python apps in detached Docker containers. We will focus on common
+output problems. We will talk about understanding output buffering. We
+will also learn how to use Docker logs to get the output. We will
+discuss why our app may not write to standard output. We will see how to
+redirect output to files too. Lastly, we will share best practices for
+running Python apps in Docker to help us avoid these problems in the
+future.</p>
+<ul>
+<li>Understanding output buffering in Python and Docker</li>
+<li>How to use Docker logs to view output from detached containers</li>
+<li>Why is my Python app not writing to standard output in Docker?</li>
+<li>How to redirect output to a file in a detached Docker container</li>
+<li>What are the best practices for running Python apps in Docker?</li>
+</ul>
+<h2
+id="understanding-output-buffering-in-python-and-docker">Understanding
+Output Buffering in Python and Docker</h2>
+<p>Output buffering can be a common problem when we run Python apps in
+Docker containers. This is especially true in detached mode. By default,
+Python buffers output to make things faster. So, the output does not
+show up right away in standard output (stdout). It only flushes when
+certain things happen, like a newline character or when we flush the
+buffer ourselves.</p>
+<h3 id="how-output-buffering-works">How Output Buffering Works</h3>
+<ul>
+<li><strong>Line Buffering:</strong> The output waits until it sees a
+newline. This often happens when we send output to a terminal.</li>
+<li><strong>Block Buffering:</strong> The output waits until it reaches
+a certain size. This is common when we write to files or pipes.</li>
+<li><strong>Unbuffered:</strong> The output goes straight to stdout
+without waiting. We can turn this on in Python with the <code>-u</code>
+flag.</li>
+</ul>
+<h3 id="configuring-python-for-unbuffered-output">Configuring Python for
+Unbuffered Output</h3>
+<p>If we want our Python app to write output right away, we can run our
+script with the <code>-u</code> option:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> my-python-image python <span class="at">-u</span> my_script.py</span></code></pre></div>
+<p>Another way is to set the environment variable
+<code>PYTHONUNBUFFERED</code> to <code>1</code> in our Dockerfile or
+when we run the container:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> PYTHONUNBUFFERED=1</span></code></pre></div>
+<h3 id="example-application">Example Application</h3>
+<p>Here is an example of how we can change a simple Python script to
+make sure it prints output correctly in a Docker container:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># app.py</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">5</span>):</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f&quot;Hello, world! </span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">&quot;</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    time.sleep(<span class="dv">1</span>)</span></code></pre></div>
+<p>We can run the container using the unbuffered option:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> my-python-image python <span class="at">-u</span> app.py</span></code></pre></div>
+<p>When we use the unbuffered option, the Python app will print each
+line right away. This way, we can see the output when we run it in a
+detached Docker container.</p>
+<p>Understanding and managing output buffering is very important for
+debugging and logging information well in Dockerized Python
+applications.</p>
+<h2
+id="how-to-use-docker-logs-to-view-output-from-detached-containers">How
+to Use Docker Logs to View Output from Detached Containers</h2>
+<p>When we run a Python application in a detached Docker container, we
+might not see any output in our terminal. This happens because the
+container runs in the background without a terminal session. To see the
+output from our application, we can use the Docker logs command.</p>
+<h3 id="viewing-logs">Viewing Logs</h3>
+<p>To see the logs of a specific container, we use this command:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="op">&lt;</span>container_id_or_name<span class="op">&gt;</span></span></code></pre></div>
+<p>We need to replace <code>&lt;container_id_or_name&gt;</code> with the
+real ID or name of our container. We can find this ID by running:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> ps</span></code></pre></div>
+<h3 id="real-time-log-streaming">Real-Time Log Streaming</h3>
+<p>If we want to see the logs in real time, like <code>tail -f</code>,
+we can add the <code>-f</code> option:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="at">-f</span> <span class="op">&lt;</span>container_id_or_name<span class="op">&gt;</span></span></code></pre></div>
+<h3 id="filtering-logs">Filtering Logs</h3>
+<p>We can filter logs to see specific output. For example, to check logs
+from a certain time, we can use:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="at">--since</span> <span class="st">&quot;2023-10-01T12:00:00&quot;</span> <span class="op">&lt;</span>container_id_or_name<span class="op">&gt;</span></span></code></pre></div>
+<h3 id="limit-log-output">Limit Log Output</h3>
+<p>To limit the number of log lines we get back, we can use the
+<code>--tail</code> option:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="at">--tail</span> 50 <span class="op">&lt;</span>container_id_or_name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command shows the last 50 lines of the logs for our chosen
+container.</p>
+<h3 id="log-options">Log Options</h3>
+<ul>
+<li><strong>–timestamps</strong>: This shows timestamps in the log
+output.</li>
+<li><strong>–details</strong>: This shows extra details about the
+logs.</li>
+</ul>
+<p>Here is an example command with these options:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="at">--timestamps</span> <span class="at">--details</span> <span class="op">&lt;</span>container_id_or_name<span class="op">&gt;</span></span></code></pre></div>
+<h3 id="example-use-case">Example Use Case</h3>
+<p>If we have a Python application running in a detached container
+called <code>my_python_app</code>, we can view its logs like this:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs my_python_app</span></code></pre></div>
+<p>To follow the logs, we use:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="at">-f</span> my_python_app</span></code></pre></div>
+<p>In summary, using the <code>docker logs</code> command is very
+important for seeing output from detached containers. This is especially
+helpful when we debug or monitor our Python application. For more
+details on managing Docker containers, check out <a
+href="https://bestonlinetutorial.com/docker/how-to-manage-docker-container-logs.html">how
+to manage Docker container logs</a>.</p>
+<h2
+id="why-is-my-python-app-not-writing-to-standard-output-in-docker">Why
+Is My Python App Not Writing to Standard Output in Docker</h2>
+<p>When we run a Python app in a detached Docker container, we might see
+that our app does not write to standard output (stdout) like we expect.
+This can happen for a few reasons:</p>
+<ol type="1">
+<li><p><strong>Output Buffering</strong>: Python keeps output in a
+buffer by default. In detached mode, we might not see this buffered
+output right away in the logs. To stop output buffering, we can run our
+Python script with the <code>-u</code> flag:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> your_image python <span class="at">-u</span> your_script.py</span></code></pre></div></li>
+<li><p><strong>Logging Configuration</strong>: We need to check that our
+logging setup in the Python app sends logs to stdout. For example, we
+can use the <code>logging</code> module like this:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> logging</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>logging.basicConfig(stream<span class="op">=</span>sys.stdout, level<span class="op">=</span>logging.INFO)</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>logging.info(<span class="st">&quot;This will be printed to stdout&quot;</span>)</span></code></pre></div></li>
+<li><p><strong>Using the Right Base Image</strong>: If we use a base
+image that changes how stdout works, we need to make sure it works well
+with our app. For example, images based on Alpine may behave differently
+because they are lightweight.</p></li>
+<li><p><strong>Running in the Background</strong>: When we run in
+detached mode, we must make sure the main process of our container runs
+in the foreground. If this process stops, the container will stop too,
+and we won’t see any output.</p></li>
+<li><p><strong>Container Logs</strong>: To see the output from our
+running container, we can use this command:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="op">&lt;</span>container_id<span class="op">&gt;</span></span></code></pre></div>
+<p>This command gets the logs and helps us check if our app is running
+correctly.</p></li>
+<li><p><strong>File Descriptors</strong>: If our app writes output
+directly to a file instead of stdout, we might not see logs in the
+container logs. We should make sure our app is not writing to a file by
+mistake.</p></li>
+</ol>
+<p>By looking at these points, we can find out why our Python app is not
+writing to standard output when it runs in a detached Docker container.
+For more details on logging and managing Docker containers, we can check
+<a
+href="https://bestonlinetutorial.com/docker/how-to-manage-docker-container-logs.html">this
+guide on managing Docker container logs</a>.</p>
+<h2
+id="how-to-redirect-output-to-a-file-in-a-detached-docker-container">How
+to Redirect Output to a File in a Detached Docker Container</h2>
+<p>Redirecting output to a file in a detached Docker container is very
+important for logging and debugging. We can capture the output from our
+Python app running in a detached container by using these methods.</p>
+<h3 id="method-1-redirect-output-in-docker-run-command">Method 1:
+Redirect Output in Docker Run Command</h3>
+<p>We can redirect output when we start our container with the
+<code>docker run</code> command. Here is how we do it:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--name</span> my_python_app my_python_image <span class="op">&gt;</span> output.log <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span></span></code></pre></div>
+<p>In this command: - <code>-d</code> means we run the container in
+detached mode. - <code>&gt; output.log</code> sends standard output to
+<code>output.log</code>. - <code>2&gt;&amp;1</code> sends standard error
+to standard output.</p>
+<h3 id="method-2-modify-your-python-script">Method 2: Modify Your Python
+Script</h3>
+<p>We can change our Python script to log output to a file. Here is an
+example:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>sys.stdout <span class="op">=</span> <span class="bu">open</span>(<span class="st">&#39;output.log&#39;</span>, <span class="st">&#39;w&#39;</span>)  <span class="co"># Redirect standard output to a file</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>sys.stderr <span class="op">=</span> <span class="bu">open</span>(<span class="st">&#39;error.log&#39;</span>, <span class="st">&#39;w&#39;</span>)    <span class="co"># Redirect standard error to a file</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">&quot;This will go to output.log&quot;</span>)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="cf">raise</span> <span class="pp">Exception</span>(<span class="st">&quot;This error will go to error.log&quot;</span>)  <span class="co"># Example error</span></span></code></pre></div>
+<p>Make sure we add this redirection in our script before we create any
+output.</p>
+<h3 id="method-3-use-dockers-logging-driver">Method 3: Use Docker’s
+Logging Driver</h3>
+<p>Docker gives us a logging driver that we can set in our
+<code>docker run</code> command or in the Docker daemon config. To use
+the <code>json-file</code> driver, which is the default, we can
+specify:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--log-driver</span> json-file <span class="at">--log-opt</span> max-size=10m <span class="at">--log-opt</span> max-file=3 my_python_image</span></code></pre></div>
+<p>This command will save logs in JSON format and rotate them based on
+size.</p>
+<h3 id="method-4-bind-mount-a-directory">Method 4: Bind Mount a
+Directory</h3>
+<p>Another way is to bind mount a directory from our host into the
+container. This way we can save logs directly to the host
+filesystem:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">-v</span> <span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span>:/app <span class="at">--name</span> my_python_app my_python_image</span></code></pre></div>
+<p>In our Python script, we can write to a file in the <code>/app</code>
+directory:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(<span class="st">&#39;/app/output.log&#39;</span>, <span class="st">&#39;w&#39;</span>) <span class="im">as</span> f:</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    f.write(<span class="st">&quot;Log entry</span><span class="ch">\n</span><span class="st">&quot;</span>)</span></code></pre></div>
+<h3 id="method-5-use-docker-compose">Method 5: Use Docker Compose</h3>
+<p>If we use Docker Compose, we can set logging options in the
+<code>docker-compose.yml</code> file:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">my_python_app</span><span class="kw">:</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my_python_image</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">logging</span><span class="kw">:</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;json-file&quot;</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">options</span><span class="kw">:</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">max-size</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10m&quot;</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">max-file</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;3&quot;</span></span></code></pre></div>
+<p>This way will manage the logs like the command line does.</p>
+<p>By using these methods, we can easily redirect output to a file in a
+detached Docker container. This helps us keep track of logs and errors
+without needing to attach to the container.</p>
+<h2
+id="what-are-the-best-practices-for-running-python-apps-in-docker">What
+Are the Best Practices for Running Python Apps in Docker</h2>
+<p>When we run Python apps in Docker, it is important to follow some
+best practices. This helps us make sure our apps are reliable, perform
+well, and are easy to maintain. Here are some simple guidelines:</p>
+<ol type="1">
+<li><p><strong>Use a Lightweight Base Image</strong>: We should start
+with a small base image like <code>python:3.11-slim</code>. This helps
+to make the image size smaller and safer.</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> python:3.11-slim</span></code></pre></div></li>
+<li><p><strong>Leverage Virtual Environments</strong>: It is good to use
+virtual environments. This way we can manage our dependencies and avoid
+problems with package versions.</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">python</span> <span class="at">-m</span> venv /venv</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> PATH=<span class="st">&quot;/venv/bin:$PATH&quot;</span></span></code></pre></div></li>
+<li><p><strong>Manage Dependencies Efficiently</strong>: We should use a
+<code>requirements.txt</code> file. Installing all dependencies in one
+go helps to save time and reduce the size of the image.</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> requirements.txt .</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">pip</span> install <span class="at">--no-cache-dir</span> <span class="at">-r</span> requirements.txt</span></code></pre></div></li>
+<li><p><strong>Set Working Directory</strong>: It is helpful to set a
+working directory for our app. This keeps our files organized and avoids
+issues with paths.</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span></code></pre></div></li>
+<li><p><strong>Use Multi-Stage Builds</strong>: This method helps us to
+make the final image smaller. We can separate build dependencies from
+what we need to run the app.</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> python:3.11-slim <span class="kw">AS</span> builder</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> requirements.txt .</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">pip</span> install <span class="at">--no-cache-dir</span> <span class="at">-r</span> requirements.txt</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> python:3.11-slim</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /app .</span></code></pre></div></li>
+<li><p><strong>Expose Only Necessary Ports</strong>: We should only open
+the ports that our app needs. This makes our app more secure.</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPOSE</span> 5000</span></code></pre></div></li>
+<li><p><strong>Use .dockerignore File</strong>: It is good to create a
+<code>.dockerignore</code> file. This file helps us to leave out
+unnecessary files and folders from the build. This also makes the image
+smaller and speeds up the build time.</p>
+<pre class="plaintext"><code>__pycache__
+*.pyc
+.git</code></pre></li>
+<li><p><strong>Run as Non-Root User</strong>: To make our app safer, we
+should create and use a non-root user for running the app in the
+container.</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">useradd</span> <span class="at">-m</span> appuser</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="kw">USER</span> appuser</span></code></pre></div></li>
+<li><p><strong>Handle Application Configuration</strong>: We should use
+environment variables for settings instead of putting them in the code.
+This gives us more flexibility for different environments.</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> DATABASE_URL=<span class="st">&quot;postgres://user:pass@db:5432/mydb&quot;</span></span></code></pre></div></li>
+<li><p><strong>Monitor and Log</strong>: We need to add logging and
+monitoring to our app. We can use Docker logs to catch output. Also, we
+can use logging libraries that support structured logging.</p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> logging</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>logging.basicConfig(level<span class="op">=</span>logging.INFO)</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>logging.info(<span class="st">&quot;Application started.&quot;</span>)</span></code></pre></div></li>
+</ol>
+<p>By following these best practices, we can make our Python apps in
+Docker better for performance, security, and maintenance. For more tips
+on Docker best practices, check out <a
+href="https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html">this
+article on Docker benefits</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="why-doesnt-my-python-app-print-output-when-running-in-a-detached-docker-container">1.
+Why doesn’t my Python app print output when running in a detached Docker
+container?</h3>
+<p>When we run a Python app in a detached Docker container, it may not
+show output in the terminal. This happens because of output buffering.
+By default, Python buffers output. This buffering can stop the output
+from showing right away in detached mode. We can fix this by using the
+<code>-u</code> flag when we run our Python script. This flag makes
+Python use unbuffered output. For example:
+<code>docker run -d python:latest python -u your_script.py</code>.</p>
+<h3 id="how-can-i-view-logs-from-my-detached-docker-container">2. How
+can I view logs from my detached Docker container?</h3>
+<p>To see logs from a detached Docker container, we can use the
+<code>docker logs</code> command. We just need to add the container ID
+or name after the command. For example,
+<code>docker logs &lt;container_id_or_name&gt;</code> will show what the
+container produced. This is very important for debugging Python apps
+that do not print output directly in detached mode.</p>
+<h3
+id="what-are-the-common-reasons-my-python-app-is-not-writing-to-standard-output-in-docker">3.
+What are the common reasons my Python app is not writing to standard
+output in Docker?</h3>
+<p>There are some common reasons why a Python app does not write to
+standard output in Docker. These reasons include output buffering, wrong
+logging settings, or Docker settings that are not right. We should make
+sure our Python code flushes output often. We can also use logging
+libraries that work well in container environments. These libraries help
+us control log formatting and delivery better.</p>
+<h3
+id="how-can-i-redirect-output-to-a-file-in-a-detached-docker-container">4.
+How can I redirect output to a file in a detached Docker container?</h3>
+<p>To send output to a file in a detached Docker container, we can use
+the shell redirection feature. For example:
+<code>docker run -d python:latest sh -c 'python your_script.py &gt; output.log 2&gt;&amp;1'</code>.
+This command will send both standard output and error output to
+<code>output.log</code>. This way, we can save logs and look at them
+later.</p>
+<h3
+id="what-are-the-best-practices-for-running-python-apps-in-docker-1">5.
+What are the best practices for running Python apps in Docker?</h3>
+<p>Some best practices for running Python apps in Docker include using a
+multi-stage Dockerfile. This helps to make the image smaller. We should
+also clearly define our dependencies and use environment variables for
+settings. Additionally, we can use logging frameworks to manage output
+well. It is also a good idea to use Docker Compose for services that
+need each other. For more on best practices, we can check the article on
+<a
+href="https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html">what
+are the benefits of using Docker in development</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

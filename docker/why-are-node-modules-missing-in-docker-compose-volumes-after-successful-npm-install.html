@@ -1,0 +1,493 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>Why Are node_modules Missing in Docker-Compose Volumes After Successful npm Install?</title>
+            <meta name="description" content="Discover why node_modules may be missing in Docker-Compose volumes after npm install and find effective solutions.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Why Are node_modules Missing in Docker-Compose Volumes After Successful npm Install?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <h1 id="how-to-keep-node_modules-in-docker-compose-volumes">How to Keep
+<code>node_modules</code> in Docker-Compose Volumes</h1>
+<p>To keep <code>node_modules</code> in Docker-Compose volumes after we
+run <code>npm install</code>, we need to manage our volume settings
+carefully. The main reason <code>node_modules</code> can go missing is
+how Docker works with volumes. Sometimes, the local filesystem can
+replace what is inside the container.</p>
+<p>To fix this, we can use the <code>.dockerignore</code> file. This
+file helps us stop <code>node_modules</code> from being replaced. We can
+also change our <code>docker-compose.yml</code> file so that it mounts
+volumes the right way.</p>
+<p>In this article, we will look at why <code>node_modules</code> can go
+missing in Docker-Compose volumes. We will also give some simple
+solutions to fix this. We will talk about how volumes work, how to set
+up Docker-Compose correctly, and some common mistakes that cause this
+problem. Plus, we will answer some frequently asked questions to clear
+up any confusion. Here are some key solutions we will cover:</p>
+<ul>
+<li>Understanding how Docker-Compose volumes work with
+<code>node_modules</code></li>
+<li>Setting up Docker-Compose to include <code>node_modules</code>
+correctly</li>
+<li>How <code>npm install</code> affects Docker-Compose volumes</li>
+<li>Ways to make sure <code>node_modules</code> stay in
+Docker-Compose</li>
+<li>Common mistakes that cause missing <code>node_modules</code> in
+Docker-Compose</li>
+</ul>
+<h2
+id="understanding-docker-compose-volume-behavior-with-node_modules">Understanding
+Docker-Compose Volume Behavior with node_modules</h2>
+<p>In Docker, when we use Docker-Compose, the way volumes work can be
+confusing. This is especially true for the <code>node_modules</code>
+folder. The main reason for this confusion is how Docker handles file
+systems and volumes while creating and running containers.</p>
+<p>When we define a volume in our <code>docker-compose.yml</code>, it
+replaces the content in the specified directory of the container with
+the content from the host. If we do not specify a directory, it creates
+a new volume. Here’s how this works for <code>node_modules</code>:</p>
+<ol type="1">
+<li><p><strong>Volume Definition</strong>: If we mount a volume that
+points to a host directory (like our project directory), it will take
+priority over any files created during the container’s runtime. This
+means if we run <code>npm install</code> inside the container, the
+<code>node_modules</code> folder created will not stay if the volume is
+set to overwrite it.</p>
+<p>Example <code>docker-compose.yml</code>:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> node:14</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">working_dir</span><span class="kw">:</span><span class="at"> /usr/src/app</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> .:/usr/src/app</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> npm install</span></span></code></pre></div></li>
+<li><p><strong>Behavior of npm Install</strong>: When we run
+<code>npm install</code>, it puts the dependencies in the
+<code>node_modules</code> folder inside the container. But if the volume
+maps to the current directory (where <code>node_modules</code> is), any
+existing <code>node_modules</code> on the host will take priority. This
+means the container will not see the installed modules.</p></li>
+<li><p><strong>Volume Types</strong>:</p>
+<ul>
+<li><strong>Bind Mounts</strong>: These link host directories directly
+to container directories. This is common for development but can cause
+problems with <code>node_modules</code>.</li>
+<li><strong>Named Volumes</strong>: These create a volume that Docker
+manages. This can help keep installed modules safe, no matter what the
+host’s directory looks like.</li>
+</ul></li>
+<li><p><strong>Best Practices</strong>:</p>
+<ul>
+<li>We should avoid mounting the whole project directory during
+development. Instead, we can mount only the parts we need or use named
+volumes for <code>node_modules</code> to stop overwriting.</li>
+<li>Example of using a named volume:</li>
+</ul>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> node:14</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">working_dir</span><span class="kw">:</span><span class="at"> /usr/src/app</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> .:/usr/src/app</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> node_modules:/usr/src/app/node_modules</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> npm install</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">node_modules</span><span class="kw">:</span></span></code></pre></div></li>
+</ol>
+<p>By knowing these behaviors and setups in Docker-Compose, we can make
+sure our <code>node_modules</code> are there when we need them. This
+way, we avoid unexpected issues.</p>
+<h2
+id="how-to-properly-configure-docker-compose-to-include-node_modules">How
+to Properly Configure Docker-Compose to Include node_modules</h2>
+<p>To make sure that the <code>node_modules</code> folder stays in your
+Docker-Compose setup, we need to set up the
+<code>docker-compose.yml</code> file the right way. The main problem
+often comes from how we set volumes. They can replace the existing
+folders inside the container, including <code>node_modules</code>. Here
+is how we can set it up correctly:</p>
+<ol type="1">
+<li><p><strong>Dockerfile Configuration</strong>: First, we check that
+our <code>Dockerfile</code> installs dependencies correctly and does not
+cause problems with volumes. A usual <code>Dockerfile</code> looks like
+this:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package*.json ./</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;npm&quot;</span>, <span class="st">&quot;start&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>docker-compose.yml Configuration</strong>: Next, we
+define volumes right in our <code>docker-compose.yml</code>. Here is an
+example:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">build</span><span class="kw">:</span><span class="at"> .</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> .:/app</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> /app/node_modules</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;3000:3000&quot;</span></span></code></pre></div>
+<p>In this setup:</p>
+<ul>
+<li><code>.:/app</code> connects our local folder to the container. This
+allows for live updates.</li>
+<li><code>/app/node_modules</code> makes sure that the
+<code>node_modules</code> in the container does not get replaced by the
+local folder. This helps the installed packages to stay.</li>
+</ul></li>
+<li><p><strong>Using Named Volumes</strong>: Another way is to use named
+volumes to keep <code>node_modules</code> in a separate place:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">build</span><span class="kw">:</span><span class="at"> .</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> .:/app</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> node_modules:/app/node_modules</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;3000:3000&quot;</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">node_modules</span><span class="kw">:</span></span></code></pre></div>
+<p>With this, the <code>node_modules</code> folder stays even if we
+clear or change the local folder.</p></li>
+<li><p><strong>Check Permissions</strong>: We also need to check that
+the user running the Docker container has permission to access and
+change the <code>node_modules</code> folder.</p></li>
+</ol>
+<p>By using these setups, we can stop the <code>node_modules</code>
+folder from being lost in our Docker-Compose volumes after a good
+<code>npm install</code>. For more details on using Docker-Compose well,
+you can check this <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html">guide
+on Docker Compose</a>.</p>
+<h2 id="the-impact-of-npm-install-on-docker-compose-volumes">The Impact
+of npm Install on Docker-Compose Volumes</h2>
+<p>When we use Docker-Compose, the <code>npm install</code> command can
+change what is in our application’s <code>node_modules</code> folder.
+This is especially true when we work with volumes. It is important to
+understand how this works. This way, our development environment can
+work as we want.</p>
+<p>By default, Docker-Compose connects a volume that we define in our
+<code>docker-compose.yml</code> file. If our service setup has a bind
+mount that links to our local folder, running <code>npm install</code>
+inside the container will install packages in the container’s
+filesystem. But if the local folder (where the volume connects) is empty
+or does not have a <code>node_modules</code> folder before we run it for
+the first time, the packages might not stay after the container
+restarts.</p>
+<h3 id="example-configuration">Example Configuration</h3>
+<p>Here is a simple example of a <code>docker-compose.yml</code>
+file:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> node:14</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">working_dir</span><span class="kw">:</span><span class="at"> /usr/src/app</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> .:/usr/src/app</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> npm install</span></span></code></pre></div>
+<p>In this setup, the volume links the current folder to
+<code>/usr/src/app</code> in the container. If there are no files in the
+current folder (including <code>node_modules</code>), running
+<code>npm install</code> will add packages inside the container. But
+these changes will not show up in the local filesystem unless we include
+the <code>node_modules</code> folder.</p>
+<h3 id="important-considerations">Important Considerations</h3>
+<ul>
+<li><strong>Initial State</strong>: We need to make sure that
+<code>node_modules</code> is in our local folder before we start the
+container. This helps keep installed packages.</li>
+<li><strong>Volume Type</strong>: We should know that using a named
+volume instead of a bind mount can change how things work. Named volumes
+do not directly connect to our local filesystem.</li>
+<li><strong>Container Lifecycle</strong>: If we remove or recreate the
+container, it can cause us to lose installed packages. This happens
+unless they are in the mounted local folder.</li>
+</ul>
+<p>Understanding how <code>npm install</code> affects Docker-Compose
+volumes is very important. It helps us keep a stable development
+environment. For more tips on how to use Docker-Compose well, we can
+check out <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html">this
+article on Docker Compose</a>.</p>
+<h2
+id="solutions-for-ensuring-node_modules-persist-in-docker-compose">Solutions
+for Ensuring node_modules Persist in Docker-Compose</h2>
+<p>To make sure that <code>node_modules</code> stay in Docker-Compose,
+we can use these simple solutions:</p>
+<ol type="1">
+<li><p><strong>Avoid Volume Overwrites</strong>: When we write the
+<code>docker-compose.yml</code>, we need to be careful not to replace
+the <code>node_modules</code> folder with an empty volume. This can
+happen if we set a volume for the whole app directory. Instead, let’s
+only target the folders we want to keep.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> node:14</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> ./:/usr/src/app</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> /usr/src/app/node_modules</span></span></code></pre></div></li>
+<li><p><strong>Use Named Volumes</strong>: We can create a named volume
+just for <code>node_modules</code>. This stops it from being replaced by
+the host’s directory.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> node:14</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> ./:/usr/src/app</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> node_modules:/usr/src/app/node_modules</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">node_modules</span><span class="kw">:</span></span></code></pre></div></li>
+<li><p><strong>Run npm Install in Dockerfile</strong>: We should install
+dependencies in the Dockerfile. This way, <code>node_modules</code> get
+built into the image.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /usr/src/app</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package*.json ./</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;npm&quot;</span>, <span class="st">&quot;start&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>Use .dockerignore</strong>: We need to check that our
+<code>.dockerignore</code> file leaves out <code>node_modules</code>.
+This stops the local <code>node_modules</code> from going to the Docker
+daemon. This way, the Docker image can build its own.</p>
+<p>Example <code>.dockerignore</code>:</p>
+<pre><code>node_modules
+npm-debug.log</code></pre></li>
+<li><p><strong>Persistent Volume Mapping</strong>: If needed, we can map
+our host machine’s <code>node_modules</code> straight to a persistent
+volume. This helps keep the state even when we rebuild containers.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> node:14</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> ./node_modules:/usr/src/app/node_modules</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> ./:/usr/src/app</span></span></code></pre></div></li>
+<li><p><strong>Multi-Stage Builds</strong>: We can use multi-stage
+builds to keep the build environment separate from the production one.
+This helps to make <code>node_modules</code> in a controlled way.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14 <span class="kw">AS</span> builder</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /usr/src/app</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package*.json ./</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /usr/src/app</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /usr/src/app/node_modules ./node_modules</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;npm&quot;</span>, <span class="st">&quot;start&quot;</span>]</span></code></pre></div></li>
+</ol>
+<p>By using these solutions, we can keep <code>node_modules</code> in
+our Docker-Compose setup. This helps us avoid problems with volume
+management. For more tips on Docker volumes, check out <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-volumes-and-how-do-they-work.html">what
+are Docker volumes and how do they work</a>.</p>
+<h2
+id="common-mistakes-leading-to-missing-node_modules-in-docker-compose">Common
+Mistakes Leading to Missing node_modules in Docker-Compose</h2>
+<p>When we use Docker-Compose for Node.js apps, we can make some common
+mistakes. These mistakes can make the <code>node_modules</code> folder
+go missing, even after running <code>npm install</code>. Knowing these
+issues can help us set up our environment right.</p>
+<ol type="1">
+<li><p><strong>Volume Overwrites</strong>: If we mount a volume to the
+<code>node_modules</code> folder in our <code>docker-compose.yml</code>,
+it can clear the contents of that folder. For example:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> node:14</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> .:/app</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> /app/node_modules</span></span></code></pre></div>
+<p>In this setup, the second line will clear <code>node_modules</code>
+when we mount the volume.</p></li>
+<li><p><strong>Incorrect Build Context</strong>: We need to make sure
+our <code>Dockerfile</code> and <code>docker-compose.yml</code> are in
+the right folder. If the context is wrong, <code>node_modules</code> can
+be left out during the image build.</p></li>
+<li><p><strong>Using <code>.dockerignore</code></strong>: If we have
+<code>node_modules</code> in our <code>.dockerignore</code> file, it
+will not be copied into the Docker image. We should check our
+<code>.dockerignore</code> file to make sure it does not block important
+files.</p>
+<p>Here is an example of a bad entry in <code>.dockerignore</code>:</p>
+<pre><code>node_modules</code></pre></li>
+<li><p><strong>Running <code>npm install</code> in the Wrong
+Directory</strong>: We must run the <code>npm install</code> command in
+the right working directory. If our <code>Dockerfile</code> sets a
+different working directory, the <code>node_modules</code> might not be
+placed where we think.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install</span></code></pre></div></li>
+<li><p><strong>Using Node.js in Development Mode</strong>: When we run
+in development mode and do not use <code>Dockerfile</code> for
+production, we must check that the local <code>node_modules</code>
+folder is not being ignored or cleared by our setup.</p></li>
+<li><p><strong>Not Specifying Node Version</strong>: If our
+<code>Dockerfile</code> or <code>docker-compose.yml</code> does not say
+which Node.js version to use, it can cause problems. We should always
+set a specific version to avoid surprises.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">image</span><span class="kw">:</span><span class="at"> node:14</span></span></code></pre></div></li>
+<li><p><strong>Rebuilding Images Incorrectly</strong>: After we make
+changes to the <code>Dockerfile</code> or
+<code>docker-compose.yml</code>, we need to rebuild our images correctly
+with <code>docker-compose build</code> to apply the updates.</p></li>
+<li><p><strong>Using Non-Persistent Volumes</strong>: If we use
+temporary volumes, any data in <code>node_modules</code> will be lost
+when the container stops. We should use named volumes or bind mounts to
+keep our data.</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">node_modules</span><span class="kw">:</span></span></code></pre></div></li>
+</ol>
+<p>By avoiding these common mistakes and making sure we configure things
+correctly, we can stop the issue of missing <code>node_modules</code> in
+Docker-Compose environments. For more tips on using Docker well, check
+this <a
+href="https://bestonlinetutorial.com/docker/how-does-docker-differ-from-virtual-machines.html">guide
+on how Docker works</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="why-are-node_modules-missing-in-docker-compose-volumes-after-a-successful-npm-install">1.
+Why are node_modules missing in Docker-Compose volumes after a
+successful npm install?</h3>
+<p>When we run <code>npm install</code> in a Docker container, it puts
+the dependencies in the container’s filesystem. If we have a volume for
+<code>node_modules</code> in the Docker-Compose file, the empty volume
+from the host can replace the container’s <code>node_modules</code>
+folder. This causes it to go missing. To fix this, we need to make sure
+our Docker-Compose setup handles the volume settings correctly.</p>
+<h3 id="how-can-i-persist-node_modules-in-docker-compose">2. How can I
+persist node_modules in Docker-Compose?</h3>
+<p>To keep <code>node_modules</code> safe in our Docker-Compose setup,
+we should not mount an empty directory from the host over the
+container’s <code>node_modules</code>. Instead, we can use named volumes
+or bind mounts that point to a specific place where we want to keep the
+dependencies. This way, the host won’t overwrite what we installed in
+the container after we run <code>npm install</code>.</p>
+<h3 id="what-is-the-impact-of-npm-install-on-docker-compose-volumes">3.
+What is the impact of npm install on Docker-Compose volumes?</h3>
+<p>Running <code>npm install</code> in a Docker container can change the
+<code>node_modules</code> folder depending on how we set up the volumes
+in our Docker-Compose file. If a volume is linked to
+<code>node_modules</code>, the packages we install may vanish after the
+command runs. This happens because the host directory takes priority.
+Checking our volume settings can help keep our dependencies safe.</p>
+<h3
+id="what-common-mistakes-lead-to-missing-node_modules-in-docker-compose">4.
+What common mistakes lead to missing node_modules in
+Docker-Compose?</h3>
+<p>Some common mistakes that lead to missing <code>node_modules</code>
+are wrong volume paths or using an empty host directory that replaces
+the container’s <code>node_modules</code>. Another problem is not having
+a <code>.dockerignore</code> file, which can include files we do not
+want. We should check our <code>docker-compose.yml</code> file to avoid
+these issues.</p>
+<h3
+id="how-do-i-configure-docker-compose-to-include-node_modules-correctly">5.
+How do I configure Docker-Compose to include node_modules
+correctly?</h3>
+<p>To set up Docker-Compose to include <code>node_modules</code>, we
+should write the volume in our <code>docker-compose.yml</code> file
+correctly. We can use a named volume for storage that lasts:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">node_modules</span><span class="kw">:</span></span></code></pre></div>
+<p>Then, we can map it in our service:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">your_service</span><span class="kw">:</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> node_modules:/app/node_modules</span></span></code></pre></div>
+<p>This way, we make sure that <code>node_modules</code> do not get lost
+after we run <code>npm install</code> in the container.</p>
+<p>For more about Docker and why it is good in development, check out <a
+href="https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html">what
+are the benefits of using Docker in development</a> or learn about <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-volumes-and-how-do-they-work.html">Docker
+volumes and how they work</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

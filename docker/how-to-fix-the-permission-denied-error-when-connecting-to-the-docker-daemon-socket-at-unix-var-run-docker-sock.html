@@ -1,0 +1,334 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How to Fix the "Permission Denied" Error When Connecting to the Docker Daemon Socket at unix:///var/run/docker.sock?</title>
+            <meta name="description" content="Learn how to resolve the "Permission Denied" error when connecting to the Docker daemon socket at unix:///var/run/docker.sock.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How to Fix the "Permission Denied" Error When Connecting to the Docker Daemon Socket at unix:///var/run/docker.sock?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To fix the “Permission Denied” error when we connect to the Docker
+daemon socket at <code>unix:///var/run/docker.sock</code>, the best way
+is to add our user to the Docker group. This gives us the right
+permissions to access the Docker socket without needing root access.
+This way not only fixes the permission problem but also makes our work
+easier when managing Docker containers.</p>
+<p>In this article, we will look at different ways to solve the
+“Permission Denied” error when we connect to the Docker daemon socket.
+We will talk about understanding the error, adding users to the Docker
+group, changing permissions on the Docker socket, using sudo commands,
+and setting up the Docker daemon to let non-root users. Here is a quick
+look at the solutions we will discuss:</p>
+<ul>
+<li>Understanding Permission Denied Error for Docker Daemon Socket</li>
+<li>Adding Your User to the Docker Group to Fix Permission Denied
+Error</li>
+<li>Changing Permissions on Docker Socket to Resolve Permission Denied
+Error</li>
+<li>Using Sudo to Overcome Permission Denied Error for Docker
+Daemon</li>
+<li>Configuring Docker Daemon to Allow Non-Root Users Fixing Permission
+Denied Error</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>By the end of this article, we will understand how to fix the
+“Permission Denied” error. This will help us have smooth interactions
+with the Docker daemon. For more information about Docker and what it
+does, we can read about <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">what
+Docker is and why you should use it</a> or <a
+href="https://bestonlinetutorial.com/docker/how-does-docker-differ-from-virtual-machines.html">how
+Docker differs from virtual machines</a>.</p>
+<h2
+id="understanding-permission-denied-error-for-docker-daemon-socket">Understanding
+Permission Denied Error for Docker Daemon Socket</h2>
+<p>The “Permission Denied” error happens when we try to connect to the
+Docker daemon socket at <code>unix:///var/run/docker.sock</code>. This
+error usually comes from not having enough permissions. The Docker
+daemon runs as the root user. By default, only users in the
+<code>docker</code> group can talk to it.</p>
+<p>Some common reasons for this error are:</p>
+<ul>
+<li>We are not in the <code>docker</code> group.</li>
+<li>The permissions on the Docker socket are too strict.</li>
+<li>The Docker service is not running.</li>
+</ul>
+<p>To check if we are in the <code>docker</code> group, we can use this
+command:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">groups</span></span></code></pre></div>
+<p>If we do not see <code>docker</code> in the result, we need to add
+our user to the group or change the socket permissions.</p>
+<p>To look at the permissions on the Docker socket, we can run:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-l</span> /var/run/docker.sock</span></code></pre></div>
+<p>This command will show us the current permissions and who owns the
+Docker socket. It should look like this:</p>
+<pre class="plaintext"><code>srw-rw---- 1 root docker 0 Oct 12 10:00 /var/run/docker.sock</code></pre>
+<p>If the permissions do not let our user access it, we will get the
+“Permission Denied” error.</p>
+<h2
+id="adding-your-user-to-the-docker-group-to-fix-permission-denied-error">Adding
+Your User to the Docker Group to Fix Permission Denied Error</h2>
+<p>To fix the “Permission Denied” error when we connect to the Docker
+daemon socket at <code>unix:///var/run/docker.sock</code>, we can add
+our user to the Docker group. This helps us run Docker commands without
+needing root access.</p>
+<ol type="1">
+<li><p><strong>Check Docker Group</strong>: First, let us check if the
+Docker group is there.</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">getent</span> group docker</span></code></pre></div>
+<p>If the group is not there, we need to create it. We can do this
+with:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> groupadd docker</span></code></pre></div></li>
+<li><p><strong>Add User to Docker Group</strong>: Next, we add our user
+to the Docker group. Use this command and replace <code>username</code>
+with your real username.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> usermod <span class="at">-aG</span> docker username</span></code></pre></div></li>
+<li><p><strong>Log Out and Back In</strong>: After we run the command,
+we must log out and log back in. This is important for the changes to
+work. Or, we can refresh our group membership with this command:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">newgrp</span> docker</span></code></pre></div></li>
+<li><p><strong>Verify Access</strong>: To check if we can run Docker
+commands now, we can run this command:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> ps</span></code></pre></div>
+<p>If we see a list of running containers (or an empty list if there are
+none), we have added our user to the Docker group. Now, we do not have
+permission denied error when connecting to the Docker daemon
+socket.</p></li>
+</ol>
+<p>This way is important for managing Docker containers and images
+without using <code>sudo</code>. It makes our development work easier.
+For more information about Docker and its setups, we can look into
+topics like <a
+href="https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html">installing
+Docker on different systems</a> or learning about <a
+href="https://bestonlinetutorial.com/docker/how-can-you-fix-the-docker-permission-denied-issue.html">Docker
+permissions</a>.</p>
+<h2
+id="changing-permissions-on-docker-socket-to-fix-permission-denied-error">Changing
+Permissions on Docker Socket to Fix Permission Denied Error</h2>
+<p>If we get a “Permission Denied” error when trying to connect to the
+Docker daemon socket at <code>unix:///var/run/docker.sock</code>, we can
+change the permissions of the Docker socket file. But we should be
+careful with this method. It can let unauthorized users access the
+Docker daemon.</p>
+<h3 id="steps-to-change-permissions">Steps to Change Permissions</h3>
+<ol type="1">
+<li><p><strong>Check Current Permissions</strong>: First, we need to
+check the current permissions of the Docker socket. We can do this by
+running:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-l</span> /var/run/docker.sock</span></code></pre></div>
+<p>The result may look like this:</p>
+<pre class="plaintext"><code>srw-rw---- 1 root docker 0 Oct  1 12:00 /var/run/docker.sock</code></pre></li>
+<li><p><strong>Change Socket Permissions</strong>: To let all users
+access the Docker socket, we can change its permissions to
+<code>666</code>:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chmod 666 /var/run/docker.sock</span></code></pre></div></li>
+<li><p><strong>Verify New Permissions</strong>: After we change the
+permissions, we should check them again:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-l</span> /var/run/docker.sock</span></code></pre></div>
+<p>Now the result should show the new permissions:</p>
+<pre class="plaintext"><code>srw-rw-rw- 1 root docker 0 Oct  1 12:00 /var/run/docker.sock</code></pre></li>
+</ol>
+<h3 id="important-notes">Important Notes</h3>
+<ul>
+<li><p><strong>Security Risk</strong>: Giving read and write access to
+all users can be risky. We should only allow trusted users to access
+it.</p></li>
+<li><p><strong>Alternative Method</strong>: Instead of changing
+permissions, we can add our user to the Docker group:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> usermod <span class="at">-aG</span> docker <span class="va">$USER</span></span></code></pre></div>
+<p>After we do this, log out and log back in to see the
+changes.</p></li>
+</ul>
+<p>For more information on Docker and its parts, we can check <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-images-and-how-do-they-work.html">What
+are Docker Images and How Do They Work?</a> and <a
+href="https://bestonlinetutorial.com/docker/how-can-you-fix-the-docker-permission-denied-issue.html">How
+to Fix Permission Denied Error When Connecting to Docker Daemon</a>.</p>
+<h2
+id="using-sudo-to-overcome-permission-denied-error-for-docker-daemon">Using
+Sudo to Overcome Permission Denied Error for Docker Daemon</h2>
+<p>If we see a “Permission Denied” error when we try to connect to the
+Docker daemon socket at <code>unix:///var/run/docker.sock</code>, we can
+use <code>sudo</code> as a quick solution. This helps us if we do not
+have the right permissions to run Docker commands.</p>
+<p>To run Docker commands with more privileges, we just need to add
+<code>sudo</code> in front of our command. For example:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> docker ps</span></code></pre></div>
+<p>This command shows the running Docker containers. By using
+<code>sudo</code>, we get temporary higher privileges. This helps us
+avoid permission problems with the Docker daemon.</p>
+<p>But we should know that using <code>sudo</code> is just a quick fix.
+It is not the best long-term solution. It is usually better to solve the
+real permission problems. We can do this by adding our user to the
+Docker group. This way, we can run Docker commands without needing
+<code>sudo</code>.</p>
+<p>For more steps on how to fix permission issues, check <a
+href="https://bestonlinetutorial.com/docker/how-can-you-fix-the-docker-permission-denied-issue.html">this
+article on fixing Docker permission denied issues</a>.</p>
+<h2
+id="configuring-docker-daemon-to-allow-non-root-users-fixing-permission-denied-error">Configuring
+Docker Daemon to Allow Non-Root Users Fixing Permission Denied
+Error</h2>
+<p>To set up the Docker daemon so non-root users can connect and avoid
+the “Permission Denied” error when they try to access the Docker daemon
+socket at <code>unix:///var/run/docker.sock</code>, we can follow these
+steps:</p>
+<ol type="1">
+<li><p><strong>Edit the Docker Service Configuration</strong>: We need
+to change the Docker service configuration file. This file is usually at
+<code>/etc/docker/daemon.json</code>. If this file is not there, we can
+create it. We should add or change the following settings to include the
+<code>hosts</code> directive. This lets Docker accept TCP
+connections:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;hosts&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;unix:///var/run/docker.sock&quot;</span><span class="ot">,</span> <span class="st">&quot;tcp://0.0.0.0:2375&quot;</span><span class="ot">]</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>This setting makes Docker listen on both the default Unix socket and
+TCP port 2375.</p></li>
+<li><p><strong>Restart Docker Service</strong>: After we update the
+configuration, we have to restart the Docker daemon to make the changes
+take effect:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart docker</span></code></pre></div></li>
+<li><p><strong>Allow Non-Root User Access</strong>: Adding TCP access is
+one way to connect without root. But adding our user to the Docker group
+is the better way to manage permissions. We can run this command:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> usermod <span class="at">-aG</span> docker <span class="va">$USER</span></span></code></pre></div>
+<p>After we run this command, we should log out and log back in or
+restart our system to make sure the group membership is
+updated.</p></li>
+<li><p><strong>Verify Configuration</strong>: To check if the Docker
+daemon is running and we can access it, we can run:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> info</span></code></pre></div>
+<p>If we do not see a “Permission Denied” error, the configuration
+worked well.</p></li>
+</ol>
+<p>This setup lets non-root users run Docker commands without facing the
+permission denied error. It also follows good security practices. For
+more details about Docker configurations, we can look at <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">What
+is Docker and Why Should You Use It</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="what-causes-the-permission-denied-error-when-connecting-to-the-docker-daemon-socket-at-unixvarrundocker.sock">1.
+What causes the “Permission Denied” error when connecting to the Docker
+daemon socket at unix:///var/run/docker.sock?</h3>
+<p>The “Permission Denied” error happens when we try to run Docker
+commands but we don’t have the right permissions to access the Docker
+daemon. This usually means we are not in the Docker group or the Docker
+socket file has the wrong permissions. Knowing these reasons is
+important to fix the problem.</p>
+<h3 id="how-can-i-check-if-my-user-is-part-of-the-docker-group">2. How
+can I check if my user is part of the Docker group?</h3>
+<p>To check if we are part of the Docker group, we can run the command
+<code>groups &lt;your-username&gt;</code> in the terminal. If we see
+“docker” in the list, then we are in the group. If we don’t see it, we
+need to add ourselves to the Docker group to fix the “Permission Denied”
+error when connecting to the Docker daemon socket.</p>
+<h3
+id="what-is-the-recommended-way-to-add-a-user-to-the-docker-group">3.
+What is the recommended way to add a user to the Docker group?</h3>
+<p>To add a user to the Docker group, we can use this command:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> usermod <span class="at">-aG</span> docker <span class="op">&lt;</span>your-username<span class="op">&gt;</span></span></code></pre></div>
+<p>After we run this command, we should log out and log back in. This
+will help us solve the “Permission Denied” error when we connect to the
+Docker daemon socket.</p>
+<h3
+id="can-i-change-permissions-on-the-docker-socket-to-fix-the-permission-denied-error">4.
+Can I change permissions on the Docker socket to fix the “Permission
+Denied” error?</h3>
+<p>Yes, we can change the permissions on the Docker socket to give more
+access. But, this is not usually a good idea because it can cause
+security problems. We can use this command:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chmod 666 /var/run/docker.sock</span></code></pre></div>
+<p>This command will let everyone read and write to the Docker socket.
+But it can be risky, so we should be careful.</p>
+<h3
+id="is-using-sudo-a-viable-solution-for-the-permission-denied-error-with-docker">5.
+Is using <code>sudo</code> a viable solution for the “Permission Denied”
+error with Docker?</h3>
+<p>Using <code>sudo</code> is a quick fix for the “Permission Denied”
+error when we connect to the Docker daemon socket. We can run Docker
+commands with higher privileges by adding <code>sudo</code> in front,
+like this:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> docker ps</span></code></pre></div>
+<p>But, it is better to add ourselves to the Docker group for a more
+permanent and safer solution.</p>
+<p>For more information about Docker and its features, we can read our
+article on <a
+href="https://bestonlinetutorial.com/docker/how-does-docker-differ-from-virtual-machines.html">How
+Does Docker Differ from Virtual Machines?</a> or check out <a
+href="https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html">How
+to Install Docker on Different Operating Systems</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

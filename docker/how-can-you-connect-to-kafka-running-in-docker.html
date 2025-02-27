@@ -1,0 +1,542 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How Can You Connect to Kafka Running in Docker?</title>
+            <meta name="description" content="Learn how to connect to Kafka running in Docker with our step-by-step guide. Simplify your Kafka setup today!">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Can You Connect to Kafka Running in Docker?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To connect to Kafka in Docker, we need to make sure our Docker
+container is set up right for networking. We should use the right Kafka
+bootstrap server address. This usually means using the container’s IP
+address and the port we mapped. If we follow the right steps, we can
+connect to our Kafka easily even when it runs in Docker.</p>
+<p>In this article, we will look at different ways to connect to Kafka
+in Docker. We will talk about how to set up Docker networking for Kafka.
+We will also see how to use Kafka CLI to connect, how to connect Java
+applications, how to use Spring Boot, and how to access Kafka from other
+tools. The solutions we will check out include:</p>
+<ul>
+<li>How to Connect to Kafka Running in Docker</li>
+<li>Configuring Docker Networking for Kafka Connections</li>
+<li>Using Kafka CLI to Connect to Dockerized Kafka</li>
+<li>Connecting Java Applications to Kafka in Docker</li>
+<li>Using Spring Boot to Connect to Kafka Running in Docker</li>
+<li>Accessing Kafka from External Tools while Running in Docker</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2 id="configuring-docker-networking-for-kafka-connections">Configuring
+Docker Networking for Kafka Connections</h2>
+<p>To connect to Kafka running in Docker, we need to set up Docker
+networking correctly. Kafka listens on multiple ports. It needs a good
+network to let the Kafka broker talk to clients. These clients can be in
+other containers or outside of Docker.</p>
+<h3 id="docker-network-setup">Docker Network Setup</h3>
+<ol type="1">
+<li><p><strong>Create a Docker Network</strong>: We should make a
+special Docker network for our Kafka and Zookeeper containers.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network create kafka-net</span></code></pre></div></li>
+<li><p><strong>Run Zookeeper and Kafka</strong>: When we start our Kafka
+and Zookeeper containers, we must connect them to the network we
+created.</p>
+<p><strong>Run Zookeeper</strong>:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--name</span> zookeeper <span class="at">--network</span> kafka-net <span class="dt">\</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> ZOOKEEPER_CLIENT_PORT=2181 <span class="dt">\</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  wurstmeister/zookeeper</span></code></pre></div>
+<p><strong>Run Kafka</strong>:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--name</span> kafka <span class="at">--network</span> kafka-net <span class="dt">\</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181 <span class="dt">\</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092 <span class="dt">\</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">-e</span> KAFKA_LISTENERS=PLAINTEXT://0.0.0.0:9092 <span class="dt">\</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">-p</span> 9092:9092 <span class="dt">\</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  wurstmeister/kafka</span></code></pre></div></li>
+</ol>
+<h3 id="exposing-ports">Exposing Ports</h3>
+<ul>
+<li><p><strong>Host Access</strong>: To let outside applications connect
+to Kafka, we need to map the Kafka port to the host. We do this with the
+<code>-p 9092:9092</code> option in the command above.</p></li>
+<li><p><strong>Advertised Listeners</strong>: We use
+<code>KAFKA_ADVERTISED_LISTENERS</code> to show how clients should
+connect. For outside access, we can set it to our host’s IP or domain:
+<code>bash  -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://&lt;host_ip&gt;:9092</code></p></li>
+</ul>
+<h3 id="verifying-docker-network">Verifying Docker Network</h3>
+<ul>
+<li><strong>Inspect the Network</strong>: To check if our containers are
+properly connected to the network, we run:
+<code>bash  docker network inspect kafka-net</code></li>
+</ul>
+<h3 id="accessing-from-other-containers">Accessing from Other
+Containers</h3>
+<ul>
+<li>For apps or clients in other Docker containers, we can use the
+service name in the Docker network. For example, we can connect using
+<code>kafka:9092</code>.</li>
+</ul>
+<h3 id="using-bridge-network-mode">Using Bridge Network Mode</h3>
+<p>If we are using the default bridge network mode, we might need to
+change the advertised listeners to our host machine’s IP address. This
+will help outside connections work right.</p>
+<p>By setting up Docker networking correctly for our Kafka, we can make
+sure that Kafka and client apps, whether they are in containers or
+outside, can talk to each other easily.</p>
+<h2 id="using-kafka-cli-to-connect-to-dockerized-kafka">Using Kafka CLI
+to Connect to Dockerized Kafka</h2>
+<p>To connect to a Kafka instance running in Docker using the Kafka
+Command Line Interface (CLI), we can follow these steps:</p>
+<ol type="1">
+<li><p><strong>Run Kafka and Zookeeper in Docker</strong>: First, we
+need to make sure that Kafka and Zookeeper are running in Docker. We can
+use this <code>docker-compose.yml</code> file:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;2&#39;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">zookeeper</span><span class="kw">:</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> wurstmeister/zookeeper:3.4.6</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;2181:2181&quot;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">kafka</span><span class="kw">:</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> wurstmeister/kafka:latest</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;9092:9092&quot;</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">KAFKA_ADVERTISED_LISTENERS</span><span class="kw">:</span><span class="at"> INSIDE://kafka:9092,OUTSIDE://localhost:9092</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">KAFKA_LISTENER_SECURITY_PROTOCOL_MAP</span><span class="kw">:</span><span class="at"> INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">KAFKA_LISTENERS</span><span class="kw">:</span><span class="at"> INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9092</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">KAFKA_ZOOKEEPER_CONNECT</span><span class="kw">:</span><span class="at"> zookeeper:2181</span></span></code></pre></div>
+<p>We run it with this command:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> up <span class="at">-d</span></span></code></pre></div></li>
+<li><p><strong>Access Kafka CLI</strong>: We can access the Kafka CLI by
+running a command inside the Kafka container. Use this command to open a
+bash shell in the running Kafka container:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> exec <span class="at">-it</span> <span class="op">&lt;</span>kafka_container_name<span class="op">&gt;</span> /bin/bash</span></code></pre></div>
+<p>We need to replace <code>&lt;kafka_container_name&gt;</code> with the
+name of our Kafka container. It is usually <code>kafka</code> if we use
+the above <code>docker-compose.yml</code>.</p></li>
+<li><p><strong>Produce Messages</strong>: To produce messages to a Kafka
+topic, we use the <code>kafka-console-producer.sh</code> script. For
+example, to send messages to a topic named <code>test</code>, we
+run:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kafka-console-producer.sh</span> <span class="at">--broker-list</span> localhost:9092 <span class="at">--topic</span> test</span></code></pre></div>
+<p>Now we can type our messages and press <code>Enter</code> to send
+them.</p></li>
+<li><p><strong>Consume Messages</strong>: To consume messages from the
+same topic, we use the <code>kafka-console-consumer.sh</code> script. To
+read messages from the <code>test</code> topic, we run:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kafka-console-consumer.sh</span> <span class="at">--bootstrap-server</span> localhost:9092 <span class="at">--topic</span> test <span class="at">--from-beginning</span></span></code></pre></div></li>
+<li><p><strong>Check Available Topics</strong>: We can list all
+available topics with this command:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kafka-topics.sh</span> <span class="at">--list</span> <span class="at">--bootstrap-server</span> localhost:9092</span></code></pre></div></li>
+</ol>
+<p>These steps help us connect to Kafka running in Docker using the CLI.
+We can produce and consume messages easily. If we want more information
+on Docker networking, we can refer to <a
+href="https://bestonlinetutorial.com/docker/how-does-docker-networking-work-for-multi-container-applications.html">how
+Docker networking works for multi-container applications</a>.</p>
+<h2 id="connecting-java-applications-to-kafka-in-docker">Connecting Java
+Applications to Kafka in Docker</h2>
+<p>To connect Java applications to Kafka running in Docker, we must make
+sure the Kafka broker can be reached from our Java app. Here is a simple
+guide to help us do this.</p>
+<ol type="1">
+<li><strong>Docker Compose Setup</strong>: We can use Docker Compose to
+run Kafka and Zookeeper. Below is a sample
+<code>docker-compose.yml</code> file.</li>
+</ol>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">zookeeper</span><span class="kw">:</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> wurstmeister/zookeeper:3.4.6</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;2181:2181&quot;</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">kafka</span><span class="kw">:</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> wurstmeister/kafka:latest</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;9092:9092&quot;</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">KAFKA_ADVERTISED_LISTENERS</span><span class="kw">:</span><span class="at"> INSIDE://kafka:9092,OUTSIDE://localhost:9094</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">KAFKA_LISTENER_SECURITY_PROTOCOL_MAP</span><span class="kw">:</span><span class="at"> INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">KAFKA_LISTENERS</span><span class="kw">:</span><span class="at"> INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9094</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">KAFKA_ZOOKEEPER_CONNECT</span><span class="kw">:</span><span class="at"> zookeeper:2181</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> zookeeper</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Run Docker Compose</strong>: We need to run this command to
+start our Kafka and Zookeeper services.</li>
+</ol>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> up <span class="at">-d</span></span></code></pre></div>
+<ol start="3" type="1">
+<li><strong>Java Dependencies</strong>: We should add the needed
+dependencies to our <code>pom.xml</code> if we use Maven. We can include
+the Kafka client library like this:</li>
+</ol>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode xml"><code class="sourceCode xml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">dependency</span>&gt;</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">groupId</span>&gt;org.apache.kafka&lt;/<span class="kw">groupId</span>&gt;</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">artifactId</span>&gt;kafka-clients&lt;/<span class="kw">artifactId</span>&gt;</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">version</span>&gt;3.4.0&lt;/<span class="kw">version</span>&gt;</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">dependency</span>&gt;</span></code></pre></div>
+<ol start="4" type="1">
+<li><strong>Producer Example</strong>: Here is a simple Java code for a
+producer to send messages to Kafka:</li>
+</ol>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">apache</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">clients</span><span class="op">.</span><span class="im">producer</span><span class="op">.</span><span class="im">KafkaProducer</span><span class="op">;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">apache</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">clients</span><span class="op">.</span><span class="im">producer</span><span class="op">.</span><span class="im">ProducerRecord</span><span class="op">;</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">java</span><span class="op">.</span><span class="im">util</span><span class="op">.</span><span class="im">Properties</span><span class="op">;</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> KafkaJavaProducer <span class="op">{</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">static</span> <span class="dt">void</span> <span class="fu">main</span><span class="op">(</span><span class="bu">String</span><span class="op">[]</span> args<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>        <span class="bu">Properties</span> props <span class="op">=</span> <span class="kw">new</span> <span class="bu">Properties</span><span class="op">();</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        props<span class="op">.</span><span class="fu">put</span><span class="op">(</span><span class="st">&quot;bootstrap.servers&quot;</span><span class="op">,</span> <span class="st">&quot;localhost:9094&quot;</span><span class="op">);</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        props<span class="op">.</span><span class="fu">put</span><span class="op">(</span><span class="st">&quot;key.serializer&quot;</span><span class="op">,</span> <span class="st">&quot;org.apache.kafka.common.serialization.StringSerializer&quot;</span><span class="op">);</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        props<span class="op">.</span><span class="fu">put</span><span class="op">(</span><span class="st">&quot;value.serializer&quot;</span><span class="op">,</span> <span class="st">&quot;org.apache.kafka.common.serialization.StringSerializer&quot;</span><span class="op">);</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>        KafkaProducer<span class="op">&lt;</span><span class="bu">String</span><span class="op">,</span> <span class="bu">String</span><span class="op">&gt;</span> producer <span class="op">=</span> <span class="kw">new</span> KafkaProducer<span class="op">&lt;&gt;(</span>props<span class="op">);</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>        producer<span class="op">.</span><span class="fu">send</span><span class="op">(</span><span class="kw">new</span> ProducerRecord<span class="op">&lt;&gt;(</span><span class="st">&quot;my-topic&quot;</span><span class="op">,</span> <span class="st">&quot;key&quot;</span><span class="op">,</span> <span class="st">&quot;value&quot;</span><span class="op">));</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        producer<span class="op">.</span><span class="fu">close</span><span class="op">();</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<ol start="5" type="1">
+<li><strong>Consumer Example</strong>: Here is a simple Java code for a
+consumer to read messages from Kafka:</li>
+</ol>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">apache</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">clients</span><span class="op">.</span><span class="im">consumer</span><span class="op">.</span><span class="im">ConsumerConfig</span><span class="op">;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">apache</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">clients</span><span class="op">.</span><span class="im">consumer</span><span class="op">.</span><span class="im">ConsumerRecords</span><span class="op">;</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">apache</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">clients</span><span class="op">.</span><span class="im">consumer</span><span class="op">.</span><span class="im">KafkaConsumer</span><span class="op">;</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">java</span><span class="op">.</span><span class="im">time</span><span class="op">.</span><span class="im">Duration</span><span class="op">;</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">java</span><span class="op">.</span><span class="im">util</span><span class="op">.</span><span class="im">Collections</span><span class="op">;</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">java</span><span class="op">.</span><span class="im">util</span><span class="op">.</span><span class="im">Properties</span><span class="op">;</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> KafkaJavaConsumer <span class="op">{</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">static</span> <span class="dt">void</span> <span class="fu">main</span><span class="op">(</span><span class="bu">String</span><span class="op">[]</span> args<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>        <span class="bu">Properties</span> props <span class="op">=</span> <span class="kw">new</span> <span class="bu">Properties</span><span class="op">();</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>        props<span class="op">.</span><span class="fu">put</span><span class="op">(</span>ConsumerConfig<span class="op">.</span><span class="fu">BOOTSTRAP_SERVERS_CONFIG</span><span class="op">,</span> <span class="st">&quot;localhost:9094&quot;</span><span class="op">);</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>        props<span class="op">.</span><span class="fu">put</span><span class="op">(</span>ConsumerConfig<span class="op">.</span><span class="fu">GROUP_ID_CONFIG</span><span class="op">,</span> <span class="st">&quot;test-group&quot;</span><span class="op">);</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>        props<span class="op">.</span><span class="fu">put</span><span class="op">(</span>ConsumerConfig<span class="op">.</span><span class="fu">KEY_DESERIALIZER_CLASS_CONFIG</span><span class="op">,</span> <span class="st">&quot;org.apache.kafka.common.serialization.StringDeserializer&quot;</span><span class="op">);</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>        props<span class="op">.</span><span class="fu">put</span><span class="op">(</span>ConsumerConfig<span class="op">.</span><span class="fu">VALUE_DESERIALIZER_CLASS_CONFIG</span><span class="op">,</span> <span class="st">&quot;org.apache.kafka.common.serialization.StringDeserializer&quot;</span><span class="op">);</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>        KafkaConsumer<span class="op">&lt;</span><span class="bu">String</span><span class="op">,</span> <span class="bu">String</span><span class="op">&gt;</span> consumer <span class="op">=</span> <span class="kw">new</span> KafkaConsumer<span class="op">&lt;&gt;(</span>props<span class="op">);</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>        consumer<span class="op">.</span><span class="fu">subscribe</span><span class="op">(</span><span class="bu">Collections</span><span class="op">.</span><span class="fu">singletonList</span><span class="op">(</span><span class="st">&quot;my-topic&quot;</span><span class="op">));</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">while</span> <span class="op">(</span><span class="kw">true</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>            ConsumerRecords<span class="op">&lt;</span><span class="bu">String</span><span class="op">,</span> <span class="bu">String</span><span class="op">&gt;</span> records <span class="op">=</span> consumer<span class="op">.</span><span class="fu">poll</span><span class="op">(</span><span class="bu">Duration</span><span class="op">.</span><span class="fu">ofMillis</span><span class="op">(</span><span class="dv">100</span><span class="op">));</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>            records<span class="op">.</span><span class="fu">forEach</span><span class="op">(</span>record <span class="op">-&gt;</span> <span class="op">{</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>                <span class="bu">System</span><span class="op">.</span><span class="fu">out</span><span class="op">.</span><span class="fu">printf</span><span class="op">(</span><span class="st">&quot;Consumed message: </span><span class="sc">%s%n</span><span class="st">&quot;</span><span class="op">,</span> record<span class="op">.</span><span class="fu">value</span><span class="op">());</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>            <span class="op">});</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<ol start="6" type="1">
+<li><p><strong>Networking Considerations</strong>: We need to ensure our
+Java application can reach the Kafka broker at the advertised listener
+address. This is <code>localhost:9094</code>. If our Java application
+runs in another Docker container, we must make sure it is on the same
+Docker network as the Kafka container.</p></li>
+<li><p><strong>Testing the Connection</strong>: After we run the
+producer and consumer code, we should see messages sent and received if
+everything is set up right.</p></li>
+</ol>
+<p>For more information about Docker and how it works, we can check <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">what
+is Docker and why should you use it</a>.</p>
+<h2 id="using-spring-boot-to-connect-to-kafka-running-in-docker">Using
+Spring Boot to Connect to Kafka Running in Docker</h2>
+<p>We can connect a Spring Boot application to Kafka that runs in Docker
+by following these steps:</p>
+<ol type="1">
+<li><p><strong>Add Dependencies</strong>: We need to add these
+dependencies in our <code>pom.xml</code> if we are using Maven:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode xml"><code class="sourceCode xml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">dependency</span>&gt;</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">groupId</span>&gt;org.springframework.kafka&lt;/<span class="kw">groupId</span>&gt;</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">artifactId</span>&gt;spring-kafka&lt;/<span class="kw">artifactId</span>&gt;</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">dependency</span>&gt;</span></code></pre></div></li>
+<li><p><strong>Configure Application Properties</strong>: In our
+<code>application.properties</code> file, we must set the Kafka
+bootstrap server. If Kafka runs on Docker with default settings, we can
+use:</p>
+<pre class="properties"><code>spring.kafka.bootstrap-servers=localhost:9092
+spring.kafka.consumer.group-id=my-group
+spring.kafka.consumer.auto-offset-reset=earliest</code></pre></li>
+<li><p><strong>Create Kafka Producer Configuration</strong>: We will
+define a configuration class for the Kafka producer:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">apache</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">clients</span><span class="op">.</span><span class="im">producer</span><span class="op">.</span><span class="im">ProducerConfig</span><span class="op">;</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">apache</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">common</span><span class="op">.</span><span class="im">serialization</span><span class="op">.</span><span class="im">StringSerializer</span><span class="op">;</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">context</span><span class="op">.</span><span class="im">annotation</span><span class="op">.</span><span class="im">Bean</span><span class="op">;</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">context</span><span class="op">.</span><span class="im">annotation</span><span class="op">.</span><span class="im">Configuration</span><span class="op">;</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">core</span><span class="op">.</span><span class="im">DefaultKafkaProducerFactory</span><span class="op">;</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">core</span><span class="op">.</span><span class="im">KafkaTemplate</span><span class="op">;</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">core</span><span class="op">.</span><span class="im">ProducerFactory</span><span class="op">;</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">java</span><span class="op">.</span><span class="im">util</span><span class="op">.</span><span class="im">HashMap</span><span class="op">;</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">java</span><span class="op">.</span><span class="im">util</span><span class="op">.</span><span class="im">Map</span><span class="op">;</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="at">@Configuration</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> KafkaProducerConfig <span class="op">{</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">@Bean</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ProducerFactory<span class="op">&lt;</span><span class="bu">String</span><span class="op">,</span> <span class="bu">String</span><span class="op">&gt;</span> <span class="fu">producerFactory</span><span class="op">()</span> <span class="op">{</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>        <span class="bu">Map</span><span class="op">&lt;</span><span class="bu">String</span><span class="op">,</span> <span class="bu">Object</span><span class="op">&gt;</span> configProps <span class="op">=</span> <span class="kw">new</span> <span class="bu">HashMap</span><span class="op">&lt;&gt;();</span></span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>        configProps<span class="op">.</span><span class="fu">put</span><span class="op">(</span>ProducerConfig<span class="op">.</span><span class="fu">BOOTSTRAP_SERVERS_CONFIG</span><span class="op">,</span> <span class="st">&quot;localhost:9092&quot;</span><span class="op">);</span></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>        configProps<span class="op">.</span><span class="fu">put</span><span class="op">(</span>ProducerConfig<span class="op">.</span><span class="fu">KEY_SERIALIZER_CLASS_CONFIG</span><span class="op">,</span> StringSerializer<span class="op">.</span><span class="fu">class</span><span class="op">);</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>        configProps<span class="op">.</span><span class="fu">put</span><span class="op">(</span>ProducerConfig<span class="op">.</span><span class="fu">VALUE_SERIALIZER_CLASS_CONFIG</span><span class="op">,</span> StringSerializer<span class="op">.</span><span class="fu">class</span><span class="op">);</span></span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="kw">new</span> DefaultKafkaProducerFactory<span class="op">&lt;&gt;(</span>configProps<span class="op">);</span></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">@Bean</span></span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> KafkaTemplate<span class="op">&lt;</span><span class="bu">String</span><span class="op">,</span> <span class="bu">String</span><span class="op">&gt;</span> <span class="fu">kafkaTemplate</span><span class="op">()</span> <span class="op">{</span></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="kw">new</span> KafkaTemplate<span class="op">&lt;&gt;(</span><span class="fu">producerFactory</span><span class="op">());</span></span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Create a Kafka Consumer</strong>: We will define a Kafka
+consumer configuration:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">apache</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">clients</span><span class="op">.</span><span class="im">consumer</span><span class="op">.</span><span class="im">ConsumerConfig</span><span class="op">;</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">apache</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">common</span><span class="op">.</span><span class="im">serialization</span><span class="op">.</span><span class="im">StringDeserializer</span><span class="op">;</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">context</span><span class="op">.</span><span class="im">annotation</span><span class="op">.</span><span class="im">Bean</span><span class="op">;</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">context</span><span class="op">.</span><span class="im">annotation</span><span class="op">.</span><span class="im">Configuration</span><span class="op">;</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">annotation</span><span class="op">.</span><span class="im">EnableKafka</span><span class="op">;</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">config</span><span class="op">.</span><span class="im">ConcurrentKafkaListenerContainerFactory</span><span class="op">;</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">core</span><span class="op">.</span><span class="im">ConsumerFactory</span><span class="op">;</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">core</span><span class="op">.</span><span class="im">DefaultKafkaConsumerFactory</span><span class="op">;</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">java</span><span class="op">.</span><span class="im">util</span><span class="op">.</span><span class="im">HashMap</span><span class="op">;</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">java</span><span class="op">.</span><span class="im">util</span><span class="op">.</span><span class="im">Map</span><span class="op">;</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="at">@Configuration</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="at">@EnableKafka</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> KafkaConsumerConfig <span class="op">{</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">@Bean</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ConsumerFactory<span class="op">&lt;</span><span class="bu">String</span><span class="op">,</span> <span class="bu">String</span><span class="op">&gt;</span> <span class="fu">consumerFactory</span><span class="op">()</span> <span class="op">{</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>        <span class="bu">Map</span><span class="op">&lt;</span><span class="bu">String</span><span class="op">,</span> <span class="bu">Object</span><span class="op">&gt;</span> configProps <span class="op">=</span> <span class="kw">new</span> <span class="bu">HashMap</span><span class="op">&lt;&gt;();</span></span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>        configProps<span class="op">.</span><span class="fu">put</span><span class="op">(</span>ConsumerConfig<span class="op">.</span><span class="fu">BOOTSTRAP_SERVERS_CONFIG</span><span class="op">,</span> <span class="st">&quot;localhost:9092&quot;</span><span class="op">);</span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>        configProps<span class="op">.</span><span class="fu">put</span><span class="op">(</span>ConsumerConfig<span class="op">.</span><span class="fu">GROUP_ID_CONFIG</span><span class="op">,</span> <span class="st">&quot;my-group&quot;</span><span class="op">);</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>        configProps<span class="op">.</span><span class="fu">put</span><span class="op">(</span>ConsumerConfig<span class="op">.</span><span class="fu">KEY_DESERIALIZER_CLASS_CONFIG</span><span class="op">,</span> StringDeserializer<span class="op">.</span><span class="fu">class</span><span class="op">);</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>        configProps<span class="op">.</span><span class="fu">put</span><span class="op">(</span>ConsumerConfig<span class="op">.</span><span class="fu">VALUE_DESERIALIZER_CLASS_CONFIG</span><span class="op">,</span> StringDeserializer<span class="op">.</span><span class="fu">class</span><span class="op">);</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="kw">new</span> DefaultKafkaConsumerFactory<span class="op">&lt;&gt;(</span>configProps<span class="op">);</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">@Bean</span></span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> ConcurrentKafkaListenerContainerFactory<span class="op">&lt;</span><span class="bu">String</span><span class="op">,</span> <span class="bu">String</span><span class="op">&gt;</span> <span class="fu">kafkaListenerContainerFactory</span><span class="op">()</span> <span class="op">{</span></span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>        ConcurrentKafkaListenerContainerFactory<span class="op">&lt;</span><span class="bu">String</span><span class="op">,</span> <span class="bu">String</span><span class="op">&gt;</span> factory <span class="op">=</span> <span class="kw">new</span> ConcurrentKafkaListenerContainerFactory<span class="op">&lt;&gt;();</span></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a>        factory<span class="op">.</span><span class="fu">setConsumerFactory</span><span class="op">(</span><span class="fu">consumerFactory</span><span class="op">());</span></span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> factory<span class="op">;</span></span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Sending Messages</strong>: We can use the
+<code>KafkaTemplate</code> to send messages:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">beans</span><span class="op">.</span><span class="im">factory</span><span class="op">.</span><span class="im">annotation</span><span class="op">.</span><span class="im">Autowired</span><span class="op">;</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">core</span><span class="op">.</span><span class="im">KafkaTemplate</span><span class="op">;</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">stereotype</span><span class="op">.</span><span class="im">Service</span><span class="op">;</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="at">@Service</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> KafkaProducerService <span class="op">{</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">@Autowired</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">private</span> KafkaTemplate<span class="op">&lt;</span><span class="bu">String</span><span class="op">,</span> <span class="bu">String</span><span class="op">&gt;</span> kafkaTemplate<span class="op">;</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">sendMessage</span><span class="op">(</span><span class="bu">String</span> topic<span class="op">,</span> <span class="bu">String</span> message<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>        kafkaTemplate<span class="op">.</span><span class="fu">send</span><span class="op">(</span>topic<span class="op">,</span> message<span class="op">);</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Consuming Messages</strong>: We create a listener to
+consume messages from Kafka:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">kafka</span><span class="op">.</span><span class="im">annotation</span><span class="op">.</span><span class="im">KafkaListener</span><span class="op">;</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="im">org</span><span class="op">.</span><span class="im">springframework</span><span class="op">.</span><span class="im">stereotype</span><span class="op">.</span><span class="im">Component</span><span class="op">;</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">@Component</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="kw">class</span> KafkaConsumerService <span class="op">{</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">@KafkaListener</span><span class="op">(</span>topics <span class="op">=</span> <span class="st">&quot;your_topic_name&quot;</span><span class="op">,</span> groupId <span class="op">=</span> <span class="st">&quot;my-group&quot;</span><span class="op">)</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">listen</span><span class="op">(</span><span class="bu">String</span> message<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>        <span class="bu">System</span><span class="op">.</span><span class="fu">out</span><span class="op">.</span><span class="fu">println</span><span class="op">(</span><span class="st">&quot;Received Message: &quot;</span> <span class="op">+</span> message<span class="op">);</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+</ol>
+<p>We run our Spring Boot application. Now it can connect to Kafka
+running in Docker. We must ensure that Docker runs and Kafka is up and
+reachable. For more details about Docker setup, we can check <a
+href="https://bestonlinetutorial.com/docker/how-to-connect-docker-containers-to-different-networks.html">How
+to Connect Docker Containers to Different Networks</a>.</p>
+<h2
+id="accessing-kafka-from-external-tools-while-running-in-docker">Accessing
+Kafka from External Tools while Running in Docker</h2>
+<p>To access Kafka in Docker from outside tools, we need to make sure
+that Kafka is set up to allow external connections. We also need to
+expose the right ports. Here is how we can do it:</p>
+<ol type="1">
+<li><p><strong>Docker Run Command</strong>: When we start our Kafka
+container, we must expose the needed ports. Kafka usually runs on port
+<code>9092</code>. We can use this command to run Kafka in Docker:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--name</span> kafka <span class="dt">\</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>-p 9092:9092 <span class="dt">\</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>-e KAFKA_LISTENER_SECURITY_MAP=<span class="st">&#39;PLAINTEXT:PLAINTEXT&#39;</span> <span class="dt">\</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>-e KAFKA_ADVERTISED_LISTENERS=<span class="st">&#39;PLAINTEXT://localhost:9092&#39;</span> <span class="dt">\</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>-e KAFKA_LISTENERS=<span class="st">&#39;PLAINTEXT://0.0.0.0:9092&#39;</span> <span class="dt">\</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>wurstmeister/kafka:latest</span></code></pre></div></li>
+<li><p><strong>Update Your Kafka Configuration</strong>: In our Kafka
+configuration file, which is usually <code>server.properties</code>, we
+must set these properties:</p>
+<pre class="properties"><code>listeners=PLAINTEXT://0.0.0.0:9092
+advertised.listeners=PLAINTEXT://&lt;YOUR_PUBLIC_IP&gt;:9092</code></pre>
+<p>Here, we must change <code>&lt;YOUR_PUBLIC_IP&gt;</code> to the real
+IP address of our Docker host.</p></li>
+<li><p><strong>Accessing from External Tools</strong>: Now we can access
+Kafka using different tools like:</p>
+<ul>
+<li><p><strong>Kafka CLI</strong>: We can run this command to send or
+get messages:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kafka-console-producer</span> <span class="at">--broker-list</span> <span class="op">&lt;</span>YOUR_PUBLIC_IP<span class="op">&gt;</span>:9092 <span class="at">--topic</span> test</span></code></pre></div></li>
+<li><p><strong>Kafka GUI Tools</strong>: We can use tools like Kafka
+Tool, Confluent Control Center, or Kafdrop. We just need to give
+<code>&lt;YOUR_PUBLIC_IP&gt;:9092</code> as the bootstrap
+server.</p></li>
+</ul></li>
+<li><p><strong>Firewall and Security Groups</strong>: We should check
+that our firewall or any security groups (if we use a cloud service)
+allow incoming connections on port <code>9092</code>.</p></li>
+<li><p><strong>Testing Connection</strong>: We can use this command to
+check the connection from an outside tool:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kafka-console-consumer</span> <span class="at">--bootstrap-server</span> <span class="op">&lt;</span>YOUR_PUBLIC_IP<span class="op">&gt;</span>:9092 <span class="at">--topic</span> test <span class="at">--from-beginning</span></span></code></pre></div></li>
+</ol>
+<p>By following these steps, we can access our Kafka instance running in
+Docker from external tools. If we need more help with Docker setup or
+networking, we can look at resources like <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">this
+Docker networking guide</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="how-do-we-connect-to-kafka-running-in-docker">1. How do we
+connect to Kafka running in Docker?</h3>
+<p>To connect to Kafka in Docker, we need to make sure our Docker
+container is set up right for networking. We can connect using the Kafka
+command line interface (CLI) from another container or from our local
+machine. This depends on how we have set it up. Make sure the right
+ports are open. The default port is 9092. For detailed steps, we can
+check our guide on <a
+href="https://bestonlinetutorial.com/docker/how-to-connect-docker-containers-to-different-networks.html">how
+to connect Docker containers to different networks</a>.</p>
+<h3
+id="what-are-the-best-practices-for-configuring-docker-networking-for-kafka">2.
+What are the best practices for configuring Docker networking for
+Kafka?</h3>
+<p>When we configure Docker networking for Kafka, it is important to use
+a bridge network. This helps with keeping our containers separate and
+allows them to talk to each other. This setup lets Kafka brokers and
+clients communicate well. Also, we should set the advertised listeners
+in the Kafka configuration. This helps external clients connect
+properly. For more information on Docker networking, we can read our
+article on <a
+href="https://bestonlinetutorial.com/docker/how-does-docker-networking-work-for-multi-container-applications.html">how
+Docker networking works for multi-container applications</a>.</p>
+<h3 id="can-we-use-the-kafka-cli-to-manage-kafka-in-docker">3. Can we
+use the Kafka CLI to manage Kafka in Docker?</h3>
+<p>Yes, we can use the Kafka CLI to manage Kafka when it runs in Docker.
+We can run CLI commands directly from the Kafka container. Also, we can
+use Docker’s <code>exec</code> command to run CLI commands against the
+running Kafka instance. This way, we can create topics, send messages,
+and manage consumer groups easily. For more on using the CLI, we can
+check our guide on <a
+href="https://bestonlinetutorial.com/docker/how-to-work-with-docker-containers-using-the-docker-cli.html">how
+to work with Docker containers using the Docker CLI</a>.</p>
+<h3 id="how-can-we-integrate-java-applications-with-dockerized-kafka">4.
+How can we integrate Java applications with Dockerized Kafka?</h3>
+<p>To connect Java applications to Kafka in Docker, we need to make sure
+our application can reach the Kafka broker’s advertised listeners. We
+should use the Kafka client libraries in our Java application and set
+the bootstrap servers properly. Make sure the right ports are open and
+can be reached from our application. For more details on connecting
+applications to Docker services, we can read our article on <a
+href="https://bestonlinetutorial.com/docker/how-do-you-define-multiple-services-in-docker-compose.html">how
+to use Docker Compose to connect services</a>.</p>
+<h3 id="what-tools-can-we-use-to-access-kafka-from-outside-docker">5.
+What tools can we use to access Kafka from outside Docker?</h3>
+<p>To access Kafka from outside tools while it runs in Docker, we can
+use GUI clients like Kafka Tool, Confluent Control Center, or any
+HTTP-based management tools. We need to make sure the Kafka ports are
+open and our Docker networking settings allow outside connections. For
+more help, we can look at our resource on <a
+href="https://bestonlinetutorial.com/docker/how-to-expose-docker-container-ports-to-the-host.html">how
+to expose Docker container ports to the host</a>.</p>
+<p>These FAQs give a good overview of connecting to Kafka in Docker and
+cover common issues we might face. For more reading on Docker and what
+it can do, we can explore more resources on <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">what
+is Docker and why should you use it</a> and <a
+href="https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html">how
+to install Docker on different operating systems</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
