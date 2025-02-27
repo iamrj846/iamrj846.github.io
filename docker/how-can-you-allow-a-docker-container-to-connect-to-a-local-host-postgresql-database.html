@@ -1,0 +1,417 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How Can You Allow a Docker Container to Connect to a Local Host PostgreSQL Database?</title>
+            <meta name="description" content="Learn how to connect a Docker container to a local PostgreSQL database with easy-to-follow steps and expert tips.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Can You Allow a Docker Container to Connect to a Local Host PostgreSQL Database?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To let a Docker container connect to a local PostgreSQL database, we
+need to make sure that the PostgreSQL server can accept connections from
+containers. Usually, we have to change the <code>pg_hba.conf</code>
+file. This file lets us allow access from the Docker bridge network or
+use host networking. Also, we might need to use the right host address
+when we connect from our Docker container. We often use
+<code>host.docker.internal</code> to point to the host machine.</p>
+<p>In this article, we will go through the important steps to help your
+Docker container connect to a local PostgreSQL database. We will talk
+about how to configure PostgreSQL. We will look at using host
+networking. We will also change Docker Compose files, set up a bridge
+network, and fix common connection problems. Here are the topics we will
+discuss:</p>
+<ul>
+<li>Configuring PostgreSQL to Allow Connections from Docker
+Containers</li>
+<li>Using Host Networking to Connect Docker to Local PostgreSQL</li>
+<li>Modifying Docker Compose for Local PostgreSQL Connection</li>
+<li>Setting Up a Bridge Network for Docker and Local PostgreSQL</li>
+<li>Troubleshooting Connection Issues Between Docker and PostgreSQL</li>
+</ul>
+<h2
+id="configuring-postgresql-to-allow-connections-from-docker-containers">Configuring
+PostgreSQL to Allow Connections from Docker Containers</h2>
+<p>We need to configure PostgreSQL so that Docker containers can connect
+to a local PostgreSQL database. Let’s follow these steps:</p>
+<ol type="1">
+<li><p><strong>Edit PostgreSQL Configuration</strong>:<br />
+We should change the <code>postgresql.conf</code> file. This file helps
+allow connections from the IP range of Docker. You can usually find this
+file in the PostgreSQL data folder. It could be something like
+<code>/etc/postgresql/&lt;version&gt;/main/postgresql.conf</code>.</p>
+<p>We need to add or update this line:</p>
+<pre class="plaintext"><code>listen_addresses = &#39;*&#39;</code></pre></li>
+<li><p><strong>Update the pg_hba.conf File</strong>:<br />
+Next, we edit the <code>pg_hba.conf</code> file. This file allows
+specific IP addresses or ranges to connect. It is usually in the same
+folder as <code>postgresql.conf</code>.</p>
+<p>We will add a line to let Docker containers connect. If your Docker
+network uses the default bridge network, which is often
+<code>172.17.0.0/16</code>, add this line:</p>
+<pre class="plaintext"><code>host    all             all             172.17.0.0/16         md5</code></pre>
+<p>If you want to allow all connections (but this is not good for
+production), we can use:</p>
+<pre class="plaintext"><code>host    all             all             0.0.0.0/0             md5</code></pre></li>
+<li><p><strong>Restart PostgreSQL</strong>:<br />
+After we make these changes, we need to restart PostgreSQL to apply
+them:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart postgresql</span></code></pre></div></li>
+<li><p><strong>Verify Docker Container IP</strong>:<br />
+When we run a Docker container, we should check its IP address with the
+command:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> inspect <span class="at">-f</span> <span class="st">&#39;{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}&#39;</span> <span class="op">&lt;</span>container_name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Connect from Docker Container</strong>:<br />
+To connect to PostgreSQL from the Docker container, we use this command.
+Replace <code>&lt;host_ip&gt;</code> with the IP address of the host
+machine or use <code>host.docker.internal</code> if it works for
+you:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">psql</span> <span class="at">-h</span> <span class="op">&lt;</span>host_ip<span class="op">&gt;</span> -U <span class="op">&lt;</span>username<span class="op">&gt;</span> -d <span class="op">&lt;</span>database<span class="op">&gt;</span></span></code></pre></div></li>
+</ol>
+<p>This setup helps our Docker containers connect to the local
+PostgreSQL database in a good way. For more details about Docker
+networking, we can look at <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">this
+guide on Docker networks</a>.</p>
+<h2
+id="using-host-networking-to-connect-docker-to-local-postgresql">Using
+Host Networking to Connect Docker to Local PostgreSQL</h2>
+<p>To connect a Docker container to a local PostgreSQL database using
+host networking, we can use the <code>--network="host"</code> option
+when we run our Docker container. This setting lets the container share
+the host’s networking stack. So, it can access services on the host as
+if they were inside the container.</p>
+<h3 id="example-docker-command">Example Docker Command</h3>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--network</span><span class="op">=</span><span class="st">&quot;host&quot;</span> <span class="at">-e</span> POSTGRES_HOST=localhost <span class="at">-e</span> POSTGRES_USER=user <span class="at">-e</span> POSTGRES_PASSWORD=password <span class="at">-e</span> POSTGRES_DB=mydatabase your-docker-image</span></code></pre></div>
+<h3 id="important-considerations">Important Considerations</h3>
+<ul>
+<li><strong>Linux Only</strong>: The <code>host</code> networking mode
+works only on Linux. Windows and macOS do not support this.</li>
+<li><strong>Security</strong>: Using host networking can expose your
+host to some security risks. The container can access all network
+interfaces.</li>
+<li><strong>Port Conflicts</strong>: Make sure the ports used by
+PostgreSQL are not taken by other services on the host.</li>
+</ul>
+<h3 id="postgresql-configuration">PostgreSQL Configuration</h3>
+<p>We have to make sure that PostgreSQL allows connections from the
+Docker container. We need to change the <code>postgresql.conf</code>
+file:</p>
+<pre class="plaintext"><code>listen_addresses = &#39;*&#39;</code></pre>
+<p>Then we update the <code>pg_hba.conf</code> to allow connections:</p>
+<pre class="plaintext"><code># TYPE  DATABASE        USER            ADDRESS                 METHOD
+host    all             all             0.0.0.0/0               md5</code></pre>
+<p>After we make these changes, we restart PostgreSQL:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart postgresql</span></code></pre></div>
+<p>Using host networking can make the connection process easier,
+especially when we are developing. It removes the need for complex
+network setups. For more details on managing Docker networks, we can
+check <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">Docker
+Networks and Why They are Necessary</a>.</p>
+<h2
+id="modifying-docker-compose-for-local-postgresql-connection">Modifying
+Docker Compose for Local PostgreSQL Connection</h2>
+<p>To let a Docker container connect to a local PostgreSQL database, we
+need to change our <code>docker-compose.yml</code> file. We will define
+the database service and set the connection details right. Here is how
+we do it:</p>
+<ol type="1">
+<li><strong>Define the PostgreSQL Service</strong>: First, we need to
+make sure our PostgreSQL service is in our
+<code>docker-compose.yml</code> file.</li>
+</ol>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">postgres</span><span class="kw">:</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> postgres:latest</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_USER</span><span class="kw">:</span><span class="at"> your_user</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_PASSWORD</span><span class="kw">:</span><span class="at"> your_password</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_DB</span><span class="kw">:</span><span class="at"> your_database</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;5432:5432&quot;</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">networks</span><span class="kw">:</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> localnet</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="fu">networks</span><span class="kw">:</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">localnet</span><span class="kw">:</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> bridge</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Modify Your Application Service</strong>: Next, in the same
+<code>docker-compose.yml</code>, we will add our application service. It
+needs to connect to the PostgreSQL service using the right hostname and
+port.</li>
+</ol>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> your_application_image</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">DATABASE_URL</span><span class="kw">:</span><span class="at"> postgres://your_user:your_password@postgres:5432/your_database</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> postgres</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">networks</span><span class="kw">:</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> localnet</span></span></code></pre></div>
+<ol start="3" type="1">
+<li><strong>Connecting from Host to Container</strong>: If we want to
+connect from our host machine to the PostgreSQL database inside the
+container, we can use this connection string:</li>
+</ol>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">psql</span> <span class="at">-h</span> localhost <span class="at">-U</span> your_user <span class="at">-d</span> your_database</span></code></pre></div>
+<ol start="4" type="1">
+<li><strong>Using Docker Compose to Build and Run</strong>: After we
+change our <code>docker-compose.yml</code>, we can run this command to
+build and start our services:</li>
+</ol>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> up <span class="at">-d</span></span></code></pre></div>
+<ol start="5" type="1">
+<li><strong>Verifying the Connection</strong>: We can check if the
+application container connects to the PostgreSQL database by looking at
+the logs:</li>
+</ol>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker-compose</span> logs app</span></code></pre></div>
+<p>This setup helps our Docker containers to talk to a local PostgreSQL
+database easily. For more settings and tips, check <a
+href="https://bestonlinetutorial.com/docker/how-to-connect-to-postgresql-in-a-docker-container-from-outside.html">how
+to connect to PostgreSQL in a Docker container from outside</a>.</p>
+<h2
+id="setting-up-a-bridge-network-for-docker-and-local-postgresql">Setting
+Up a Bridge Network for Docker and Local PostgreSQL</h2>
+<p>To let a Docker container connect to a local PostgreSQL database, we
+can set up a bridge network. A bridge network helps containers talk to
+each other and the host machine. This makes it easy to connect to the
+PostgreSQL service that runs on the host.</p>
+<ol type="1">
+<li><p><strong>Create a Bridge Network:</strong> First, we need to
+create a custom bridge network in Docker. We can use this command:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network create my_bridge_network</span></code></pre></div></li>
+<li><p><strong>Run PostgreSQL Container:</strong> Next, we run the
+PostgreSQL container. We should specify the bridge network we just made.
+This way, the PostgreSQL container can talk within the same network.</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--name</span> postgres-container <span class="at">--network</span> my_bridge_network <span class="at">-e</span> POSTGRES_PASSWORD=mysecretpassword <span class="at">-d</span> postgres</span></code></pre></div></li>
+<li><p><strong>Connect Another Container to the Bridge Network:</strong>
+Now, when we run our application container, like a Node.js app, we
+connect it to the same bridge network. This lets it access the
+PostgreSQL database.</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--name</span> myapp-container <span class="at">--network</span> my_bridge_network <span class="at">-e</span> DATABASE_URL=postgres://postgres:mysecretpassword@postgres-container:5432/mydatabase <span class="at">-d</span> myapp</span></code></pre></div></li>
+<li><p><strong>Database Connection:</strong> In our application, we need
+to use the right connection string format. This points to the PostgreSQL
+container by name. It acts as the hostname in the bridge network:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> { Client } <span class="op">=</span> <span class="pp">require</span>(<span class="st">&#39;pg&#39;</span>)<span class="op">;</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> client <span class="op">=</span> <span class="kw">new</span> <span class="fu">Client</span>({</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">connectionString</span><span class="op">:</span> <span class="bu">process</span><span class="op">.</span><span class="at">env</span><span class="op">.</span><span class="at">DATABASE_URL</span><span class="op">,</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>})<span class="op">;</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>client<span class="op">.</span><span class="fu">connect</span>()</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">then</span>(() <span class="kw">=&gt;</span> <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(<span class="st">&#39;Connected to PostgreSQL&#39;</span>))</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">.</span><span class="fu">catch</span>(err <span class="kw">=&gt;</span> <span class="bu">console</span><span class="op">.</span><span class="fu">error</span>(<span class="st">&#39;Connection error&#39;</span><span class="op">,</span> err<span class="op">.</span><span class="at">stack</span>))<span class="op">;</span></span></code></pre></div></li>
+<li><p><strong>Verifying Network Configuration:</strong> We should check
+the network setup to make sure both containers are in the same bridge
+network:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network inspect my_bridge_network</span></code></pre></div></li>
+<li><p><strong>Firewall Rules:</strong> We need to make sure that local
+firewall rules let traffic between Docker containers and the host
+PostgreSQL service. We might need to change the PostgreSQL settings in
+<code>postgresql.conf</code> and <code>pg_hba.conf</code> to allow
+connections from the Docker network.</p></li>
+</ol>
+<p>By following these steps, we can set up a bridge network for Docker
+and our local PostgreSQL database. This helps them communicate
+smoothly.</p>
+<h2
+id="troubleshooting-connection-issues-between-docker-and-postgresql">Troubleshooting
+Connection Issues Between Docker and PostgreSQL</h2>
+<p>When we have trouble connecting a Docker container to a local
+PostgreSQL database, we can follow these simple steps to fix the
+issues.</p>
+<ol type="1">
+<li><p><strong>Check PostgreSQL Configuration</strong>: First, we need
+to make sure PostgreSQL can accept connections from the Docker
+container’s IP address. We can update <code>pg_hba.conf</code> to allow
+access like this:</p>
+<pre class="plaintext"><code>host    all             all             &lt;docker_container_ip&gt;/32         md5</code></pre>
+<p>Remember to replace <code>&lt;docker_container_ip&gt;</code> with the
+real IP address of the Docker container.</p></li>
+<li><p><strong>PostgreSQL Listening Address</strong>: Next, we check if
+PostgreSQL is listening on the right network interface. We can change
+<code>postgresql.conf</code> to:</p>
+<pre class="plaintext"><code>listen_addresses = &#39;*&#39;</code></pre>
+<p>We should restart PostgreSQL after making this change.</p></li>
+<li><p><strong>Docker Network Configuration</strong>: We must ensure the
+Docker container is on the correct network. We can check this by
+using:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network ls</span></code></pre></div>
+<p>If we need to, we can connect the container to the right network
+with:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network connect <span class="op">&lt;</span>network_name<span class="op">&gt;</span> <span class="op">&lt;</span>container_name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Firewall Rules</strong>: We should check our local
+firewall settings. We need to ensure the PostgreSQL port (which is
+usually 5432) is not blocked. On Ubuntu, we can do this with:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ufw allow 5432/tcp</span></code></pre></div></li>
+<li><p><strong>Docker Container Environment Variables</strong>: Next, we
+must check that the PostgreSQL credentials in our Docker container’s
+environment variables are correct. We can look at our
+<code>docker run</code> or <code>docker-compose.yml</code> file like
+this:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">POSTGRES_USER</span><span class="kw">:</span><span class="at"> your_user</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">POSTGRES_PASSWORD</span><span class="kw">:</span><span class="at"> your_password</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">POSTGRES_DB</span><span class="kw">:</span><span class="at"> your_db</span></span></code></pre></div></li>
+<li><p><strong>Check Docker Logs</strong>: We can use Docker logs to
+find errors that might help us understand the issue:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="op">&lt;</span>container_name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Network Connectivity</strong>: From inside the Docker
+container, we can check if we can reach PostgreSQL. We can use:</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ping</span> <span class="op">&lt;</span>host_ip_address<span class="op">&gt;</span></span></code></pre></div>
+<p>Or we can use <code>psql</code> to test the connection directly:</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">psql</span> <span class="at">-h</span> <span class="op">&lt;</span>host_ip_address<span class="op">&gt;</span> -U <span class="op">&lt;</span>username<span class="op">&gt;</span> -d <span class="op">&lt;</span>database_name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Using Host Networking</strong>: If we still have issues,
+we can try running the container with host networking like this:</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--network</span><span class="op">=</span><span class="st">&quot;host&quot;</span> <span class="op">&lt;</span>your_image<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Validate PostgreSQL Service</strong>: We need to make
+sure that the PostgreSQL service is running. We can check its status
+with:</p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl status postgresql</span></code></pre></div></li>
+<li><p><strong>Check Docker Version</strong>: Lastly, we should make
+sure we are using a compatible version of Docker and PostgreSQL.
+Sometimes, not matching versions can cause connection problems.</p></li>
+</ol>
+<p>By following these steps carefully, we can find and fix connection
+issues between our Docker container and local PostgreSQL database. For
+more information on Docker networking, we can check <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">this
+guide</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="how-can-we-connect-a-docker-container-to-a-postgresql-database-running-on-our-host">1.
+How can we connect a Docker container to a PostgreSQL database running
+on our host?</h3>
+<p>To connect a Docker container to a PostgreSQL database on our local
+host, we need to set up PostgreSQL to accept connections from the Docker
+container’s IP range. This usually means changing the
+<code>pg_hba.conf</code> file and the <code>postgresql.conf</code> file.
+This allows connections from remote IPs. We can also use Docker’s host
+networking mode to make it easier to connect.</p>
+<h3
+id="what-do-we-need-to-change-in-postgresql-settings-for-docker-container-connections">2.
+What do we need to change in PostgreSQL settings for Docker container
+connections?</h3>
+<p>To let a Docker container connect to a local PostgreSQL database, we
+have to modify two main PostgreSQL configuration files. These are
+<code>postgresql.conf</code> and <code>pg_hba.conf</code>. In
+<code>postgresql.conf</code>, we should set the
+<code>listen_addresses</code> parameter to <code>'*'</code> or to our
+specific network interface. Then, we update <code>pg_hba.conf</code> to
+include the Docker container’s subnet. This helps it to authenticate
+successfully.</p>
+<h3
+id="how-can-we-use-docker-compose-to-connect-to-a-local-postgresql-instance">3.
+How can we use Docker Compose to connect to a local PostgreSQL
+instance?</h3>
+<p>When we use Docker Compose, we can define our PostgreSQL service and
+link it to our application container. We need to make sure that the
+<code>POSTGRES_HOST</code> environment variable points to our host’s IP
+address. Alternatively, we can use <code>host.docker.internal</code> if
+we are on Docker for Windows or Mac. This setup helps our application
+container communicate with the PostgreSQL database easily.</p>
+<h3
+id="what-steps-should-we-take-if-our-docker-container-cant-connect-to-postgresql">4.
+What steps should we take if our Docker container can’t connect to
+PostgreSQL?</h3>
+<p>If our Docker container has trouble connecting to the PostgreSQL
+database on our local host, we should check if PostgreSQL allows
+connections from the container’s IP address. We need to look at firewall
+settings that might block access. We also need to make sure that the
+credentials we are using are correct. Checking container logs for error
+messages can also help us find the problem.</p>
+<h3
+id="can-we-use-host-networking-for-docker-containers-to-connect-to-postgresql">5.
+Can we use host networking for Docker containers to connect to
+PostgreSQL?</h3>
+<p>Yes, using host networking is one of the easiest ways to connect a
+Docker container to a local PostgreSQL database. When we run our Docker
+container with the <code>--network host</code> option, it shares the
+host’s network. This makes it easier to connect to services like
+PostgreSQL on <code>localhost</code>. But remember, this method is not
+available on Docker for Windows.</p>
+<p>For more information on Docker and what it can do, you can read
+articles like <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">What
+is Docker and Why Should You Use It?</a> and <a
+href="https://bestonlinetutorial.com/docker/how-to-install-docker-on-different-operating-systems.html">How
+to Install Docker on Different Operating Systems</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

@@ -1,0 +1,416 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>Why Doesn't the RUN Instruction in a Dockerfile Work with 'source'?</title>
+            <meta name="description" content="Explore why the RUN instruction in a Dockerfile doesn't work with source and learn effective alternatives for your projects.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Why Doesn't the RUN Instruction in a Dockerfile Work with 'source'?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>The <code>RUN</code> instruction in a Dockerfile does not work with
+the <code>source</code> command. This is because of how Docker creates
+layers and manages environment variables. When we use <code>RUN</code>
+to run a command, it starts in a new shell. Any changes to the
+environment that <code>source</code> makes are lost when the command
+finishes. This can confuse us when we expect the environment changes to
+stay in our Docker images.</p>
+<p>In this article, we will look at why the <code>RUN</code> instruction
+in a Dockerfile does not support <code>source</code>. We will talk about
+its limits and share other ways to run scripts well in Dockerfiles. We
+will also explain how to use the <code>SHELL</code> instruction to get
+around these limits and how to use multi-stage builds to manage
+environment variables better. Here are some key points we will
+cover:</p>
+<ul>
+<li>Understanding the <code>RUN</code> instruction and its limits</li>
+<li>Why we cannot use <code>source</code> in <code>RUN</code>
+instructions</li>
+<li>Other ways to run scripts in Dockerfiles</li>
+<li>Using the <code>SHELL</code> instruction to fix the limits</li>
+<li>Using multi-stage builds for managing environment variables</li>
+<li>Common questions about Dockerfile best practices</li>
+</ul>
+<p>For more information on Docker, we can check these articles: <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">What
+is Docker and Why Should You Use It?</a> and <a
+href="https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html">What
+are the Benefits of Using Docker in Development?</a>.</p>
+<h2
+id="understanding-the-run-instruction-in-a-dockerfile-and-its-limitations">Understanding
+the RUN Instruction in a Dockerfile and Its Limitations</h2>
+<p>The <code>RUN</code> instruction in a Dockerfile helps us run
+commands while we build the image. We mainly use it to install packages,
+change files, or set up the environment before the container starts.
+Each <code>RUN</code> command makes a new layer in the Docker image.
+This adds to the size and complexity of the image.</p>
+<h3 id="limitations-of-the-run-instruction">Limitations of the RUN
+Instruction</h3>
+<ul>
+<li><p><strong>Isolation</strong>: Every <code>RUN</code> command runs
+in its own shell. This means changes to the environment, like setting
+environment variables, do not stay for the next <code>RUN</code>
+commands unless we define them again.</p></li>
+<li><p><strong>Shell vs. Exec Form</strong>: The <code>RUN</code>
+instruction has two ways to write it: shell form and exec form. The
+shell form runs commands in a shell, while the exec form runs commands
+directly. For example:</p>
+<ul>
+<li><p>Shell form:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apt-get</span> update <span class="kw">&amp;&amp;</span> <span class="ex">apt-get</span> install <span class="at">-y</span> curl</span></code></pre></div></li>
+<li><p>Exec form:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> [<span class="st">&quot;apt-get&quot;</span>, <span class="st">&quot;update&quot;</span>]</span></code></pre></div></li>
+</ul></li>
+<li><p><strong>Environment Variables</strong>: If we set environment
+variables in one <code>RUN</code> instruction, they are not available in
+the next <code>RUN</code> instructions unless we use the
+<code>ENV</code> instruction.</p></li>
+<li><p><strong>Persistence</strong>: Changes to files or settings are
+lost after the layer is created. We must save them in a way that keeps
+them.</p></li>
+<li><p><strong>Complexity</strong>: Using many <code>RUN</code>
+instructions for similar tasks can make the image bigger. This happens
+because of the layers we add. We can mix commands when we can to reduce
+this.</p></li>
+<li><p><strong>Caching</strong>: Docker saves the results of each
+<code>RUN</code> command. If we change a command, the cache gets
+invalid. This makes Docker rebuild all the following layers, which can
+slow down the build.</p></li>
+</ul>
+<p>Knowing these limits is very important for making a good Dockerfile.
+This helps us use the <code>RUN</code> instruction in a smart way.</p>
+<h2 id="why-cant-we-use-source-in-a-dockerfile-run-instruction">Why
+Can’t We Use ‘source’ in a Dockerfile RUN Instruction?</h2>
+<p>The <code>RUN</code> instruction in a Dockerfile runs commands in a
+new layer on top of the current image. It commits the results after
+running. But using the <code>source</code> command or its short form
+<code>.</code> to load environment variables or scripts does not work
+like we expect. This is because of how Docker manages layers and shell
+sessions.</p>
+<p>When we use <code>RUN</code> in a Dockerfile, it creates a new shell
+session for each command. The <code>source</code> command works only in
+the current shell session. It does not keep the environment changes for
+the next layers. So, if we set any environment variables with
+<code>source</code>, those variables are not available in later
+<code>RUN</code> commands or in the final container.</p>
+<p>For example, look at this Dockerfile:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> alpine:latest</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="bu">source</span> /path/to/script.sh</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="bu">echo</span> <span class="va">$MY_VAR</span></span></code></pre></div>
+<p>In this example, <code>MY_VAR</code> will not be available in the
+second <code>RUN</code> command. The changes from <code>source</code>
+did not stay.</p>
+<p>To get around this problem, we can do two things:</p>
+<ol type="1">
+<li>Use <code>ENV</code> to set environment variables directly in the
+Dockerfile.</li>
+<li>Combine commands with <code>&amp;&amp;</code> to make sure
+environment variables are set in the same shell session.</li>
+</ol>
+<h3 id="alternative-example">Alternative Example:</h3>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> alpine:latest</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="bu">.</span> /path/to/script.sh <span class="kw">&amp;&amp;</span> <span class="bu">echo</span> <span class="va">$MY_VAR</span></span></code></pre></div>
+<p>In this alternative, we run the commands in one shell session. This
+way, <code>$MY_VAR</code> is available.</p>
+<p>By knowing these limits of the <code>RUN</code> instruction, we can
+manage environment variables in our Dockerfiles without using
+<code>source</code>. For more information on Docker configurations, we
+can check this article on <a
+href="https://bestonlinetutorial.com/docker/how-can-i-pass-environment-variables-to-docker-containers.html">Docker
+environment variables</a>.</p>
+<h2
+id="alternative-approaches-to-running-scripts-in-dockerfiles">Alternative
+Approaches to Running Scripts in Dockerfiles</h2>
+<p>When we work with Dockerfiles, the <code>RUN</code> instruction does
+not let us use the <code>source</code> command. This is because of how
+Docker builds layers and handles shell sessions. Here are some easier
+ways to run scripts or set environment variables in our Dockerfile.</p>
+<h3 id="use-a-shell-script">1. Use a Shell Script</h3>
+<p>We can create a shell script that sets up the environment. Then we
+run that script using the <code>RUN</code> instruction. This way, we can
+run several commands in the same shell.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Dockerfile</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ubuntu:latest</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Copy the setup script into the image</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> setup.sh /usr/local/bin/setup.sh</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Make the script executable</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="fu">chmod</span> +x /usr/local/bin/setup.sh</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Run the script</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">/usr/local/bin/setup.sh</span></span></code></pre></div>
+<h3 id="chain-commands-with">2. Chain Commands with
+<code>&amp;&amp;</code></h3>
+<p>We can chain commands together using <code>&amp;&amp;</code>. This
+lets us set environment variables for the next commands in the same
+<code>RUN</code> instruction.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Dockerfile</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ubuntu:latest</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Install packages and set environment variables in one RUN instruction</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apt-get</span> update <span class="kw">&amp;&amp;</span> <span class="ex">apt-get</span> install <span class="at">-y</span> <span class="dt">\</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    package1 package2 <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">export</span> <span class="va">MY_VAR</span><span class="op">=</span>value <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="va">$MY_VAR</span></span></code></pre></div>
+<h3 id="use-the-shell-instruction">3. Use the <code>SHELL</code>
+Instruction</h3>
+<p>The <code>SHELL</code> instruction lets us change the shell for the
+<code>RUN</code> instructions. This means we can use a different shell
+that supports <code>source</code>.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Dockerfile</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ubuntu:latest</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Change default shell to bash</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="kw">SHELL</span> [<span class="st">&quot;/bin/bash&quot;</span>, <span class="st">&quot;-c&quot;</span>]</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Use source in RUN instruction</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="bu">source</span> /path/to/script.sh <span class="kw">&amp;&amp;</span> <span class="bu">echo</span> <span class="st">&quot;Script executed&quot;</span></span></code></pre></div>
+<h3 id="multi-stage-builds">4. Multi-Stage Builds</h3>
+<p>We can use multi-stage builds to manage environment variables better.
+We create a temporary build stage to set up the environment. Then we
+copy the needed files into the final image.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Dockerfile</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ubuntu:latest <span class="kw">AS</span> builder</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Install dependencies</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apt-get</span> update <span class="kw">&amp;&amp;</span> <span class="ex">apt-get</span> install <span class="at">-y</span> <span class="dt">\</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    build-essential</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Run a script to set up the build environment</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">./setup_build_env.sh</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ubuntu:latest</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Copy necessary files from the builder stage</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /path/to/artifacts /path/to/artifacts</span></code></pre></div>
+<h3 id="environment-variables">5. Environment Variables</h3>
+<p>We can set environment variables using the <code>ENV</code>
+instruction. This makes them available for the next <code>RUN</code>
+commands.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Dockerfile</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ubuntu:latest</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Set environment variable</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> MY_VAR value</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Use the environment variable in RUN</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="bu">echo</span> <span class="va">$MY_VAR</span></span></code></pre></div>
+<p>By using these ways, we can manage script execution and environment
+setup in our Dockerfiles. We do not need the <code>source</code>
+command. This helps us have a more reliable and repeatable Docker build
+process.</p>
+<h2
+id="how-to-use-the-shell-instruction-to-overcome-run-limitations">How to
+Use the SHELL Instruction to Overcome RUN Limitations</h2>
+<p>The <code>SHELL</code> instruction in a Dockerfile lets us choose the
+command-line shell for the next <code>RUN</code> commands. This is very
+helpful when we want to use shell features that the default shell does
+not support. For example, we can use <code>bash</code> features like the
+<code>source</code> command.</p>
+<p>To use the <code>SHELL</code> instruction well, we can change the
+default shell to <code>bash</code> or any other shell we like. Here is
+how we do it:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use bash as the default shell for the next RUN commands</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SHELL</span> [<span class="st">&quot;/bin/bash&quot;</span>, <span class="st">&quot;-c&quot;</span>]</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Example of using source</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="bu">source</span> /path/to/your/script.sh <span class="kw">&amp;&amp;</span> <span class="bu">echo</span> <span class="st">&quot;Script executed&quot;</span></span></code></pre></div>
+<p>By changing the shell, we can now use <code>source</code> to load
+environment variables or functions from scripts. This helps us run more
+complex commands in our Dockerfile.</p>
+<p>Also, we can combine multiple commands or scripts easily:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use bash and run multiple commands</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="bu">source</span> /path/to/your/env.sh <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">./run_some_command.sh</span></span></code></pre></div>
+<p>This way, we make sure the environment is set up right for the next
+commands. It helps us get past the limits of using <code>RUN</code> with
+<code>source</code>. For more details about Dockerfile instructions, we
+can check <a
+href="https://bestonlinetutorial.com/docker/what-is-a-dockerfile-and-how-do-you-create-one.html">what
+is a Dockerfile and how do you create one</a>.</p>
+<h2 id="using-multi-stage-builds-to-handle-environment-variables">Using
+Multi-Stage Builds to Handle Environment Variables</h2>
+<p>Multi-stage builds in Docker help us make our Dockerfile images
+better. We can separate the build environment from the final runtime
+environment. This is very useful for managing environment variables in
+different stages of the build process.</p>
+<h3 id="utilizing-multi-stage-builds">Utilizing Multi-Stage Builds</h3>
+<ol type="1">
+<li><p><strong>Basic Structure</strong>:<br />
+We can define many <code>FROM</code> statements in a Dockerfile. This
+lets us create different build stages. Each stage can do specific tasks
+and share data with the next stages.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Build</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14 <span class="kw">AS</span> build</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> package*.json ./</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">npm</span> install</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 2: Production</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> node:14 <span class="kw">AS</span> production</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=build</span> /app ./</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> NODE_ENV=production</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;node&quot;</span>, <span class="st">&quot;server.js&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>Defining and Passing Environment
+Variables</strong>:<br />
+We can set environment variables in one stage and use them in another.
+This keeps sensitive data or settings separate.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Build</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> python:3.9 <span class="kw">AS</span> build</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="kw">ARG</span> APP_VERSION=1.0</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> APP_ENV=development</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 2: Production</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> python:3.9 <span class="kw">AS</span> production</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="kw">ARG</span> APP_VERSION</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> APP_ENV=production</span></code></pre></div></li>
+<li><p><strong>Example with Environment Variables</strong>:<br />
+If we have a <code>.env</code> file or similar settings, we can read
+these variables in the build stage and set them for our final image.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 1: Build</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> nginx:alpine <span class="kw">AS</span> build</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . /app</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apk</span> add <span class="at">--no-cache</span> bash</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="bu">source</span> /app/.env <span class="kw">&amp;&amp;</span> <span class="bu">echo</span> <span class="st">&quot;Environment: </span><span class="va">$MY_ENV_VARIABLE</span><span class="st">&quot;</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Stage 2: Production</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> nginx:alpine</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=build</span> /app /usr/share/nginx/html</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> MY_ENV_VARIABLE=prod_value</span></code></pre></div></li>
+<li><p><strong>Benefits</strong>:</p>
+<ul>
+<li><strong>Reduced Image Size</strong>: We only copy necessary files
+and dependencies to the final image.</li>
+<li><strong>Improved Security</strong>: Sensitive build-time variables
+do not go into the final image.</li>
+<li><strong>Clear Separation</strong>: We can easily manage different
+configurations for different environments.</li>
+</ul></li>
+</ol>
+<p>Using multi-stage builds well can make our Docker workflow smoother.
+It helps us manage environment variables in different build contexts.
+For more information on multi-stage builds, we can check this article:
+<a
+href="https://bestonlinetutorial.com/docker/what-are-multi-stage-docker-builds-and-how-do-they-improve-efficiency.html">What
+are Multi-Stage Docker Builds and How Do They Improve
+Efficiency?</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="why-doesnt-the-run-instruction-in-a-dockerfile-work-with-source">1.
+Why doesn’t the RUN instruction in a Dockerfile work with ‘source’?</h3>
+<p>The RUN instruction in a Dockerfile makes a new layer and runs
+commands in a different shell. When we use <code>source</code>, it only
+changes the current shell session. After the command runs, that session
+is gone. So, any environment variables we set with <code>source</code>
+do not stay in later layers. If we want to keep environment variable
+settings, we should use the ENV instruction instead.</p>
+<h3 id="how-can-i-set-environment-variables-in-a-dockerfile">2. How can
+I set environment variables in a Dockerfile?</h3>
+<p>To set environment variables in a Dockerfile, we use the ENV
+instruction. This instruction lets us create variables that last across
+layers. We can use these variables in later commands or shells. For
+example:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">ENV</span> MY_VAR=my_value</span></code></pre></div>
+<p>This way is better than using <code>source</code> inside a RUN
+instruction because it is clearer and more consistent.</p>
+<h3
+id="what-is-the-difference-between-run-cmd-and-entrypoint-in-a-dockerfile">3.
+What is the difference between RUN, CMD, and ENTRYPOINT in a
+Dockerfile?</h3>
+<p>The RUN instruction runs commands when we build the image. It makes
+layers in the image. CMD tells us what commands to run when the
+container starts. ENTRYPOINT helps us set up the container to act like
+an executable. Knowing these differences helps us manage Docker
+container behavior and make image builds better.</p>
+<h3 id="how-can-i-execute-multiple-commands-in-a-dockerfile">4. How can
+I execute multiple commands in a Dockerfile?</h3>
+<p>To run multiple commands in a Dockerfile, we can connect commands
+using <code>&amp;&amp;</code> in one RUN instruction. For example:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apt-get</span> update <span class="kw">&amp;&amp;</span> <span class="ex">apt-get</span> install <span class="at">-y</span> package_name</span></code></pre></div>
+<p>We can also use a shell script and run that script. This way makes
+our commands more organized and easier to read.</p>
+<h3 id="what-are-the-best-practices-for-writing-dockerfiles">5. What are
+the best practices for writing Dockerfiles?</h3>
+<p>Best practices for writing Dockerfiles include reducing the number of
+layers by combining commands. We can use .dockerignore files to hide
+files we do not need. Also, using multi-stage builds helps to make the
+image smaller. Always specify a base image version to keep things
+stable. For more help, we can check out <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-security-best-practices.html">this
+article on Docker best practices</a>.</p>
+<p>By answering these common questions about the RUN instruction in a
+Dockerfile and ways to avoid using <code>source</code>, we can get
+better at Docker and improve our development work.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
