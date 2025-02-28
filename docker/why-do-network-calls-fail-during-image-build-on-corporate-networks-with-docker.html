@@ -1,0 +1,477 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>Why Do Network Calls Fail During Image Build on Corporate Networks with Docker?</title>
+            <meta name="description" content="Discover why network calls fail during Docker image builds on corporate networks and learn how to troubleshoot and resolve issues.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Why Do Network Calls Fail During Image Build on Corporate Networks with Docker?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Network calls can often fail when we build images using Docker on
+corporate networks. This happens because of strict network setups like
+firewalls, DNS problems, or proxy settings. To stop these failures, we
+need to set up Docker’s proxy settings correctly. We can also use Docker
+BuildKit for better network stability and manage our DNS settings well.
+Doing these things can really help us succeed with network calls when we
+build Docker images in a corporate setting.</p>
+<p>In this article, we will look at why network calls fail during Docker
+image builds on corporate networks. We will give you practical
+solutions. We will discuss corporate network restrictions, how to set up
+proxy settings for Docker, the benefits of Docker BuildKit, how to find
+network connectivity problems, and the best ways to manage DNS settings.
+By the end, you will understand how to handle these network issues
+better.</p>
+<ul>
+<li>Understanding corporate network restrictions that affect Docker
+builds</li>
+<li>How to set up proxy settings for Docker to avoid network call
+failures</li>
+<li>Using Docker BuildKit to improve network stability during image
+builds</li>
+<li>Finding network connectivity issues during Docker image builds</li>
+<li>Best ways to manage DNS settings in Docker on corporate
+networks</li>
+</ul>
+<h2
+id="understanding-corporate-network-restrictions-affecting-docker-builds">Understanding
+Corporate Network Restrictions Affecting Docker Builds</h2>
+<p>Corporate networks often have many rules that can change how we build
+Docker images. These rules can cause problems when we try to connect to
+the network. This can interrupt the build process. Here are some common
+issues we might face:</p>
+<ol type="1">
+<li><p><strong>Firewall Rules</strong>: Corporate firewalls can stop our
+connections to Docker registry servers or other important
+resources.</p></li>
+<li><p><strong>Proxy Servers</strong>: In many companies, traffic goes
+through proxy servers. We need to set up Docker right to make sure our
+HTTP/HTTPS requests work.</p></li>
+<li><p><strong>DNS Resolution</strong>: Some corporate networks use
+special DNS servers. This can change how we find domain names for
+outside resources while building.</p></li>
+<li><p><strong>Rate Limiting</strong>: Some corporate networks limit the
+number of outgoing connections. This can lead to timeouts or failures
+when we try to get images or dependencies.</p></li>
+<li><p><strong>Network Isolation</strong>: Some company rules keep
+development environments separate. This can block us from reaching
+public networks. So, we might not be able to pull images from Docker Hub
+or other registries.</p></li>
+</ol>
+<p>To fix these problems, we need to understand and set up our corporate
+network rules well. This way, we can have smooth Docker builds.</p>
+<h2
+id="how-to-configure-proxy-settings-for-docker-to-prevent-network-call-failures">How
+to Configure Proxy Settings for Docker to Prevent Network Call
+Failures</h2>
+<p>Configuring proxy settings for Docker is very important. It helps to
+stop network call failures when we build images. This is especially true
+in companies where access to outside networks is limited. To set up
+Docker with a proxy, we need to change the Docker settings. This way,
+the Docker daemon can work through the company proxy.</p>
+<h3 id="step-1-configure-docker-daemon-proxy-settings">Step 1: Configure
+Docker Daemon Proxy Settings</h3>
+<ol type="1">
+<li><p><strong>Create or edit the <code>daemon.json</code>
+file</strong>. This file is found at
+<code>/etc/docker/daemon.json</code> for Linux or
+<code>C:\ProgramData\docker\config\daemon.json</code> for
+Windows.</p></li>
+<li><p><strong>Add the proxy settings</strong>:</p></li>
+</ol>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;proxies&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;default&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;httpProxy&quot;</span><span class="fu">:</span> <span class="st">&quot;http://proxy.example.com:8080&quot;</span><span class="fu">,</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;httpsProxy&quot;</span><span class="fu">:</span> <span class="st">&quot;http://proxy.example.com:8080&quot;</span><span class="fu">,</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;noProxy&quot;</span><span class="fu">:</span> <span class="st">&quot;localhost,127.0.0.1,.example.com&quot;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">}</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<ul>
+<li>We should replace <code>proxy.example.com:8080</code> with our real
+proxy server and port.</li>
+<li>We can change the <code>noProxy</code> field to include addresses
+that do not need to use the proxy.</li>
+</ul>
+<ol start="3" type="1">
+<li><strong>Restart Docker</strong> so the changes work:</li>
+</ol>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># On Linux</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart docker</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># On Windows (using PowerShell)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Restart-Service</span> docker</span></code></pre></div>
+<h3 id="step-2-configure-proxy-for-docker-cli">Step 2: Configure Proxy
+for Docker CLI</h3>
+<p>If we use Docker CLI commands that need proxy settings, we might have
+to set our environment variables:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">HTTP_PROXY</span><span class="op">=</span><span class="st">&quot;http://proxy.example.com:8080&quot;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">HTTPS_PROXY</span><span class="op">=</span><span class="st">&quot;http://proxy.example.com:8080&quot;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">NO_PROXY</span><span class="op">=</span><span class="st">&quot;localhost,127.0.0.1,.example.com&quot;</span></span></code></pre></div>
+<h3 id="step-3-verify-proxy-configuration">Step 3: Verify Proxy
+Configuration</h3>
+<p>To check if Docker uses the proxy settings correctly, we can run this
+command:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> info <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-i</span> proxy</span></code></pre></div>
+<p>This command should show the proxy settings if we set them up
+right.</p>
+<h3 id="step-4-handling-proxy-authentication">Step 4: Handling Proxy
+Authentication</h3>
+<p>If our proxy needs a username and password, we can add them in the
+proxy URL:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;proxies&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="dt">&quot;default&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;httpProxy&quot;</span><span class="fu">:</span> <span class="st">&quot;http://username:password@proxy.example.com:8080&quot;</span><span class="fu">,</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;httpsProxy&quot;</span><span class="fu">:</span> <span class="st">&quot;http://username:password@proxy.example.com:8080&quot;</span><span class="fu">,</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>            <span class="dt">&quot;noProxy&quot;</span><span class="fu">:</span> <span class="st">&quot;localhost,127.0.0.1,.example.com&quot;</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="fu">}</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<h3 id="additional-consideration">Additional Consideration</h3>
+<p>If we have problems with SSL certificates when using a company proxy,
+we may need to add the company CA certificates to the Docker daemon. We
+can do this by putting the CA certificates in
+<code>/etc/docker/certs.d/</code> on Linux or by configuring the right
+settings on Windows.</p>
+<p>For more details about Docker builds and proxy settings, we can check
+<a
+href="https://bestonlinetutorial.com/docker/how-to-resolve-docker-image-download-issues-behind-a-proxy.html">this
+guide</a>.</p>
+<h2
+id="utilizing-docker-buildkit-to-enhance-network-stability-during-image-build">Utilizing
+Docker BuildKit to Enhance Network Stability During Image Build</h2>
+<p>Docker BuildKit is a new build system for Docker. It gives better
+performance, caching, and network stability when we build images. By
+using BuildKit, we can make our Docker image build process better. This
+is especially helpful when we make network calls, which often fail in
+corporate settings.</p>
+<p>To turn on BuildKit, we need to set the environment variable
+<code>DOCKER_BUILDKIT=1</code> before we run our build command:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">DOCKER_BUILDKIT</span><span class="op">=</span>1</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> my-image .</span></code></pre></div>
+<h3 id="benefits-of-using-buildkit-for-network-stability">Benefits of
+Using BuildKit for Network Stability</h3>
+<ol type="1">
+<li><p><strong>Parallel Builds</strong>: BuildKit lets us run build
+steps at the same time. This can help us save build time and lower the
+effect of network delays.</p></li>
+<li><p><strong>Cache Management</strong>: It gives us better ways to
+manage cache. This can stop unnecessary network calls for layers that
+did not change. We can set up the build cache to avoid pulling the same
+base images over and over.</p></li>
+<li><p><strong>Improved Error Handling</strong>: BuildKit gives us
+clearer error messages. It also supports retries for network calls. This
+helps us fix problems and recover from temporary failures.</p></li>
+<li><p><strong>Frontend Support</strong>: BuildKit supports advanced
+frontends. This helps us customize the build process for our needs,
+including better handling of network interactions.</p></li>
+</ol>
+<h3 id="example-dockerfile-using-buildkit">Example Dockerfile Using
+BuildKit</h3>
+<p>Here is an example of a Dockerfile that uses BuildKit features:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="cv">syntax=docker/dockerfile:1.2</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> alpine:3.14 <span class="kw">AS</span> builder</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">WORKDIR</span> /app</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> . .</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Use --network=host to avoid issues with corporate proxies</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="op">--mount=type=cache,target=/var/cache/apk</span> <span class="op">\</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    <span class="ex">apk</span> add <span class="at">--no-cache</span> curl <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    <span class="ex">curl</span> <span class="at">-O</span> https://example.com/file.zip <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">unzip</span> file.zip</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> scratch</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> <span class="op">--from=builder</span> /app/output /output</span></code></pre></div>
+<h3 id="network-configuration-for-buildkit">Network Configuration for
+BuildKit</h3>
+<p>To make network stability even better, we should change DNS and proxy
+settings in Docker.</p>
+<ol type="1">
+<li><strong>DNS Configuration</strong>: We can edit the Docker daemon
+configuration file (<code>/etc/docker/daemon.json</code>) to use our
+corporate DNS servers.</li>
+</ol>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;dns&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;8.8.8.8&quot;</span><span class="ot">,</span> <span class="st">&quot;8.8.4.4&quot;</span><span class="ot">]</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Proxy Settings</strong>: If our corporate network needs a
+proxy, we should set up the proxy environment variables:</li>
+</ol>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">HTTP_PROXY</span><span class="op">=</span>http://proxy.company.com:8080</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">HTTPS_PROXY</span><span class="op">=</span>http://proxy.company.com:8080</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">NO_PROXY</span><span class="op">=</span>localhost,127.0.0.1</span></code></pre></div>
+<p>When we use Docker BuildKit with the right network settings, we can
+greatly lower the chances of network call failures during image builds
+in corporate environments. For more information on Docker and its
+features, we can check out <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-buildkit-and-how-does-it-improve-the-build-process.html">Docker
+BuildKit and how it improves the build process</a>.</p>
+<h2
+id="diagnosing-network-connectivity-issues-during-docker-image-build">Diagnosing
+Network Connectivity Issues During Docker Image Build</h2>
+<p>Diagnosing network connectivity issues during Docker image builds on
+corporate networks is very important for keeping our work smooth. Common
+problems include failed downloads of base images or dependencies. These
+issues often happen because of strict network settings, which can make
+builds fail. To fix these problems, we can follow these steps:</p>
+<ol type="1">
+<li><p><strong>Check Docker Daemon Logs</strong>: We should look at the
+Docker daemon logs for any network errors. We can run this command:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> journalctl <span class="at">-u</span> docker.service</span></code></pre></div></li>
+<li><p><strong>Verify Network Configuration</strong>: We need to make
+sure Docker is set up right to work with our corporate network. Check
+the Docker configuration file at <code>/etc/docker/daemon.json</code>.
+It might need proxy settings or DNS configurations.</p></li>
+<li><p><strong>Test Network Connectivity</strong>:</p>
+<ul>
+<li>We can use simple network commands to check if we have
+connectivity.</li>
+</ul>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ping</span> <span class="at">-c</span> 4 google.com</span></code></pre></div>
+<ul>
+<li>We should also test if we can reach Docker registries:</li>
+</ul>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-v</span> https://registry-1.docker.io</span></code></pre></div></li>
+<li><p><strong>Check Proxy Settings</strong>: If our corporate network
+needs a proxy, we must make sure Docker uses it. We need to add this to
+our <code>~/.docker/config.json</code>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;proxies&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;default&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;httpProxy&quot;</span><span class="fu">:</span> <span class="st">&quot;http://proxy.company.com:8080&quot;</span><span class="fu">,</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;httpsProxy&quot;</span><span class="fu">:</span> <span class="st">&quot;http://proxy.company.com:8080&quot;</span><span class="fu">,</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;noProxy&quot;</span><span class="fu">:</span> <span class="st">&quot;localhost,127.0.0.1,.company.com&quot;</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div></li>
+<li><p><strong>Validate Firewall Rules</strong>: We should check if
+outgoing connections to Docker Hub and other needed registries are
+allowed by the corporate firewall. We can ask our network admin to
+confirm that ports 443 (HTTPS) and 80 (HTTP) are open.</p></li>
+<li><p><strong>DNS Resolution</strong>: We need to check if DNS is
+working well in Docker containers. We can run a simple container to test
+DNS:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> busybox nslookup google.com</span></code></pre></div></li>
+<li><p><strong>Using BuildKit</strong>: If we are using Docker BuildKit,
+we can enable it for better error finding:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="va">DOCKER_BUILDKIT</span><span class="op">=</span>1 <span class="ex">docker</span> build .</span></code></pre></div>
+<p>This gives us more detailed logs and can help us find problems during
+the build process.</p></li>
+<li><p><strong>Inspect Network Interfaces</strong>: We can use
+<code>docker network ls</code> and
+<code>docker network inspect &lt;network_name&gt;</code> commands to
+check if the networks are set up correctly and if containers are
+connected to the right networks.</p></li>
+</ol>
+<p>By following these steps, we can find and fix network connectivity
+issues during Docker image builds on corporate networks. For more
+information on using Docker in restricted settings, we can refer to <a
+href="https://bestonlinetutorial.com/docker/how-to-resolve-docker-image-download-issues-behind-a-proxy.html">this
+article</a>.</p>
+<h2
+id="best-practices-for-managing-dns-configuration-in-docker-on-corporate-networks">Best
+Practices for Managing DNS Configuration in Docker on Corporate
+Networks</h2>
+<p>Managing DNS setup well is very important for Docker containers on
+corporate networks. This is especially true when network calls during
+image builds do not work. Here are some best practices we can use:</p>
+<ol type="1">
+<li><p><strong>Use the Corporate DNS Server</strong>: We should set up
+Docker to use the corporate DNS servers. This helps containers resolve
+internal and external hostnames correctly. We can edit the Docker daemon
+configuration file (<code>/etc/docker/daemon.json</code>):</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;dns&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;10.0.0.1&quot;</span><span class="ot">,</span> <span class="st">&quot;10.0.0.2&quot;</span><span class="ot">]</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>After we make changes, we need to restart the Docker service:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart docker</span></code></pre></div></li>
+<li><p><strong>Verify DNS Resolution Inside Containers</strong>: We can
+test DNS resolution inside a running container. This checks if it can
+resolve the hostnames we need. Use this command:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> busybox nslookup example.com</span></code></pre></div></li>
+<li><p><strong>Set DNS Options</strong>: We can use DNS options like
+<code>timeout</code> and <code>attempts</code>. These control how DNS
+queries behave. We can set this in the <code>daemon.json</code>
+file:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;dns-options&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;timeout:1&quot;</span><span class="ot">,</span> <span class="st">&quot;attempts:3&quot;</span><span class="ot">]</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div></li>
+<li><p><strong>Use Docker Compose for DNS Configuration</strong>: When
+we use Docker Compose, it is good to specify DNS settings for services
+in the <code>docker-compose.yml</code> file:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myapp</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">dns</span><span class="kw">:</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fl">10.0.0.1</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fl">10.0.0.2</span></span></code></pre></div></li>
+<li><p><strong>Avoid Using Default DNS</strong>: The default DNS setup
+may not work well in corporate networks because of restrictions. We
+should always specify the corporate DNS servers clearly.</p></li>
+<li><p><strong>Test Network Configuration</strong>: We can use tools
+like <code>curl</code> or <code>ping</code> to check network
+connectivity and DNS resolution inside the container:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--rm</span> busybox ping <span class="at">-c</span> 4 google.com</span></code></pre></div></li>
+<li><p><strong>Handle Docker’s Default Behavior</strong>: If the DNS
+settings do not work as we expect, we need to make sure the Docker
+daemon is not using the host’s DNS settings. We can change
+<code>/etc/docker/daemon.json</code>:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;dns&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;8.8.8.8&quot;</span><span class="ot">,</span> <span class="st">&quot;8.8.4.4&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;dns-search&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;mycompany.local&quot;</span><span class="ot">]</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div></li>
+<li><p><strong>Monitor and Diagnose DNS Issues</strong>: We should
+regularly check DNS performance. We can use logging and monitoring
+tools. It is good to check logs for DNS errors:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> journalctl <span class="at">-u</span> docker</span></code></pre></div></li>
+</ol>
+<p>By using these practices, we can help our Docker containers resolve
+DNS queries well. This will lower the chances of network call failures
+during image builds on corporate networks. For more information on
+Docker networking, we can look at <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">this
+article on Docker networks</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="why-do-network-calls-fail-during-docker-image-builds-on-corporate-networks">1.
+Why do network calls fail during Docker image builds on corporate
+networks?</h3>
+<p>Network calls can fail when we build Docker images on corporate
+networks. This usually happens because of firewall blocks, proxy
+settings, or DNS problems. Corporate networks often have firewalls that
+stop outside requests. If we do not set Docker to use the corporate
+proxy, it will cause failed network calls. For more details, check our
+article on <a
+href="https://bestonlinetutorial.com/docker/how-to-resolve-docker-image-download-issues-behind-a-proxy.html">understanding
+corporate network restrictions affecting Docker builds</a>.</p>
+<h3 id="how-can-i-configure-docker-to-use-a-corporate-proxy">2. How can
+I configure Docker to use a corporate proxy?</h3>
+<p>To set up Docker to use a corporate proxy, we need to create or edit
+the Docker systemd service file or the config file at
+<code>/etc/systemd/system/docker.service.d/http-proxy.conf</code>. We
+should add these lines:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[Service]</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="dt">Environment</span><span class="ot">=</span><span class="st">&quot;HTTP_PROXY=http://your.proxy.address:port/&quot;</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="dt">Environment</span><span class="ot">=</span><span class="st">&quot;HTTPS_PROXY=https://your.proxy.address:port/&quot;</span></span></code></pre></div>
+<p>After we save the changes, we restart the Docker service using
+<code>sudo systemctl daemon-reload &amp;&amp; sudo systemctl restart docker</code>.</p>
+<h3
+id="what-is-docker-buildkit-and-how-does-it-improve-network-stability-during-builds">3.
+What is Docker BuildKit, and how does it improve network stability
+during builds?</h3>
+<p>Docker BuildKit is a new build system that helps us build Docker
+images better. It makes network calls more stable by using caching,
+working in parallel, and managing network resources better. To turn on
+BuildKit, we need to set the environment variable
+<code>DOCKER_BUILDKIT=1</code> before we run our build command. This can
+help us save time and avoid network problems.</p>
+<h3
+id="how-can-i-diagnose-network-connectivity-issues-during-docker-image-builds">4.
+How can I diagnose network connectivity issues during Docker image
+builds?</h3>
+<p>To find network problems during Docker image builds, we can start by
+checking the Docker daemon logs using
+<code>journalctl -u docker.service</code>. We can also use the
+<code>docker build</code> command with the <code>--no-cache</code>
+option. This lets us see real-time output and skip cached layers.
+Testing DNS resolution inside a container can also help us find
+issues.</p>
+<h3
+id="what-are-best-practices-for-managing-dns-configuration-in-docker-on-corporate-networks">5.
+What are best practices for managing DNS configuration in Docker on
+corporate networks?</h3>
+<p>To manage DNS settings in Docker on corporate networks, we should
+make sure Docker uses the right DNS servers. We can do this by changing
+the <code>daemon.json</code> file at
+<code>/etc/docker/daemon.json</code>. We can set the DNS like this:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;dns&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;8.8.8.8&quot;</span><span class="ot">,</span> <span class="st">&quot;8.8.4.4&quot;</span><span class="ot">]</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>After we change this, we need to restart the Docker service. This can
+help fix DNS issues during image builds and make the network more
+reliable.</p>
+<p>By looking at these common questions, we can understand better why
+network calls fail during image builds on corporate networks with
+Docker. We can also learn how to fix these problems well.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

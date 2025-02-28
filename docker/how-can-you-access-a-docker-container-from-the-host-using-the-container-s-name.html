@@ -1,0 +1,449 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How Can You Access a Docker Container from the Host Using the Container's Name?</title>
+            <meta name="description" content="Learn how to access a Docker container from your host using the container's name with our easy step-by-step guide.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Can You Access a Docker Container from the Host Using the Container's Name?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>Accessing a Docker container from the host using the container’s name
+is simple and effective. We can easily ping or connect to our Docker
+container by its name from the host system if we are using Docker’s
+default network settings. This way is very helpful when containers run
+services that need to be reached from outside. This includes things like
+web servers or databases.</p>
+<p>In this article, we will look at different ways to access a Docker
+container by its name from the host. We will make sure to understand
+Docker networking well. We will talk about how to use Docker Compose,
+how to use the host’s IP address, and how to fix any access problems we
+may have. Here is what we will cover:</p>
+<ul>
+<li>How to Access a Docker Container from the Host Using the Container’s
+Name</li>
+<li>Understanding Docker Networking for Accessing Containers</li>
+<li>Using Docker Compose to Access Containers by Name</li>
+<li>Accessing a Docker Container Using the Host’s IP Address</li>
+<li>Using Docker’s Default Bridge Network for Container Access</li>
+<li>How to Troubleshoot Access Issues to Docker Containers</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2
+id="understanding-docker-networking-for-accessing-containers">Understanding
+Docker Networking for Accessing Containers</h2>
+<p>To access a Docker container from the host using its name, we need to
+know about Docker’s networking model. Docker has different network
+drivers. These drivers help containers and the host to communicate
+well.</p>
+<h3 id="network-drivers">Network Drivers</h3>
+<ol type="1">
+<li><strong>Bridge Network</strong>:
+<ul>
+<li><p>This is the default network driver for stand-alone
+containers.</p></li>
+<li><p>Containers can talk to each other by their names. Docker DNS
+helps resolve container names to IP addresses.</p></li>
+<li><p>To make a container in the bridge network, we run:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--name</span> my_container nginx</span></code></pre></div></li>
+</ul></li>
+<li><strong>Host Network</strong>:
+<ul>
+<li><p>This binds the container directly to the host’s network. It lets
+the container use the host’s IP address.</p></li>
+<li><p>This means the container is not separated from the host
+network.</p></li>
+<li><p>Here is an example:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">--network</span> host my_container</span></code></pre></div></li>
+</ul></li>
+<li><strong>Overlay Network</strong>:
+<ul>
+<li><p>We use this for multi-host networking in Docker Swarm.</p></li>
+<li><p>It allows containers on different hosts to communicate like they
+are on the same local network.</p></li>
+<li><p>To create an overlay network, we use:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network create <span class="at">-d</span> overlay my_overlay</span></code></pre></div></li>
+</ul></li>
+<li><strong>Macvlan Network</strong>:
+<ul>
+<li><p>This lets us give a MAC address to a container. It makes the
+container look like a physical device on the network.</p></li>
+<li><p>This is good for connecting to older applications that need a
+specific MAC address.</p></li>
+<li><p>To create a macvlan network, we run:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network create <span class="at">-d</span> macvlan <span class="at">--subnet</span><span class="op">=</span>192.168.1.0/24 <span class="at">--gateway</span><span class="op">=</span>192.168.1.1 <span class="at">-o</span> parent=eth0 my_macvlan</span></code></pre></div></li>
+</ul></li>
+</ol>
+<h3 id="accessing-containers-by-name">Accessing Containers by Name</h3>
+<ul>
+<li><p>We can access containers by name if they are on the same Docker
+network. For example, if we have a container named <code>web</code> that
+runs an application, we can access it using:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://web:80</span></code></pre></div></li>
+</ul>
+<h3 id="host-file-configuration">Host File Configuration</h3>
+<ul>
+<li>If we want to access containers by name from the host, we can change
+the <code>/etc/hosts</code> file (Linux/Mac) or
+<code>C:\Windows\System32\drivers\etc\hosts</code> (Windows) to link
+container names with their IP addresses. This helps when containers are
+not on the same network.</li>
+</ul>
+<p>By knowing about Docker networking, we can access our containers
+using their names. This makes it easier to communicate between our
+applications that run in Docker. For more details on Docker networking,
+check the <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">Docker
+networking documentation</a>.</p>
+<h2 id="using-docker-compose-to-access-containers-by-name">Using Docker
+Compose to Access Containers by Name</h2>
+<p>To access containers by name using Docker Compose, we can use the
+default networking features that Docker gives us. When we define
+services in a <code>docker-compose.yml</code> file, Docker Compose makes
+one network for our application. This lets the containers talk to each
+other using their service names as hostnames.</p>
+<h3 id="example-docker-compose.yml">Example
+<code>docker-compose.yml</code></h3>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">web</span><span class="kw">:</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;80:80&quot;</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> web</span></span></code></pre></div>
+<p>In this example, we can access the <code>web</code> service from the
+<code>app</code> service with the hostname <code>web</code>. For
+example, if we want to make an HTTP request from the <code>app</code>
+container to the <code>web</code> container, we can run this command in
+the <code>app</code> container:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://web</span></code></pre></div>
+<h3 id="networking-mode">Networking Mode</h3>
+<p>By default, Docker Compose sets the network mode to bridge. But we
+can also set a custom network if we need to.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">networks</span><span class="kw">:</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">my-network</span><span class="kw">:</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">web</span><span class="kw">:</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">networks</span><span class="kw">:</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> my-network</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">networks</span><span class="kw">:</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> my-network</span></span></code></pre></div>
+<p>With this setup, both services will talk over the
+<code>my-network</code> network. We can still reach the <code>web</code>
+service using its name.</p>
+<h3 id="additional-considerations">Additional Considerations</h3>
+<ul>
+<li>Make sure the services are up and running with
+<code>docker-compose up</code>.</li>
+<li>Use <code>docker-compose logs</code> to fix any communication
+problems.</li>
+<li>For more complex apps, we can use environment variables to handle
+service URLs.</li>
+</ul>
+<p>By using Docker Compose, we make it easier to access containers by
+their names. This helps improve communication between services. If you
+want to learn more about Docker networking, check out <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">Understanding
+Docker Networking for Accessing Containers</a>.</p>
+<h2
+id="accessing-a-docker-container-using-the-hosts-ip-address">Accessing a
+Docker Container Using the Host’s IP Address</h2>
+<p>To access a Docker container from the host using the container’s
+name, we can use the container’s IP address. This is helpful when we
+have applications inside the container that need to talk to the host or
+the other way around. Let’s see how we can do this easily.</p>
+<p>First, we need to find the IP address of the Docker container. We can
+do this with the command below:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> inspect <span class="at">-f</span> <span class="st">&#39;{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}&#39;</span> <span class="op">&lt;</span>container_name<span class="op">&gt;</span></span></code></pre></div>
+<p>Just change <code>&lt;container_name&gt;</code> with the real name of
+your container.</p>
+<p>After we get the IP address, we can use it to access services that
+are running in the container. For example, if we have a web server
+running on port 80 in our container, we can access it from the host by
+using:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://<span class="op">&lt;</span>container_ip<span class="op">&gt;</span>:80</span></code></pre></div>
+<p>If we want to access a Docker container using the host’s IP address,
+we need to make sure that the container’s ports are linked to the host.
+We can run the container while doing this like this:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">-p</span> 8080:80 <span class="at">--name</span> <span class="op">&lt;</span>container_name<span class="op">&gt;</span> <span class="op">&lt;</span>image_name<span class="op">&gt;</span></span></code></pre></div>
+<p>This command links port 80 in the container to port 8080 on the host.
+Then we can access the web server from the host by using:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://localhost:8080</span></code></pre></div>
+<p>When we use Docker Compose, we can set similar port links in the
+<code>docker-compose.yml</code> file like this:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3&#39;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">web</span><span class="kw">:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> &lt;image_name&gt;</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;8080:80&quot;</span></span></code></pre></div>
+<p>After we start the service with <code>docker-compose up</code>, we
+can access our app from the host at
+<code>http://localhost:8080</code>.</p>
+<p>If we want to access the container using the host’s IP address from
+other devices on the same network, we should change
+<code>localhost</code> to the real IP address of the host. We can find
+the host’s IP address by using:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hostname</span> <span class="at">-I</span></span></code></pre></div>
+<p>We also need to make sure that any firewall settings allow traffic to
+the ports we want for outside access.</p>
+<p>For more information on Docker networking concepts, check out <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">Understanding
+Docker Networking for Accessing Containers</a>.</p>
+<h2
+id="utilizing-dockers-default-bridge-network-for-container-access">Utilizing
+Docker’s Default Bridge Network for Container Access</h2>
+<p>Docker’s default bridge network helps containers talk to each other
+and the host. Each time we create a container, it gets added to this
+network automatically. We can use the container names to access them
+from the host or other containers.</p>
+<p>To use the default bridge network for container access, we can follow
+these steps:</p>
+<ol type="1">
+<li><p><strong>Create a Docker Container</strong>: We can make a
+container with a specific name by using the <code>--name</code> flag.
+For example, to create a container that runs an NGINX server, we
+use:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--name</span> my-nginx <span class="at">-p</span> 8080:80 nginx</span></code></pre></div></li>
+<li><p><strong>Accessing the Container from the Host</strong>: We can
+reach the NGINX server from our host machine by using the container name
+like this:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://my-nginx</span></code></pre></div>
+<p>This command works from the host machine because Docker connects the
+container’s port 80 to port 8080 on the host.</p></li>
+<li><p><strong>Accessing the Container from Another Container</strong>:
+To get to the <code>my-nginx</code> container from another container, we
+can use Docker’s built-in DNS. We start another container in the same
+bridge network:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-it</span> <span class="at">--rm</span> <span class="at">--network</span> bridge alpine sh</span></code></pre></div>
+<p>Then, inside the Alpine container, we can use curl to access the
+NGINX server:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">apk</span> add <span class="at">--no-cache</span> curl</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://my-nginx</span></code></pre></div></li>
+<li><p><strong>Inspecting the Bridge Network</strong>: We can check the
+default bridge network to see which containers are connected and their
+IP addresses:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network inspect bridge</span></code></pre></div>
+<p>This command shows important details about the network settings and
+the containers linked to it.</p></li>
+<li><p><strong>Network Configuration</strong>: The default bridge
+network does not automatically find services. So, we must use container
+names or IP addresses to communicate. If we want a more advanced setup
+with service discovery, we can create a custom network like this:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network create my-custom-network</span></code></pre></div>
+<p>After that, we can run containers in this network and access them by
+their names.</p></li>
+</ol>
+<p>By using Docker’s default bridge network, we can easily manage and
+access many containers through their names. This makes our work in
+containerized environments better. For more info on Docker networking,
+check out <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">what
+are docker networks and why are they necessary</a>.</p>
+<h2 id="how-to-troubleshoot-access-issues-to-docker-containers">How to
+Troubleshoot Access Issues to Docker Containers</h2>
+<p>When we have access problems with Docker containers, we can follow
+these steps to find and fix the issues.</p>
+<ol type="1">
+<li><p><strong>Check Container Status</strong>: First, we need to make
+sure the container is running. We can use this command to check:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> ps</span></code></pre></div>
+<p>If we do not see the container in the list, we can start it with:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> start <span class="op">&lt;</span>container_name_or_id<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Network Configuration</strong>: Next, we should confirm
+that the container is connected to the right network. We can do this by
+using:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> inspect <span class="op">&lt;</span>container_name_or_id<span class="op">&gt;</span> --format=<span class="st">&#39;{{json .NetworkSettings}}&#39;</span></span></code></pre></div>
+<p>We must check if the network settings are right, especially the IP
+address and network mode.</p></li>
+<li><p><strong>Port Mapping</strong>: We need to check if the ports are
+mapped correctly between the host and container. We can see the port
+bindings with:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> port <span class="op">&lt;</span>container_name_or_id<span class="op">&gt;</span></span></code></pre></div>
+<p>If we do not see the expected ports, we should check the
+<code>-p</code> option we used when creating the container.</p></li>
+<li><p><strong>Firewall Settings</strong>: We should look at the
+firewall settings on our host machine. If needed, we can open the ports
+we require. For example, to open port 8080, we can run:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ufw allow 8080</span></code></pre></div></li>
+<li><p><strong>Container Logs</strong>: It is a good idea to check the
+logs of the container for any errors or issues. We can use:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> logs <span class="op">&lt;</span>container_name_or_id<span class="op">&gt;</span></span></code></pre></div>
+<p>This can help us see any application errors that might block
+access.</p></li>
+<li><p><strong>Host IP Address</strong>: If we access the container
+using an IP address, we must ensure we have the correct host IP. We can
+find the host’s IP address with:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">hostname</span> <span class="at">-I</span></span></code></pre></div></li>
+<li><p><strong>DNS Resolution</strong>: If we try to access the
+container by name, we must check if DNS resolution is working. We can
+test this by pinging the container name from the host:</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ping</span> <span class="op">&lt;</span>container_name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Health Checks</strong>: If there are health checks set
+for the container, we need to check if they are passing. We can do this
+with:</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> inspect <span class="op">&lt;</span>container_name_or_id<span class="op">&gt;</span> --format=<span class="st">&#39;{{json .State.Health}}&#39;</span></span></code></pre></div>
+<p>We should look at the health status to spot any problems.</p></li>
+<li><p><strong>Inspecting Docker Networks</strong>: We can further check
+the Docker networks to ensure they are working properly. We can list the
+networks with:</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network ls</span></code></pre></div>
+<p>To inspect specific networks, we can use:</p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network inspect <span class="op">&lt;</span>network_name<span class="op">&gt;</span></span></code></pre></div></li>
+<li><p><strong>Check for Conflicting Services</strong>: Finally, we need
+to make sure no other services are using the same ports as our Docker
+container. We can check this with:</p>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> netstat <span class="at">-tuln</span> <span class="kw">|</span> <span class="fu">grep</span> <span class="op">&lt;</span>port_number<span class="op">&gt;</span></span></code></pre></div></li>
+</ol>
+<p>By going through these steps carefully, we can find and fix issues
+with accessing Docker containers from the host. For more information
+about Docker networking, we can check out <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">what
+are Docker networks and why are they necessary</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="how-do-we-access-a-docker-container-from-the-host-using-the-containers-name">1.
+How do we access a Docker container from the host using the container’s
+name?</h3>
+<p>To access a Docker container from the host using its name, we can use
+Docker networking features. The Docker bridge network helps us here. We
+can run commands like
+<code>docker exec -it &lt;container_name&gt; /bin/bash</code> to enter
+the container. If the container runs a web service, we can access it by
+going to <code>http://&lt;container_name&gt;:&lt;port&gt;</code>.</p>
+<h3 id="what-is-the-default-docker-bridge-network">2. What is the
+default Docker bridge network?</h3>
+<p>The default Docker bridge network is a private network. Docker
+containers use this network to talk to each other. When we create a
+container, it connects to this network automatically unless we say
+otherwise. We can access the container by its name from the host. For
+more details on Docker networking, we can check our article on <a
+href="https://bestonlinetutorial.com/docker/what-are-docker-networks-and-why-are-they-necessary.html">what
+are Docker networks and why are they necessary</a>.</p>
+<h3
+id="can-we-access-a-docker-container-by-its-name-when-using-docker-compose">3.
+Can we access a Docker container by its name when using Docker
+Compose?</h3>
+<p>Yes, when we use Docker Compose, each service is available by its
+service name in the <code>docker-compose.yml</code> file. This makes it
+easy to communicate between services. To access a web service, we use
+<code>http://&lt;service_name&gt;:&lt;port&gt;</code> from the host or
+other containers. We can learn more about Docker Compose in our article
+on <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html">what
+is Docker Compose</a>.</p>
+<h3 id="what-if-we-cant-access-our-docker-container-by-its-name">4. What
+if we can’t access our Docker container by its name?</h3>
+<p>If we cannot access our Docker container by its name, we should check
+if the container is running. We also need to make sure the right ports
+are exposed. We can use <code>docker ps</code> to see running containers
+and check network settings. For more troubleshooting tips, we can look
+at our guide on <a
+href="https://bestonlinetutorial.com/docker/how-to-troubleshoot-docker-networking-issues.html">how
+to troubleshoot Docker networking issues</a>.</p>
+<h3
+id="how-can-we-expose-ports-in-a-docker-container-for-external-access">5.
+How can we expose ports in a Docker container for external access?</h3>
+<p>To expose ports in a Docker container for outside access, we can use
+the <code>-p</code> option in the <code>docker run</code> command. We
+need to specify the host port and the container port like this:
+<code>docker run -p &lt;host_port&gt;:&lt;container_port&gt; &lt;image_name&gt;</code>.
+This way, services inside the container can be reached using the host’s
+IP address or localhost. For more information, we can check our article
+on <a
+href="https://bestonlinetutorial.com/docker/how-to-expose-ports-in-docker-containers.html">how
+to expose ports in Docker containers</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

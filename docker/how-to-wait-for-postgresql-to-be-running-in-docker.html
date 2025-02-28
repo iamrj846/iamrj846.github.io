@@ -1,0 +1,416 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How to Wait for PostgreSQL to Be Running in Docker?</title>
+            <meta name="description" content="Learn effective methods to wait for PostgreSQL to start running in Docker, ensuring smooth database operations and deployments.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How to Wait for PostgreSQL to Be Running in Docker?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To wait for PostgreSQL to run in Docker, we can use different
+methods. Some of these methods are Docker health checks, shell scripts,
+or Docker Compose settings. These methods help us make sure that our app
+does not try to connect to the PostgreSQL database until it is ready.
+This way, we can avoid connection errors and make our app more
+reliable.</p>
+<p>In this article, we will talk about different ways to make sure
+PostgreSQL is ready when we use Docker. We will look at Docker health
+checks, using a shell script, using Docker Compose for checks, and using
+a wait-for-it script. We will also see how to check the PostgreSQL
+connection status in a loop. Plus, we will answer some frequently asked
+questions about this topic. Here is a list of the solutions we will
+check:</p>
+<ul>
+<li>Using Docker Health Checks to Wait for PostgreSQL</li>
+<li>Implementing a Shell Script to Wait for PostgreSQL in Docker</li>
+<li>Using Docker Compose to Make Sure PostgreSQL is Ready</li>
+<li>Using a Wait-for-it Script to Wait for PostgreSQL</li>
+<li>Checking PostgreSQL Connection Status in a Loop</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2 id="using-docker-health-checks-to-wait-for-postgresql">Using Docker
+Health Checks to Wait for PostgreSQL</h2>
+<p>Docker health checks help us see if a container is working well. When
+we use PostgreSQL in a Docker container, we can set up a health check.
+This check makes sure PostgreSQL is running and ready to accept
+connections. It helps us start other services only when PostgreSQL is
+ready.</p>
+<p>To set up a health check for PostgreSQL, we can add this
+configuration in our <code>Dockerfile</code> or
+<code>docker-compose.yml</code>:</p>
+<h3 id="dockerfile-example">Dockerfile Example</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> postgres:latest</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">HEALTHCHECK</span> <span class="op">--interval=5s</span> <span class="op">--timeout=3s</span> <span class="op">--retries=3</span> \</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">CMD</span> <span class="ex">pg_isready</span> <span class="at">-U</span> postgres <span class="kw">||</span> <span class="bu">exit</span> 1</span></code></pre></div>
+<h3 id="docker-compose-example">Docker Compose Example</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">postgres</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> postgres:latest</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_USER</span><span class="kw">:</span><span class="at"> user</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_PASSWORD</span><span class="kw">:</span><span class="at"> password</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">healthcheck</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">test</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;CMD&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;pg_isready&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-U&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;postgres&quot;</span><span class="kw">]</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">interval</span><span class="kw">:</span><span class="at"> 5s</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 3s</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">retries</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span></code></pre></div>
+<h3 id="explanation-of-parameters">Explanation of Parameters</h3>
+<ul>
+<li><strong><code>interval</code></strong>: This is the time between
+health checks.</li>
+<li><strong><code>timeout</code></strong>: This is the time we wait for
+the health check to succeed.</li>
+<li><strong><code>retries</code></strong>: This is the number of times
+it fails before we say the container is unhealthy.</li>
+</ul>
+<p>After we set up the health check, we can wait for the PostgreSQL
+container to be healthy. Then we can start other services. For example,
+in a multi-container setup, we can use the <code>depends_on</code>
+option with <code>condition: service_healthy</code> in our Docker
+Compose file:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> your_app_image</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">postgres</span><span class="kw">:</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">condition</span><span class="kw">:</span><span class="at"> service_healthy</span></span></code></pre></div>
+<p>This setup makes sure our application container only starts when the
+PostgreSQL container is healthy. It uses Docker health checks to manage
+service dependencies.</p>
+<p>For more details on Docker health checks, you can check <a
+href="https://bestonlinetutorial.com/docker/how-to-check-the-health-status-of-a-docker-container.html">this
+guide</a>.</p>
+<h2
+id="implementing-a-shell-script-to-wait-for-postgresql-in-docker">Implementing
+a Shell Script to Wait for PostgreSQL in Docker</h2>
+<p>We need to make sure our application starts only after PostgreSQL is
+ready in a Docker container. To do this, we can use a shell script that
+checks if the PostgreSQL service is available. This script will try to
+connect to the PostgreSQL instance until it works.</p>
+<p>Here is a simple shell script we can use to wait for PostgreSQL to be
+ready:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Variables</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="va">HOST</span><span class="op">=</span><span class="st">&quot;localhost&quot;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="va">PORT</span><span class="op">=</span><span class="st">&quot;5432&quot;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="va">USER</span><span class="op">=</span><span class="st">&quot;your_username&quot;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="va">DB</span><span class="op">=</span><span class="st">&quot;your_database&quot;</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="va">TIMEOUT</span><span class="op">=</span>30</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to check PostgreSQL connection</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">check_postgres()</span> <span class="kw">{</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  <span class="ex">psql</span> <span class="at">-h</span> <span class="st">&quot;</span><span class="va">$HOST</span><span class="st">&quot;</span> <span class="at">-U</span> <span class="st">&quot;</span><span class="va">$USER</span><span class="st">&quot;</span> <span class="at">-d</span> <span class="st">&quot;</span><span class="va">$DB</span><span class="st">&quot;</span> <span class="at">-c</span> <span class="st">&quot;SELECT 1;&quot;</span> <span class="op">&gt;</span> /dev/null <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="va">$?</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Wait for PostgreSQL to be ready</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;Waiting for PostgreSQL to be ready...&quot;</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="va">$(</span><span class="fu">seq</span> 1 <span class="va">$TIMEOUT)</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="ex">check_postgres</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">&quot;PostgreSQL is ready!&quot;</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    <span class="bu">exit</span> 0</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">fi</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="st">&quot;Attempt </span><span class="va">$i</span><span class="st"> of </span><span class="va">$TIMEOUT</span><span class="st">: PostgreSQL is not ready yet...&quot;</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sleep</span> 1</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;PostgreSQL did not become ready in time. Exiting.&quot;</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a><span class="bu">exit</span> 1</span></code></pre></div>
+<h3 id="script-explanation">Script Explanation:</h3>
+<ul>
+<li><strong>Variables</strong>: We can change <code>HOST</code>,
+<code>PORT</code>, <code>USER</code>, and <code>DB</code> as we
+need.</li>
+<li><strong>check_postgres function</strong>: This function tries to
+connect to PostgreSQL. It gives back 0 if it is successful.</li>
+<li><strong>Loop</strong>: It waits for up to <code>TIMEOUT</code>
+seconds. It checks every second if PostgreSQL is ready.</li>
+<li><strong>Exit Codes</strong>: The script exits with code 0 if it
+works and 1 if it fails.</li>
+</ul>
+<h3 id="usage">Usage</h3>
+<ol type="1">
+<li><p>Save the script as <code>wait-for-postgres.sh</code>.</p></li>
+<li><p>Make it executable:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x wait-for-postgres.sh</span></code></pre></div></li>
+<li><p>Run the script before starting our application to make sure
+PostgreSQL is ready.</p></li>
+</ol>
+<p>This method is simple and good for making sure our application does
+not try to connect to PostgreSQL before it is ready. For more advanced
+setups, we can think about using <a
+href="https://bestonlinetutorial.com/docker/how-to-check-the-health-status-of-a-docker-container.html">Docker
+Health Checks</a> or Docker Compose.</p>
+<h2 id="using-docker-compose-to-make-postgresql-ready">Using Docker
+Compose to Make PostgreSQL Ready</h2>
+<p>To make sure PostgreSQL is ready when we use Docker Compose, we can
+use the <code>depends_on</code> option with a health check. This way, we
+can set service dependencies. It makes sure that the PostgreSQL
+container is healthy before we start other services.</p>
+<h3 id="example-docker-compose.yml">Example
+<code>docker-compose.yml</code></h3>
+<p>Here is an example of how to set this up in your
+<code>docker-compose.yml</code> file:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">postgres</span><span class="kw">:</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> postgres:latest</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_USER</span><span class="kw">:</span><span class="at"> user</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_PASSWORD</span><span class="kw">:</span><span class="at"> password</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_DB</span><span class="kw">:</span><span class="at"> mydb</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">healthcheck</span><span class="kw">:</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">test</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;CMD-SHELL&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;pg_isready -U user&quot;</span><span class="kw">]</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">interval</span><span class="kw">:</span><span class="at"> 10s</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 5s</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">retries</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myapp:latest</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">postgres</span><span class="kw">:</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">condition</span><span class="kw">:</span><span class="at"> service_healthy</span></span></code></pre></div>
+<h3 id="explanation">Explanation</h3>
+<ul>
+<li><strong>PostgreSQL Service</strong>:
+<ul>
+<li>The <code>healthcheck</code> part makes sure that the PostgreSQL
+service runs <code>pg_isready</code>. This checks if it is ready with
+set intervals and retries.</li>
+</ul></li>
+<li><strong>Application Service</strong>:
+<ul>
+<li>The <code>depends_on</code> option means that the <code>app</code>
+service must wait for the <code>postgres</code> service to be healthy
+before it starts.</li>
+</ul></li>
+</ul>
+<p>This way, we can control the order of service startup. It helps to
+make sure our application does not try to connect to PostgreSQL until it
+is fully ready. This stops connection errors.</p>
+<h3 id="additional-configuration">Additional Configuration</h3>
+<p>We might want to change the health check command based on our
+PostgreSQL setup and needs. Adjust the <code>POSTGRES_USER</code>,
+<code>POSTGRES_PASSWORD</code>, and <code>POSTGRES_DB</code> to fit our
+application.</p>
+<p>For more reading on Docker Compose and its options, check out <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html">this
+article on Docker Compose</a>.</p>
+<h2 id="using-a-wait-for-it-script-to-wait-for-postgresql">Using a
+Wait-for-it Script to Wait for PostgreSQL</h2>
+<p>The <code>wait-for-it</code> script is a handy tool. It helps us wait
+for a TCP host and port to be ready. This is very useful when we work
+with PostgreSQL in Docker. It makes sure that the PostgreSQL service is
+ready before our app tries to connect.</p>
+<h3 id="steps-to-use-the-wait-for-it-script">Steps to Use the
+Wait-for-it Script</h3>
+<ol type="1">
+<li><p><strong>Download the Script</strong>: We can download the
+<code>wait-for-it</code> script straight into our Docker container or
+add it to our Dockerfile.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-o</span> wait-for-it.sh https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x wait-for-it.sh</span></code></pre></div></li>
+<li><p><strong>Add to Dockerfile</strong>: If we want to add the script
+to our Docker image, we should put these lines in our Dockerfile:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> wait-for-it.sh /usr/local/bin/wait-for-it</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="fu">chmod</span> +x /usr/local/bin/wait-for-it</span></code></pre></div></li>
+<li><p><strong>Use in Docker-Compose</strong>: We can use the
+<code>wait-for-it</code> script in our <code>docker-compose.yml</code>.
+This makes our app wait for PostgreSQL to be ready before it starts.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;3.8&#39;</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">services</span><span class="kw">:</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">postgres</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> postgres:latest</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_USER</span><span class="kw">:</span><span class="at"> user</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">POSTGRES_PASSWORD</span><span class="kw">:</span><span class="at"> password</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="st">&quot;5432:5432&quot;</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">app</span><span class="kw">:</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">build</span><span class="kw">:</span><span class="at"> .</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">depends_on</span><span class="kw">:</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> postgres</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;./wait-for-it.sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;postgres:5432&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;your-start-command&quot;</span><span class="kw">]</span></span></code></pre></div></li>
+<li><p><strong>Command Usage</strong>: The command for
+<code>wait-for-it</code> looks like this:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./wait-for-it.sh</span> <span class="op">&lt;</span>host<span class="op">&gt;</span>:<span class="op">&lt;</span>port<span class="op">&gt;</span> -- <span class="op">&lt;</span>command<span class="op">&gt;</span></span></code></pre></div>
+<p>For example:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./wait-for-it.sh</span> postgres:5432 <span class="at">--</span> echo <span class="st">&quot;PostgreSQL is up!&quot;</span></span></code></pre></div></li>
+</ol>
+<p>This way, our app will only start when PostgreSQL is fully running.
+This helps to avoid connection errors when we first start. If you want
+to learn more about Docker and PostgreSQL, check out <a
+href="https://bestonlinetutorial.com/docker/how-to-connect-django-to-postgresql-using-docker-compose.html">How
+to Connect Django to PostgreSQL Using Docker Compose</a>.</p>
+<h2 id="checking-postgresql-connection-status-in-a-loop">Checking
+PostgreSQL Connection Status in a Loop</h2>
+<p>We can make sure that our PostgreSQL instance running in Docker is
+ready for connections. We do this by using a simple shell script that
+checks the connection status in a loop. This is helpful when we want to
+wait for the database to be ready before we do more tasks.</p>
+<p>Here is a simple example of how to check the PostgreSQL connection
+status in a loop using <code>bash</code>:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Database connection parameters</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="va">DB_HOST</span><span class="op">=</span><span class="st">&quot;localhost&quot;</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="va">DB_PORT</span><span class="op">=</span><span class="st">&quot;5432&quot;</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="va">DB_USER</span><span class="op">=</span><span class="st">&quot;your_username&quot;</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="va">DB_NAME</span><span class="op">=</span><span class="st">&quot;your_database&quot;</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to check PostgreSQL connection</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="fu">check_connection()</span> <span class="kw">{</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="va">PGPASSWORD</span><span class="op">=</span><span class="st">&quot;your_password&quot;</span> <span class="ex">psql</span> <span class="at">-h</span> <span class="st">&quot;</span><span class="va">$DB_HOST</span><span class="st">&quot;</span> <span class="at">-U</span> <span class="st">&quot;</span><span class="va">$DB_USER</span><span class="st">&quot;</span> <span class="at">-d</span> <span class="st">&quot;</span><span class="va">$DB_NAME</span><span class="st">&quot;</span> <span class="at">-c</span> <span class="st">&#39;\q&#39;</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Retry until the connection is successful</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="cf">until</span> <span class="ex">check_connection</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">&quot;Waiting for PostgreSQL to be ready...&quot;</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sleep</span> 2</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;PostgreSQL is up and running!&quot;</span></span></code></pre></div>
+<h3 id="how-it-works">How It Works:</h3>
+<ul>
+<li>This script sets the connection parameters for PostgreSQL.</li>
+<li>The <code>check_connection</code> function tries to connect to the
+PostgreSQL database.</li>
+<li>The <code>until</code> loop keeps calling
+<code>check_connection</code> until it works. It prints a waiting
+message every 2 seconds.</li>
+<li>When it connects, it shows a success message.</li>
+</ul>
+<p>This method helps us make sure that our application only starts after
+PostgreSQL is fully ready. We can change the connection parameters like
+host, port, user, database, and password to fit our setup.</p>
+<p>For more details on how to set up PostgreSQL with Docker, we can
+check <a
+href="https://bestonlinetutorial.com/docker/how-to-connect-django-to-postgresql-using-docker-compose.html">this
+tutorial</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3
+id="how-can-we-verify-if-our-postgresql-database-is-running-in-docker">1.
+How can we verify if our PostgreSQL database is running in Docker?</h3>
+<p>To check if our PostgreSQL database is running in Docker, we can use
+the command <code>docker ps</code>. This command will show all running
+containers. We should look for our PostgreSQL container in the list. If
+it is running, we can also use the command
+<code>docker logs &lt;container_id&gt;</code> to see the logs. This
+helps us check if PostgreSQL has started correctly. It means our
+PostgreSQL instance is ready for connections.</p>
+<h3
+id="what-are-docker-health-checks-and-how-do-they-work-with-postgresql">2.
+What are Docker health checks and how do they work with PostgreSQL?</h3>
+<p>Docker health checks let us define a command. Docker runs this
+command to see if a container is working well. For PostgreSQL, we can
+set a health check to run a simple SQL query or connection command. This
+checks if it is available. Other containers that depend on it can wait
+until PostgreSQL is fully ready before they start. This feature makes
+our multi-container setups more reliable.</p>
+<h3 id="can-we-use-a-shell-script-to-wait-for-postgresql-in-docker">3.
+Can we use a shell script to wait for PostgreSQL in Docker?</h3>
+<p>Yes, we can use a shell script to wait for PostgreSQL in Docker. This
+is a common practice. The script can have a loop that checks for a
+successful connection to the database using <code>psql</code> commands.
+It keeps checking until it succeeds. This method is very useful in
+automated deployments. We want to make sure PostgreSQL is ready before
+our application starts.</p>
+<h3
+id="how-do-we-configure-docker-compose-to-wait-for-postgresql-to-be-ready">4.
+How do we configure Docker Compose to wait for PostgreSQL to be
+ready?</h3>
+<p>In Docker Compose, we can use the <code>depends_on</code> option to
+show service dependencies. But it does not wait for the service to be
+fully ready. To make sure PostgreSQL is ready, we can use health checks
+and a wait-for-it script. This way, dependent services can delay their
+startup until the PostgreSQL container is fully working. This helps to
+prevent connection problems.</p>
+<h3
+id="what-is-the-wait-for-it-script-and-how-can-we-use-it-with-postgresql-in-docker">5.
+What is the wait-for-it script, and how can we use it with PostgreSQL in
+Docker?</h3>
+<p>The wait-for-it script is a shell script that pauses our application
+until a specific service, like PostgreSQL, is available. We can include
+it in our Docker setup by adding it to our Dockerfile or container
+startup command. This way, our application will only start after
+PostgreSQL is reachable. It helps to avoid connection errors during the
+starting phase.</p>
+<p>For more reading about Docker and its parts, we can check articles
+like <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">What
+is Docker and Why Should You Use It?</a> and <a
+href="https://bestonlinetutorial.com/docker/how-to-use-docker-compose-for-development-and-testing.html">How
+to Use Docker Compose for Development and Testing</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

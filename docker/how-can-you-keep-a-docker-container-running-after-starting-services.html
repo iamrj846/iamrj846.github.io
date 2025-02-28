@@ -1,0 +1,393 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How can you keep a Docker container running after starting services?</title>
+            <meta name="description" content="Learn how to keep your Docker container running after starting services with our step-by-step guide and expert tips.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How can you keep a Docker container running after starting services?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To keep a Docker container running after we start services, we can
+use different strategies. These strategies help the main process not to
+exit right away. One good way is to run our services in the foreground.
+This makes the container stay active as long as the service is running.
+Another way is to use a dummy process or a special entrypoint script.
+This keeps the container alive by having an active process.</p>
+<p>In this article, we will look at some ways to make Docker containers
+persistent. This means our services will keep running even after they
+start. We will talk about these solutions:</p>
+<ul>
+<li>Using an interactive shell to keep a Docker container running</li>
+<li>Running services in the foreground to keep the Docker container
+active</li>
+<li>Using a dummy process to keep a Docker container alive</li>
+<li>Making a custom entrypoint script for persistent Docker
+containers</li>
+<li>Managing services with Supervisor to keep the Docker container
+active</li>
+</ul>
+<p>We can learn more about Docker and how it works by reading articles
+like <a
+href="https://bestonlinetutorial.com/docker/what-is-docker-and-why-should-you-use-it.html">What
+is Docker and Why Should You Use It?</a> and <a
+href="https://bestonlinetutorial.com/docker/what-is-a-docker-container-and-how-does-it-operate.html">What
+is a Docker Container and How Does It Operate?</a>.</p>
+<h2
+id="using-an-interactive-shell-to-keep-a-docker-container-running">Using
+an Interactive Shell to Keep a Docker Container Running</h2>
+<p>To keep a Docker container running after we start services, we can
+use an interactive shell. This way, we keep an active process in the
+container. This stops it from stopping right after we run it. Here is
+how we can do it:</p>
+<ol type="1">
+<li><p><strong>Run the Container in Interactive Mode</strong>: We can
+use the <code>-it</code> flags with <code>docker run</code> to start the
+container in interactive mode with a TTY.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-it</span> <span class="op">&lt;</span>image-name<span class="op">&gt;</span> /bin/bash</span></code></pre></div>
+<p>We should replace <code>&lt;image-name&gt;</code> with the Docker
+image we want. This command opens a shell inside the container. It keeps
+it alive.</p></li>
+<li><p><strong>Attach to an Existing Container</strong>: If we already
+started a container and want to attach to it, we use this command:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> exec <span class="at">-it</span> <span class="op">&lt;</span>container-id<span class="op">&gt;</span> /bin/bash</span></code></pre></div>
+<p>Here, <code>&lt;container-id&gt;</code> is the ID or name of the
+running container. This command lets us access the shell of the running
+container.</p></li>
+<li><p><strong>Using the <code>sleep</code> Command</strong>: If we want
+to run a command that does not stop right away, we can use the
+<code>sleep</code> command like this:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="op">&lt;</span>image-name<span class="op">&gt;</span> /bin/sh <span class="at">-c</span> <span class="st">&quot;while true; do sleep 30; done;&quot;</span></span></code></pre></div>
+<p>This command keeps the container running forever. It runs a loop that
+sleeps for 30 seconds again and again.</p></li>
+<li><p><strong>Using a Shell Script</strong>: We can make a shell script
+that runs our services and then goes into an interactive shell. For
+example:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/sh</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Start your services</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">service</span> start</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep the shell open</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="bu">exec</span> /bin/bash</span></code></pre></div>
+<p>We save this as <code>start.sh</code>, make it executable, and set it
+as the entrypoint in our Dockerfile.</p></li>
+</ol>
+<p>By using an interactive shell, we make sure our Docker container
+stays active. This helps us manage services better. For more on keeping
+Docker containers running, we can check <a
+href="https://bestonlinetutorial.com/docker/what-is-a-docker-container-and-how-does-it-operate.html">this
+Docker tutorial</a>.</p>
+<h2
+id="running-services-in-the-foreground-to-keep-docker-container-active">Running
+Services in the Foreground to Keep Docker Container Active</h2>
+<p>To keep a Docker container running after we start services, we need
+to run those services in the foreground. When a service runs in the
+foreground, it stays active. This way, the container does not exit. This
+method is simple and is often suggested for many applications.</p>
+<p>For example, if we use a web server like Nginx or Apache, we can run
+it in the foreground by using the right command. Here is how we can do
+it:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example Dockerfile for Nginx</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">FROM</span> nginx:latest</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">COPY</span> ./html /usr/share/nginx/html</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="ex">CMD</span> [<span class="st">&quot;nginx&quot;</span>, <span class="st">&quot;-g&quot;</span>, <span class="st">&quot;daemon off;&quot;</span>]</span></code></pre></div>
+<p>In this example, <code>nginx -g 'daemon off;'</code> keeps the Nginx
+process running in the foreground. If we have a Node.js application, we
+can start it like this:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Example Dockerfile for a Node.js application</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">FROM</span> node:latest</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">WORKDIR</span> /usr/src/app</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">COPY</span> package<span class="pp">*</span>.json ./</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">RUN</span> npm install</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="ex">COPY</span> . .</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="ex">CMD</span> [<span class="st">&quot;node&quot;</span>, <span class="st">&quot;app.js&quot;</span>]</span></code></pre></div>
+<p>Here, <code>node app.js</code> will run our Node.js application in
+the foreground.</p>
+<p>Using the <code>-D</code> or <code>--daemonize</code> flags in many
+services makes them run in the background. This is not good if we want
+the container to stay alive. So, we should not use these flags.</p>
+<p>For services like Python’s Flask or Django, we also need to make sure
+the server runs in the foreground:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Running a Flask application</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">CMD</span> [<span class="st">&quot;flask&quot;</span>, <span class="st">&quot;run&quot;</span>, <span class="st">&quot;--host=0.0.0.0&quot;</span>]</span></code></pre></div>
+<p>By following this way, we make sure that our Docker container stays
+running as long as the foreground service is active. This helps us avoid
+the container from exiting by mistake. This method is good for keeping
+Docker container active and is used a lot in different types of
+applications.</p>
+<h2
+id="utilizing-a-dummy-process-to-keep-a-docker-container-alive">Utilizing
+a Dummy Process to Keep a Docker Container Alive</h2>
+<p>We can keep a Docker container running after we start services by
+using a dummy process. This means we run a simple command that does not
+stop. This way, we keep the container alive. A common way to do this is
+to run an infinite loop or a background process.</p>
+<h3 id="example-using-tail--f-devnull">Example: Using
+<code>tail -f /dev/null</code></h3>
+<p>One easy way to keep a Docker container running is to use this
+command in your Dockerfile or in your <code>docker run</code>
+command:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span> <span class="at">-f</span> /dev/null</span></code></pre></div>
+<p>This command makes the container run forever. It keeps reading from
+<code>/dev/null</code>, which does not give any output.</p>
+<h3 id="example-using-sleep">Example: Using <code>sleep</code></h3>
+<p>Another way is to use <code>sleep</code> in a loop. Here is how we
+can do it in our Dockerfile:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> <span class="cf">while</span> <span class="fu">true</span><span class="kw">;</span> <span class="cf">do</span> <span class="fu">sleep</span> 1000<span class="kw">;</span> <span class="cf">done</span></span></code></pre></div>
+<p>This command keeps the container alive by sleeping in a loop.</p>
+<h3 id="example-creating-a-dummy-script">Example: Creating a Dummy
+Script</h3>
+<p>We can also create our own script that runs as a dummy process.
+First, we create a script named <code>keep-alive.sh</code>:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/sh</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="fu">true</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">sleep</span> 1000</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span></code></pre></div>
+<p>We need to give it permission to run:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x keep-alive.sh</span></code></pre></div>
+<p>Then, in our Dockerfile, we copy the script and run it:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> keep-alive.sh /usr/local/bin/keep-alive.sh</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;/usr/local/bin/keep-alive.sh&quot;</span>]</span></code></pre></div>
+<p>Using a dummy process is a simple and good way to make sure our
+Docker container stays active. This lets any services inside work well
+without the container stopping. This method is very helpful when we have
+services that need the container to be running but do not keep the main
+process alive by themselves.</p>
+<h2
+id="creating-a-custom-entrypoint-script-for-persistent-docker-containers">Creating
+a Custom Entrypoint Script for Persistent Docker Containers</h2>
+<p>We can keep a Docker container running after starting services by
+making a custom entrypoint script. This script runs when the container
+starts. It helps us run many services or processes and keeps the
+container alive.</p>
+<h3 id="step-by-step-guide">Step-by-Step Guide</h3>
+<ol type="1">
+<li><p><strong>Create a Shell Script</strong>: First, we need to create
+a new file called <code>entrypoint.sh</code>. Here is the content for
+this file. This example runs a web server and a database service.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="bu">set</span> <span class="at">-e</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Start the first service</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="ex">service</span> apache2 start</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Start the second service</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="ex">service</span> mysql start</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Keep the container running</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="fu">tail</span> <span class="at">-f</span> /dev/null</span></code></pre></div></li>
+<li><p><strong>Make the Script Executable</strong>: Next, we make the
+entrypoint script executable. We can use this command.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x entrypoint.sh</span></code></pre></div></li>
+<li><p><strong>Dockerfile Setup</strong>: In our Dockerfile, we will
+copy the entrypoint script and set it as the entrypoint.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> ubuntu:latest</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Install necessary packages</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apt-get</span> update <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">apt-get</span> install <span class="at">-y</span> apache2 mysql-server <span class="kw">&amp;&amp;</span> <span class="dt">\</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="ex">apt-get</span> clean</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Copy the entrypoint script into the container</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> entrypoint.sh /usr/local/bin/entrypoint.sh</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Set the entrypoint</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="kw">ENTRYPOINT</span> [<span class="st">&quot;/usr/local/bin/entrypoint.sh&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>Build the Docker Image</strong>: Now we can build our
+Docker image. Use this command and replace
+<code>&lt;image-name&gt;</code> with what you want to name your
+image.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> <span class="op">&lt;</span>image-name<span class="op">&gt;</span> .</span></code></pre></div></li>
+<li><p><strong>Run the Container</strong>: Finally, we run our container
+with this command.</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="op">&lt;</span>image-name<span class="op">&gt;</span></span></code></pre></div></li>
+</ol>
+<p>This method lets us set up many services in one container. It also
+makes sure that the container stays active. The command
+<code>tail -f /dev/null</code> keeps the container running forever. We
+can change the services and commands in the script as we need to keep
+our Docker containers running. For more info on Docker best practices,
+we can check <a
+href="https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html">this
+article</a>.</p>
+<h2
+id="managing-services-with-supervisor-to-keep-docker-container-running">Managing
+Services with Supervisor to Keep Docker Container Running</h2>
+<p>To make sure a Docker container keeps running after we start
+services, we can use a tool called Supervisor. Supervisor helps us
+manage many processes in one container. If one process fails, Supervisor
+can restart it by itself. This is very helpful for apps that need
+several services to run at the same time.</p>
+<h3 id="installation-and-setup">Installation and Setup</h3>
+<ol type="1">
+<li><p><strong>Install Supervisor in your Docker container</strong>.
+Change your <code>Dockerfile</code> to add Supervisor installation:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode dockerfile"><code class="sourceCode dockerfile"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> your-base-image</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Install Supervisor</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="kw">RUN</span> <span class="ex">apt-get</span> update <span class="kw">&amp;&amp;</span> <span class="ex">apt-get</span> install <span class="at">-y</span> supervisor</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Copy Supervisor configuration file</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="kw">COPY</span> ./supervisord.conf /etc/supervisor/conf.d/supervisord.conf</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Expose the needed port</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="kw">EXPOSE</span> 8000</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="kw">CMD</span> [<span class="st">&quot;/usr/bin/supervisord&quot;</span>]</span></code></pre></div></li>
+<li><p><strong>Create a Supervisor configuration file</strong>
+(<code>supervisord.conf</code>) to manage your services. Here is a
+simple setup that runs two services:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode ini"><code class="sourceCode ini"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[supervisord]</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="dt">nodaemon</span><span class="ot">=</span><span class="kw">true</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="kw">[program:service1]</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="dt">command</span><span class="ot">=</span><span class="st">/path/to/your/service1</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="dt">autostart</span><span class="ot">=</span><span class="kw">true</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="dt">autorestart</span><span class="ot">=</span><span class="kw">true</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="dt">stderr_logfile</span><span class="ot">=</span><span class="st">/var/log/service1.err.log</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="dt">stdout_logfile</span><span class="ot">=</span><span class="st">/var/log/service1.out.log</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a><span class="kw">[program:service2]</span></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="dt">command</span><span class="ot">=</span><span class="st">/path/to/your/service2</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="dt">autostart</span><span class="ot">=</span><span class="kw">true</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a><span class="dt">autorestart</span><span class="ot">=</span><span class="kw">true</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="dt">stderr_logfile</span><span class="ot">=</span><span class="st">/var/log/service2.err.log</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="dt">stdout_logfile</span><span class="ot">=</span><span class="st">/var/log/service2.out.log</span></span></code></pre></div></li>
+</ol>
+<h3 id="build-and-run-the-container">Build and Run the Container</h3>
+<p>After we set up Supervisor, we can build and run our Docker
+container:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> build <span class="at">-t</span> my-supervisor-container .</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--name</span> my-container my-supervisor-container</span></code></pre></div>
+<h3 id="benefits-of-using-supervisor">Benefits of Using Supervisor</h3>
+<ul>
+<li><strong>Automatic Restart</strong>: If any service stops suddenly,
+Supervisor will restart it.</li>
+<li><strong>Logging</strong>: Supervisor can keep logs of each service,
+which helps when fixing problems.</li>
+<li><strong>Process Management</strong>: We can easily manage many
+processes in one container.</li>
+</ul>
+<p>Using Supervisor is a good way to make sure our Docker container
+stays active. It helps us watch and manage the services running inside
+it. For more details on Docker and process management, we can check <a
+href="https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html">this
+article on Docker and its benefits</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="why-does-my-docker-container-stop-right-after-starting">1. Why
+does my Docker container stop right after starting?</h3>
+<p>Docker containers stop when the main process inside exits. We need to
+keep the container running after starting services. To do this, we can
+run services in the foreground or use a dummy process. For more
+information, check our article on <a
+href="https://bestonlinetutorial.com/docker/why-does-a-docker-container-exit-immediately.html">Why
+Does a Docker Container Exit Immediately?</a>.</p>
+<h3
+id="how-can-i-keep-a-docker-container-alive-without-running-a-service">2.
+How can I keep a Docker container alive without running a service?</h3>
+<p>To keep a Docker container alive without a main service, we can use a
+dummy process like <code>tail -f /dev/null</code>. This command helps
+keep the container running forever by keeping the main process active.
+For more ideas, read about <a
+href="https://bestonlinetutorial.com/docker/utilizing-a-dummy-process-to-keep-a-docker-container-alive.html">Utilizing
+a Dummy Process to Keep a Docker Container Alive</a>.</p>
+<h3
+id="what-is-the-benefit-of-using-a-custom-entrypoint-script-in-docker">3.
+What is the benefit of using a custom entrypoint script in Docker?</h3>
+<p>A custom entrypoint script lets us run many commands or set up our
+environment before we start the main application. This is helpful to
+make sure that important services are ready. It can also help keep a
+Docker container running. For more on this, visit our article about <a
+href="https://bestonlinetutorial.com/docker/creating-a-custom-entrypoint-script-for-persistent-docker-containers.html">Creating
+a Custom Entrypoint Script for Persistent Docker Containers</a>.</p>
+<h3 id="how-can-i-manage-multiple-services-in-a-docker-container">4. How
+can I manage multiple services in a Docker container?</h3>
+<p>We can manage multiple services in a Docker container using a process
+manager like Supervisor. This tool helps keep all services running and
+restarts them if they fail. This way, the container stays active. For
+detailed help, see our article on <a
+href="https://bestonlinetutorial.com/docker/managing-services-with-supervisor-to-ensure-docker-container-stays-active.html">Managing
+Services with Supervisor to Ensure Docker Container Stays
+Active</a>.</p>
+<h3
+id="what-are-the-best-practices-for-keeping-a-docker-container-running">5.
+What are the best practices for keeping a Docker container running?</h3>
+<p>Best practices for keeping a Docker container running are using an
+interactive shell, running services in the foreground, using a dummy
+process, or making a custom entrypoint script. Each of these ways helps
+the container stay active and responsive. For more ideas, check our
+guide on <a
+href="https://bestonlinetutorial.com/docker/how-can-you-keep-a-docker-container-running-after-starting-services.html">How
+to Keep a Docker Container Running After Starting Services</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
