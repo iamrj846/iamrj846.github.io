@@ -1,294 +1,427 @@
-To use the `kubectl wait --for=condition=complete --timeout=30s` command in Kubernetes, we just need to run this command. It will pause the process until the condition of a resource, like a Job or CronJob, is true or the time runs out. This command is very important for managing Kubernetes workloads. It helps us make sure that Jobs finish successfully before we do other tasks. By setting a timeout of 30 seconds, we can control how long we wait for the condition to be met. This makes our Kubernetes workflows more reliable and smooth.
+To stop overwriting secrets that we create randomly in Helm templates for Kubernetes, we can use some simple strategies. These include using Helm hooks, adding conditional logic, and using tools for secret management. These methods help us keep our secrets safe and not change them by mistake during deployments. By following these best practices, we can protect our important information and make our Kubernetes deployments smoother.
 
-In this article, we will look closely at how the `kubectl wait` command works. We will see how to choose different conditions and set timeout options. We will also talk about how to use it with Jobs and CronJobs. We will learn how to check resource status well. Lastly, we will answer some common questions about how to use it. Here is what we will cover:
+In this article, we will look at different ways to stop accidentally overwriting secrets in Helm templates. We will learn how to manage secrets with template functions, use Helm hooks to keep secrets safe, apply conditional logic, use external secret management tools, and control versions of secrets with Helm releases. We will talk about these topics:
 
-- How to Use `kubectl wait` for condition complete timeout 30s in Kubernetes
-- Understanding the `kubectl wait` Command for Kubernetes
-- How to Specify Different Conditions with `kubectl wait`
-- Setting the Timeout Parameter in `kubectl wait` Command
-- Using `kubectl wait` with Jobs and CronJobs in Kubernetes
-- Monitoring Resource Status with `kubectl wait`
-- Frequently Asked Questions
+- How to Avoid Overwriting Randomly Generated Secrets in Helm Templates for Kubernetes
+- How to Use Template Functions to Manage Secrets in Helm
+- How to Leverage Helm Hooks to Preserve Secrets
+- How to Implement Conditional Logic in Helm Templates for Secrets
+- How to Use External Secret Management Solutions with Helm
+- How to Version Control Secrets with Helm Releases
 
-For more reading about Kubernetes, we can check out articles like [What is Kubernetes and How Does it Simplify Container Management?](https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html) and [Why Should I Use Kubernetes for My Applications?](https://bestonlinetutorial.com/kubernetes/why-should-i-use-kubernetes-for-my-applications.html). This will help us understand more.
+For more information about Kubernetes and its parts, you can check these articles: [What is Kubernetes and How Does It Simplify Container Management?](https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html) and [How Do I Manage Secrets in Kubernetes Securely?](https://bestonlinetutorial.com/kubernetes/how-do-i-manage-secrets-in-kubernetes-securely.html).
 
-## Understanding the kubectl wait Command for Kubernetes
+## How to Use Template Functions to Manage Secrets in Helm
 
-We can use the `kubectl wait` command in Kubernetes to hold until a specific condition happens on a Kubernetes resource. This command is really helpful. It makes sure that other resources are ready before we run more commands.
+Helm gives us many template functions. We can use these functions to manage secrets in our Kubernetes deployments. These functions let us create and change secret data easily. This helps us avoid accidentally overwriting secrets.
 
-The way to use the `kubectl wait` command looks like this:
+### Using `lookup` Function
 
-```bash
-kubectl wait --for=condition=<condition> <resource-type>/<resource-name> --timeout=<timeout>
+The `lookup` function helps us get Kubernetes resources, like secrets. We just need to say the resource type, name, and namespace. This way, we can refer to existing secrets without putting hardcoded values.
+
+```yaml
+{{- $secret := lookup "v1" "Secret" .Release.Namespace "my-secret" }}
 ```
 
-### Key Components:
-- **`--for=condition=<condition>`**: This part tells us what condition to wait for. Some common conditions are `complete`, `available`, and `ready`.
-- **`<resource-type>/<resource-name>`**: Here we say the type of resource like `job` or `deployment` and the name of that resource.
-- **`--timeout=<timeout>`**: This sets the longest time we will wait for the condition to be met. For example, `30s` means we wait for 30 seconds.
+### Generating Random Values
 
-### Example Usage:
-If we want to wait for a Job called `my-job` to finish, we write:
+We can use the built-in `randAlphaNum` function to create random values for secret data. This makes sure our secrets are unique and hard to guess.
 
-```bash
-kubectl wait --for=condition=complete job/my-job --timeout=30s
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-random-secret
+type: Opaque
+data:
+  password: {{ .Values.password | default (randAlphaNum 16 | b64enc) }}
 ```
 
-This command will block until the job is complete or the 30 seconds timeout happens. If we do not meet the condition in this time, the command will fail. This is good because it helps us avoid running scripts that depend on the job too soon.
+### Conditional Logic with `if` Statement
 
-The `kubectl wait` command is good for automating things in CI/CD pipelines. It helps us manage dependencies between Kubernetes resources in a smart way.
+Using `if` statements in our templates helps us manage secrets based on certain conditions. For example, we can choose to create a new secret or use an existing one.
 
-## How to Specify Different Conditions with kubectl wait
-
-The `kubectl wait` command helps us set different conditions for Kubernetes resources. This way, we can wait for a resource to reach the state we want before we do more actions. Some common conditions are `complete`, `ready`, and `available`.
-
-### Syntax
-
-```bash
-kubectl wait --for=condition=<condition> <resource_type>/<resource_name> --timeout=<duration>
+```yaml
+{{- if .Values.createNewSecret }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: new-secret
+type: Opaque
+data:
+  password: {{ .Values.password | b64enc }}
+{{- else }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: existing-secret
+type: Opaque
+data:
+  password: {{ lookup "v1" "Secret" .Release.Namespace "existing-secret" | .data.password }}
+{{- end }}
 ```
 
-### Common Conditions
+### Using `tpl` Function
 
-1. **complete**: We use this mainly with Jobs. It waits until the Job finishes.
-2. **ready**: This checks if the resource is ready. We often use it with Pods and Deployments.
-3. **available**: This waits for Deployments to make sure the right number of replicas are available.
+We can use the `tpl` function to create secret data dynamically. This helps us make more complex secret setups based on values from `values.yaml`.
 
-### Examples
-
-- **Waiting for a Job to complete:**
-
-```bash
-kubectl wait --for=condition=complete job/my-job --timeout=30s
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dynamic-secret
+type: Opaque
+data:
+  config: {{ .Values.config | tpl . }}
 ```
 
-- **Waiting for a Pod to be ready:**
+### Implementing `toYaml` for Structured Data
 
-```bash
-kubectl wait --for=condition=ready pod/my-pod --timeout=30s
+If our secret data has structure, we can use the `toYaml` function. It changes complex data types into YAML format. This way, our secrets stay organized and easy to handle.
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: structured-secret
+type: Opaque
+data:
+  config.yaml: {{ .Values.config | toYaml | b64enc }}
 ```
 
-- **Waiting for a Deployment to become available:**
+By using these template functions in Helm, we can manage secrets well. This reduces the chance of overwriting them and makes our Kubernetes apps safer. We should check out the [Kubernetes secrets management best practices](https://bestonlinetutorial.com/kubernetes/how-do-i-manage-secrets-in-kubernetes-securely.html) for more tips.
 
-```bash
-kubectl wait --for=condition=available deployment/my-deployment --timeout=30s
+## How to Leverage Helm Hooks to Preserve Secrets
+
+Helm hooks are really useful. They help us do things at certain times during the release process. We can use Helm hooks to stop random secrets from being overwritten in our Helm templates.
+
+### Using Pre-install and Pre-upgrade Hooks
+
+We can set up hooks that create and save secrets before the main template runs. For instance, we can use a `pre-install` or `pre-upgrade` hook to generate secrets and put them in a Kubernetes secret store.
+
+Here is an example of a pre-install hook that makes a secret:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: generate-secret
+  annotations:
+    "helm.sh/hook": pre-install
+data:
+  secret-value: {{ .Values.secretValue | quote }}
 ```
 
-### Custom Conditions
+### Using Post-install Hooks for Secret Validation
 
-If we want to use custom conditions, we need to make sure the condition works with the resource type we are using. We can see the available conditions by describing the resource:
+We can use post-install hooks to check if the secrets exist and are correct after we create the main resources. This way, we make sure that the secrets are still safe.
 
-```bash
-kubectl describe <resource_type> <resource_name>
-```
-
-By using the `kubectl wait` command with different conditions, we can manage the state of our resources in Kubernetes. This helps our actions match the current status of our apps.
-
-## Setting the Timeout Parameter in kubectl wait Command
-
-We use the `kubectl wait` command to manage Kubernetes resources. It helps us make sure a specific condition is met before we go on. The `--timeout` parameter tells us how long to wait for a condition to be true. If we do not meet the condition in that time, the command will give us an error.
-
-### Syntax
-
-The basic way to use the `kubectl wait` command with a timeout is:
-
-```bash
-kubectl wait --for=condition=<condition> <resource_type>/<resource_name> --timeout=<duration>
-```
-
-### Example Usage
-
-If we want to wait for a Job called `my-job` to finish within 30 seconds, we can run this command:
-
-```bash
-kubectl wait --for=condition=complete job/my-job --timeout=30s
-```
-
-### Timeout Duration Formats
-
-We can say the duration for the timeout in different ways:
-
-- **Seconds**: Use `30s` for 30 seconds.
-- **Minutes**: Use `1m` for 1 minute.
-- **Hours**: Use `1h` for 1 hour.
-
-For example, if we want to wait for 2 minutes, we write:
-
-```bash
-kubectl wait --for=condition=complete job/my-job --timeout=2m
-```
-
-### Handling Timeout Expiry
-
-If the timeout ends before the condition is true, the command will stop with a non-zero status. This means failure. We can use this for scripting and automation. It helps us handle errors based on the command's exit status.
-
-To use the timeout feature well, we need to set the right duration for the resource's expected finish time. We can change the timeout value based on how our application works and the conditions we check.
-
-For more details on using `kubectl wait`, see [this resource](https://bestonlinetutorial.com/kubernetes/how-can-you-wait-for-a-kubernetes-job-to-complete-on-failure-or-success-using-the-command-line.html).
-
-## Using kubectl wait with Jobs and CronJobs in Kubernetes
-
-In Kubernetes, we can use `kubectl wait` to manage the lifecycle of Jobs and CronJobs. It helps us wait for them to finish. This is important for tasks that rely on the success of batch jobs or scheduled jobs.
-
-### Using kubectl wait with Jobs
-
-To wait for a Job to finish, we use this command:
-
-```bash
-kubectl wait --for=condition=complete --timeout=30s job/<job-name>
-```
-
-We replace `<job-name>` with the name of our Job. This command checks the status of the Job. It waits until the Job is complete or until the 30 seconds timeout is over.
-
-### Example of Waiting for a Job
-
-Here is a simple example:
-
-1. First, we create a Job that runs a small task:
+Here is an example of a post-install hook for validation:
 
 ```yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: example-job
+  name: validate-secret
+  annotations:
+    "helm.sh/hook": post-install
 spec:
   template:
     spec:
       containers:
-      - name: example
-        image: busybox
-        command: ['sh', '-c', 'echo Hello, Kubernetes! && sleep 5']
+        - name: validate
+          image: busybox
+          command: ['sh', '-c', 'kubectl get secret my-secret -o json']
       restartPolicy: Never
 ```
 
-2. Next, we apply the Job manifest:
+### Managing Secrets with Helm Hooks
 
-```bash
-kubectl apply -f job.yaml
-```
+- **Pre-delete Hooks**: We can use a `pre-delete` hook to back up or keep secrets safe before we delete the release.
 
-3. Then, we wait for the Job to finish:
+  ```yaml
+  apiVersion: v1
+  kind: Job
+  metadata:
+    name: backup-secret
+    annotations:
+      "helm.sh/hook": pre-delete
+  spec:
+    template:
+      spec:
+        containers:
+          - name: backup
+            image: busybox
+            command: ['sh', '-c', 'kubectl get secret my-secret -o yaml > backup.yaml']
+        restartPolicy: Never
+  ```
 
-```bash
-kubectl wait --for=condition=complete --timeout=30s job/example-job
-```
+- **Pre-upgrade Hooks**: We can use `pre-upgrade` hooks to change or recreate secrets with new settings before we upgrade.
 
-### Using kubectl wait with CronJobs
+### Best Practices for Using Helm Hooks with Secrets
 
-For CronJobs, we can also wait for the last run to finish. We use this command:
+- Give unique names to secrets made by hooks. This stops name conflicts.
+- Make sure hooks have the right annotations to run at the needed times.
+- Test hooks often to make sure they work well during deployment.
 
-```bash
-kubectl wait --for=condition=complete --timeout=30s cronjob/<cronjob-name>
-```
+By using Helm hooks the right way, we can control and keep our Kubernetes secrets safe. This helps us avoid mistakes during Helm releases. For more tips on managing secrets securely in Kubernetes, you can read this article on [how to manage secrets in Kubernetes securely](https://bestonlinetutorial.com/kubernetes/how-do-i-manage-secrets-in-kubernetes-securely.html).
 
-### Example of Waiting for a CronJob
+## How to Implement Conditional Logic in Helm Templates for Secrets
 
-1. First, we create a CronJob that runs every minute:
+We want to avoid overwriting randomly generated secrets in Helm templates. To do this, we can use conditional logic with Helm's templating. This helps us decide if we should create a new secret or use an existing one based on certain conditions.
+
+We can use the `if` statement in our Helm templates to apply this logic. For example, we can check if a secret already exists before we create a new one. Here is a simple way to do it:
 
 ```yaml
-apiVersion: batch/v1
-kind: CronJob
+{{- if .Values.useExistingSecret }}
+apiVersion: v1
+kind: Secret
 metadata:
-  name: example-cronjob
-spec:
-  schedule: "*/1 * * * *"
-  jobTemplate:
-    spec:
-      template:
-        spec:
-          containers:
-          - name: example
-            image: busybox
-            command: ['sh', '-c', 'echo Hello, Kubernetes! && sleep 5']
-          restartPolicy: Never
+  name: {{ .Values.existingSecretName }}
+type: Opaque
+data:
+  username: {{ .Values.existingUsername | b64enc | quote }}
+  password: {{ .Values.existingPassword | b64enc | quote }}
+{{- else }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Release.Name }}-generated-secret
+type: Opaque
+data:
+  username: {{ .Values.newUsername | b64enc | quote }}
+  password: {{ .Values.newPassword | b64enc | quote }}
+{{- end }}
 ```
 
-2. Next, we apply the CronJob manifest:
+In this example, the template checks the value of `useExistingSecret`. If it is true, we use the existing secret's name and data. If it is false, we create a new secret with the given username and password.
 
-```bash
-kubectl apply -f cronjob.yaml
+We can also do more complex checks with Helm template functions. For instance, we can use the `default` function to set fallback values. This makes sure our Helm chart works well even when some values are missing:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Release.Name }}-secret
+type: Opaque
+data:
+  username: {{ .Values.username | default "defaultUser" | b64enc | quote }}
+  password: {{ .Values.password | default "defaultPass" | b64enc | quote }}
 ```
 
-3. Then, we wait for the latest CronJob to finish:
+This method helps us manage secrets better. It also stops us from accidentally overwriting important data. For more advanced ways to manage secrets, we can think about using external secret management tools or Helm hooks to improve our workflow.
 
-```bash
-kubectl wait --for=condition=complete --timeout=30s job/$(kubectl get jobs --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1].metadata.name}')
-```
+For more info about managing secrets safely in Kubernetes, we can look at [this article](https://bestonlinetutorial.com/kubernetes/how-do-i-manage-secrets-in-kubernetes-securely.html).
 
-This command gets the most recent Job created by the CronJob. It waits for that Job to finish.
+## How to Use External Secret Management Solutions with Helm
 
-Using `kubectl wait` like this helps us build strong automation and CI/CD pipelines. It lets us manage job completion in our Kubernetes clusters. For more info on Kubernetes Jobs and CronJobs, we can check the article on [running batch jobs in Kubernetes](https://bestonlinetutorial.com/kubernetes/how-do-i-run-batch-jobs-in-kubernetes-with-jobs-and-cronjobs.html).
+Using external secret management solutions with Helm can make our sensitive data safer in Kubernetes. We can use tools like HashiCorp Vault, AWS Secrets Manager, or Azure Key Vault. These tools help us manage secrets better in our Helm charts.
 
-## Monitoring Resource Status with kubectl wait
+### Integrating HashiCorp Vault with Helm
 
-The `kubectl wait` command is a useful tool in Kubernetes. It helps us check the status of resources. We can block the command until a certain condition is met for a resource. This way, we can make sure tasks like deployments or jobs finish correctly.
+1. **Install Vault**: We can use Helm to add Vault to our Kubernetes cluster.
 
-To check the status of resources with `kubectl wait`, we can use this syntax:
+   ```bash
+   helm repo add hashicorp https://helm.releases.hashicorp.com
+   helm install vault hashicorp/vault
+   ```
 
-```bash
-kubectl wait --for=condition=complete --timeout=30s job/my-job
-```
+2. **Configure Vault**: We need to enable the Kubernetes auth method and set up a role for our application.
 
-In this example, `kubectl wait` looks to see if the job called `my-job` finished successfully. If the job does not finish in 30 seconds, the command will stop with an error.
+   ```bash
+   vault auth enable kubernetes
+   vault write auth/kubernetes/config \
+       token_reviewer_jwt="YOUR_JWT" \
+       kubernetes_host="https://YOUR_K8S_API_SERVER" \
+       kubernetes_ca_cert="@/path/to/ca.crt"
 
-### Common Conditions
+   vault write auth/kubernetes/role/my-role \
+       bound_service_account_names=my-app-sa \
+       bound_service_account_namespaces=default \
+       policies=my-app-policy \
+       ttl=24h
+   ```
 
-We can use different conditions to monitor:
+3. **Fetch Secrets in Helm Templates**: We can use the `vault` Helm plugin or `helm-secrets` to get secrets from Vault.
 
-- **complete**: This means a Job has finished successfully.
-- **available**: This means a Deployment has at least one replica ready.
-- **ready**: This means a Pod is ready to take traffic.
-- **failed**: This means a Job has failed.
+   ```yaml
+   apiVersion: v1
+   kind: Secret
+   metadata:
+     name: my-secret
+   type: Opaque
+   data:
+     password: {{ .Values.vault.password | vault "my-secret/password" }}
+   ```
 
-### Example Usage
+### Using AWS Secrets Manager with Helm
 
-1. **Monitor a Job Completion**:
+1. **Setup IAM Role**: We need to create an IAM role that lets our Kubernetes pods access AWS Secrets Manager.
 
-```bash
-kubectl wait --for=condition=complete --timeout=60s job/my-job
-```
+2. **Install External Secrets Operator**: This operator helps sync secrets from AWS Secrets Manager to Kubernetes.
 
-2. **Monitor Deployment Availability**:
+   ```bash
+   kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/master/deploy/crds/external-secrets.k8s.io_externalsecrets_crd.yaml
+   kubectl apply -f https://raw.githubusercontent.com/external-secrets/external-secrets/master/deploy/deploy.yaml
+   ```
 
-```bash
-kubectl wait --for=condition=available --timeout=30s deployment/my-deployment
-```
+3. **Create External Secret**: We define an ExternalSecret resource to sync our secrets.
 
-3. **Monitor Pod Readiness**:
+   ```yaml
+   apiVersion: kubernetes-client.io/v1
+   kind: ExternalSecret
+   metadata:
+     name: my-external-secret
+   spec:
+     backendType: secretsManager
+     data:
+       - key: my-secret
+         name: password
+         property: password
+   ```
 
-```bash
-kubectl wait --for=condition=ready --timeout=45s pod/my-pod
-```
+4. **Use in Helm Chart**: We can reference the synced secret in our Helm chart.
 
-### Benefits of Using kubectl wait
+   ```yaml
+   apiVersion: v1
+   kind: Deployment
+   metadata:
+     name: my-app
+   spec:
+     template:
+       spec:
+         containers:
+           - name: my-container
+             image: my-image
+             env:
+               - name: SECRET_PASSWORD
+                 valueFrom:
+                   secretKeyRef:
+                     name: my-external-secret
+                     key: password
+   ```
 
-- **Automation**: We can automate workflows. This helps us make sure resources are ready before moving on.
-- **Error Handling**: We can quickly find problems with resources that do not reach the needed state in the timeout.
-- **Simplicity**: It makes checking the status of resources easier in scripts and CI/CD pipelines.
+### Leveraging Azure Key Vault with Helm
 
-For more details on the `kubectl` command and how to use it, we can look at the official documentation or check topics like [how to wait for a Kubernetes job to complete](https://bestonlinetutorial.com/kubernetes/how-can-you-wait-for-a-kubernetes-job-to-complete-on-failure-or-success-using-the-command-line.html).
+1. **Setup Azure Key Vault**: We create a Key Vault and add our secrets.
+
+   ```bash
+   az keyvault create --name MyKeyVault --resource-group MyResourceGroup --location eastus
+   az keyvault secret set --vault-name MyKeyVault --name MySecret --value MySecretValue
+   ```
+
+2. **Install the Azure Key Vault Provider**: We need to deploy the provider for Kubernetes.
+
+   ```bash
+   helm repo add azure-keyvault-secrets-provider https://azure.github.io/secrets-store-csi-driver-provider-azure/charts
+   helm install azure-keyvault-secrets-provider azure-keyvault-secrets-provider/azure-keyvault-secrets-provider
+   ```
+
+3. **Create SecretProviderClass**: We define a SecretProviderClass for our application.
+
+   ```yaml
+   apiVersion: secrets-store.csi.k8s.io/v1
+   kind: SecretProviderClass
+   metadata:
+     name: my-secret-provider
+   spec:
+     provider: azure
+     parameters:
+       usePodIdentity: "false"
+       keyvaultName: "MyKeyVault"
+       cloudName: "AzurePublicCloud"
+       objects: |
+         array:
+           - |
+             objectName: MySecret
+             objectType: secret
+   ```
+
+4. **Reference in Helm Chart**: We can use the secret in our application deployment.
+
+   ```yaml
+   apiVersion: v1
+   kind: Deployment
+   metadata:
+     name: my-app
+   spec:
+     template:
+       spec:
+         containers:
+           - name: my-container
+             image: my-image
+             env:
+               - name: SECRET_PASSWORD
+                 valueFrom:
+                   secretKeyRef:
+                     name: my-app-secret
+                     key: MySecret
+   ```
+
+Using external secret management solutions with Helm can help us keep our Kubernetes applications more secure. We can manage sensitive credentials better this way.
+
+## How to Version Control Secrets with Helm Releases
+
+We need to control versions for secrets in Helm releases. This helps us manage changes and keep our sensitive data safe across deployments. We can do this by using Helm's built-in tools and some best practices for handling secrets.
+
+1. **Using `helm get`**: We can get the current values of a release to see changes over time.
+   ```bash
+   helm get values <release-name> --revision <revision-number>
+   ```
+
+2. **Version Control with Git**: We should store our Helm chart templates and `values.yaml` files in a Git repository. This way, we can track changes to our secrets and configurations.
+   - **Commit changes**:
+     ```bash
+     git add .
+     git commit -m "Update secret values for release"
+     git push
+     ```
+
+3. **Helm Secrets Plugin**: We can use the [Helm Secrets](https://github.com/jkroepke/helm-secrets) plugin to encrypt our secrets with tools like SOPS. This keeps our sensitive data safe in our Git repository.
+   ```bash
+   helm secrets enc secrets.yaml
+   helm secrets install <release-name> ./chart/
+   ```
+
+4. **Helmfile**: We can use Helmfile to manage many Helm releases and their settings. This helps us have one main source of truth.
+   ```yaml
+   releases:
+     - name: myapp
+       chart: ./myapp
+       values:
+         - secrets.yaml
+   ```
+
+5. **Kubernetes External Secrets**: We can use external secret management tools, like AWS Secrets Manager or HashiCorp Vault. This helps us get secrets when we deploy.
+   ```yaml
+   apiVersion: kubernetes.io/v1
+   kind: ExternalSecret
+   metadata:
+     name: my-secret
+   spec:
+     backendType: secretsManager
+     data:
+       - key: myapp/secret
+         name: my-secret-key
+   ```
+
+6. **Automated CI/CD Pipelines**: We can set up CI/CD pipelines that automatically deploy Helm releases with version-controlled secrets. We can use environment variables or secret management tools to get sensitive data during the pipeline run.
+
+If we follow these practices, we can version control secrets well in our Helm releases. This keeps our data secure and makes it easy to trace changes while we manage our Kubernetes applications. For more details on handling secrets safely in Kubernetes, check [this guide](https://bestonlinetutorial.com/kubernetes/how-do-i-manage-secrets-in-kubernetes-securely.html).
 
 ## Frequently Asked Questions
 
-### 1. What does the `kubectl wait --for=condition=complete` command do in Kubernetes?
-The command `kubectl wait --for=condition=complete` makes a script stop until a certain condition is true for a Kubernetes resource. It waits for a Job or a CronJob to finish successfully. This is helpful in CI/CD pipelines. Later steps depend on the success of earlier jobs.
+### 1. How can we prevent overwriting secrets in Helm templates?
+To stop overwriting secrets in Helm templates, we can use unique names or labels for each secret. This keeps our secrets safe during different releases. We can also use Helm’s built-in template functions. They help us create unique identifiers. This way, our secrets stay different between deployments. For more details, check out [how to manage secrets in Kubernetes securely](https://bestonlinetutorial.com/kubernetes/how-do-i-manage-secrets-in-kubernetes-securely.html).
 
-### 2. How can I set a different timeout when using `kubectl wait`?
-To change the timeout, we can change the `--timeout` flag in the command. For example, if we want to wait for a Job to finish with a timeout of 1 minute, we use:
-```bash
-kubectl wait --for=condition=complete --timeout=1m job/my-job
-```
-This lets us set the waiting time based on what we need.
+### 2. What are Helm hooks and how can they help with secrets?
+Helm hooks are a useful tool. They let us run specific actions at certain times in the lifecycle of a Helm release. Using hooks can help us manage secrets better. We can create or handle secrets before or after the main installation. For instance, a pre-install hook can make a secure secret. This way, it won’t get overwritten when we upgrade later. Learn more about [using Helm hooks to manage your Kubernetes resources](https://bestonlinetutorial.com/kubernetes/how-do-i-use-helm-to-manage-releases-of-my-applications-on-kubernetes.html).
 
-### 3. Can I use `kubectl wait` for other conditions besides completion?
-Yes, we can use `kubectl wait` for many conditions like `available`, `ready`, or `deleted`. For example, to wait until a Deployment is available, we run:
-```bash
-kubectl wait --for=condition=available --timeout=30s deployment/my-deployment
-```
-This gives us the ability to check different parts of our Kubernetes resources.
+### 3. How do we implement conditional logic in Helm templates for managing secrets?
+We can use `if`, `else`, and `with` statements to add conditional logic in Helm templates. This lets us control when secrets are created based on certain conditions like environment variables. By using this logic, we ensure secrets are only made or changed when needed. This helps us avoid overwriting existing secrets. For more help, see [how to use templating variables in Helm](https://bestonlinetutorial.com/kubernetes/how-to-use-templating-variables-in-values-yaml-for-helm-in-kubernetes.html).
 
-### 4. How does `kubectl wait` integrate with Jobs and CronJobs?
-`kubectl wait` is very good for managing Jobs and CronJobs in Kubernetes. When we use the command with the `--for=condition=complete` flag, we make sure that our deployment waits for these batch jobs to finish before moving on. This helps keep the application workflow correct.
+### 4. What external secret management solutions can we use with Helm?
+We can improve our Kubernetes security by connecting external secret management tools like HashiCorp Vault or AWS Secrets Manager with Helm. These tools help us manage secrets dynamically. This means we do not need to hardcode sensitive data in our Helm charts. By using these solutions, we can keep our secrets safe and make our deployment process cleaner. For more info, visit [how to use external secret management solutions with Kubernetes](https://bestonlinetutorial.com/kubernetes/how-do-i-manage-secrets-in-kubernetes-securely.html).
 
-### 5. Where can I find more information about using `kubectl` effectively?
-For more info about `kubectl` and its commands, we can look at the article on [what is kubectl and how do I use it to manage Kubernetes](https://bestonlinetutorial.com/kubernetes/what-is-kubectl-and-how-do-i-use-it-to-manage-kubernetes.html). This resource gives us useful information about important commands and good practices for managing resources in Kubernetes.
+### 5. How do we version control secrets with Helm releases?
+Version controlling secrets in Helm is very important. It helps us keep track of changes and allows us to roll back if needed. We can use Helm's release management features to see changes to secrets over time. We should store secrets in a secure place and refer to them in our Helm charts. This way, we can update secrets without losing old values. For best practices, check out [how to manage releases with Helm](https://bestonlinetutorial.com/kubernetes/how-do-i-use-helm-to-manage-releases-of-my-applications-on-kubernetes.html).
