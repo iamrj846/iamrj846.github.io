@@ -1,0 +1,462 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            
+            <meta property="og:title" content="How can you effectively use Redis `SCAN` to balance incoming matching keys while ensuring timely results?" />
+            <meta property="og:description" content="Discover effective strategies to use Redis SCAN for balancing incoming keys and achieving timely results in your applications." />
+            <meta property="og:url" content="https://www.bestonlinetutorial.com/redis/how-can-you-effectively-use-redis-scan-to-balance-incoming-matching-keys-while-ensuring-timely-results.html" />
+            <link rel="canonical" href="https://www.bestonlinetutorial.com/redis/how-can-you-effectively-use-redis-scan-to-balance-incoming-matching-keys-while-ensuring-timely-results.html">
+            <meta property="og:type" content="article" />
+            <meta property="og:site_name" content=“BestOnlineTutorial” />
+            <meta name="twitter:title" content="How can you effectively use Redis `SCAN` to balance incoming matching keys while ensuring timely results?" />
+            <meta name="twitter:description" content="Discover effective strategies to use Redis SCAN for balancing incoming keys and achieving timely results in your applications." />
+            <meta name="pinterest-rich-pin" content="true" />
+
+            <script type="application/ld+json">
+                {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "BestOnlineTutorial",
+                "url": "https://www.bestonlinetutorial.com/"
+                }
+            </script>
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How can you effectively use Redis `SCAN` to balance incoming matching keys while ensuring timely results?</title>
+            <meta name="description" content="Discover effective strategies to use Redis SCAN for balancing incoming keys and achieving timely results in your applications.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How can you effectively use Redis `SCAN` to balance incoming matching keys while ensuring timely results?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To use Redis <code>SCAN</code> well for balancing incoming matching
+keys and getting results on time, we can use its ability to work in
+small steps. This helps to stop blocking the server. With
+<code>SCAN</code>, we can get keys in small groups instead of all at
+once. This way, our application stays responsive even when we have big
+datasets. This method reduces performance issues and makes our
+application work better with key matching.</p>
+<p>In this article, we will look into how to use Redis <code>SCAN</code>
+for the best key balancing and performance. We will explain how
+<code>SCAN</code> works, why it is better than <code>KEYS</code>, how to
+use cursor-based pagination, ways to improve performance, and tips for
+working with large datasets. Here are the topics we will cover:</p>
+<ul>
+<li>How to Use Redis SCAN to Balance Incoming Matching Keys and Get
+Results on Time</li>
+<li>How Does Redis SCAN Work for Key Matching</li>
+<li>What Are the Benefits of Using SCAN Instead of KEYS</li>
+<li>How Can We Use SCAN with Cursor-Based Pagination</li>
+<li>How to Improve SCAN for Better Performance and Timeliness</li>
+<li>How to Manage Large Datasets with Redis SCAN</li>
+<li>Common Questions and Answers</li>
+</ul>
+<h2 id="how-does-redis-scan-work-for-key-matching">How Does Redis SCAN
+Work for Key Matching</h2>
+<p>Redis has the <code>SCAN</code> command. This command helps us look
+through keys in a database without stopping the server. This makes it
+good for apps that need to find keys while giving quick results. The
+<code>SCAN</code> command is different from the <code>KEYS</code>
+command. The <code>KEYS</code> command gets all matching keys at once.
+But <code>SCAN</code> uses a cursor. This lets us go through keys step
+by step.</p>
+<h3 id="basic-syntax">Basic Syntax</h3>
+<p>The basic way to write the <code>SCAN</code> command is:</p>
+<pre class="redis"><code>SCAN cursor [MATCH pattern] [COUNT count]</code></pre>
+<ul>
+<li><strong>cursor</strong>: This is where we start. It should be
+<code>0</code> to begin.</li>
+<li><strong>MATCH pattern</strong>: We can use this to filter the keys
+we want (like <code>user:*</code>).</li>
+<li><strong>COUNT count</strong>: This suggests how many items to get
+each time, but it is not sure.</li>
+</ul>
+<h3 id="example-usage">Example Usage</h3>
+<p>Let’s see how <code>SCAN</code> works with an example in Redis
+CLI:</p>
+<pre class="redis"><code># Start scanning from cursor 0
+SCAN 0 MATCH user:* COUNT 10</code></pre>
+<p>This command will give us a few keys that match <code>user:*</code>.
+It starts from the beginning. The response gives us a new cursor. We can
+use this cursor to keep scanning.</p>
+<h3 id="handling-iteration">Handling Iteration</h3>
+<p>To get all matching keys, we need to use the new cursor we got. We
+keep going until it returns <code>0</code>. This means we reached the
+end of the keys:</p>
+<pre class="redis"><code># Pseudo-code for scanning all matching keys
+local cursor = &quot;0&quot;
+repeat
+    local result = redis.call(&quot;SCAN&quot;, cursor, &quot;MATCH&quot;, &quot;user:*&quot;, &quot;COUNT&quot;, &quot;10&quot;)
+    cursor = result[1]
+    local keys = result[2]
+    -- Process keys here
+until cursor == &quot;0&quot;</code></pre>
+<h3 id="advantages-of-scan">Advantages of SCAN</h3>
+<ul>
+<li><strong>Non-blocking</strong>: SCAN does not stop the server. This
+is good for busy production environments.</li>
+<li><strong>Incremental</strong>: We can get keys in small groups
+instead of getting all at once.</li>
+<li><strong>Adaptable</strong>: We can change the <code>COUNT</code> to
+manage load based on what we need.</li>
+</ul>
+<p>Using <code>SCAN</code> helps us work with big datasets while getting
+keys quickly. This makes it a strong tool for Redis key matching tasks.
+For more details on Redis commands, check <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">What is
+Redis?</a>.</p>
+<h2 id="what-are-the-advantages-of-using-scan-over-keys">What Are the
+Advantages of Using SCAN Over KEYS</h2>
+<p>Using <code>SCAN</code> in Redis has many benefits compared to the
+<code>KEYS</code> command. This is true especially when we work with big
+datasets or when we need good performance and quick responses. Here are
+the main advantages:</p>
+<ol type="1">
+<li><p><strong>Non-Blocking Operation</strong>:</p>
+<ul>
+<li><code>SCAN</code> works in small steps. It returns a few keys at a
+time. This way, it does not block the Redis server. On the other hand,
+<code>KEYS</code> can slow down the server because it scans everything
+at once.</li>
+</ul></li>
+<li><p><strong>Memory Efficiency</strong>:</p>
+<ul>
+<li><code>SCAN</code> uses less memory for each operation. It returns a
+limited number of keys each time. This makes it good for systems that
+have limited resources.</li>
+</ul></li>
+<li><p><strong>Incremental Iteration</strong>:</p>
+<ul>
+<li>With <code>SCAN</code>, we can keep scanning from where we stopped
+using a cursor. This is helpful for going through large sets of data bit
+by bit.</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SCAN</span> cursor [MATCH pattern] [COUNT count]</span></code></pre></div></li>
+<li><p><strong>Avoids Performance Degradation</strong>:</p>
+<ul>
+<li>Using <code>KEYS</code> can slow down production systems. It may
+lock the server while it runs. But <code>SCAN</code> spreads out the
+work over several calls. This helps avoid problems.</li>
+</ul></li>
+<li><p><strong>Pattern Matching</strong>:</p>
+<ul>
+<li>Both <code>SCAN</code> and <code>KEYS</code> can match patterns. But
+with <code>SCAN</code>, we can limit the number of keys based on a
+pattern. It does not hurt performance much.</li>
+</ul>
+<p>Example of using <code>SCAN</code> with pattern matching:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SCAN</span> 0 MATCH user:<span class="pp">*</span> COUNT 100</span></code></pre></div></li>
+<li><p><strong>Ideal for Large Datasets</strong>:</p>
+<ul>
+<li>If we work with a lot of keys, <code>SCAN</code> is the better
+option. It helps prevent memory overload and keeps the server
+responsive.</li>
+</ul></li>
+<li><p><strong>Control Over Iteration</strong>:</p>
+<ul>
+<li><code>SCAN</code> gives us better control over how many keys we get
+at once. We can adjust this based on what our application needs and what
+the server can handle.</li>
+</ul></li>
+</ol>
+<p>When we want to balance incoming matching keys and get results
+quickly, <code>SCAN</code> is very important. It works well in
+applications that need fast responses. We can also use it with other
+Redis commands for the best performance. For more information about
+Redis commands and how to use them, check the <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">Redis
+documentation</a>.</p>
+<h2 id="how-can-we-implement-scan-with-cursor-based-pagination">How Can
+We Implement SCAN with Cursor-Based Pagination</h2>
+<p>To use Redis <code>SCAN</code> with cursor-based pagination, we take
+the cursor value from the <code>SCAN</code> command. This helps us go
+through keys in a Redis database. We can get keys in small groups
+instead of all at once. This way, we can keep performance and memory use
+balanced.</p>
+<h3 id="basic-syntax-1">Basic Syntax</h3>
+<p>The basic format for the <code>SCAN</code> command looks like
+this:</p>
+<pre class="plaintext"><code>SCAN cursor [MATCH pattern] [COUNT count]</code></pre>
+<ul>
+<li><strong>cursor</strong>: This is the position where we start
+scanning. The first call should use <code>0</code>.</li>
+<li><strong>MATCH pattern</strong>: This is an optional part to filter
+keys that match a certain pattern.</li>
+<li><strong>COUNT count</strong>: This is another optional part to
+suggest how many keys we want to get in each step (not guaranteed).</li>
+</ul>
+<h3 id="example-implementation">Example Implementation</h3>
+<p>Here is a simple example in Python that shows cursor-based pagination
+with Redis:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Connect to Redis</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> redis.Redis(host<span class="op">=</span><span class="st">&#39;localhost&#39;</span>, port<span class="op">=</span><span class="dv">6379</span>, db<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> scan_keys(pattern<span class="op">=</span><span class="st">&#39;*&#39;</span>, count<span class="op">=</span><span class="dv">10</span>):</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    cursor <span class="op">=</span> <span class="st">&#39;0&#39;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">while</span> cursor <span class="op">!=</span> <span class="st">&#39;0&#39;</span>:</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>        cursor, keys <span class="op">=</span> r.scan(cursor<span class="op">=</span>cursor, match<span class="op">=</span>pattern, count<span class="op">=</span>count)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> key <span class="kw">in</span> keys:</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(key.decode(<span class="st">&#39;utf-8&#39;</span>))  <span class="co"># Decode bytes to string</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Usage</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>scan_keys(pattern<span class="op">=</span><span class="st">&#39;user:*&#39;</span>, count<span class="op">=</span><span class="dv">5</span>)</span></code></pre></div>
+<h3 id="explanation">Explanation</h3>
+<ul>
+<li>The <code>scan_keys</code> function starts with the cursor set to
+<code>'0'</code>. We keep calling <code>SCAN</code> until the cursor
+returned is <code>0</code>. This means we have reached the end of the
+keys.</li>
+<li>The <code>MATCH</code> part helps filter keys based on the pattern
+we want (like <code>user:*</code>).</li>
+<li>The <code>COUNT</code> part gives Redis a hint on how many keys to
+return. This helps us manage memory when we scan a lot of keys.</li>
+</ul>
+<h3 id="performance-considerations">Performance Considerations</h3>
+<ul>
+<li><strong>Non-blocking</strong>: <code>SCAN</code> does not block like
+<code>KEYS</code>, so it is better for production environments.</li>
+<li><strong>Incremental</strong>: We can load keys gradually. This is
+very helpful for big data sets.</li>
+</ul>
+<h3 id="use-case">Use Case</h3>
+<p>This cursor-based pagination method is really useful when working
+with large data sets in Redis. It lets us get keys one by one. This way,
+we get results on time without overloading the server or using too much
+memory.</p>
+<p>For more details about Redis commands, we can check the <a
+href="https://bestonlinetutorial.com/redis/what-is-redis.html">Redis
+command documentation</a>.</p>
+<h2 id="how-to-optimize-scan-for-performance-and-timeliness">How to
+Optimize SCAN for Performance and Timeliness</h2>
+<p>We can make Redis <code>SCAN</code> work better and faster by using
+some simple strategies. These tips will help us when we need to query
+large datasets. Here are the key techniques we can use:</p>
+<ol type="1">
+<li><p><strong>Use Smaller COUNT Values</strong>: By default,
+<code>SCAN</code> gives us 10 keys each time. If we change the
+<code>COUNT</code> value, we can decide how many keys to get in one go.
+This can make our queries faster for large datasets.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SCAN</span> cursor COUNT 100</span></code></pre></div></li>
+<li><p><strong>Batch Processing</strong>: We can use a loop to handle
+keys in smaller groups. This way, we do not overload our application
+with too many keys at once. It helps us get results on time.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> redis.Redis()</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>cursor <span class="op">=</span> <span class="st">&#39;0&#39;</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> cursor <span class="op">!=</span> <span class="dv">0</span>:</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    cursor, keys <span class="op">=</span> r.scan(cursor<span class="op">=</span>cursor, count<span class="op">=</span><span class="dv">100</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Process keys here</span></span></code></pre></div></li>
+<li><p><strong>Parallel SCANs</strong>: We can run many SCAN commands at
+the same time. This divides the work and can make getting keys much
+faster.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> concurrent.futures <span class="im">import</span> ThreadPoolExecutor</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> scan_keys(cursor):</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Perform SCAN operation</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> r.scan(cursor<span class="op">=</span>cursor, count<span class="op">=</span><span class="dv">100</span>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> ThreadPoolExecutor(max_workers<span class="op">=</span><span class="dv">4</span>) <span class="im">as</span> executor:</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    futures <span class="op">=</span> [executor.submit(scan_keys, cursor) <span class="cf">for</span> cursor <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, <span class="dv">4</span>)]</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    results <span class="op">=</span> [future.result() <span class="cf">for</span> future <span class="kw">in</span> futures]</span></code></pre></div></li>
+<li><p><strong>Filter Keys Early</strong>: If we know the patterns of
+the keys we want, we can use the <code>MATCH</code> option with SCAN.
+This helps us find keys faster.</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">SCAN</span> cursor MATCH pattern<span class="pp">*</span> COUNT 100</span></code></pre></div></li>
+<li><p><strong>Avoiding Blocking</strong>: SCAN does not block, but if
+we have a lot of load, we should run <code>SCAN</code> in a background
+job or during times when there are fewer users. This helps stop delays
+when a lot of people are using the system.</p></li>
+<li><p><strong>Redis Configuration</strong>: We should adjust Redis
+settings to work well with large datasets. Increasing the
+<code>maxmemory</code> setting gives us more memory for our tasks. This
+can help avoid slowdowns.</p></li>
+<li><p><strong>Use of Redis Modules</strong>: We can use Redis modules
+that make SCAN better. For example, RediSearch can help us search
+indexed data faster. This improves our query times for specific
+patterns.</p></li>
+<li><p><strong>Monitoring Performance</strong>: It is important to check
+how well our SCAN operations work. We can use Redis monitoring tools to
+watch key metrics like response times and memory usage. This helps us
+find any problems.</p></li>
+</ol>
+<p>For more information about Redis operations, you can check this link
+on <a
+href="https://bestonlinetutorial.com/redis/how-do-i-optimize-redis-performance.html">Redis
+performance optimization</a>.</p>
+<h2 id="how-to-handle-large-datasets-with-redis-scan">How to Handle
+Large Datasets with Redis SCAN</h2>
+<p>We can handle large datasets in Redis in a smart way. We use the
+<code>SCAN</code> command for this. Unlike <code>KEYS</code>, which can
+stop the server, <code>SCAN</code> does not block and gets keys in small
+parts. This helps us manage memory better and lowers the delay when we
+work with big datasets.</p>
+<h3 id="using-scan-for-large-datasets">Using SCAN for Large
+Datasets</h3>
+<ul>
+<li><strong>Basic SCAN Syntax</strong>:
+<code>bash     SCAN cursor [MATCH pattern] [COUNT count]</code>
+<ul>
+<li><code>cursor</code>: This is a number that shows our current
+position in the keyspace.</li>
+<li><code>MATCH</code>: This is an extra option to filter keys by a
+pattern.</li>
+<li><code>COUNT</code>: This is a hint to limit how many keys we get
+back each time.</li>
+</ul></li>
+<li><strong>Example</strong>: To find keys that fit a certain pattern,
+we can use: <code>bash     SCAN 0 MATCH user:* COUNT 100</code></li>
+</ul>
+<h3 id="implementing-scan-in-a-loop">Implementing SCAN in a Loop</h3>
+<p>When we work with large datasets, we must run <code>SCAN</code> in a
+loop. We keep going until the cursor goes back to zero. This shows we
+finish the scan.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode python"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> redis</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Connect to Redis</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> redis.Redis()</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Start cursor</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>cursor <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span> <span class="va">True</span>:</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    cursor, keys <span class="op">=</span> r.scan(cursor, match<span class="op">=</span><span class="st">&#39;user:*&#39;</span>, count<span class="op">=</span><span class="dv">100</span>)</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> key <span class="kw">in</span> keys:</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Do something with each key</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(key)</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> cursor <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span></span></code></pre></div>
+<h3 id="tips-for-efficient-scan-usage">Tips for Efficient SCAN
+Usage</h3>
+<ul>
+<li><strong>Adjust COUNT</strong>: We can try out different
+<code>COUNT</code> values to find a good mix of speed and response. A
+smaller count gives us quicker answers. A bigger count can be better for
+efficiency.</li>
+<li><strong>Use MATCH</strong>: We should narrow our keys using the
+<code>MATCH</code> option. This helps us get fewer keys back and can
+speed up our work.</li>
+<li><strong>Asynchronous Processing</strong>: We can think about using
+asynchronous methods for keys. This keeps our application working well
+while scanning.</li>
+</ul>
+<h3 id="scalability-and-performance">Scalability and Performance</h3>
+<ul>
+<li><strong>Horizontal Scaling</strong>: If we use Redis Cluster, we can
+use the sharding system to share the keyspace. This helps us run many
+SCAN commands at the same time on different nodes.</li>
+<li><strong>Memory Management</strong>: We need to keep an eye on memory
+use during big scans. This helps avoid running out of memory. We can use
+tools like Redis Memory Analyzer to help us use memory better.</li>
+</ul>
+<p>By using the <code>SCAN</code> command, we can manage and work with
+large datasets in Redis without losing speed or responsiveness. This
+way, we use resources well and get results on time. For more tips on
+Redis commands and how to optimize them, we can check out <a
+href="https://bestonlinetutorial.com/redis/what-are-redis-data-types.html">Redis
+Data Types</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-redis-scan-and-how-does-it-differ-from-keys">What is
+Redis SCAN and how does it differ from KEYS?</h3>
+<p>Redis SCAN is a command that we use to go through keys in a Redis
+database. It does this without blocking the server. This is different
+from the KEYS command. KEYS can slow down performance because it tries
+to look at all keys at the same time. SCAN helps us get keys in smaller
+parts. This makes it better for large datasets. With SCAN, we can find
+matching keys faster. This is important for keeping Redis running
+well.</p>
+<h3 id="how-can-i-optimize-redis-scan-for-better-performance">How can I
+optimize Redis SCAN for better performance?</h3>
+<p>To make Redis SCAN work better, we can use smaller batch sizes. We
+can also change the SCAN count parameter. This helps us balance
+performance and how much memory we use. We should also check that our
+Redis instance is set up right for good memory use. Using pipelining can
+help reduce waiting time. These tips will help us get keys quickly and
+keep things running smoothly when we use Redis SCAN.</p>
+<h3 id="can-scan-handle-large-datasets-effectively">Can SCAN handle
+large datasets effectively?</h3>
+<p>Yes, Redis SCAN is made to work well with large datasets. SCAN uses a
+cursor-based method. This lets us go through keys in small amounts. It
+does not overload the server. This way, we reduce the chances of
+timeouts. Our application can keep working on incoming requests while it
+gets keys. So, SCAN is a good choice for applications that need quick
+results.</p>
+<h3 id="what-are-the-best-practices-for-using-scan-in-redis">What are
+the best practices for using SCAN in Redis?</h3>
+<p>The best practices for using SCAN in Redis are to use a cursor. This
+helps us know where we are in the keyspace. We should set a reasonable
+count parameter. This limits how many keys we get in each round. We must
+also run SCAN in a way that does not block the application. This keeps
+our app responsive. It can help to use SCAN with other Redis features
+like sorting and filtering. This makes finding keys easier.</p>
+<h3
+id="how-does-scan-improve-upon-the-limitations-of-the-keys-command">How
+does SCAN improve upon the limitations of the KEYS command?</h3>
+<p>SCAN is better than the KEYS command because it lets us go through
+keys without blocking. This helps us avoid slow performance when the
+server is busy. KEYS tries to get all keys at once. This can cause
+delays. SCAN lets us get keys little by little. This is important for
+handling incoming matching keys and giving results quickly. Because of
+this, SCAN is a better choice for working with large datasets.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
