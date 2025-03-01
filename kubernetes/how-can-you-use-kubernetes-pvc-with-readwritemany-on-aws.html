@@ -1,0 +1,572 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How Can You Use Kubernetes PVC with ReadWriteMany on AWS?</title>
+            <meta name="description" content="Discover how to utilize Kubernetes PVC with ReadWriteMany on AWS for efficient storage management and seamless application scaling.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Can You Use Kubernetes PVC with ReadWriteMany on AWS?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To use Kubernetes Persistent Volume Claims (PVC) with ReadWriteMany
+access mode on AWS, we can use Amazon Elastic File System (EFS). This
+lets many pods read and write to the same volume at the same time. This
+setup is important for apps that need shared storage. It helps us manage
+data easily across our Kubernetes clusters.</p>
+<p>In this article, we will look at the key steps to set up Kubernetes
+PVC with ReadWriteMany on AWS. We will talk about how to configure EFS
+for Kubernetes. We will also explain how to create a Kubernetes PVC with
+ReadWriteMany, set up the EFS CSI driver, and check access. Here are the
+topics we will discuss:</p>
+<ul>
+<li>How to Use Kubernetes PVC with ReadWriteMany on AWS</li>
+<li>What is ReadWriteMany in Kubernetes PVC on AWS</li>
+<li>How to Configure EFS for Kubernetes PVC ReadWriteMany on AWS</li>
+<li>How to Create a Kubernetes PVC with ReadWriteMany on AWS</li>
+<li>How to Set Up EFS CSI Driver for ReadWriteMany on AWS</li>
+<li>How to Verify ReadWriteMany Access in Kubernetes on AWS</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>By knowing these ideas, we will be ready to create a strong and
+effective storage solution in our Kubernetes setup on AWS.</p>
+<h2 id="what-is-readwritemany-in-kubernetes-pvc-on-aws">What is
+ReadWriteMany in Kubernetes PVC on AWS</h2>
+<p>ReadWriteMany (RWX) is one access mode for Persistent Volume Claims
+(PVCs) in Kubernetes. It lets many nodes read from and write to the same
+volume at the same time. This is very useful for distributed apps where
+many pods need to share the same data at once.</p>
+<p>When we talk about AWS, ReadWriteMany usually means using Amazon
+Elastic File System (EFS). EFS gives us a storage system that can grow
+and shrink. It can be connected to many Amazon Elastic Kubernetes
+Service (EKS) nodes. This setup helps pods share data easily across
+different nodes in a Kubernetes cluster.</p>
+<p><strong>Key Points about ReadWriteMany in Kubernetes
+PVC:</strong></p>
+<ul>
+<li><strong>Access Mode:</strong> RWX lets many pods read and write to
+the same volume.</li>
+<li><strong>Use Case:</strong> It is great for apps that need shared
+storage. This includes content management systems or apps that need to
+read/write logs or temporary data across nodes.</li>
+<li><strong>AWS Integration:</strong> We often use AWS EFS to make RWX
+work in Kubernetes. It supports many connections at once and gives
+strong consistency.</li>
+</ul>
+<p><strong>Example of a Persistent Volume (PV) using EFS with
+ReadWriteMany:</strong></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> efs-pv</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">persistentVolumeReclaimPolicy</span><span class="kw">:</span><span class="at"> Retain</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> efs-sc</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">csi</span><span class="kw">:</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> efs.csi.aws.com</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumeHandle</span><span class="kw">:</span><span class="at"> &lt;EFS_FILE_SYSTEM_ID&gt;</span></span></code></pre></div>
+<p><strong>Example of a Persistent Volume Claim (PVC) using
+ReadWriteMany:</strong></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> efs-pvc</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> efs-sc</span></span></code></pre></div>
+<p>Using RWX with Kubernetes PVCs on AWS gives us flexible and scalable
+application setups. This is very helpful in microservices and
+cloud-native environments. Many services can access data together. For
+more details on Kubernetes PVC and its settings, check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-persistent-volumes-and-persistent-volume-claims.html">what
+are persistent volumes and persistent volume claims</a>.</p>
+<h2
+id="how-to-configure-efs-for-kubernetes-pvc-readwritemany-on-aws">How to
+Configure EFS for Kubernetes PVC ReadWriteMany on AWS</h2>
+<p>We can use ReadWriteMany access mode with Kubernetes Persistent
+Volume Claims (PVCs) on AWS by using Amazon Elastic File System (EFS).
+Here are the steps to set up EFS for Kubernetes PVC ReadWriteMany on
+AWS.</p>
+<ol type="1">
+<li><strong>Create an EFS File System</strong>:
+<ul>
+<li>First, we open the AWS Management Console and go to the EFS
+section.</li>
+<li>Then, we click on “Create file system.”</li>
+<li>Next, we set up the settings like VPC settings, security groups, and
+performance modes.</li>
+<li>Remember to note the File System ID after we create it.</li>
+</ul></li>
+<li><strong>Install EFS CSI Driver</strong>:
+<ul>
+<li>We use this command to deploy the EFS CSI driver on our Kubernetes
+cluster:</li>
+</ul>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-k</span> <span class="st">&quot;github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/ecr&quot;</span></span></code></pre></div></li>
+<li><strong>Create Storage Class</strong>:
+<ul>
+<li>We need to define a StorageClass for EFS in a YAML file. We can name
+it <code>efs-sc.yaml</code>:</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> efs-sc</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">provisioner</span><span class="kw">:</span><span class="at"> efs.csi.aws.com</span></span></code></pre></div>
+<ul>
+<li>After that, we apply the StorageClass with this command:</li>
+</ul>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> efs-sc.yaml</span></code></pre></div></li>
+<li><strong>Create Persistent Volume (PV)</strong>:
+<ul>
+<li>Next, we define a PersistentVolume in a YAML file. We can name it
+<code>efs-pv.yaml</code>:</li>
+</ul>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> efs-pv</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">persistentVolumeReclaimPolicy</span><span class="kw">:</span><span class="at"> Retain</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> efs-sc</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">csi</span><span class="kw">:</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> efs.csi.aws.com</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumeHandle</span><span class="kw">:</span><span class="at"> &lt;your-efs-file-system-id&gt;</span></span></code></pre></div>
+<ul>
+<li>Then, we apply the PersistentVolume:</li>
+</ul>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> efs-pv.yaml</span></code></pre></div></li>
+<li><strong>Create Persistent Volume Claim (PVC)</strong>:
+<ul>
+<li>Now, we define a PVC in a YAML file. We can name it
+<code>efs-pvc.yaml</code>:</li>
+</ul>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> efs-pvc</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> efs-sc</span></span></code></pre></div>
+<ul>
+<li>After that, we apply the PersistentVolumeClaim:</li>
+</ul>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> efs-pvc.yaml</span></code></pre></div></li>
+<li><strong>Verify EFS Access</strong>:
+<ul>
+<li>Finally, we check if the PVC is bound to the PV by running:</li>
+</ul>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pvc</span></code></pre></div>
+<ul>
+<li>We need to check the status of the PVC. It should show as
+<code>Bound</code>.</li>
+</ul></li>
+</ol>
+<p>Now we have configured EFS for Kubernetes PVC with ReadWriteMany
+access on AWS. This setup lets multiple pods read and write to the same
+volume at the same time. For more details on using storage classes in
+Kubernetes, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-use-storage-classes-for-dynamic-volume-provisioning.html">this
+article</a>.</p>
+<h2 id="how-to-create-a-kubernetes-pvc-with-readwritemany-on-aws">How to
+Create a Kubernetes PVC with ReadWriteMany on AWS</h2>
+<p>To create a Kubernetes Persistent Volume Claim (PVC) with
+ReadWriteMany access mode on AWS, we usually use Amazon Elastic File
+System (EFS). Let’s look at the steps to set it up.</p>
+<ol type="1">
+<li><strong>Set Up Amazon EFS</strong>:
+<ul>
+<li>First, we need to create an EFS file system in the AWS Management
+Console. Remember to take note of the File System ID.</li>
+</ul></li>
+<li><strong>Install the EFS CSI Driver</strong>:
+<ul>
+<li><p>We must make sure that the EFS CSI driver is installed in our
+Kubernetes cluster. We can apply this manifest:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-k</span> <span class="st">&quot;github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/ecr/1.22&quot;</span></span></code></pre></div></li>
+</ul></li>
+<li><strong>Create a Storage Class</strong>:
+<ul>
+<li>Next, we need to define a StorageClass that uses the EFS CSI
+driver.</li>
+</ul>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> efs-sc</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">provisioner</span><span class="kw">:</span><span class="at"> efs.csi.aws.com</span></span></code></pre></div></li>
+<li><strong>Create a Persistent Volume (PV)</strong>:
+<ul>
+<li>We now create a Persistent Volume that points to our EFS file
+system.</li>
+</ul>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> efs-pv</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">persistentVolumeReclaimPolicy</span><span class="kw">:</span><span class="at"> Retain</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> efs-sc</span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">csi</span><span class="kw">:</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> efs.csi.aws.com</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumeHandle</span><span class="kw">:</span><span class="at"> &lt;EFS_File_System_ID&gt;</span></span></code></pre></div></li>
+<li><strong>Create a Persistent Volume Claim (PVC)</strong>:
+<ul>
+<li>Now we create a PVC that asks for the PV with ReadWriteMany
+access.</li>
+</ul>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> efs-pvc</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> efs-sc</span></span></code></pre></div></li>
+<li><strong>Apply the Configurations</strong>:
+<ul>
+<li>We can use this command to apply the PV and PVC configurations:</li>
+</ul>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> persistent-volume.yaml</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> persistent-volume-claim.yaml</span></code></pre></div></li>
+<li><strong>Verify the PVC</strong>:
+<ul>
+<li>Finally, we confirm that the PVC is bound to the PV by running:</li>
+</ul>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pvc</span></code></pre></div></li>
+</ol>
+<p>This process helps us create a Kubernetes PVC with ReadWriteMany
+access on AWS. We use EFS for shared storage across many pods. For more
+details about deploying Kubernetes on AWS, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-set-up-a-kubernetes-cluster-on-aws-eks.html">how
+do I set up a Kubernetes cluster on AWS EKS</a>.</p>
+<h2 id="how-to-set-up-efs-csi-driver-for-readwritemany-on-aws">How to
+Set Up EFS CSI Driver for ReadWriteMany on AWS</h2>
+<p>We can set up the Amazon Elastic File System (EFS) Container Storage
+Interface (CSI) driver. This will help us use Kubernetes Persistent
+Volume Claims (PVC) with ReadWriteMany access mode on AWS. Let’s follow
+these steps.</p>
+<h3 id="step-1-install-the-efs-csi-driver">Step 1: Install the EFS CSI
+Driver</h3>
+<p>First, we need to apply the EFS CSI driver manifest from AWS. This
+will create the needed resources in our Kubernetes cluster.</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-k</span> <span class="st">&quot;github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/ecr/aws/1.6.0&quot;</span></span></code></pre></div>
+<h3 id="step-2-create-an-efs-file-system">Step 2: Create an EFS File
+System</h3>
+<ol type="1">
+<li>We go to the AWS Management Console.</li>
+<li>Then we find the EFS section.</li>
+<li>Click on “Create file system”.</li>
+<li>We set the file system settings. It is important to choose the VPC
+where our Kubernetes cluster is.</li>
+<li>We write down the File System ID. We will need it later.</li>
+</ol>
+<h3 id="step-3-create-a-storageclass">Step 3: Create a StorageClass</h3>
+<p>Next, we create a <code>StorageClass</code> that uses the EFS CSI
+driver. We save the following YAML as <code>efs-sc.yaml</code>.</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> efs-sc</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">provisioner</span><span class="kw">:</span><span class="at"> efs.csi.aws.com</span></span></code></pre></div>
+<p>Now we apply the StorageClass:</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> efs-sc.yaml</span></code></pre></div>
+<h3 id="step-4-create-a-persistent-volume-pv">Step 4: Create a
+Persistent Volume (PV)</h3>
+<p>Now we define a <code>PersistentVolume</code> that links to the EFS
+file system. We save the following configuration as
+<code>efs-pv.yaml</code>.</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> efs-pv</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">persistentVolumeReclaimPolicy</span><span class="kw">:</span><span class="at"> Retain</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> efs-sc</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">csi</span><span class="kw">:</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> efs.csi.aws.com</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumeHandle</span><span class="kw">:</span><span class="at"> &lt;EFS_FILE_SYSTEM_ID&gt;</span></span></code></pre></div>
+<p>We must replace <code>&lt;EFS_FILE_SYSTEM_ID&gt;</code> with our
+actual EFS file system ID. Then we apply the Persistent Volume:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> efs-pv.yaml</span></code></pre></div>
+<h3 id="step-5-create-a-persistent-volume-claim-pvc">Step 5: Create a
+Persistent Volume Claim (PVC)</h3>
+<p>Next, we create a <code>PersistentVolumeClaim</code>. This will ask
+for the storage we defined in the PV. We save the following
+configuration as <code>efs-pvc.yaml</code>.</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> efs-pvc</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> efs-sc</span></span></code></pre></div>
+<p>Now we apply the Persistent Volume Claim:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> efs-pvc.yaml</span></code></pre></div>
+<h3 id="step-6-verify-the-setup">Step 6: Verify the Setup</h3>
+<p>We check the status of the Persistent Volume Claim to make sure it is
+bound.</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pvc efs-pvc</span></code></pre></div>
+<p>We should see the status as <code>Bound</code>. This means our EFS
+CSI driver is set up well with ReadWriteMany access mode.</p>
+<h3 id="additional-notes">Additional Notes</h3>
+<ul>
+<li>Make sure our EFS file system is in the same VPC and subnet as our
+Kubernetes cluster. This helps with the connection.</li>
+<li>We may need to change security groups for our EFS. This allows
+access from our Kubernetes nodes.</li>
+</ul>
+<p>For more details on Kubernetes PVCs and EFS, we can look at this <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-persistent-volumes-and-persistent-volume-claims.html">guide
+on Kubernetes and persistent volumes</a>.</p>
+<h2 id="how-to-verify-readwritemany-access-in-kubernetes-on-aws">How to
+Verify ReadWriteMany Access in Kubernetes on AWS</h2>
+<p>To verify ReadWriteMany (RWX) access in Kubernetes with AWS, we need
+to make sure our Persistent Volume (PV) and Persistent Volume Claim
+(PVC) are set up right. We also want to check that multiple pods can use
+the same volume at the same time. Let’s follow these steps.</p>
+<ol type="1">
+<li><p><strong>Check PVC and PV Status:</strong> First, we need to see
+if our PVC is connected to the right PV. We can use this command to
+check the status of our PVC:</p>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get pvc</span></code></pre></div>
+<p>The output should show that the status is
+<strong>Bound</strong>.</p></li>
+<li><p><strong>Deploy Sample Application:</strong> Next, we will create
+two pods that use the same PVC. Here is an example YAML
+configuration:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app1</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app1</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;while true; do echo $(date) &gt;&gt; /mnt/data/app1.log; sleep 5; done&quot;</span><span class="kw">]</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt/data</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-storage</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-storage</span></span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> my-pvc</span></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app2</span></span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app2</span></span>
+<span id="cb26-25"><a href="#cb26-25" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox</span></span>
+<span id="cb26-26"><a href="#cb26-26" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;while true; do echo $(date) &gt;&gt; /mnt/data/app2.log; sleep 5; done&quot;</span><span class="kw">]</span></span>
+<span id="cb26-27"><a href="#cb26-27" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb26-28"><a href="#cb26-28" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt/data</span></span>
+<span id="cb26-29"><a href="#cb26-29" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-storage</span></span>
+<span id="cb26-30"><a href="#cb26-30" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb26-31"><a href="#cb26-31" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-storage</span></span>
+<span id="cb26-32"><a href="#cb26-32" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
+<span id="cb26-33"><a href="#cb26-33" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> my-pvc</span></span></code></pre></div>
+<p>Save this as <code>pods.yaml</code> and apply it like this:</p>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> pods.yaml</span></code></pre></div></li>
+<li><p><strong>Verify Logs:</strong> After a bit, we should check the
+logs of both pods. This helps us see if they are writing to the shared
+volume:</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs app1</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> logs app2</span></code></pre></div>
+<p>We want to find entries in the logs that show both applications are
+adding timestamps to their log files.</p></li>
+<li><p><strong>Access the Shared Files:</strong> We can also check the
+file access by opening a shell in one of the pods and looking at the
+shared directory:</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> exec <span class="at">-it</span> app1 <span class="at">--</span> /bin/sh</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> /mnt/data/app1.log</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> /mnt/data/app2.log</span></code></pre></div>
+<p>We should make sure both log files have entries from both
+applications.</p></li>
+<li><p><strong>Clean Up:</strong> After we finish checking, we can
+delete the pods:</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> delete pod app1 app2</span></code></pre></div></li>
+</ol>
+<p>This process shows that our Kubernetes setup on AWS is using a
+Persistent Volume with ReadWriteMany access. This allows multiple pods
+to read and write to the same storage at the same time. For more
+information about Kubernetes PVCs and how they work, check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-persistent-volumes-and-persistent-volume-claims.html">what
+are Kubernetes Persistent Volumes and Persistent Volume Claims</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="what-is-readwritemany-in-kubernetes-pvc-on-aws-1">1. What is
+ReadWriteMany in Kubernetes PVC on AWS?</h3>
+<p>ReadWriteMany (RWX) is a way to access Kubernetes Persistent Volume
+Claims (PVCs). It lets many pods read and write to the same volume at
+the same time. This is great for shared file systems. Many applications
+can access the same data together. In AWS, we need to set up a storage
+solution that works, like Amazon EFS, to make this happen in our
+Kubernetes clusters.</p>
+<h3
+id="how-do-i-configure-efs-for-kubernetes-pvc-readwritemany-on-aws">2.
+How do I configure EFS for Kubernetes PVC ReadWriteMany on AWS?</h3>
+<p>To set up Amazon EFS for Kubernetes PVC with ReadWriteMany access, we
+start by creating an Amazon EFS file system. We also need to make sure
+it is in the same VPC as our EKS cluster. Next, we install the EFS CSI
+driver. This driver helps Kubernetes manage EFS volumes. Finally, we
+create a Persistent Volume (PV) that points to our EFS file system. We
+also create a PVC that says we want ReadWriteMany access for our
+pods.</p>
+<h3
+id="what-are-the-benefits-of-using-kubernetes-pvc-with-readwritemany-on-aws">3.
+What are the benefits of using Kubernetes PVC with ReadWriteMany on
+AWS?</h3>
+<p>Using Kubernetes PVC with ReadWriteMany on AWS helps many pods work
+together better. They can get the same data at the same time. This is
+good for things like shared caches, logs, or stateful applications that
+need to access data together. Also, using Amazon EFS gives us a
+scalable, managed file storage solution. It works well with Kubernetes
+on AWS, making storage easier to manage.</p>
+<h3 id="how-can-i-create-a-kubernetes-pvc-with-readwritemany-on-aws">4.
+How can I create a Kubernetes PVC with ReadWriteMany on AWS?</h3>
+<p>To create a Kubernetes PVC with ReadWriteMany access on AWS, we write
+a PVC YAML file. This file shows the access mode we want. Here is an
+example:</p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-efs-pvc</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> efs-sc</span></span></code></pre></div>
+<p>After we create the PVC, we need to make sure it is linked to a
+Persistent Volume (PV) that is set up for Amazon EFS. This way, our pods
+can use the shared storage well.</p>
+<h3 id="how-do-i-verify-readwritemany-access-in-kubernetes-on-aws">5.
+How do I verify ReadWriteMany access in Kubernetes on AWS?</h3>
+<p>To check ReadWriteMany access in Kubernetes on AWS, we can run
+multiple pods that use the same PVC. We should perform read and write
+actions at the same time. We can look at the logs for each pod to see if
+data is being read and written correctly. We can also use commands like
+<code>kubectl exec</code> to go into the pod’s shell and check if the
+data is correct across the mounted volumes. This helps us confirm that
+shared access is working.</p>
+<p>By using Kubernetes PVC with ReadWriteMany on AWS, we can make sure
+our storage solutions fit our application’s needs. For more information
+about Kubernetes storage options, look at our article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-different-kubernetes-storage-options.html">different
+Kubernetes storage options</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

@@ -1,0 +1,468 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How can you list recently deleted pods in Kubernetes?</title>
+            <meta name="description" content="Learn how to list recently deleted pods in Kubernetes with easy steps and commands to streamline your cluster management tasks.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How can you list recently deleted pods in Kubernetes?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To list the pods that we recently deleted in Kubernetes, we can use
+the Kubernetes API or turn on audit logging. Kubernetes does not give a
+simple command to show deleted pods. But we can use tools like
+<code>kubectl</code> with logging features or access the Kubernetes API.
+These can help us track the lifecycle events of pods, including when we
+delete them.</p>
+<p>In this article, we will look at different ways to list recently
+deleted pods in Kubernetes. We will cover using <code>kubectl</code>,
+the Kubernetes API, turning on and using audit logs, and using custom
+controllers for better tracking. We will also talk about making
+solutions for monitoring pod lifecycle for better observability. Here is
+what we will cover:</p>
+<ul>
+<li>How to List Recently Deleted Pods in Kubernetes Using kubectl</li>
+<li>How to Use the Kubernetes API to Retrieve Recently Deleted Pods</li>
+<li>How to Enable and Use Kubernetes Audit Logs for Deleted Pods</li>
+<li>How to Leverage Custom Controllers to Track Deleted Pods</li>
+<li>How to Implement a Pod Lifecycle Monitoring Solution</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<p>For more information about Kubernetes, we can check related articles
+like <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-kubernetes-and-how-does-it-simplify-container-management.html">What
+is Kubernetes and How Does it Simplify Container Management?</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-use-kubernetes-for-machine-learning.html">How
+Do I Use Kubernetes for Machine Learning?</a>.</p>
+<h2
+id="how-to-use-the-kubernetes-api-to-retrieve-recently-deleted-pods">How
+to Use the Kubernetes API to Retrieve Recently Deleted Pods</h2>
+<p>We can retrieve recently deleted pods in Kubernetes using the
+Kubernetes API. We can use the <code>kubectl</code> command or make
+direct HTTP requests to the API server. Here is how we can do it:</p>
+<h3 id="using-kubectl-with-api-query">Using <code>kubectl</code> with
+API Query</h3>
+<p>We can access the Kubernetes API directly with <code>kubectl</code>
+to list the deleted pods. Deleted pods do not show in the regular
+listing. But we can check the events linked to the pods.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get events <span class="at">--sort-by</span><span class="op">=</span><span class="st">&#39;.metadata.creationTimestamp&#39;</span> <span class="at">-n</span> <span class="op">&lt;</span>namespace<span class="op">&gt;</span></span></code></pre></div>
+<p>We need to replace <code>&lt;namespace&gt;</code> with our target
+namespace. This command shows all events sorted by creation time. Here,
+we can find events that relate to pod deletions.</p>
+<h3 id="making-direct-api-requests">Making Direct API Requests</h3>
+<p>We can also make direct HTTP requests to the Kubernetes API to get
+info about deleted pods. Use this endpoint:</p>
+<pre class="plaintext"><code>GET /api/v1/namespaces/&lt;namespace&gt;/pods</code></pre>
+<p>This gives us the pods in the chosen namespace. But to include
+deleted ones, we need to use the <code>?fieldSelector</code>
+parameter.</p>
+<p>Here is an example using <code>curl</code>:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-X</span> GET <span class="st">&quot;https://&lt;k8s-api-server&gt;/api/v1/namespaces/&lt;namespace&gt;/pods?fieldSelector=status.phase=Failed&amp;labelSelector=&lt;your-label-selector&gt;&quot;</span> <span class="at">-H</span> <span class="st">&quot;Authorization: Bearer &lt;your-token&gt;&quot;</span></span></code></pre></div>
+<h3 id="example-with-kubectl-proxy">Example with
+<code>kubectl proxy</code></h3>
+<p>If we want to access the API without issues with authentication, we
+can start <code>kubectl proxy</code> and then access the API:</p>
+<ol type="1">
+<li>Start the proxy:</li>
+</ol>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> proxy</span></code></pre></div>
+<ol start="2" type="1">
+<li>Access the deleted pods using your web browser or a tool like
+<code>curl</code>:</li>
+</ol>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://localhost:8001/api/v1/namespaces/<span class="op">&lt;</span>namespace<span class="op">&gt;</span>/pods<span class="pp">?</span>fieldSelector=status.phase=Failed</span></code></pre></div>
+<h3 id="custom-resource-definitions-crds">Custom Resource Definitions
+(CRDs)</h3>
+<p>If we need better tracking, we can think about using a Custom
+Resource Definition (CRD). This CRD can track pod lifecycle events,
+including deletions. This way, we can keep a record of deleted pods.
+Then we can query this info later.</p>
+<h3 id="final-note">Final Note</h3>
+<p>For more details on managing Kubernetes resources, we can check the
+article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-interact-with-the-kubernetes-api.html">how
+to interact with the Kubernetes API</a>. This article gives us more
+insights on how to work with different Kubernetes resources in a good
+way.</p>
+<h2
+id="how-to-enable-and-use-kubernetes-audit-logs-for-deleted-pods">How to
+Enable and Use Kubernetes Audit Logs for Deleted Pods</h2>
+<p>To track deleted pods in Kubernetes, we need to enable and use audit
+logs. Kubernetes audit logs give us records of all requests made to the
+API server. This includes actions related to pod deletions. Here’s how
+we can enable and set up audit logging for our Kubernetes cluster.</p>
+<h3 id="step-1-configure-the-audit-policy">Step 1: Configure the Audit
+Policy</h3>
+<p>First, we create a YAML file called <code>audit-policy.yaml</code>.
+This file will tell us which events to log. For deleted pods, we add a
+rule as below:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> audit.k8s.io/v1</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Policy</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">level</span><span class="kw">:</span><span class="at"> RequestResponse</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">group</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;delete&quot;</span><span class="kw">]</span></span></code></pre></div>
+<h3 id="step-2-enable-audit-logging">Step 2: Enable Audit Logging</h3>
+<p>Next, we need to change the Kubernetes API server configuration to
+use the audit policy we just made. Usually, we edit the API server
+manifest file. This file is often at
+<code>/etc/kubernetes/manifests/kube-apiserver.yaml</code>. We add these
+flags:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">command</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> kube-apiserver</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> --audit-policy-file=/etc/kubernetes/audit-policy.yaml</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> --audit-log-path=/var/log/kube-apiserver-audit.log</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> --audit-log-maxage=30</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> --audit-log-maxbackup=10</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> --audit-log-maxsize=100</span></span></code></pre></div>
+<h3 id="step-3-restart-the-api-server">Step 3: Restart the API
+Server</h3>
+<p>After we change the API server configuration, we have to restart the
+API server. This helps to apply the changes. If we use a managed
+Kubernetes service, we should check the documentation from our provider
+on how to restart the API server.</p>
+<h3 id="step-4-access-the-audit-logs">Step 4: Access the Audit Logs</h3>
+<p>Now that we have enabled audit logging, we can access the logs at the
+path we set. We can use this command to view the logs:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> /var/log/kube-apiserver-audit.log <span class="kw">|</span> <span class="fu">grep</span> <span class="st">&quot;DELETE&quot;</span></span></code></pre></div>
+<p>This command helps us see only delete operations, so we can monitor
+deleted pods well.</p>
+<h3 id="step-5-analyze-the-audit-logs">Step 5: Analyze the Audit
+Logs</h3>
+<p>The audit log entries give us detailed info about the deletion
+requests. This includes who did the action, when it happened, and which
+resource was affected. Here is an example of a log entry for a deleted
+pod:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode json"><code class="sourceCode json"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;Event&quot;</span><span class="fu">,</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;audit.k8s.io/v1&quot;</span><span class="fu">,</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;level&quot;</span><span class="fu">:</span> <span class="st">&quot;RequestResponse&quot;</span><span class="fu">,</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;timestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2023-10-01T12:00:00Z&quot;</span><span class="fu">,</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;auditID&quot;</span><span class="fu">:</span> <span class="st">&quot;abcd1234-5678-90ef-ghij-klmnopqrstuv&quot;</span><span class="fu">,</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;requestURI&quot;</span><span class="fu">:</span> <span class="st">&quot;/api/v1/namespaces/default/pods/my-pod&quot;</span><span class="fu">,</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;verb&quot;</span><span class="fu">:</span> <span class="st">&quot;delete&quot;</span><span class="fu">,</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;user&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;username&quot;</span><span class="fu">:</span> <span class="st">&quot;system:admin&quot;</span><span class="fu">,</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;groups&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;system:masters&quot;</span><span class="ot">]</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">},</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;responseStatus&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;code&quot;</span><span class="fu">:</span> <span class="dv">200</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>By following these steps, we can enable and use Kubernetes audit logs
+to track deleted pods. For more info on managing Kubernetes resources,
+we can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">this
+article on Kubernetes components</a>.</p>
+<h2 id="how-to-use-custom-controllers-to-track-deleted-pods">How to Use
+Custom Controllers to Track Deleted Pods</h2>
+<p>We can use custom controllers in Kubernetes to track deleted pods. We
+do this by using the Kubernetes client-go library to watch for events.
+This way, we can keep a record of deleted pods. This is important for
+auditing and monitoring.</p>
+<h3 id="steps-to-make-a-custom-controller">Steps to Make a Custom
+Controller</h3>
+<ol type="1">
+<li><p><strong>Set Up Your Go Environment</strong>: Make sure you have
+Go installed. Set up your workspace.</p></li>
+<li><p><strong>Import Important Packages</strong>: In your Go
+application, use the Kubernetes client-go and other needed packages.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/apimachinery/pkg/runtime&quot;</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/apimachinery/pkg/watch&quot;</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/client-go/kubernetes&quot;</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/client-go/tools/clientcmd&quot;</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/client-go/tools/remotecommand&quot;</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div></li>
+<li><p><strong>Initialize Kubernetes Client</strong>: Load your
+kubeconfig. Then create a Kubernetes client.</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>config<span class="op">,</span> err <span class="op">:=</span> clientcmd<span class="op">.</span>BuildConfigFromFlags<span class="op">(</span><span class="st">&quot;&quot;</span><span class="op">,</span> <span class="st">&quot;/path/to/kubeconfig&quot;</span><span class="op">)</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">panic</span><span class="op">(</span>err<span class="op">.</span>Error<span class="op">())</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>clientset<span class="op">,</span> err <span class="op">:=</span> kubernetes<span class="op">.</span>NewForConfig<span class="op">(</span>config<span class="op">)</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">panic</span><span class="op">(</span>err<span class="op">.</span>Error<span class="op">())</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Watch for Pod Deletion Events</strong>: We use a watch on
+the pods resource to listen for delete events.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>watchPods<span class="op">,</span> err <span class="op">:=</span> clientset<span class="op">.</span>CoreV1<span class="op">().</span>Pods<span class="op">(</span><span class="st">&quot;your-namespace&quot;</span><span class="op">).</span>Watch<span class="op">(</span>context<span class="op">.</span>TODO<span class="op">(),</span> metav1<span class="op">.</span>ListOptions<span class="op">{})</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">panic</span><span class="op">(</span>err<span class="op">.</span>Error<span class="op">())</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> event <span class="op">:=</span> <span class="kw">range</span> watchPods<span class="op">.</span>ResultChan<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">switch</span> event<span class="op">.</span>Type <span class="op">{</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> watch<span class="op">.</span>Deleted<span class="op">:</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>        pod <span class="op">:=</span> event<span class="op">.</span>Object<span class="op">.(*</span>v1<span class="op">.</span>Pod<span class="op">)</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>        fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Deleted pod: %s</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> pod<span class="op">.</span>Name<span class="op">)</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Add logic to save pod info in storage</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Store Deleted Pod Information</strong>: We need to log
+deleted pod details in a database or file so we can get it
+later.</p></li>
+</ol>
+<h3 id="example-of-storing-deleted-pods">Example of Storing Deleted
+Pods</h3>
+<p>Here is a simple example. This writes the deleted pod’s name and time
+to a log file:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> logDeletedPod<span class="op">(</span>podName <span class="dt">string</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    f<span class="op">,</span> err <span class="op">:=</span> os<span class="op">.</span>OpenFile<span class="op">(</span><span class="st">&quot;deleted_pods.log&quot;</span><span class="op">,</span> os<span class="op">.</span>O_APPEND<span class="op">|</span>os<span class="op">.</span>O_CREATE<span class="op">|</span>os<span class="op">.</span>O_WRONLY<span class="op">,</span> <span class="bn">0666</span><span class="op">)</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>        log<span class="op">.</span>Fatal<span class="op">(</span>err<span class="op">)</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">defer</span> f<span class="op">.</span>Close<span class="op">()</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> _<span class="op">,</span> err <span class="op">:=</span> f<span class="op">.</span>WriteString<span class="op">(</span>fmt<span class="op">.</span>Sprintf<span class="op">(</span><span class="st">&quot;Deleted pod: %s at %s</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> podName<span class="op">,</span> time<span class="op">.</span>Now<span class="op">().</span>Format<span class="op">(</span>time<span class="op">.</span>RFC3339<span class="op">)));</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        log<span class="op">.</span>Fatal<span class="op">(</span>err<span class="op">)</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="deploying-the-custom-controller">Deploying the Custom
+Controller</h3>
+<p>When your custom controller is ready, we can deploy it as a pod in
+our cluster. Make sure it has the right permissions to watch pod events.
+We do this by assigning a proper Role and RoleBinding.</p>
+<h3 id="conclusion">Conclusion</h3>
+<p>Using custom controllers helps us track deleted pods in Kubernetes.
+We can change the setup based on our monitoring and auditing needs. This
+way, we keep good visibility over pod lifecycle events. For more
+information about Kubernetes, you can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">what
+are the key components of a Kubernetes cluster</a>.</p>
+<h2 id="how-to-implement-a-pod-lifecycle-monitoring-solution">How to
+Implement a Pod Lifecycle Monitoring Solution</h2>
+<p>To monitor the lifecycle of pods in Kubernetes, we can use custom
+controllers, webhooks, and monitoring tools. Here is a simple
+step-by-step guide:</p>
+<ol type="1">
+<li><strong>Custom Controller</strong>:
+<ul>
+<li>We create a custom Kubernetes controller with the client-go library.
+This controller will watch for pod events.<br />
+</li>
+<li>It will listen for <code>ADDED</code>, <code>DELETED</code>, and
+<code>MODIFIED</code> events related to pods.</li>
+</ul>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> main</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/apimachinery/pkg/watch&quot;</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/client-go/kubernetes&quot;</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/client-go/tools/clientcmd&quot;</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;k8s.io/kubernetes/pkg/client/clientset_generated/clientset&quot;</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    config<span class="op">,</span> err <span class="op">:=</span> clientcmd<span class="op">.</span>BuildConfigFromFlags<span class="op">(</span><span class="st">&quot;&quot;</span><span class="op">,</span> <span class="st">&quot;/path/to/kubeconfig&quot;</span><span class="op">)</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>        <span class="bu">panic</span><span class="op">(</span>err<span class="op">.</span>Error<span class="op">())</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>    clientset<span class="op">,</span> _ <span class="op">:=</span> kubernetes<span class="op">.</span>NewForConfig<span class="op">(</span>config<span class="op">)</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>    watchPods<span class="op">(</span>clientset<span class="op">)</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> watchPods<span class="op">(</span>clientset <span class="op">*</span>clientset<span class="op">.</span>Clientset<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>    watch<span class="op">,</span> _ <span class="op">:=</span> clientset<span class="op">.</span>CoreV1<span class="op">().</span>Pods<span class="op">(</span><span class="st">&quot;&quot;</span><span class="op">).</span>Watch<span class="op">(</span>context<span class="op">.</span>TODO<span class="op">(),</span> metav1<span class="op">.</span>ListOptions<span class="op">{})</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> event <span class="op">:=</span> <span class="kw">range</span> watch<span class="op">.</span>ResultChan<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>        <span class="cf">switch</span> event<span class="op">.</span>Type <span class="op">{</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>        <span class="cf">case</span> watch<span class="op">.</span>Added<span class="op">:</span></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>            <span class="co">// Handle pod addition</span></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">case</span> watch<span class="op">.</span>Deleted<span class="op">:</span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>            <span class="co">// Handle pod deletion</span></span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>        <span class="cf">case</span> watch<span class="op">.</span>Modified<span class="op">:</span></span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>            <span class="co">// Handle pod modification</span></span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><strong>Kubernetes Events</strong>:
+<ul>
+<li>We use Kubernetes events to track pod lifecycle changes. We can
+query events with <code>kubectl</code>:</li>
+</ul>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get events <span class="at">--sort-by</span><span class="op">=</span><span class="st">&#39;.metadata.creationTimestamp&#39;</span></span></code></pre></div></li>
+<li><strong>Prometheus and Grafana</strong>:
+<ul>
+<li>We deploy Prometheus to collect metrics from our Kubernetes cluster.
+We use the kube-state-metrics service to gather pod lifecycle
+metrics.<br />
+</li>
+<li>Then, we set up Grafana dashboards to show pod states over
+time.</li>
+</ul>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> prometheus</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">9090</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> prometheus</span></span></code></pre></div></li>
+<li><strong>Alerting with Prometheus</strong>:
+<ul>
+<li>We create alert rules in Prometheus. This helps us know when pods
+are failing or restarting often.</li>
+</ul>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">groups</span><span class="kw">:</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-alerts</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">alert</span><span class="kw">:</span><span class="at"> PodRestarting</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">expr</span><span class="kw">:</span><span class="at"> rate(kube_pod_container_status_restarts_total[5m]) &gt; 0</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">for</span><span class="kw">:</span><span class="at"> 10m</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">severity</span><span class="kw">:</span><span class="at"> warning</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">summary</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Pod {{ $labels.pod }} is restarting frequently&quot;</span></span></code></pre></div></li>
+<li><strong>Logging</strong>:
+<ul>
+<li>We can use tools like Fluentd or Elasticsearch. These tools help us
+collect logs from our pods. We set up log shipping to track pod events
+and errors.</li>
+</ul></li>
+<li><strong>Webhook for Custom Actions</strong>:
+<ul>
+<li>We can also add a webhook to trigger custom actions when pod events
+happen. For example, it can send notifications or log information.</li>
+</ul>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingWebhookConfiguration</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-lifecycle-webhook</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="fu">webhooks</span><span class="kw">:</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> podlifecycle.example.com</span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">clientConfig</span><span class="kw">:</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">service</span><span class="kw">:</span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-lifecycle-service</span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/validate&quot;</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">caBundle</span><span class="kw">:</span><span class="at"> &lt;ca-bundle&gt;</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">operations</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;DELETE&quot;</span><span class="kw">]</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span></code></pre></div></li>
+</ol>
+<p>By using these methods, we can monitor the lifecycle of pods in
+Kubernetes. This helps us see their states and react to changes quickly.
+For more information on Kubernetes configurations, check the article on
+<a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-the-lifecycle-of-a-kubernetes-pod.html">Kubernetes
+Pod Management</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="how-can-we-view-recently-deleted-pods-in-kubernetes">1. How can
+we view recently deleted pods in Kubernetes?</h3>
+<p>To see recently deleted pods in Kubernetes, we can use the
+<code>kubectl</code> command with the <code>--field-selector</code>
+option. This helps us filter events for certain actions like deletion.
+But, by default, Kubernetes does not keep information about deleted
+pods. So, we might need to turn on auditing or use a monitoring tool to
+track this in detail.</p>
+<h3 id="are-we-able-to-get-deleted-pod-logs-in-kubernetes">2. Are we
+able to get deleted pod logs in Kubernetes?</h3>
+<p>When a pod is deleted in Kubernetes, its logs usually cannot be
+retrieved. This is unless we have set up a logging tool that keeps logs
+even after the pod is gone. Tools like Fluentd or ELK Stack can help us
+save logs for deleted pods. This way, we can look at them later.</p>
+<h3 id="how-can-we-enable-kubernetes-audit-logs-for-deleted-pods">3. How
+can we enable Kubernetes audit logs for deleted pods?</h3>
+<p>To turn on audit logs for deleted pods in Kubernetes, we need to set
+up the API server with an audit policy file. This file tells the server
+what events to log, including deletions of pods. We should also make
+sure our Kubernetes cluster saves these logs in a place where we can
+access them later.</p>
+<h3
+id="what-are-custom-controllers-in-kubernetes-and-how-can-they-help-us-track-deleted-pods">4.
+What are custom controllers in Kubernetes and how can they help us track
+deleted pods?</h3>
+<p>Custom controllers in Kubernetes can help us watch pod lifecycle
+events, like deletions. By making a custom controller, we can keep a
+record of deleted pods. This helps us track and audit them. It gives us
+a solution that suits our specific monitoring needs.</p>
+<h3
+id="what-is-a-pod-lifecycle-monitoring-solution-and-how-can-it-help-us-track-deleted-pods">5.
+What is a pod lifecycle monitoring solution and how can it help us track
+deleted pods?</h3>
+<p>A pod lifecycle monitoring solution helps us watch the state changes
+of pods in a Kubernetes cluster. With this solution, we can see when
+pods are created, deleted, or restarted. This is very helpful for
+keeping track of operations and fixing problems related to pod
+management. For more details, check out our article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-kubernetes-events.html">monitoring
+Kubernetes events</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

@@ -1,0 +1,410 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How Can You Access the Host's Localhost from Inside a Kubernetes Cluster?</title>
+            <meta name="description" content="Discover how to access the host's localhost from within a Kubernetes cluster with our step-by-step guide and expert tips.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Can You Access the Host's Localhost from Inside a Kubernetes Cluster?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To access the host’s localhost from inside a Kubernetes cluster, we
+can use several methods. These methods help Kubernetes pods talk to
+services that run on the host machine. Some options are using the
+HostNetwork feature, setting up a Kubernetes Service, and using NodePort
+services for outside access. Each method has its own uses and benefits.
+So, we need to pick the one that fits our needs the best.</p>
+<p>In this article, we will look at different ways to access the host’s
+localhost from a Kubernetes cluster. We will talk about how to use them,
+their benefits, and when each way works best. The methods we will cover
+are:</p>
+<ul>
+<li>Using HostNetwork to Access Localhost from Kubernetes Pods</li>
+<li>Configuring a Kubernetes Service to Reach Host’s Localhost</li>
+<li>Using NodePort to Access Host’s Localhost from Kubernetes</li>
+<li>Accessing Host’s Localhost via a Custom Docker Bridge Network</li>
+<li>Exposing Host’s Localhost through a Sidecar Container</li>
+</ul>
+<p>These methods will help us connect our Kubernetes applications to
+things running on the host system.</p>
+<h2
+id="using-hostnetwork-to-access-localhost-from-kubernetes-pods">Using
+HostNetwork to Access Localhost from Kubernetes Pods</h2>
+<p>To reach the host’s localhost from Kubernetes pods, we can use the
+<code>HostNetwork</code> feature. When a pod uses the host network, it
+shares the network space with the host. This means it can access
+services that run on the host’s localhost.</p>
+<h3 id="example-pod-configuration">Example Pod Configuration</h3>
+<p>Here is an example of a Kubernetes pod definition that uses the host
+network:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-hostnetwork-pod</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hostNetwork</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image:latest</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div>
+<h3 id="key-properties">Key Properties</h3>
+<ul>
+<li><strong>hostNetwork: true</strong>: This makes the pod use the
+host’s network stack.</li>
+<li><strong>containerPort</strong>: This is the port where the container
+listens. We can access the host’s services by using
+<code>localhost:&lt;port&gt;</code>.</li>
+</ul>
+<h3 id="accessing-services">Accessing Services</h3>
+<p>After the pod is running with the host network, we can access any
+service on the host’s localhost with this command:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://localhost:<span class="op">&lt;</span>port<span class="op">&gt;</span></span></code></pre></div>
+<p><strong>Note:</strong> We should use this setup carefully. It can
+cause port conflicts and may have security issues.</p>
+<h2
+id="configuring-a-kubernetes-service-to-reach-hosts-localhost">Configuring
+a Kubernetes Service to Reach Host’s Localhost</h2>
+<p>To reach the host’s localhost from a Kubernetes cluster, we can set
+up a Kubernetes Service that points to the host’s IP address. Here’s how
+we do it:</p>
+<ol type="1">
+<li><p><strong>Identify Host IP Address</strong>: First, we need to find
+the IP address of our host machine. We can usually do this by running
+the command:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ip</span> addr show</span></code></pre></div></li>
+<li><p><strong>Create a Service</strong>: Next, we define a Kubernetes
+Service that points to the host’s IP. Here is a simple YAML example for
+a Service:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> host-local-service</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> ClusterIP</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">endpoints</span><span class="kw">:</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">ip</span><span class="kw">:</span><span class="at"> &lt;HOST_IP_ADDRESS&gt;</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div>
+<p>We replace <code>&lt;HOST_IP_ADDRESS&gt;</code> with the real IP
+address of our host.</p></li>
+<li><p><strong>Accessing the Service</strong>: Pods in the cluster can
+reach the host’s localhost by using the Service name and the port we
+defined. For example, to access the service, we can run:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://host-local-service:8080</span></code></pre></div></li>
+<li><p><strong>Using <code>host.docker.internal</code></strong> (for
+Docker Desktop users): If we use Docker Desktop, we can use
+<code>host.docker.internal</code> to connect to services on the host. We
+need to update our Service configuration like this:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> host-local-service</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> ClusterIP</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> None</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> your-app</span></span></code></pre></div>
+<p>Then, inside our pods, we can access it by running:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://host.docker.internal:8080</span></code></pre></div></li>
+</ol>
+<p>This setup helps our Kubernetes pods to connect to the host’s
+localhost. It makes it easy for us to integrate the host and the
+containerized apps running in the Kubernetes environment.</p>
+<h2 id="using-nodeport-to-access-hosts-localhost-from-kubernetes">Using
+NodePort to Access Host’s Localhost from Kubernetes</h2>
+<p>We can access the host’s localhost from a Kubernetes cluster using
+NodePort. This way, we expose a service that lets outside traffic reach
+our application on the host machine. Here is how we can set it up:</p>
+<ol type="1">
+<li><strong>Create a NodePort Service</strong>: We need to define a
+Kubernetes service of type NodePort in our YAML file. This service will
+send traffic from a port on the host to our application.</li>
+</ol>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nodeport-service</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> NodePort</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span><span class="co">           # Port that the service listens on</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span><span class="co">   # Port where the application runs</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">nodePort</span><span class="kw">:</span><span class="at"> </span><span class="dv">30000</span><span class="co">    # NodePort to reach the service from outside</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Deploy Your Application</strong>: We must make sure our
+application runs in a pod. It also needs to have the right label that
+matches the selector in our service.</li>
+</ol>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-container</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app-image</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div>
+<ol start="3" type="1">
+<li><strong>Accessing the Host’s Localhost</strong>: We can reach the
+host’s localhost using the Node’s IP address and the NodePort. For
+example, if our Node’s IP is <code>192.168.1.100</code>, we can access
+our application like this:</li>
+</ol>
+<pre><code>http://192.168.1.100:30000</code></pre>
+<ol start="4" type="1">
+<li><strong>Using <code>curl</code> to Test</strong>: We can check if it
+works using <code>curl</code> or any HTTP client. We send a request to
+the NodePort.</li>
+</ol>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://192.168.1.100:30000</span></code></pre></div>
+<ol start="5" type="1">
+<li><strong>Firewall and Security Groups</strong>: We need to check that
+our firewall or cloud security group allows incoming traffic on the
+NodePort (like <code>30000</code>) so we can access it.</li>
+</ol>
+<p>This method helps us send traffic from outside the Kubernetes cluster
+to our host’s localhost. It allows us to test and integrate services
+that run on the host. For more details about setting up services in
+Kubernetes, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-services-and-how-do-they-expose-applications.html">Kubernetes
+Services</a>.</p>
+<h2
+id="accessing-hosts-localhost-via-a-custom-docker-bridge-network">Accessing
+Host’s Localhost via a Custom Docker Bridge Network</h2>
+<p>To access the host’s localhost from a Kubernetes cluster with a
+custom Docker bridge network, we can follow these steps.</p>
+<ol type="1">
+<li><p><strong>Create a Custom Docker Bridge Network</strong>: First, we
+need to make a bridge network. This helps containers talk to the
+host.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network create <span class="at">--driver</span> bridge my-custom-net</span></code></pre></div></li>
+<li><p><strong>Run a Container on the Custom Network</strong>: Next, we
+can run a container using the custom network. For example, if we want to
+start an Nginx server, we use this command:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run <span class="at">-d</span> <span class="at">--name</span> my-nginx <span class="at">--network</span> my-custom-net <span class="at">-p</span> 8080:80 nginx</span></code></pre></div></li>
+<li><p><strong>Get the Host’s IP Address</strong>: Now, we need to find
+the host’s IP address on the Docker network. We can do this with the
+command below:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> network inspect my-custom-net</span></code></pre></div>
+<p>We should look for the “Gateway” entry in the output. It usually
+looks like <code>172.18.0.1</code> but can change.</p></li>
+<li><p><strong>Configure Kubernetes Pod</strong>: When we create a
+Kubernetes pod, we must set it up to connect to the Docker bridge. We
+use the host’s IP address. Here is an example of a pod manifest that
+connects to the host’s localhost through the custom Docker bridge
+network:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-container</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app-image</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> HOST_IP</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;172.18.0.1&quot;</span><span class="co">  # Replace with your actual host IP</span></span></code></pre></div></li>
+<li><p><strong>Access the Host’s Localhost</strong>: Inside the
+application in the Kubernetes pod, we can now reach the host’s localhost
+services using the IP we set. For example, if the application needs to
+call a service running on the host’s localhost on port 3000, we do it
+like this:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://<span class="va">$HOST_IP</span>:3000</span></code></pre></div></li>
+</ol>
+<p>Using this way, we can access the host’s localhost services from our
+Kubernetes cluster through a custom Docker bridge network. This gives us
+better networking between our host and Kubernetes pods. If we want to
+learn more about Kubernetes networking, we can check this article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-networking-work.html">how
+Kubernetes networking works</a>.</p>
+<h2 id="exposing-hosts-localhost-through-a-sidecar-container">Exposing
+Host’s Localhost through a Sidecar Container</h2>
+<p>We can expose the host’s localhost using a sidecar container in a
+Kubernetes cluster. This method helps us run another container next to
+our main application container in the same pod. The sidecar takes care
+of talking to the host’s localhost. This way, our application can access
+it.</p>
+<p>Here is how we set this up:</p>
+<ol type="1">
+<li><strong>Define a Pod with a Sidecar Container</strong>: We create a
+Kubernetes Pod that has both the main application container and the
+sidecar container.</li>
+</ol>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main-app</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-main-app-image</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sidecar</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> appropriate/curl</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sleep&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;infinity&quot;</span><span class="kw">]</span><span class="co"> # Keeps the sidecar running</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><p><strong>Access Host’s Localhost</strong>: The sidecar container
+can reach the host’s localhost using the special DNS name
+<code>host.docker.internal</code>. This name points to the internal IP
+address of the host.</p></li>
+<li><p><strong>Make Requests from Main Application</strong>: We can set
+up our main application to send HTTP requests to the sidecar. The
+sidecar will then forward these requests to the host’s
+localhost.</p></li>
+</ol>
+<p>For example, if our main application sends requests to
+<code>http://host.docker.internal:8080</code>, the sidecar will forward
+these requests to the host’s localhost.</p>
+<ol start="4" type="1">
+<li><p><strong>Networking Considerations</strong>: We need to make sure
+that the network policies allow communication between the containers in
+the pod. Also, we should check that the port we want to expose on the
+host is open.</p></li>
+<li><p><strong>Testing the Setup</strong>: We can deploy the pod and
+test it by sending requests from the main application to the localhost
+service through the sidecar.</p></li>
+</ol>
+<p>This method gives a good way for our Kubernetes applications to
+connect with services on the host’s localhost. It helps us integrate
+smoothly in a microservices setup.</p>
+<p>For more information on Kubernetes networking concepts, we can check
+<a
+href="https://bestonlinetutorial.com/kubernetes/how-does-kubernetes-networking-work.html">how
+does Kubernetes networking work</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="how-can-we-access-the-hosts-localhost-from-a-kubernetes-pod">1.
+How can we access the host’s localhost from a Kubernetes pod?</h3>
+<p>To access the host’s localhost from a Kubernetes pod, we can use the
+<code>hostNetwork</code> option in the pod specs. This lets the pod
+share the network space with the host. So, we can reach services running
+on the host’s localhost. But we need to be careful, as this can expose
+the host’s network to the pod.</p>
+<h3 id="what-is-the-purpose-of-using-nodeport-service-in-kubernetes">2.
+What is the purpose of using NodePort service in Kubernetes?</h3>
+<p>A NodePort service in Kubernetes helps us expose a service on a fixed
+port on each node’s IP. This way, outside traffic can reach our service
+by using any node’s IP address and the NodePort. This method can be
+useful for accessing the host’s localhost from Kubernetes, especially
+while developing.</p>
+<h3
+id="can-we-configure-a-kubernetes-service-to-access-the-hosts-localhost">3.
+Can we configure a Kubernetes service to access the host’s
+localhost?</h3>
+<p>Yes, we can set up a Kubernetes service to access the host’s
+localhost by using a ClusterIP service type. We need to define the right
+endpoints that point to the host’s localhost. This setup allows other
+pods in the cluster to talk to services running on the host.</p>
+<h3
+id="what-are-the-security-risks-of-accessing-the-hosts-localhost-from-kubernetes">4.
+What are the security risks of accessing the host’s localhost from
+Kubernetes?</h3>
+<p>Accessing the host’s localhost from a Kubernetes pod can have big
+security risks. It can expose the host’s services to possible problems.
+So, it is very important to use strict network rules. We should make
+sure that only trusted pods can access the host’s network to lower these
+risks.</p>
+<h3
+id="how-does-using-a-sidecar-container-help-in-accessing-the-hosts-localhost">5.
+How does using a sidecar container help in accessing the host’s
+localhost?</h3>
+<p>Using a sidecar container can make it easier to access the host’s
+localhost. It runs a proxy or helper service next to our main
+application container. This setup helps in managing how the main
+application talks to the host. It allows more secure and controlled
+access to host services.</p>
+<p>For more reading on Kubernetes networking and service exposure, we
+can look at articles like <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-access-applications-running-in-a-kubernetes-cluster.html">How
+Do I Access Applications Running in a Kubernetes Cluster?</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-services-and-how-do-they-expose-applications.html">What
+Are Kubernetes Services and How Do They Expose Applications?</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

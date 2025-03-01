@@ -1,0 +1,491 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>Can You Autoscale Akka on Kubernetes?</title>
+            <meta name="description" content="Discover how to effectively autoscale Akka applications on Kubernetes for enhanced performance and resource efficiency.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">Can You Autoscale Akka on Kubernetes?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p><strong>Autoscaling Akka on Kubernetes</strong></p>
+<p>Autoscaling Akka on Kubernetes is not just possible. It is very
+important for keeping good performance and efficiency when workloads
+change. We can use Kubernetes’ Horizontal Pod Autoscaler (HPA) with
+Akka’s features. This way, we can change the number of Akka actor
+instances based on what we need at the moment. This helps us use
+resources well and stay responsive. This connection lets us scale our
+applications smoothly. We can also manage stateful services in a good
+way inside Kubernetes.</p>
+<p>In this article, we will look at how to autoscale Akka applications
+on Kubernetes. We will talk about how Akka handles stateful services. We
+will find key metrics for autoscaling. Also, we will give a simple guide
+on how to use Horizontal Pod Autoscaling for Akka. Plus, we will mention
+tools for monitoring Akka applications. We will show how to set resource
+requests and limits. We will also answer some common questions. This
+will help us understand how to do successful autoscaling.</p>
+<ul>
+<li>Can You Autoscale Akka on Kubernetes?<br />
+</li>
+<li>How Does Akka Manage Stateful Services in Kubernetes?<br />
+</li>
+<li>What Are the Key Metrics for Autoscaling Akka on Kubernetes?<br />
+</li>
+<li>How to Implement Horizontal Pod Autoscaling for Akka on
+Kubernetes?<br />
+</li>
+<li>Which Tools Can Help Monitor Akka Applications on Kubernetes?<br />
+</li>
+<li>How to Configure Resource Requests and Limits for Akka on
+Kubernetes?<br />
+</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2 id="how-does-akka-manage-stateful-services-in-kubernetes">How Does
+Akka Manage Stateful Services in Kubernetes?</h2>
+<p>We can see that Akka manages stateful services in Kubernetes really
+well. It uses its actor-based model along with what Kubernetes can do.
+Akka’s actors keep their state during their lifecycle. This is very
+important for stateful applications. Let’s look at how Akka works with
+Kubernetes for managing state:</p>
+<ol type="1">
+<li><p><strong>Persistence</strong>: With Akka Persistence, actors can
+get back their state by saving events in a safe place. This can be a
+database or other storage options that Akka supports.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode scala"><code class="sourceCode scala"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> akka<span class="op">.</span>persistence<span class="op">.</span>_</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> MyPersistentActor <span class="kw">extends</span> PersistentActor <span class="op">{</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="kw">override</span> <span class="kw">def</span> persistenceId<span class="op">:</span> <span class="ex">String</span> <span class="op">=</span> <span class="st">&quot;my-actor-id&quot;</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> receiveCommand<span class="op">:</span> Receive <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">case</span> cmd<span class="op">:</span> <span class="ex">String</span> <span class="op">=&gt;</span> <span class="fu">persist</span><span class="op">(</span>cmd<span class="op">)(</span>event <span class="op">=&gt;</span> <span class="fu">handleEvent</span><span class="op">(</span>event<span class="op">))</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">def</span> <span class="fu">handleEvent</span><span class="op">(</span>event<span class="op">:</span> <span class="ex">String</span><span class="op">):</span> <span class="bu">Unit</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Handle the event and update the state</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="op">}</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p><strong>Cluster Sharding</strong>: Akka Cluster Sharding helps to
+spread stateful entities across the cluster. This way, actors can be
+reached easily, even when they grow in number.</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode scala"><code class="sourceCode scala"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> akka<span class="op">.</span>cluster<span class="op">.</span>sharding<span class="op">.</span>_</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> shardRegion <span class="op">=</span> <span class="fu">ClusterSharding</span><span class="op">(</span>system<span class="op">).</span><span class="fu">start</span><span class="op">(</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  typeName <span class="op">=</span> <span class="st">&quot;MyEntity&quot;</span><span class="op">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  entityProps <span class="op">=</span> Props<span class="op">[</span>MyPersistentActor<span class="op">],</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  settings <span class="op">=</span> <span class="fu">ClusterShardingSettings</span><span class="op">(</span>system<span class="op">),</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  extractEntityId <span class="op">=</span> extractEntityId<span class="op">,</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  extractShardId <span class="op">=</span> extractShardId</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div></li>
+<li><p><strong>Kubernetes Integration</strong>: We can deploy Akka on
+Kubernetes using StatefulSets. This gives stable network identities and
+keeps storage for stateful applications.</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> akka-cluster</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">serviceName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;akka&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> akka</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> akka</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> akka</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> akka-image:latest</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">2552</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> akka-persistent-storage</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /data</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumeClaimTemplates</span><span class="kw">:</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> akka-persistent-storage</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">accessModes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;ReadWriteOnce&quot;</span><span class="kw">]</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 1Gi</span></span></code></pre></div></li>
+<li><p><strong>Service Discovery</strong>: Akka uses Kubernetes DNS for
+service discovery. This helps actors to talk easily across
+pods.</p></li>
+<li><p><strong>Actor Supervision</strong>: Akka has built-in strategies
+for supervision. This helps stateful actors to recover from problems,
+which keeps them available in a Kubernetes setup.</p></li>
+</ol>
+<p>By using Akka’s actor model with Kubernetes’ orchestration features,
+we can build strong stateful services that scale well and recover from
+issues. For more details on how to deploy Kubernetes applications, you
+can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-the-key-components-of-a-kubernetes-cluster.html">this
+article on Kubernetes fundamentals</a>.</p>
+<h2
+id="what-are-the-key-metrics-for-autoscaling-akka-on-kubernetes">What
+Are the Key Metrics for Autoscaling Akka on Kubernetes?</h2>
+<p>To autoscale Akka applications on Kubernetes, we need to watch some
+important metrics. These metrics help us decide when to scale. Here are
+the key metrics we should look at:</p>
+<ol type="1">
+<li><strong>CPU Utilization</strong>: We must check the average CPU
+usage across pods. If CPU usage is high, it means we may need more
+instances.
+<ul>
+<li>We can use Kubernetes Metrics Server or Prometheus to gather this
+data.</li>
+</ul></li>
+<li><strong>Memory Utilization</strong>: We need to keep an eye on how
+much memory our Akka application uses. If memory usage gets close to
+limits, we might need to scale up.
+<ul>
+<li>We should set memory requests and limits in our deployment YAML like
+this:</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1Gi&quot;</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span></code></pre></div></li>
+<li><strong>Request Latency</strong>: We should measure how long it
+takes to process requests. If latency goes up, it can show that we need
+more pods.
+<ul>
+<li>We can use Akka’s monitoring tools to collect latency data.</li>
+</ul></li>
+<li><strong>Message Processing Rate</strong>: For Akka actors, we need
+to track how fast messages are processed. If the processing rate goes
+down, it might mean we need to scale.
+<ul>
+<li>We can use Akka’s built-in metrics for this.</li>
+</ul></li>
+<li><strong>Error Rates</strong>: We have to watch how often errors
+happen, like exceptions being thrown. If errors increase, we may need to
+scale.
+<ul>
+<li>We can connect logging frameworks to capture these error
+metrics.</li>
+</ul></li>
+<li><strong>Custom Application Metrics</strong>: Depending on our
+application, we can create custom metrics that show the workload and
+performance of our Akka actors.
+<ul>
+<li>We can use Akka’s telemetry features or libraries like Kamon for
+collecting custom metrics.</li>
+</ul></li>
+</ol>
+<p>By watching these metrics closely, we can effectively use horizontal
+pod autoscaling for our Akka applications on Kubernetes. This way, they
+can handle different loads well. For more information on autoscaling
+applications, we can check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-autosale-my-applications-with-horizontal-pod-autoscaler-hpa.html">how
+to autoscale my applications with Horizontal Pod Autoscaler
+(HPA)</a>.</p>
+<h2
+id="how-to-implement-horizontal-pod-autoscaling-for-akka-on-kubernetes">How
+to Implement Horizontal Pod Autoscaling for Akka on Kubernetes?</h2>
+<p>To use Horizontal Pod Autoscaling (HPA) for Akka apps on Kubernetes,
+we need to do some steps.</p>
+<ol type="1">
+<li><p><strong>Make Sure Metrics Server is Installed</strong>: HPA needs
+metrics like CPU and memory usage. If we did not install the Kubernetes
+Metrics Server yet, we should do it now.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml</span></code></pre></div></li>
+<li><p><strong>Define Resource Requests and Limits</strong>: We need to
+set resource requests and limits in our Akka deployment YAML file. This
+is very important for HPA to work well.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> akka-app</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> akka</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> akka</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> akka-container</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> your-akka-image:latest</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100m&quot;</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span></code></pre></div></li>
+<li><p><strong>Create an HPA Resource</strong>: We define an HPA
+resource for our Akka deployment. This setup will tell the desired
+metrics for autoscaling.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling/v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> HorizontalPodAutoscaler</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> akka-hpa</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">scaleTargetRef</span><span class="kw">:</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> akka-app</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">resource</span><span class="kw">:</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">target</span><span class="kw">:</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div></li>
+<li><p><strong>Apply the HPA Configuration</strong>: We use
+<code>kubectl</code> to apply the HPA setting.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> apply <span class="at">-f</span> hpa.yaml</span></code></pre></div></li>
+<li><p><strong>Check HPA Status</strong>: We need to check the status of
+our HPA to make sure it is working right.</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> get hpa</span></code></pre></div></li>
+<li><p><strong>Testing Autoscaling</strong>: We can create load on our
+Akka application. This helps us to see the HPA working. We should watch
+the number of replicas scale up or down based on CPU use.</p></li>
+</ol>
+<p>By following these steps, we can set up Horizontal Pod Autoscaling
+for Akka applications on Kubernetes. This will help us use resources
+well based on what we need in real-time. For more info on Kubernetes
+autoscaling, we can check the guide on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-use-horizontal-pod-autoscaler-hpa-to-scale-my-application.html">how
+to use Horizontal Pod Autoscaler</a>.</p>
+<h2
+id="which-tools-can-help-monitor-akka-applications-on-kubernetes">Which
+Tools Can Help Monitor Akka Applications on Kubernetes?</h2>
+<p>Monitoring Akka applications on Kubernetes is very important. It
+helps us make sure our apps run well and can handle more users. Many
+tools can help us check the health and performance of Akka applications
+in a Kubernetes setup.</p>
+<ol type="1">
+<li><p><strong>Prometheus</strong>: This tool is a strong monitoring
+system. It collects metrics from set targets at certain times. It works
+well with Kubernetes and can get metrics from Akka applications using
+the Micrometer library.</p>
+<p><strong>Example Configuration for Akka with Prometheus:</strong></p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode scala"><code class="sourceCode scala"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> akka<span class="op">.</span>actor<span class="op">.</span>ActorSystem</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> akka<span class="op">.</span>http<span class="op">.</span>scaladsl<span class="op">.</span>Http</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> akka<span class="op">.</span>prometheus<span class="op">.</span>Prometheus</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> akka<span class="op">.</span>stream<span class="op">.</span>ActorMaterializer</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="kw">implicit</span> <span class="kw">val</span> system <span class="op">=</span> <span class="fu">ActorSystem</span><span class="op">(</span><span class="st">&quot;my-system&quot;</span><span class="op">)</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="kw">implicit</span> <span class="kw">val</span> materializer <span class="op">=</span> <span class="fu">ActorMaterializer</span><span class="op">()</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> prometheus <span class="op">=</span> <span class="fu">Prometheus</span><span class="op">(</span>system<span class="op">)</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>prometheus<span class="op">.</span><span class="fu">start</span><span class="op">()</span></span></code></pre></div></li>
+<li><p><strong>Grafana</strong>: We use Grafana with Prometheus. It
+helps us make dashboards to show metrics. We can create real-time
+analytics and alerts based on the data we collect.</p></li>
+<li><p><strong>Kibana</strong>: When we log Akka applications using the
+ELK stack (Elasticsearch, Logstash, Kibana), Kibana helps us see the
+logs. This is good for tracking issues and looking at how our apps
+behave over time.</p></li>
+<li><p><strong>Zipkin</strong>: This is a distributed tracing system. It
+helps us watch how requests move in an Akka application. It can gather
+traces and show them, which makes it easier to find performance
+problems.</p>
+<p><strong>Example of integrating Zipkin in Akka:</strong></p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode scala"><code class="sourceCode scala"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> akka<span class="op">.</span>http<span class="op">.</span>scaladsl<span class="op">.</span>Http</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> zipkin2<span class="op">.</span>reporter<span class="op">.</span>AsyncReporter</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> zipkin2<span class="op">.</span>reporter<span class="op">.</span>okhttp3<span class="op">.</span>OkHttpSender</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> zipkin4s<span class="op">.</span>Span</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> sender <span class="op">=</span> OkHttpSender<span class="op">.</span><span class="fu">create</span><span class="op">(</span><span class="st">&quot;http://localhost:9411/api/v2/spans&quot;</span><span class="op">)</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> reporter <span class="op">=</span> AsyncReporter<span class="op">.</span><span class="fu">create</span><span class="op">(</span>sender<span class="op">)</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> zipkinTracer <span class="op">=</span> <span class="fu">ZipkinTracer</span><span class="op">(</span>reporter<span class="op">)</span></span></code></pre></div></li>
+<li><p><strong>New Relic</strong>: This is a SaaS tool for monitoring
+app performance. It gives us a good view of how our applications
+perform, tracking transactions and errors in Akka applications.</p></li>
+<li><p><strong>DataDog</strong>: This tool helps us monitor and analyze
+our apps. We can connect it with Kubernetes to see how our app performs
+and check infrastructure metrics and logs.</p></li>
+<li><p><strong>Jaeger</strong>: This is an end-to-end tracing tool. We
+can use it with Akka to trace requests as they move through services.
+This helps us optimize performance better.</p></li>
+</ol>
+<p>Adding these tools to our Kubernetes-based Akka applications can help
+us a lot. We can monitor and fix issues more easily. For more details on
+how to set up monitoring tools, check the article on <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-a-kubernetes-application-with-prometheus-and-grafana.html">how
+to monitor a Kubernetes application with Prometheus and Grafana</a>.</p>
+<h2
+id="how-to-configure-resource-requests-and-limits-for-akka-on-kubernetes">How
+to Configure Resource Requests and Limits for Akka on Kubernetes?</h2>
+<p>Configuring resource requests and limits for Akka apps on Kubernetes
+is very important for managing resources well and for autoscaling. We
+can do this by using the <code>resources</code> field in our Kubernetes
+deployment YAML file.</p>
+<h3 id="example-configuration">Example Configuration</h3>
+<p>Here is an example of how we can set resource requests and limits in
+a Kubernetes deployment for an Akka app:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> akka-app</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> akka</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> akka</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> akka-container</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-akka-app:latest</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1Gi&quot;</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span></code></pre></div>
+<h3 id="key-components">Key Components</h3>
+<ul>
+<li><strong>Requests</strong>: These show the minimum resources we need
+for the Akka container to run. Kubernetes makes sure this amount is
+given before the container starts.</li>
+<li><strong>Limits</strong>: These tell the maximum resources that the
+Akka container can use. If the container goes over these limits,
+Kubernetes might reduce the resources or stop the container.</li>
+</ul>
+<h3 id="best-practices">Best Practices</h3>
+<ul>
+<li>Set resource requests based on how much load we expect on our Akka
+app.</li>
+<li>Use monitoring tools to watch resource usage and change requests and
+limits when needed.</li>
+<li>Think about using Horizontal Pod Autoscaler (HPA) to scale our Akka
+app based on how we use resources.</li>
+</ul>
+<p>For more information on autoscaling your apps on Kubernetes, we can
+check this article on how to <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-use-horizontal-pod-autoscaler-hpa-to-scale-my-application.html">use
+Horizontal Pod Autoscaler (HPA)</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="can-akka-applications-effectively-autoscale-on-kubernetes">1.
+Can Akka applications effectively autoscale on Kubernetes?</h3>
+<p>Yes, we can make Akka applications autoscale well on Kubernetes. We
+use Horizontal Pod Autoscaler (HPA) for this. HPA changes the number of
+pods in a deployment based on CPU usage or other metrics we choose. This
+way, Akka applications can adjust to different loads. It helps us use
+resources well while keeping good performance.</p>
+<h3
+id="how-do-i-monitor-resource-usage-for-akka-applications-in-kubernetes">2.
+How do I monitor resource usage for Akka applications in
+Kubernetes?</h3>
+<p>To check resource usage for Akka applications on Kubernetes, we can
+use tools like Prometheus and Grafana. These tools gather metrics from
+our Akka applications and show them visually. This helps us track how
+well our applications perform and how much resources they use. For more
+details on monitoring, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-my-kubernetes-cluster.html">this
+article</a>.</p>
+<h3
+id="what-are-the-key-metrics-to-consider-for-autoscaling-akka-applications">3.
+What are the key metrics to consider for autoscaling Akka
+applications?</h3>
+<p>The key metrics we should watch for autoscaling Akka applications on
+Kubernetes are CPU usage, memory use, and request latency. By keeping an
+eye on these metrics, we can set up HPA to scale our Akka pods based on
+what is happening in real-time. This helps our application manage
+different workloads well.</p>
+<h3
+id="how-can-i-set-resource-requests-and-limits-for-akka-pods-in-kubernetes">4.
+How can I set resource requests and limits for Akka pods in
+Kubernetes?</h3>
+<p>To set resource requests and limits for Akka pods in Kubernetes, we
+need to define these in our deployment YAML file. Resource requests make
+sure our Akka pods have enough resources to work well. Limits stop them
+from using too many resources. For a full guide, we can check <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-manage-resource-limits-and-requests-in-kubernetes.html">this
+article</a>.</p>
+<h3
+id="what-tools-can-help-in-monitoring-akka-applications-on-kubernetes">5.
+What tools can help in monitoring Akka applications on Kubernetes?</h3>
+<p>There are many tools that can help us monitor Akka applications on
+Kubernetes. Prometheus helps us collect metrics, and Grafana helps us
+visualize them. These tools work well with Kubernetes and let us set up
+alerts and dashboards for good monitoring. For more information, we can
+look at <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-monitor-a-kubernetes-application-with-prometheus-and-grafana.html">this
+article</a>.</p>
+<p>By answering these frequently asked questions, we can understand
+better how to autoscale Akka applications on Kubernetes. This makes sure
+they work well and respond quickly in changing environments.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            

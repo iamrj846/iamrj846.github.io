@@ -1,264 +1,306 @@
-**Combining Multiple Docker Images into a Single Container**
+To fix the 413 error with Kubernetes and Nginx Ingress Controller, we need to increase the `client_max_body_size` setting in the Nginx config. This error shows up when the request is bigger than what the server can handle. It usually happens with large payloads. By changing this setting, we can let larger requests go through without causing the error. This helps our applications run better.
 
-Combining many Docker images into one container can make our application deployment easier. It helps us manage resources better and simplifies our work processes. We can do this by using methods like multi-stage builds, Dockerfile commands, or Docker Compose settings. These techniques help us create a smooth environment from different image sources.
+In this article, we will talk about different ways to fix the 413 error in Kubernetes with Nginx Ingress Controller. We will look at what causes the error. We will also see how to set up the Nginx Ingress Controller to handle big payloads. Plus, we will learn how to increase the client max body size and change the resource limits in Kubernetes. We will give some troubleshooting tips too. Here’s what we will cover:
 
-In this article, we will look at different ways to combine many Docker images into one container. We will share the benefits of this method. We will also give clear steps on how to use Dockerfile and Docker Compose. Plus, we will show how multi-stage builds can improve our work. Here is what we will learn:
+- Understanding the 413 Error in Kubernetes and Nginx Ingress Controller
+- Configuring Nginx Ingress Controller to Handle Large Payloads
+- Increasing Client Max Body Size in Nginx Ingress Controller
+- Adjusting Resource Limits in Kubernetes Deployments
+- Troubleshooting 413 Error in Nginx Ingress Controller
+- Frequently Asked Questions
 
-- How to Combine Multiple Docker Images into a Single Container  
-- Why Should We Combine Multiple Docker Images into a Single Container?  
-- What are the Methods to Combine Multiple Docker Images into a Single Container?  
-- How Can We Use Dockerfile to Combine Multiple Docker Images into a Single Container?  
-- Can We Use Docker Compose to Combine Multiple Docker Images into a Single Container?  
-- How Can We Use Multi-Stage Builds to Combine Multiple Docker Images into a Single Container?  
-- Frequently Asked Questions  
+By doing these steps, we can manage and fix the 413 error well. This will help us optimize our Kubernetes and Nginx Ingress setup.
 
-At the end of this article, we will understand how to combine Docker images well. This will help us improve our containerization strategy.
+## Understanding the 413 Error in Kubernetes and Nginx Ingress Controller
 
-## Why Should We Combine Multiple Docker Images into a Single Container?
+The 413 error in Kubernetes with the Nginx Ingress Controller means that the request is too big for the server to handle. This happens when a client sends a request that is larger than the limits set in the Nginx Ingress settings.
 
-Combining multiple Docker images into one container can help us work better and make it easier to deploy our applications. Here are some simple reasons why this is a good idea:
+We often see this error in situations like:
 
-1. **Less Overhead**: When we put several images together, we can cut down the layers and make the image size smaller. This helps us pull images faster and use less disk space.
+- Uploading big files
+- Sending large JSON data
 
-2. **Easier Management**: It is easier to handle one container than many. This makes it simpler to deploy and manage. We don’t have to worry as much about keeping track of different versions and dependencies.
+In Nginx, the standard maximum body size for a request is 1MB. If a request is bigger than this limit, the server will show a `413 Request Entity Too Large` error.
 
-3. **Better Performance**: Merging images can make our apps start up faster because there are fewer layers to load. This is helpful for apps that need to scale quickly.
+To fix this issue, we need to change the `client_max_body_size` setting in the Nginx Ingress Controller configuration. This setting tells the server the maximum size of the client request body. By making this number bigger, we can allow larger requests.
 
-4. **Improved Portability**: A single container that has everything we need can be moved around more easily. This helps us keep things the same when we deploy in different places.
-
-5. **Simpler Configuration**: When we combine images, we can set things up more easily. All parts can be together, so we don’t need to set up complicated communication between different containers.
-
-6. **Smoother CI/CD Processes**: A combined image can make our Continuous Integration and Continuous Deployment (CI/CD) pipelines easier. We have fewer steps to build and test our applications.
-
-7. **Less Network Delay**: When we put multiple services into one container, they can talk to each other without needing to go through the network. This can help improve performance.
-
-By using these benefits, we can make our Docker applications more efficient and easier to manage. For more information about Docker images, check out [what are docker images and how do they work](https://bestonlinetutorial.com/docker/what-are-docker-images-and-how-do-they-work.html).
-
-## What are the Methods to Combine Multiple Docker Images into a Single Container?
-
-We can combine multiple Docker images into a single container using different methods. Here are some easy ways to do it:
-
-1. **Using Dockerfile**: We can make a custom Dockerfile. This file pulls different base images. It combines them into one image by using a multi-stage build.
-
-   ```Dockerfile
-   # Stage 1: Build the first service
-   FROM node:14 AS build-node
-   WORKDIR /app
-   COPY package*.json ./
-   RUN npm install
-   COPY . .
-
-   # Stage 2: Build the second service
-   FROM python:3.8 AS build-python
-   WORKDIR /app
-   COPY requirements.txt ./
-   RUN pip install -r requirements.txt
-   COPY . .
-
-   # Final stage: Combine both
-   FROM ubuntu:20.04
-   COPY --from=build-node /app /app/node-app
-   COPY --from=build-python /app /app/python-app
-   CMD ["bash"]
-   ```
-
-2. **Using Docker Compose**: Docker Compose helps us to define and run multi-container Docker apps. We can list many services in a `docker-compose.yml` file. This way, we combine them under one app.
-
-   ```yaml
-   version: '3'
-   services:
-     node-app:
-       image: node:14
-       build:
-         context: ./node-app
-       ports:
-         - "3000:3000"
-
-     python-app:
-       image: python:3.8
-       build:
-         context: ./python-app
-       ports:
-         - "5000:5000"
-   ```
-
-3. **Multi-Stage Builds**: This way makes the build process better. We can use many `FROM` statements in a Dockerfile. This helps us manage dependencies and make the image size smaller.
-
-   ```Dockerfile
-   FROM golang:1.16 AS build-env
-   WORKDIR /src
-   COPY . .
-   RUN go build -o myapp
-
-   FROM alpine:3.12
-   COPY --from=build-env /src/myapp /usr/local/bin/myapp
-   CMD ["myapp"]
-   ```
-
-4. **Using Docker's Overlay Filesystem**: We can make layered images with Docker's filesystem features. Here, changes from many images can be combined. But this is a bit complex and not used often for this purpose.
-
-5. **Image Import and Export**: We can export many images to a tar file. Then we import them into one container. This is more of a workaround than a common method.
-
-   ```bash
-   docker save image1 image2 -o combined_images.tar
-   docker load -i combined_images.tar
-   ```
-
-Each method has its own uses and best ways to do things. Depending on what we need for our project, we can pick the method that works best for us. For more details on Docker images and containers, we can check the article on [what are Docker images and how do they work](https://bestonlinetutorial.com/docker/what-are-docker-images-and-how-do-they-work.html).
-
-## How Can We Use Dockerfile to Combine Multiple Docker Images into a Single Container?
-
-We can combine many Docker images into one container by using a Dockerfile. We do this by using the `FROM` command several times in a multi-stage build. This helps us separate the build environment from the final runtime environment. It also makes the image smaller and only includes what we need in the final image.
-
-### Example Dockerfile
-
-```dockerfile
-# Stage 1: Build Stage
-FROM node:14 AS build-env
-WORKDIR /app
-COPY package.json ./
-RUN npm install
-COPY . ./
-RUN npm run build
-
-# Stage 2: Production Stage
-FROM nginx:alpine
-COPY --from=build-env /app/build /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-### Explanation
-
-- **Stage 1**: We use a Node.js image to install what we need and build the application.
-  - `FROM node:14 AS build-env`: This starts our build stage with the Node.js image.
-  - `WORKDIR /app`: This sets our working directory.
-  - `COPY package.json ./`: This copies the package.json file.
-  - `RUN npm install`: This installs the dependencies.
-  - `COPY . ./`: This copies all the application source code.
-  - `RUN npm run build`: This builds our application.
-
-- **Stage 2**: We use an Nginx image to serve the built application.
-  - `FROM nginx:alpine`: This starts a new stage with the Nginx image.
-  - `COPY --from=build-env /app/build /usr/share/nginx/html`: This copies the built application from the first stage.
-  - `EXPOSE 80`: This opens port 80 for the Nginx server.
-  - `CMD ["nginx", "-g", "daemon off;"]`: This starts the Nginx server.
-
-This way, we effectively combine many Docker images into one smaller and safer container by using multi-stage builds. It lowers the final image size and keeps only the necessary dependencies. For more details on using Dockerfile, we can check [what is the Dockerfile and how do you create one](https://bestonlinetutorial.com/docker/what-is-the-dockerfile-and-how-do-you-create-one.html).
-
-## Can You Use Docker Compose to Combine Multiple Docker Images into a Single Container?
-
-Yes, we can use Docker Compose to handle many Docker images and put them together in one application. But it does not make a single container from many images. Instead, it helps us define and run applications with many containers. Each service in the Docker Compose file can use a different image or build area. They can also talk to each other.
-
-To combine many Docker images with Docker Compose, we need to define our services in a `docker-compose.yml` file. Here is an example setup that shows how to create multiple services:
+Here is an example of how to set `client_max_body_size` in your Ingress resource:
 
 ```yaml
-version: '3.8'
-
-services:
-  web:
-    image: nginx:latest
-    ports:
-      - "80:80"
-
-  app:
-    build:
-      context: ./app
-      dockerfile: Dockerfile
-    depends_on:
-      - db
-
-  db:
-    image: postgres:latest
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/client-max-body-size: "10m"  # Set to 10 MB
+spec:
+  rules:
+    - host: example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-service
+                port:
+                  number: 80
 ```
 
-In this example:
+By using this configuration, we can increase the body size limit. This will help stop the 413 error from happening when we upload large files or send lots of data.
 
-- **web**: Uses the Nginx image to show web pages.
-- **app**: Builds from a local Dockerfile in the `./app` folder.
-- **db**: Uses the Postgres image and sets some environment variables for the database.
+## Configuring Nginx Ingress Controller to Handle Large Payloads
 
-To start the application stack we defined in the `docker-compose.yml`, we run:
+To manage large payloads in Kubernetes with the Nginx Ingress Controller, we need to set some parameters. We will change the `client_max_body_size`. This setting controls the biggest allowed body size for client requests.
+
+### Step 1: Modify Nginx Ingress ConfigMap
+
+1. First, we edit or create a ConfigMap for our Nginx Ingress controller. We can do this using the command below:
+
+   ```bash
+   kubectl edit configmap nginx-configuration -n <namespace>
+   ```
+
+   Here, we replace `<namespace>` with the namespace where we install our Nginx Ingress Controller. The default is often `ingress-nginx`.
+
+2. Next, we add or change the `client-max-body-size` setting:
+
+   ```yaml
+   data:
+     client-max-body-size: "10m"  # Change the value if needed
+   ```
+
+   This sets the maximum size for client requests to 10 megabytes. We should change this value based on what our application needs.
+
+### Step 2: Apply Changes
+
+After we modify the ConfigMap, we save and close the editor. Kubernetes will update the Nginx Ingress Controller with our new settings.
+
+### Step 3: Validate Configuration
+
+To check if the changes work, we can describe the Nginx Ingress Controller pod:
 
 ```bash
-docker-compose up
+kubectl describe pod <nginx-ingress-controller-pod-name> -n <namespace>
 ```
 
-This command will create and start the services we defined. To combine different images well, we can use environment variables, volumes, and networks in the Docker Compose file. This will help the services work together smoothly.
+We look at the logs for any errors about the configuration.
 
-For more details on how Docker Compose makes multi-container applications easier, check the article on [What is Docker Compose and how does it simplify multi-container applications?](https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html).
+### Step 4: Test the Configuration
 
-## How Can We Leverage Multi-Stage Builds to Combine Multiple Docker Images into a Single Container?
+We can test the configuration by trying to upload a payload that is within the size limit we set. We can use tools like `curl` or Postman to send requests:
 
-Multi-stage builds in Docker help us create one optimized Docker image from many images. This reduces the final image size and makes the build process faster. This method is great for apps that need different tools during building but don't need them when they run.
-
-### Key Steps to Leverage Multi-Stage Builds
-
-1. **Define Multiple Stages**: In our `Dockerfile`, we can set up different stages with the `FROM` instruction. Each stage can use a different base image.
-
-2. **Copy Artifacts Between Stages**: We can use the `COPY` command to move compiled code or files from one stage to another. This way, we keep only the files we need in the final image.
-
-3. **Final Stage with Minimal Base**: The last stage should use a small base image like `alpine`. This helps to keep the image small.
-
-### Example Dockerfile
-
-Here is an example that shows how we can combine multiple Docker images into one container using multi-stage builds:
-
-```dockerfile
-# Stage 1: Build
-FROM node:14 AS builder
-WORKDIR /app
-COPY package.json ./
-RUN npm install
-COPY . .
-RUN npm run build
-
-# Stage 2: Production
-FROM nginx:alpine
-COPY --from=builder /app/build /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+```bash
+curl -X POST -F "file=@largefile.txt" http://<your-nginx-ingress-ip>/upload
 ```
 
-### Explanation of the Dockerfile
+Here, we replace `<your-nginx-ingress-ip>` with the IP address of our Nginx Ingress.
 
-- **Stage 1 - Build**:
-  - We use `node:14` as the base image to build a Node.js app.
-  - We install the tools we need and build the app.
+By following these steps, we can set up the Nginx Ingress Controller in our Kubernetes cluster to handle large payloads. This helps to fix any 413 errors that happen because of request size limits. For more details on setting up an Ingress, check out [this guide on configuring ingress for Kubernetes](https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html).
 
-- **Stage 2 - Production**:
-  - We use `nginx:alpine` as a simple server to run the built app.
-  - We copy only the files we need from the first stage to the final image.
+## Increasing Client Max Body Size in Nginx Ingress Controller
 
-### Benefits of Using Multi-Stage Builds
+To fix the 413 error in Kubernetes with the Nginx Ingress Controller, we need to increase the client maximum body size. We can do this by changing the Nginx settings linked to our Ingress resource.
 
-- **Reduced Image Size**: We only include the parts we need to run in the final image.
-- **Improved Build Performance**: Each stage can be saved, making future builds faster.
-- **Cleaner Dockerfile**: We keep building and running parts apart, so it is easier to manage.
+### Step 1: Modify the Ingress Resource
 
-By using multi-stage builds, we can combine multiple Docker images into one container. This helps us make the image smaller and better in performance. For more information about Docker images and how they work, check out [What are Docker Images and How Do They Work?](https://bestonlinetutorial.com/docker/what-are-docker-images-and-how-do-they-work.html).
+We add an annotation to our Ingress resource to set the `client-max-body-size`. We can put this in our Ingress YAML file like this:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "8m"  # Set the size we want
+spec:
+  rules:
+  - host: example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: example-service
+            port:
+              number: 80
+```
+
+### Step 2: Apply the Configuration
+
+After we update the Ingress resource, we apply the changes using kubectl:
+
+```bash
+kubectl apply -f your-ingress-file.yaml
+```
+
+### Step 3: Verify the Changes
+
+We need to check if the changes are applied right. We can do this by looking at the Nginx Ingress Controller configuration:
+
+```bash
+kubectl describe ingress example-ingress
+```
+
+We should see the annotation we added in the result.
+
+### Step 4: Test the Configuration
+
+We can test the configuration by sending a big payload to our service through the Ingress. If we set everything right, we should not see the 413 error anymore.
+
+By following these steps, we can increase the client max body size in the Nginx Ingress Controller. This helps our applications handle bigger payloads without issues. For more info about configuring Ingress for external access to applications, we can check this [guide](https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html).
+
+## Adjusting Resource Limits in Kubernetes Deployments
+
+We need to fix the 413 error with Kubernetes and Nginx Ingress Controller. A good way to do this is by adjusting resource limits in our Kubernetes deployments. This helps our applications get enough CPU and memory to handle bigger data.
+
+### Setting Resource Requests and Limits
+
+When we set up our Kubernetes deployment, we can add resource requests and limits in the deployment YAML file. This helps Kubernetes give out resources in a smart way. Here is an example of how we can set these:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-app-container
+        image: my-app-image:latest
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+          limits:
+            memory: "512Mi"
+            cpu: "1"
+```
+
+### Key Considerations
+
+- **Requests**: This shows the least amount of CPU and memory that the container needs. Kubernetes uses this to place the pod on a good node.
+- **Limits**: This tells the highest amount of resources a container can use. If it goes over this limit, it can get slowed down or even stopped.
+
+### Monitoring Resource Usage
+
+To check if our applications are working well, we can look at the resource usage of our pods with this command:
+
+```bash
+kubectl top pods
+```
+
+By changing the resource limits and requests in our Kubernetes deployments, we can make our applications run better. This is important when we deal with big data that can cause a 413 error with the Nginx Ingress Controller.
+
+For more tips and good practices on Kubernetes deployments, we can check [Kubernetes Deployments and How Do I Use Them?](https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-deployments-and-how-do-i-use-them.html).
+
+## Troubleshooting 413 Error in Nginx Ingress Controller
+
+To fix the 413 Error we see in Nginx Ingress Controller in a Kubernetes setup, we can follow these steps:
+
+1. **Check Nginx Ingress Controller Logs**:  
+   First, we should look at the logs of the Nginx Ingress Controller. This will help us find out why we get the 413 error. We can use this command to get the logs:
+
+   ```bash
+   kubectl logs -n <ingress-namespace> <nginx-ingress-controller-pod>
+   ```
+
+2. **Inspect Ingress Resource**:  
+   Next, we need to check the Ingress resource configuration. We must make sure that it is set up right. We should look for annotations about client body size:
+
+   ```yaml
+   apiVersion: networking.k8s.io/v1
+   kind: Ingress
+   metadata:
+     name: example-ingress
+     annotations:
+       nginx.ingress.kubernetes.io/proxy-body-size: "10m"  # Change size if needed
+   ```
+
+3. **Confirm Nginx Configuration**:  
+   If we have set annotations, we need to check if they are applied correctly. We can see the Nginx configuration by running this command:
+
+   ```bash
+   kubectl exec -it <nginx-ingress-controller-pod> -n <ingress-namespace> -- cat /etc/nginx/nginx.conf
+   ```
+
+   We should find the `client_max_body_size` directive and check if it has a good value.
+
+4. **Update ConfigMap (if needed)**:  
+   If we use a ConfigMap to set up the Nginx Ingress Controller, we need to check that the `client_max_body_size` setting is there:
+
+   ```yaml
+   apiVersion: v1
+   kind: ConfigMap
+   metadata:
+     name: nginx-configuration
+     namespace: <ingress-namespace>
+   data:
+     client-max-body-size: "10m"  # Change based on what we need
+   ```
+
+   After we make changes, we should restart the Nginx Ingress Controller so the new settings apply.
+
+5. **Increase Payload Size in Deployment**:  
+   If our app has resource limits, we need to check that they allow for larger payloads. A simple setup can look like this:
+
+   ```yaml
+   apiVersion: apps/v1
+   kind: Deployment
+   metadata:
+     name: example-app
+   spec:
+     template:
+       spec:
+         containers:
+         - name: example-container
+           image: example-image
+           resources:
+             limits:
+               memory: "512Mi"
+               cpu: "500m"
+             requests:
+               memory: "256Mi"
+               cpu: "250m"
+   ```
+
+6. **Test Uploads with Different Sizes**:  
+   We can use tools like `curl` or Postman to test uploads with different sizes. This will help us see if the limits we set work. An example command with `curl` can be:
+
+   ```bash
+   curl -X POST -F "file=@largefile.txt" http://<your-ingress-url>
+   ```
+
+7. **Monitor Metrics**:  
+   We should turn on monitoring for the Nginx Ingress Controller. This will give us insights into traffic patterns and error rates. We can use tools like Prometheus and Grafana.
+
+8. **Check Network Policies**:  
+   Finally, we must check that there are no network policies blocking traffic to the Nginx Ingress Controller. This can cause strange behaviors.
+
+For more detailed troubleshooting and setup tips, we can look at the [Kubernetes Ingress Controller documentation](https://bestonlinetutorial.com/kubernetes/how-do-i-configure-ingress-for-external-access-to-my-applications.html).
 
 ## Frequently Asked Questions
 
-### 1. What is the best way to combine multiple Docker images into a single container?
+### What causes a 413 error in Kubernetes with Nginx Ingress Controller?
+A 413 error is also called "Payload Too Large." It happens when the request body sent to the server is bigger than the limits set by the Nginx Ingress Controller. This can occur when users try to upload big files or send large data. We need to understand how to set up the Nginx Ingress Controller to deal with larger payloads. This is important to fix this error well.
 
-We can combine multiple Docker images into one container to make things work better and reduce duplication. The best way to do this is to use a Dockerfile. In the Dockerfile, we can use the `FROM` command to set multiple base images in a multi-stage build. This way, we can create a final image that only has what we need from each image. For more details, check our article on [how to use Dockerfiles](https://bestonlinetutorial.com/docker/what-is-the-dockerfile-and-how-do-you-create-one.html).
+### How can I increase the max body size for Nginx Ingress?
+To fix the 413 error in Kubernetes with Nginx Ingress Controller, we can increase the limit for the client body size. We do this by changing the `client_max_body_size` directive. We can add an annotation to our Ingress resource or change the ConfigMap for Nginx settings. For more details, check out [Configuring Nginx Ingress Controller to Handle Large Payloads](https://bestonlinetutorial.com/kubernetes/configuring-ingress-for-external-access-to-my-applications.html).
 
-### 2. Can Docker Compose help in combining images?
+### Are there resource limits in Kubernetes that affect the 413 error?
+Yes, resource limits in Kubernetes can indirectly lead to a 413 error. They can limit the memory or CPU available to a pod. This may cause it to fail when it tries to handle large requests. We must make sure our deployments have enough resource requests and limits set. For more information, see [Adjusting Resource Limits in Kubernetes Deployments](https://bestonlinetutorial.com/kubernetes/how-do-i-manage-resource-limits-and-requests-in-kubernetes.html).
 
-Yes, it can! Docker Compose makes it easier to manage applications with many Docker containers. We can write multiple services in a `docker-compose.yml` file. This helps us control how these containers work together. Each service can use different Docker images, and we can combine them well in one application. Learn more about Docker Compose [here](https://bestonlinetutorial.com/docker/what-is-docker-compose-and-how-does-it-simplify-multi-container-applications.html).
+### What are the best practices for troubleshooting a 413 error in Nginx Ingress?
+To troubleshoot a 413 error in Nginx Ingress, we should check the Nginx logs for error messages. We need to validate the Ingress annotations and make sure the `client_max_body_size` is set correctly. Also, we should verify how our application handles large payloads. For more tips on troubleshooting, look at [Troubleshooting 413 Error in Nginx Ingress Controller](https://bestonlinetutorial.com/kubernetes/how-do-i-troubleshoot-issues-in-my-kubernetes-deployments.html).
 
-### 3. How do multi-stage builds work in Docker?
-
-Multi-stage builds in Docker let us use more than one `FROM` statement in the same Dockerfile. This is good for making our images smaller by copying only the files we need from one stage to another. It helps us combine multiple Docker images while keeping the build process clean and efficient. For more information, read our article on [multi-stage Docker builds](https://bestonlinetutorial.com/docker/what-are-multi-stage-docker-builds-and-how-do-they-improve-efficiency.html).
-
-### 4. What are the advantages of combining Docker images?
-
-When we combine multiple Docker images into one container, we can make the final image much smaller. This helps with faster deployment and uses less resources. It also makes the application easier to manage, with simpler dependencies and settings. This practice helps with maintainability and performance, especially in production. For more benefits of Docker, check our article on [the benefits of using Docker in development](https://bestonlinetutorial.com/docker/what-are-the-benefits-of-using-docker-in-development.html).
-
-### 5. Is there a way to automate the process of combining Docker images?
-
-Yes, we can automate combining Docker images with CI/CD pipelines. Tools like Jenkins or GitLab CI can build and deploy your Docker images based on what we define in the `Dockerfile` or `docker-compose.yml`. This automation makes sure everything is consistent and lowers mistakes during deployment. For more on automation in Docker, visit our guide on [automating Docker builds with CI/CD pipelines](https://bestonlinetutorial.com/docker/how-to-automate-docker-builds-with-ci-cd-pipelines.html).
+### Can I set different body size limits for different Ingress resources?
+Yes, we can set different body size limits for different Ingress resources in Kubernetes. We do this by using specific annotations for each Ingress. This lets us change the configuration based on the needs of each application. To learn more about setting up Ingress resources, check [Using an Ingress Controller to Expose My Applications](https://bestonlinetutorial.com/kubernetes/how-do-i-use-an-ingress-controller-to-expose-my-applications.html).
