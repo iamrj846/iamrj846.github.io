@@ -1,0 +1,499 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            
+            <meta property="og:title" content="How Can You Mimic '--volumes-from' in Kubernetes?" />
+            <meta property="og:description" content="Discover how to replicate the '--volumes-from' functionality in Kubernetes with practical tips and insights for efficient management." />
+            <meta property="og:url" content="https://www.bestonlinetutorial.com/kubernetes/how-can-you-mimic-volumes-from-in-kubernetes.html" />
+            <link rel="canonical" href="https://www.bestonlinetutorial.com/kubernetes/how-can-you-mimic-volumes-from-in-kubernetes.html">
+            <meta property="og:type" content="article" />
+            <meta property="og:site_name" content=“BestOnlineTutorial” />
+            <meta name="twitter:title" content="How Can You Mimic '--volumes-from' in Kubernetes?" />
+            <meta name="twitter:description" content="Discover how to replicate the '--volumes-from' functionality in Kubernetes with practical tips and insights for efficient management." />
+            <meta name="pinterest-rich-pin" content="true" />
+
+            <script type="application/ld+json">
+                {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "BestOnlineTutorial",
+                "url": "https://www.bestonlinetutorial.com/"
+                }
+            </script>
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How Can You Mimic '--volumes-from' in Kubernetes?</title>
+            <meta name="description" content="Discover how to replicate the '--volumes-from' functionality in Kubernetes with practical tips and insights for efficient management.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Can You Mimic '--volumes-from' in Kubernetes?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To mimic the <code>--volumes-from</code> option in Kubernetes, we can
+use different methods to share storage between pods. One way is by using
+Persistent Volume Claims (PVCs). PVCs let many pods use the same
+storage. We can also use other methods like init containers, sidecar
+containers, HostPath volumes, and StatefulSets. These options help us
+share data between pods without directly sharing volumes like we do in
+Docker.</p>
+<p>In this article, we will look at several ways to share volumes in
+Kubernetes. We will talk about the benefits and when to use each method.
+We will cover:</p>
+<ul>
+<li>Using Persistent Volume Claims to Share Storage</li>
+<li>Configuring Init Containers to Prepare Shared Volumes</li>
+<li>Leveraging Sidecar Containers for Shared Volume Access</li>
+<li>Implementing HostPath Volumes for Direct File Sharing</li>
+<li>Exploring StatefulSets for Volume Sharing Among Pods</li>
+</ul>
+<p>By learning and using these methods, we can manage data sharing in
+our Kubernetes setup. This will help make our applications more reliable
+and perform better.</p>
+<h2 id="using-persistent-volume-claims-to-share-storage">Using
+Persistent Volume Claims to Share Storage</h2>
+<p>In Kubernetes, we use Persistent Volume Claims (PVCs) to ask for
+storage resources. We can share storage across many pods with PVCs. This
+works like the <code>--volumes-from</code> feature in Docker. We can use
+PVCs to let several pods access the same Persistent Volume (PV).</p>
+<h3 id="creating-a-persistent-volume">Creating a Persistent Volume</h3>
+<p>First, we need to create a Persistent Volume that we will share:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-pv</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 1Gi</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /mnt/data</span></span></code></pre></div>
+<h3 id="creating-a-persistent-volume-claim">Creating a Persistent Volume
+Claim</h3>
+<p>Next, we define a Persistent Volume Claim that asks for the shared
+storage:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-pvc</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> ReadWriteMany</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 1Gi</span></span></code></pre></div>
+<h3 id="using-the-pvc-in-pods">Using the PVC in Pods</h3>
+<p>After that, we can use this PVC in many pods. Here is an example with
+two pods using the same PVC:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-one</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> app-one</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> app-one</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-one-container</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /usr/share/nginx/html</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-storage</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-storage</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> shared-pvc</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-two</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> app-two</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> app-two</span></span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-two-container</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /usr/share/nginx/html</span></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-storage</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-storage</span></span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> shared-pvc</span></span></code></pre></div>
+<h3 id="access-modes">Access Modes</h3>
+<p>We must make sure that the Persistent Volume supports the
+<code>ReadWriteMany</code> access mode. This allows many pods to read
+and write to it at the same time. By using this method, we can mimic the
+Docker <code>--volumes-from</code> feature. This helps us share storage
+between Kubernetes pods using Persistent Volume Claims.</p>
+<p>If you want to know more about managing storage in Kubernetes, check
+the article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">Kubernetes
+volumes</a>.</p>
+<h2
+id="configuring-init-containers-to-prepare-shared-volumes">Configuring
+Init Containers to Prepare Shared Volumes</h2>
+<p>Init containers in Kubernetes are special containers. They run before
+the main application containers in a pod. They help us prepare shared
+volumes. This ensures we finish important tasks before the application
+starts. Let’s see how we can set up init containers to prepare shared
+volumes in our Kubernetes setup.</p>
+<ol type="1">
+<li><p><strong>Define the Init Container</strong>: We need to specify
+the init container in our pod specification. This container can do tasks
+like downloading files, making directories, or setting permissions on
+shared volumes.</p></li>
+<li><p><strong>Mount the Shared Volume</strong>: We must make sure that
+both the init container and the main application container use the same
+shared volume.</p></li>
+<li><p><strong>Example Configuration</strong>:</p></li>
+</ol>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> init-container-example</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-data</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">emptyDir</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="co">  # Using emptyDir for demonstration</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">initContainers</span><span class="kw">:</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> init-myservice</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;echo &quot;Initializing shared volume...&quot; &gt; /mnt/shared/init.txt&#39;</span><span class="kw">]</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-data</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt/shared</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myservice</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myapp:latest</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-data</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt/shared</span></span></code></pre></div>
+<p>In this example, the init container <code>init-myservice</code> sets
+up the shared volume by creating a file called <code>init.txt</code>.
+This happens before the main application container
+<code>myservice</code> starts. So, any setup is complete and the main
+application can access the data easily.</p>
+<p>Using init containers for volume preparation gives us better control.
+It helps make sure the environment is ready for our application. This is
+similar to how the <code>--volumes-from</code> option works in Docker.
+For more information on Kubernetes volumes, check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">What
+are Kubernetes Volumes and How Do I Persist Data?</a>.</p>
+<h2
+id="leveraging-sidecar-containers-for-shared-volume-access">Leveraging
+Sidecar Containers for Shared Volume Access</h2>
+<p>In Kubernetes, we can use sidecar containers to share volume access
+between pods. A sidecar container runs next to the main application
+container in the same pod. It can add useful features like logging,
+monitoring, or managing shared resources.</p>
+<h3 id="example-configuration">Example Configuration</h3>
+<p>To use sidecar containers for shared volume access, we can set up a
+pod with multiple containers that share a volume. Here is a simple YAML
+configuration that shows how to create a sidecar container that shares a
+volume with the main application container.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main-app</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app-image</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /app/data</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-data</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sidecar</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-sidecar-image</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /app/data</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-data</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-data</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">emptyDir</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
+<h3 id="explanation-of-the-configuration">Explanation of the
+Configuration</h3>
+<ul>
+<li><strong>Containers</strong>: The pod has two containers:
+<code>main-app</code> and <code>sidecar</code>.</li>
+<li><strong>Volume Mounts</strong>: Both containers mount the same
+volume <code>shared-data</code> at <code>/app/data</code>. This lets
+them read and write to the same filesystem.</li>
+<li><strong>Volume Type</strong>: In this setup, we use an
+<code>emptyDir</code> volume. This volume gets created when the pod is
+assigned to a node and stays as long as the pod runs.</li>
+</ul>
+<h3 id="use-cases-for-sidecar-containers">Use Cases for Sidecar
+Containers</h3>
+<ul>
+<li><strong>Data Processing</strong>: The sidecar can process data that
+the main application creates.</li>
+<li><strong>Logging</strong>: Sidecar containers can gather logs from
+the main application and send them to a logging service.</li>
+<li><strong>Configuration Management</strong>: Sidecars can handle
+configuration files or secret data shared between containers.</li>
+</ul>
+<h3 id="benefits">Benefits</h3>
+<ul>
+<li><strong>Decoupling</strong>: Sidecar containers help us separate
+different parts of an application. This makes it easier to manage and
+grow.</li>
+<li><strong>Reusable Components</strong>: We can put common features in
+sidecars, so we can use them in different applications.</li>
+</ul>
+<p>Using sidecar containers for shared volume access improves our
+architecture. It gives us a flexible and scalable way to manage complex
+applications in Kubernetes. For more tips on sharing storage between
+Kubernetes pods, you can check this <a
+href="https://bestonlinetutorial.com/kubernetes/how-to-share-storage-between-kubernetes-pods-kubernetes.html">guide
+on sharing storage</a>.</p>
+<h2
+id="implementing-hostpath-volumes-for-direct-file-sharing">Implementing
+HostPath Volumes for Direct File Sharing</h2>
+<p>We can use HostPath volumes in Kubernetes to mount a directory or
+file from the host node’s filesystem into a pod. This method helps us
+share files between pods that run on the same node. But we need to be
+careful. Using HostPath volumes can make our applications dependent on
+each other. It can also create problems with portability because they
+rely on the host’s filesystem.</p>
+<h3 id="example-configuration-1">Example Configuration</h3>
+<p>Here is a simple example of how to set up a Pod using HostPath
+volumes:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hostpath-example</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /usr/share/nginx/html</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> html-volume</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> html-volume</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">hostPath</span><span class="kw">:</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /data/html</span></span></code></pre></div>
+<h3 id="key-points">Key Points</h3>
+<ul>
+<li>The <code>hostPath</code> volume type tells us a path on the host
+node.</li>
+<li>The <code>mountPath</code> shows where the volume is inside the
+container.</li>
+<li>We must make sure that the path on the host (<code>/data/html</code>
+in this case) exists before we create the pod. If it does not exist,
+Kubernetes will not create it.</li>
+</ul>
+<h3 id="use-cases">Use Cases</h3>
+<ul>
+<li><strong>Development Environments</strong>: This is good for local
+testing where we want file changes to appear right away without
+rebuilding images.</li>
+<li><strong>Log Sharing</strong>: We can give access to log files made
+by applications on the host.</li>
+</ul>
+<h3 id="security-considerations">Security Considerations</h3>
+<ul>
+<li>HostPath volumes can let containers see sensitive host directories.
+This can be a security risk.</li>
+<li>We should use them carefully. We must avoid exposing important
+system paths.</li>
+</ul>
+<h3 id="further-reading">Further Reading</h3>
+<p>For more about managing volumes, we can look at <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">Kubernetes
+Volumes</a> for detailed info on different volume types and their use
+cases.</p>
+<h2 id="exploring-statefulsets-for-volume-sharing-among-pods">Exploring
+StatefulSets for Volume Sharing Among Pods</h2>
+<p>StatefulSets in Kubernetes help us manage stateful applications. They
+allow us to share volumes among pods. Each pod in a StatefulSet keeps
+its own identity and storage. This is very useful for applications like
+databases where we need to keep data safe.</p>
+<h3 id="key-features-of-statefulsets">Key Features of StatefulSets</h3>
+<ul>
+<li><strong>Stable Network Identity</strong>: Each pod gets a unique
+name that stays the same even if we reschedule it.</li>
+<li><strong>Stable Storage</strong>: StatefulSets handle persistent
+volumes for each pod. This means we keep our data even if a pod is moved
+around.</li>
+</ul>
+<h3 id="configuration-example">Configuration Example</h3>
+<p>To set up a StatefulSet that shares volumes among pods, we need to
+define a PersistentVolumeClaim (PVC) in our StatefulSet. Here is an
+example of how we can create a StatefulSet with shared storage:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-statefulset</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">serviceName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;my-service&quot;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-image</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-storage</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /data</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">volumeClaimTemplates</span><span class="kw">:</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-storage</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">accessModes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;ReadWriteMany&quot;</span><span class="at"> </span><span class="kw">]</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 1Gi</span></span></code></pre></div>
+<h3 id="explanation">Explanation</h3>
+<ul>
+<li><strong>volumeClaimTemplates</strong>: This part tells us how to
+create a PVC for each pod in the StatefulSet.</li>
+<li><strong>accessModes</strong>: <code>ReadWriteMany</code> lets many
+pods read and write to the same volume. This helps with data
+sharing.</li>
+<li><strong>volumeMounts</strong>: Each pod mounts the volume at a
+specific path. This allows us to access shared data.</li>
+</ul>
+<h3 id="use-cases-1">Use Cases</h3>
+<ul>
+<li><strong>Databases</strong>: We can use StatefulSets to manage
+database replicas. Each instance can access the same data.</li>
+<li><strong>Distributed File Systems</strong>: Applications that need to
+share access to files can use this setup.</li>
+</ul>
+<p>This method works like the <code>--volumes-from</code> option in
+Docker. It lets us share storage easily among pods in Kubernetes. For
+more details about Kubernetes volume management, check out <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">this
+resource</a>.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="how-can-we-share-storage-between-multiple-pods-in-kubernetes">1.
+How can we share storage between multiple pods in Kubernetes?</h3>
+<p>In Kubernetes, we can share storage between many pods using
+Persistent Volume Claims, or PVCs. PVCs let us ask for storage resources
+that different pods can use. To get the same result as
+<code>--volumes-from</code>, we create a PVC and mount it in the pods we
+want. This way, the pods can access the same storage. This helps with
+sharing data and keeping it safe across our applications. For more
+details, see our article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-kubernetes-volumes-and-how-do-i-persist-data.html">Kubernetes
+Volumes</a>.</p>
+<h3
+id="what-are-init-containers-and-how-do-they-help-prepare-shared-volumes">2.
+What are Init Containers and how do they help prepare shared
+volumes?</h3>
+<p>Init Containers in Kubernetes are special containers. They run before
+the main application containers in a pod. We can use them to prepare
+shared volumes. They do tasks like downloading files, setting up
+environment variables, or configuring dependencies. This makes sure the
+shared volume is ready for the main application containers, just like
+<code>--volumes-from</code> works in Docker.</p>
+<h3 id="how-can-we-use-sidecar-containers-for-shared-volume-access">3.
+How can we use Sidecar containers for shared volume access?</h3>
+<p>Sidecar containers in Kubernetes are extra containers. They run with
+the main application container in the same pod. We can use them to
+access and manage shared volumes. This allows us to do things like
+logging, monitoring, or acting as a proxy. By using a Sidecar container,
+we can improve our application’s features while sharing the same
+storage, like the <code>--volumes-from</code> option in Docker.</p>
+<h3
+id="what-are-statefulsets-and-how-do-they-help-with-volume-sharing-among-pods">4.
+What are StatefulSets and how do they help with volume sharing among
+pods?</h3>
+<p>StatefulSets in Kubernetes help us manage applications that need to
+keep their state. They give each pod a stable network identity and
+persistent storage. With StatefulSets, we can share volumes between pods
+in a steady way. This ensures our data is safe and in order. This is
+very useful for applications needing stable and unique storage, making
+it a good option instead of <code>--volumes-from</code>.</p>
+<h3
+id="can-we-use-hostpath-volumes-for-direct-file-sharing-in-kubernetes">5.
+Can we use HostPath volumes for direct file sharing in Kubernetes?</h3>
+<p>Yes, we can use HostPath volumes in Kubernetes. They let us mount a
+directory from the host node’s filesystem into a pod. This is a simple
+way to share files directly between containers on the same node. But we
+should think about security and node affinity. Using HostPath volumes
+can act like <code>--volumes-from</code>, but it connects our pods to
+certain nodes. For more guidance on Kubernetes storage options, check
+our article on <a
+href="https://bestonlinetutorial.com/kubernetes/what-are-different-kubernetes-storage-options.html">Kubernetes
+Storage Options</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
