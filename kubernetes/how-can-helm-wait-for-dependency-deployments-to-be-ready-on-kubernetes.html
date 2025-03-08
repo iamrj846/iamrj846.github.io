@@ -1,0 +1,513 @@
+
+    
+            <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <!-- Google tag (gtag.js) -->
+            <script async src="https://www.googletagmanager.com/gtag/js?id=G-TFCQEJR7TD"></script>
+            <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-TFCQEJR7TD');
+            </script>
+            <meta charset="utf-8">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            
+            <meta property="og:title" content="How Can Helm Wait for Dependency Deployments to Be Ready on Kubernetes?" />
+            <meta property="og:description" content="Discover how to use Helm to wait for dependency deployments to be ready on Kubernetes, ensuring smoother application rollouts." />
+            <meta property="og:url" content="https://www.bestonlinetutorial.com/kubernetes/how-can-helm-wait-for-dependency-deployments-to-be-ready-on-kubernetes.html" />
+            <link rel="canonical" href="https://www.bestonlinetutorial.com/kubernetes/how-can-helm-wait-for-dependency-deployments-to-be-ready-on-kubernetes.html">
+            <meta property="og:type" content="article" />
+            <meta property="og:site_name" content=“BestOnlineTutorial” />
+            <meta name="twitter:title" content="How Can Helm Wait for Dependency Deployments to Be Ready on Kubernetes?" />
+            <meta name="twitter:description" content="Discover how to use Helm to wait for dependency deployments to be ready on Kubernetes, ensuring smoother application rollouts." />
+            <meta name="pinterest-rich-pin" content="true" />
+
+            <script type="application/ld+json">
+                {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "BestOnlineTutorial",
+                "url": "https://www.bestonlinetutorial.com/"
+                }
+            </script>
+            <!-- Common CSS & Icons -->
+            <link rel="icon" href="/favicon.ico" type="image/x-icon">
+            <link rel="stylesheet" href="/assets/plugins/highlight/styles/monokai-sublime.css">
+            <link id="theme-style" rel="stylesheet" href="/assets/css/theme-8.css">
+            <link rel="stylesheet" href="/assets/css/post.css">
+            <title>How Can Helm Wait for Dependency Deployments to Be Ready on Kubernetes?</title>
+            <meta name="description" content="Discover how to use Helm to wait for dependency deployments to be ready on Kubernetes, ensuring smoother application rollouts.">
+            <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	        <script src="/assets/js/blog.js"></script>
+        </head>
+
+        <body>
+
+            <div id="header-placeholder"></div>
+
+            <div class="main-wrapper">
+
+                <article class="blog-post px-3 py-5 p-md-5">
+                    <div class="container single-col-max-width">
+                        <header class="blog-post-header">
+                            <h1 class="title mb-2">How Can Helm Wait for Dependency Deployments to Be Ready on Kubernetes?</h1>
+                        </header>
+
+                        <div class="blog-post-body">
+                            <p>To make sure that Helm waits for dependencies to be ready on
+Kubernetes, we can use the <code>--wait</code> flag during the
+<code>helm install</code> or <code>helm upgrade</code> commands. This
+flag tells Helm to wait until all resources in the chart are ready
+before it marks the release as successful. Also, setting up readiness
+probes in our Helm charts can help make our deployments more reliable.
+This way, we ensure that the services we depend on are fully working
+before using them.</p>
+<p>In this article, we will look at different ways to manage
+dependencies well in Helm and Kubernetes. We will talk about how to use
+Helm’s dependency management, use hooks, set up resource readiness
+probes, apply wait flags in Helm commands, and manage the order of
+dependencies. By the end of this article, we will understand how to make
+Helm deployments wait for dependencies to be completely ready. This will
+help us have a smoother deployment process.</p>
+<ul>
+<li>Understanding Helm Dependency Management for Kubernetes</li>
+<li>Utilizing Helm Hooks to Wait for Deployments to Be Ready</li>
+<li>Configuring Resource Readiness Probes in Helm Charts</li>
+<li>Implementing Wait Flags in Helm Commands for Kubernetes
+Deployments</li>
+<li>Handling Dependency Order with Helm in Kubernetes</li>
+<li>Frequently Asked Questions</li>
+</ul>
+<h2
+id="understanding-helm-dependency-management-for-kubernetes">Understanding
+Helm Dependency Management for Kubernetes</h2>
+<p>Helm helps us manage Kubernetes apps using a package called charts.
+In this area, managing dependencies is very important. It makes sure our
+apps deploy in the right order and have what they need.</p>
+<h3 id="key-concepts-of-helm-dependency-management">Key Concepts of Helm
+Dependency Management</h3>
+<ol type="1">
+<li><p><strong>Chart.yaml</strong>: This file shows the details of a
+Helm chart. It includes the dependencies.</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dependencies</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="fl">1.6.9</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">repository</span><span class="kw">:</span><span class="at"> https://charts.bitnami.com/bitnami</span></span></code></pre></div></li>
+<li><p><strong>Requirements.yaml</strong>: In old versions of Helm
+(2.x), we put dependencies in <code>requirements.yaml</code>. In Helm 3,
+we now use <code>Chart.yaml</code> for this.</p></li>
+<li><p><strong>Helm Dependency Commands</strong>:</p>
+<ul>
+<li><code>helm dependency update</code>: This command updates charts and
+requirements based on <code>Chart.yaml</code>.</li>
+<li><code>helm dependency build</code>: This command builds the
+dependencies and puts them in the <code>charts/</code> folder.</li>
+<li><code>helm dependency list</code>: This command shows all
+dependencies we listed in the chart.</li>
+</ul></li>
+<li><p><strong>Managing Dependency Versions</strong>: We should define
+specific versions. This helps with compatibility and stability. Use
+semantic versioning to show ranges or exact versions.</p></li>
+<li><p><strong>Subcharts</strong>: These are charts that depend on a
+parent chart. We can manage them separately. This helps us organize our
+apps better.</p></li>
+<li><p><strong>Repository Configuration</strong>: We need to make sure
+the chart repositories are set up correctly in our local Helm. This lets
+Helm get the necessary dependencies.</p></li>
+<li><p><strong>Chart Repositories</strong>: We can add outside chart
+repositories like this:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> repo add bitnami https://charts.bitnami.com/bitnami</span></code></pre></div></li>
+</ol>
+<p>By using these features, Helm helps us manage dependencies well. It
+makes sure all parts are deployed correctly and in the right order on
+our Kubernetes cluster. For more details about Kubernetes and Helm, we
+can check <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-helm-and-how-does-it-help-with-kubernetes-deployments.html">this
+resource on Helm</a>.</p>
+<h2
+id="utilizing-helm-hooks-to-wait-for-deployments-to-be-ready">Utilizing
+Helm Hooks to Wait for Deployments to Be Ready</h2>
+<p>Helm hooks are great tools to manage the lifecycle of Kubernetes
+resources. They let us define actions that happen at certain times
+during the release process. This way, we can wait for deployments to get
+ready before we do other tasks.</p>
+<h3 id="implementing-hooks">Implementing Hooks</h3>
+<p>To use Helm hooks for waiting on deployments, we can add hooks in our
+Helm chart with annotations. Here’s how we can do it:</p>
+<ol type="1">
+<li><strong>Define a Pre-upgrade Hook</strong>: This hook makes sure
+that a deployment is ready before we upgrade it.</li>
+</ol>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">&quot;helm.sh/hook&quot;</span><span class="kw">:</span><span class="at"> pre-upgrade</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app:latest</span></span></code></pre></div>
+<ol start="2" type="1">
+<li><strong>Use <code>post-install</code> Hook</strong>: This hook
+checks if the application is running after the installation.</li>
+</ol>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wait-for-my-app</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">&quot;helm.sh/hook&quot;</span><span class="kw">:</span><span class="at"> post-install</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">&quot;helm.sh/hook-delete-policy&quot;</span><span class="kw">:</span><span class="at"> hook-succeeded</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wait-for-my-app</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;until kubectl rollout status deployment/my-app; do echo waiting for my-app; sleep 2; done&#39;</span><span class="kw">]</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<h3 id="hook-annotations">Hook Annotations</h3>
+<ul>
+<li><code>helm.sh/hook</code>: It tells what type of hook it is (like
+<code>pre-install</code>, <code>post-install</code>,
+<code>pre-upgrade</code>, <code>post-upgrade</code>, etc.).</li>
+<li><code>helm.sh/hook-delete-policy</code>: It decides when to delete
+the hook (like <code>hook-succeeded</code>, <code>hook-failed</code>,
+etc.).</li>
+</ul>
+<h3 id="using-the-kubectl-rollout-status">Using the
+<code>kubectl rollout status</code></h3>
+<p>We can also use the <code>kubectl rollout status</code> command in
+our hooks. This command helps us check if our deployment is ready. It
+waits until the deployment is fully rolled out.</p>
+<h3 id="example">Example</h3>
+<p>Here is a full example of a Helm hook job that waits for a deployment
+to be ready before we upgrade:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wait-for-my-app</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">&quot;helm.sh/hook&quot;</span><span class="kw">:</span><span class="at"> post-upgrade</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">&quot;helm.sh/hook-delete-policy&quot;</span><span class="kw">:</span><span class="at"> hook-succeeded</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wait-for-my-app</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;kubectl rollout status deployment/my-app --timeout=60s&#39;</span><span class="kw">]</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<p>This job makes sure that the deployment <code>my-app</code> is ready
+before we do any more Helm tasks.</p>
+<p>Using Helm hooks well can help us automate the deployment process. It
+also ensures that our Kubernetes apps are ready and working as they
+should before we make more changes. For more tips on managing Helm
+charts, check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-use-helm-to-manage-releases-of-my-applications-on-kubernetes.html">how
+to use Helm to manage releases of my applications on Kubernetes</a>.</p>
+<h2
+id="configuring-resource-readiness-probes-in-helm-charts">Configuring
+Resource Readiness Probes in Helm Charts</h2>
+<p>In Kubernetes, readiness probes are very important. They help us know
+when a container can accept traffic. When we configure readiness probes
+in Helm charts, we make sure our apps have the right health checks. This
+helps Kubernetes manage the lifecycle of pods better.</p>
+<p>To set up readiness probes in Helm charts, we must define the
+<code>readinessProbe</code> field in our Kubernetes deployment YAML.
+Here is an example of how to do this in a Helm chart’s
+<code>values.yaml</code> file and the related deployment template.</p>
+<h3 id="example-values.yaml">Example <code>values.yaml</code></h3>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">readinessProbe</span><span class="kw">:</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">timeoutSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">successThreshold</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">failureThreshold</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /health</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> http</span></span></code></pre></div>
+<h3 id="example-deployment-template-deployment.yaml">Example Deployment
+Template (<code>deployment.yaml</code>)</h3>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Release.Name </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Values.replicaCount </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Release.Name </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Release.Name </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Release.Name </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;{{ .Values.image.repository }}:{{ .Values.image.tag }}&quot;</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> http</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Values.service.port </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">readinessProbe</span><span class="kw">:</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">{</span><span class="at">{- if .Values.readinessProbe.enabled </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Values.readinessProbe.httpGet.path </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Values.readinessProbe.httpGet.port </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Values.readinessProbe.initialDelaySeconds </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Values.readinessProbe.periodSeconds </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">timeoutSeconds</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Values.readinessProbe.timeoutSeconds </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">successThreshold</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Values.readinessProbe.successThreshold </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">failureThreshold</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at">{ .Values.readinessProbe.failureThreshold </span><span class="kw">}</span><span class="at">}</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="kw">{</span><span class="at">{- end </span><span class="kw">}</span><span class="at">}</span></span></code></pre></div>
+<h3 id="key-parameters-for-readiness-probes">Key Parameters for
+Readiness Probes</h3>
+<ul>
+<li><strong><code>initialDelaySeconds</code></strong>: This is the time
+we wait before starting the probe after the container starts.</li>
+<li><strong><code>periodSeconds</code></strong>: This shows how often we
+run the probe (in seconds).</li>
+<li><strong><code>timeoutSeconds</code></strong>: This is the time we
+wait for a probe to succeed.</li>
+<li><strong><code>successThreshold</code></strong>: This is the minimum
+number of successful attempts needed for the probe to be successful
+after it has failed.</li>
+<li><strong><code>failureThreshold</code></strong>: This is the number
+of failed attempts needed for the probe to be considered failed.</li>
+</ul>
+<p>When we add readiness probes to our Helm charts, we help Kubernetes
+send traffic only to pods that are ready. This makes our applications
+more reliable and available.</p>
+<p>For more details on managing Kubernetes deployments with Helm, we can
+read <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-use-helm-to-manage-releases-of-my-applications-on-kubernetes.html">this
+guide on using Helm for Kubernetes deployments</a>.</p>
+<h2
+id="implementing-wait-flags-in-helm-commands-for-kubernetes-deployments">Implementing
+Wait Flags in Helm Commands for Kubernetes Deployments</h2>
+<p>In Kubernetes, we can manage the readiness of deployments easily with
+Helm’s wait flags. This is very helpful when we deploy applications that
+have dependencies. It makes sure all parts are ready before we continue.
+The <code>--wait</code> flag in Helm is important for this.</p>
+<h3 id="using-the---wait-flag">Using the <code>--wait</code> Flag</h3>
+<p>When we install or upgrade a Helm release, we can use the
+<code>--wait</code> flag. This tells Helm to wait until all resources
+are ready before it says the release is successful. The command looks
+like this:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> install <span class="op">&lt;</span>release-name<span class="op">&gt;</span> <span class="op">&lt;</span>chart-name<span class="op">&gt;</span> --wait</span></code></pre></div>
+<h3 id="configuring-timeout">Configuring Timeout</h3>
+<p>We can also use the <code>--timeout</code> flag to set how long Helm
+should wait for the resources to be ready. By default, this is 300
+seconds. If we want to set a timeout of 600 seconds, we can do it like
+this:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> install <span class="op">&lt;</span>release-name<span class="op">&gt;</span> <span class="op">&lt;</span>chart-name<span class="op">&gt;</span> --wait <span class="at">--timeout</span> 600s</span></code></pre></div>
+<h3 id="implementing-wait-for-specific-conditions">Implementing Wait for
+Specific Conditions</h3>
+<p>We can also set conditions for the wait flag. This means we can wait
+for certain deployments, services, or jobs to be ready. This is helpful
+for complex applications with many parts. For example:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> upgrade <span class="op">&lt;</span>release-name<span class="op">&gt;</span> <span class="op">&lt;</span>chart-name<span class="op">&gt;</span> --wait <span class="at">--timeout</span> 600s <span class="at">--set</span> image.tag=<span class="op">&lt;</span>new-tag<span class="op">&gt;</span></span></code></pre></div>
+<h3 id="example-of-using-wait-flags">Example of Using Wait Flags</h3>
+<p>Here is an example of deploying an application with Helm using the
+wait flag. This makes sure both the deployment and service are
+ready:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> install my-app ./my-app-chart <span class="at">--wait</span> <span class="at">--timeout</span> 5m</span></code></pre></div>
+<h3 id="combining-with-other-flags">Combining with Other Flags</h3>
+<p>We can mix the <code>--wait</code> flag with other Helm flags like
+<code>--values</code> or <code>--set</code>. This helps us customize our
+deployment more:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> upgrade my-app ./my-app-chart <span class="at">--install</span> <span class="at">--wait</span> <span class="at">--timeout</span> 10m <span class="at">--values</span> values-production.yaml</span></code></pre></div>
+<p>By using the <code>--wait</code> flag well, we can make sure our
+Kubernetes deployments are stable and running before we take more
+actions. This helps reduce problems related to service downtime and
+dependency readiness during deployment.</p>
+<p>For more about managing deployments in Kubernetes, check out <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-deploy-a-kubernetes-cluster-on-aws-eks.html">this
+article</a> about setting up applications on AWS EKS.</p>
+<h2 id="handling-dependency-order-with-helm-in-kubernetes">Handling
+Dependency Order with Helm in Kubernetes</h2>
+<p>In Kubernetes, we need to manage the order of deploying dependencies
+with Helm. This is important so that dependent services are ready before
+the applications start. Helm gives us several ways to control the
+deployment order.</p>
+<h3 id="using-dependencies-in-chart.yaml">Using
+<code>dependencies</code> in <code>Chart.yaml</code></h3>
+<p>To set up dependencies in your Helm chart, we define them in the
+<code>Chart.yaml</code> file. Each dependency will be deployed in the
+order we list them.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dependencies</span><span class="kw">:</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dependent-chart</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1.0.0&quot;</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">repository</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;https://example.com/charts&quot;</span></span></code></pre></div>
+<h3 id="utilizing-requirements.yaml">Utilizing
+<code>requirements.yaml</code></h3>
+<p>For Helm versions before 3, we could use
+<code>requirements.yaml</code> to declare dependencies. This file lets
+us specify the dependency charts and the versions we need.</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">dependencies</span><span class="kw">:</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dependent-chart</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1.0.0&quot;</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">repository</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;https://example.com/charts&quot;</span></span></code></pre></div>
+<h3 id="helm-hooks-for-dependency-management">Helm Hooks for Dependency
+Management</h3>
+<p>We can use Helm hooks to manage resources before and after
+deployments. Hooks help us take certain actions at specific moments in
+the deployment process.</p>
+<p>Here is an example of a post-install hook in a deployment:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wait-for-dependency</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">&quot;helm.sh/hook&quot;</span><span class="kw">:</span><span class="at"> post-install</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wait</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> alpine</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;sleep 30&quot;</span><span class="kw">]</span><span class="co">  # Wait for 30 seconds for dependencies to be ready</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<h3 id="dependency-management-with---wait-flag">Dependency Management
+with <code>--wait</code> Flag</h3>
+<p>When we deploy a Helm chart, we can use the <code>--wait</code> flag.
+This flag makes sure that Helm waits until all resources are ready
+before it marks the release as successful.</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> install my-release my-chart <span class="at">--wait</span></span></code></pre></div>
+<h3 id="resource-readiness-probes">Resource Readiness Probes</h3>
+<p>Using readiness probes in our Kubernetes deployments helps us make
+sure that Helm charts only continue when the needed services are
+running.</p>
+<p>Here is an example of a readiness probe configuration in a
+deployment:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">metadata</span><span class="kw">:</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app-container</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app-image</span></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">readinessProbe</span><span class="kw">:</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">httpGet</span><span class="kw">:</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /health</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<h3 id="managing-deployment-order-with---set-flags">Managing Deployment
+Order with <code>--set</code> Flags</h3>
+<p>Helm lets us use <code>--set</code> flags to pass parameters
+dynamically. This can control the order of deployment through conditions
+in templates. For example, we can decide to deploy a service based on if
+its dependency is ready.</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">helm</span> install my-release my-chart <span class="at">--set</span> dependentService.enabled=true</span></code></pre></div>
+<h3 id="conclusion">Conclusion</h3>
+<p>By using dependencies in our Helm charts, hooks, readiness probes,
+and the <code>--wait</code> flag, we can make sure that our applications
+deploy in the right order. We also ensure that all dependencies are
+ready before moving forward. This improves the stability and reliability
+of our Kubernetes deployments. It makes sure that services are available
+when we need them.</p>
+<h2 id="frequently-asked-questions">Frequently Asked Questions</h2>
+<h3 id="how-does-helm-handle-dependencies-in-kubernetes-deployments">1.
+How does Helm handle dependencies in Kubernetes deployments?</h3>
+<p>Helm helps with dependencies in Kubernetes by letting us define them
+in a <code>Chart.yaml</code> file. This file lists other Helm charts we
+need for our application. When we install or upgrade a chart, Helm will
+automatically install these dependencies. This makes sure all parts are
+deployed together. It helps us to deploy complex applications
+easier.</p>
+<h3 id="can-helm-wait-for-all-kubernetes-resources-to-be-ready">2. Can
+Helm wait for all Kubernetes resources to be ready?</h3>
+<p>Yes, Helm can wait for Kubernetes resources to be ready. We can use
+the <code>--wait</code> flag when we run install or upgrade commands.
+This means Helm will not finish the operation until all resources like
+Deployments, StatefulSets, and Pods are ready. It gives us a better
+deployment experience.</p>
+<h3
+id="what-are-helm-hooks-and-how-can-they-help-with-deployment-readiness">3.
+What are Helm hooks, and how can they help with deployment
+readiness?</h3>
+<p>Helm hooks are special notes that let us run scripts at different
+times during the release process. This can be before or after an install
+or upgrade. By using hooks, we can set up our own checks to see if
+everything is ready. This helps to make sure that all needed resources
+are working before we continue with more deployments.</p>
+<h3 id="how-can-i-use-readiness-probes-in-my-helm-charts">4. How can I
+use readiness probes in my Helm charts?</h3>
+<p>Readiness probes in Helm charts are set in the container part of our
+Kubernetes deployments. By setting up these probes, we can say what
+conditions make a container ready to get traffic. This way, services
+only send requests to pods that are fully ready and working well.</p>
+<h3
+id="what-is-the-best-practice-for-handling-the-order-of-dependencies-in-helm">5.
+What is the best practice for handling the order of dependencies in
+Helm?</h3>
+<p>To handle the order of dependencies in Helm, we need to list them
+correctly in our <code>requirements.yaml</code> or
+<code>Chart.yaml</code>. By making sure the dependent charts are in the
+right order, we can control how they are deployed. Also, using hooks and
+the <code>--wait</code> flag will help improve the reliability of our
+deployment process in Kubernetes.</p>
+<p>For more information about Kubernetes and Helm, we can read articles
+like <a
+href="https://bestonlinetutorial.com/kubernetes/what-is-helm-and-how-does-it-help-with-kubernetes-deployments.html">What
+is Helm and How Does it Help with Kubernetes Deployments?</a> and <a
+href="https://bestonlinetutorial.com/kubernetes/how-do-i-create-and-manage-helm-charts.html">How
+Do I Create and Manage Helm Charts?</a>.</p>
+
+                        </div>
+
+                    </div>
+                    <!--//container-->
+                </article>
+
+            </div>
+            <!--//main-wrapper-->
+
+            <div id="footer-placeholder"></div>
+
+            <!-- Javascript -->
+            <script src="/assets/plugins/popper.min.js" defer></script>
+            <script src="/assets/plugins/bootstrap/js/bootstrap.min.js" defer></script>
+            <script src="/assets/fontawesome/js/all.min.js" defer></script>
+        </body>
+
+        </html>
+            
+            
