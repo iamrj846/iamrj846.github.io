@@ -124,7 +124,7 @@ Get your GA4 measurement ID and add to HTML `<head>`:
 ### Step 3: Set Up Goals
 Track important conversions:
 - Contact form submissions
-- Email clicks (contact@corporateguild.com)
+- Email clicks (jainraunak846@gmail.com)
 - Phone number clicks (+91-6382248789)
 - External social media links
 
@@ -275,7 +275,7 @@ All required meta tags have been added:
 ## 📞 Support & Contact
 
 **For Technical SEO Issues:**
-- Email: contact@corporateguild.com
+- Email: jainraunak846@gmail.com
 - Phone: +91-6382248789
 - WhatsApp: +91-6382248789
 
