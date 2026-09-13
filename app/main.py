@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from contextlib import asynccontextmanager
 
@@ -16,9 +17,22 @@ from app.services.ingestion_service import get_ingestion_manager
 from app.routers import jobs, auth, admin, telemetry
 
 # Setup logging
+log_handlers = [logging.StreamHandler()]
+log_dir = "/app/logs" if os.path.exists("/app/logs") else "logs"
+try:
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "app.log")
+    log_handlers.append(
+        RotatingFileHandler(log_file, maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8")
+    )
+except Exception:
+    pass
+
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=log_handlers
 )
 logger = logging.getLogger("server")
 
