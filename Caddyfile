@@ -1,0 +1,65 @@
+# ==============================================================================
+# CorporateGuild - Production Caddy Web Server & Reverse Proxy Configuration
+# ==============================================================================
+# Caddy automatically provisions and renews SSL/TLS certificates via Let's Encrypt
+# for the specified domains with zero manual certbot intervention.
+# ==============================================================================
+
+# Global Configuration
+{
+    email admin@corporateguild.com
+    # Keep access logs clean
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}
+
+# Redirect www to apex domain (canonical URL)
+www.corporateguild.com {
+    redir https://corporateguild.com{uri} permanent
+}
+
+# Primary Production Domain
+corporateguild.com {
+    # Automatic HTTP to HTTPS redirection is enabled by default in Caddy
+
+    # High-performance Gzip and Zstandard compression
+    encode zstd gzip
+
+    # Production Security Headers
+    header {
+        # Enforce HTTPS across all subdomains for 1 year
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # Mitigate MIME-sniffing
+        X-Content-Type-Options "nosniff"
+        # Mitigate Clickjacking
+        X-Frame-Options "SAMEORIGIN"
+        # Referrer Policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # Remove server identity header
+        -Server
+    }
+
+    # Reverse proxy to FastAPI application container
+    reverse_proxy web:8000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+
+        # Health checks & timeouts
+        transport http {
+            dial_timeout 5s
+            response_header_timeout 60s
+        }
+    }
+}
+
+# Direct IP fallback / Health Check
+:80 {
+    # If accessed directly via Oracle Public IP before DNS propagates,
+    # forward to the web container
+    reverse_proxy web:8000
+}

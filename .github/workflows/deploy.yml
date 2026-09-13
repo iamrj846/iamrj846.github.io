@@ -1,0 +1,92 @@
+name: Deploy CorporateGuild to Oracle Cloud Always Free VM
+
+# ==============================================================================
+# CorporateGuild - Automated Production Deployment CI/CD Workflow
+# ==============================================================================
+# Triggered automatically on push to 'master' branch or manual workflow dispatch.
+# Connects securely via SSH to the Oracle Cloud Always Free VM, updates the
+# repository, builds and restarts the Docker Compose stack with zero downtime.
+# ==============================================================================
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Production Deployment to OCI VM
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Execute Remote SSH Deployment on Oracle VM
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.OCI_VM_HOST }}
+          username: ${{ secrets.OCI_VM_USER || 'ubuntu' }}
+          key: ${{ secrets.OCI_SSH_KEY }}
+          port: ${{ secrets.OCI_SSH_PORT || 22 }}
+          script_stop: true
+          envs: GITHUB_SHA
+          script: |
+            echo "======================================================================"
+            echo "🚀 Starting CorporateGuild Automated Deployment: ${GITHUB_SHA::7}"
+            echo "======================================================================"
+
+            # 1. Target Directory Detection
+            APP_DIR="/home/$(whoami)/iamrj846.github.io"
+            if [ ! -d "$APP_DIR" ]; then
+              APP_DIR="/opt/corporateguild"
+            fi
+
+            if [ ! -d "$APP_DIR" ]; then
+              echo "❌ Error: Application directory not found at $APP_DIR"
+              echo "Please clone the repository first on your VM as described in DEPLOYMENT_GUIDE.md"
+              exit 1
+            fi
+
+            cd "$APP_DIR"
+            echo "📂 Working directory: $(pwd)"
+
+            # 2. Pull Latest Changes from master
+            echo "📥 Pulling latest commits from GitHub master branch..."
+            git fetch origin master
+            git reset --hard origin/master
+
+            # 3. Ensure permissions on scripts
+            chmod +x scripts/*.sh
+
+            # 4. Build and Launch Containers via Docker Compose
+            echo "🐳 Building and spinning up production containers..."
+            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+
+            # 5. Prune dangling/untagged Docker images to preserve disk space
+            echo "🧹 Cleaning unused Docker build cache..."
+            docker image prune -f
+
+            # 6. Verify Container Health
+            echo "🩺 Running post-deployment health check..."
+            sleep 8
+            docker compose -f docker-compose.prod.yml ps
+
+            # Verify endpoint returns valid JSON
+            HEALTH=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://127.0.0.1:8000/api/auth/me || echo "000")
+            echo "Healthcheck status: HTTP $HEALTH"
+            if [ "$HEALTH" -ne 200 ] && [ "$HEALTH" -ne 401 ]; then
+              echo "⚠️ Warning: Web service returned unexpected status $HEALTH during health check"
+            else
+              echo "✅ Web service is healthy and responding!"
+            fi
+
+            echo "======================================================================"
+            echo "🎉 Deployment completed successfully!"
+            echo "======================================================================"

@@ -1,0 +1,56 @@
+version: '3.8'
+
+# ==============================================================================
+# CorporateGuild - Local Development & Testing Docker Compose Configuration
+# ==============================================================================
+# Usage:
+#   docker compose up --build
+# Access:
+#   Web Application: http://localhost:8000
+#   Redis Client:    redis://localhost:6379
+# ==============================================================================
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: corporateguild_web
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=local
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_PATH=/app/data/jobs_portal.db
+      - SYNC_INTERVAL_MINUTES=10
+      - TZ=Asia/Kolkata
+    volumes:
+      # Mount data, logs, and resources for local hot-persistence
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./resources:/app/resources
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: corporateguild_redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+    driver: local
