@@ -51,7 +51,8 @@ COMPRESSED_BACKUP="${BACKUP_DIR}/${BACKUP_BASE}.db.gz"
 CHECKSUM_FILE="${BACKUP_DIR}/${BACKUP_BASE}.sha256"
 
 log() {
-    echo "[$HUMAN_IST] $1" | tee -a "$LOG_FILE"
+    echo "[$HUMAN_IST] $1"
+    echo "[$HUMAN_IST] $1" >> "$LOG_FILE" 2>/dev/null || true
 }
 
 log "▶ Starting automated database backup..."
