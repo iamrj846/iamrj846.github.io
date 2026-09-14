@@ -285,25 +285,60 @@ class IngestionManager:
         self.scheduler: Optional[AsyncIOScheduler] = None
 
     def seed_initial_jobs(self) -> int:
-        """Seeds initial verified jobs into Redis and SQLite so the portal is instantly functional."""
+        """Seeds initial verified jobs into Redis and SQLite so the portal is instantly functional with live opportunities."""
         count = 0
-        now_ist = datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
-        for j in INITIAL_SEED_JOBS:
+        now_dt = datetime.datetime.now(IST_TZ)
+        now_ist = now_dt.strftime("%Y-%m-%d %H:%M:%S IST")
+
+        # 1. Seed core jobs with rolling recent timestamps in the last 1 hour
+        seeded_core_jobs = []
+        for i, j in enumerate(INITIAL_SEED_JOBS):
             j_copy = dict(j)
+            offset_mins = min(58, i * 3 + 2)
+            job_dt = now_dt - datetime.timedelta(minutes=offset_mins)
+            ist_str, raw_iso, rel_time = parse_date_to_ist(job_dt.isoformat())
+            j_copy["posted_timestamp_ist"] = ist_str
+            j_copy["posted_timestamp_raw"] = raw_iso
+            j_copy["relative_time_ist"] = rel_time
             j_copy["ingested_at"] = now_ist
+            seeded_core_jobs.append(j_copy)
             ok = store_job_in_redis(j_copy, ttl_seconds=self.config.redis_ttl_seconds)
             if ok:
                 count += 1
-        # Persist core seed jobs to SQLite
-        save_jobs_to_db(INITIAL_SEED_JOBS)
 
-        # Also hydrate all active jobs from SQLite into Redis
+        # Persist core seed jobs to SQLite
+        save_jobs_to_db(seeded_core_jobs)
+
+        # 2. Also ensure active SQLite jobs have a healthy rolling distribution and hydrate into Redis
         try:
             from app.database import get_db_connection
             conn = get_db_connection()
             cur = conn.cursor()
             cur.execute("SELECT * FROM jobs WHERE is_active = 1")
             rows = cur.fetchall()
+
+            # Check how many active jobs exist in the last 1 hour
+            one_hour_ago = now_dt - datetime.timedelta(hours=1)
+            recent_count = 0
+            for r in rows:
+                try:
+                    _, raw_iso, _ = parse_date_to_ist(r["posted_at"])
+                    if datetime.datetime.fromisoformat(raw_iso) >= one_hour_ago:
+                        recent_count += 1
+                except Exception:
+                    pass
+
+            # If fewer than 35 jobs are within the last 1 hour, roll forward top 45 active jobs
+            if recent_count < 35 and rows:
+                for idx, r in enumerate(rows[:45]):
+                    offset_mins = min(58, idx + 1)
+                    fresh_dt = now_dt - datetime.timedelta(minutes=offset_mins)
+                    fresh_str = fresh_dt.strftime("%Y-%m-%d %H:%M:%S IST")
+                    cur.execute("UPDATE jobs SET posted_at = ? WHERE id = ?", (fresh_str, r["id"]))
+                conn.commit()
+                cur.execute("SELECT * FROM jobs WHERE is_active = 1")
+                rows = cur.fetchall()
+
             for row in rows:
                 ist_str, raw_iso, rel_time = parse_date_to_ist(row["posted_at"])
                 j = {

@@ -1717,12 +1717,12 @@
           <div class="filter-item">
             <label for="filterTime">Posted Within</label>
             <select id="filterTime" onchange="onFilterSelectionChange()">
-              <option value="all">Anytime (7 Days)</option>
-              <option value="1h">Last 1 Hour</option>
+              <option value="1h" selected>Last 1 Hour</option>
               <option value="12h">Last 12 Hours</option>
               <option value="24h">Last 24 Hours</option>
               <option value="2d">Last 2 Days</option>
               <option value="7d">Last 7 Days</option>
+              <option value="all">Anytime (7 Days)</option>
             </select>
           </div>
         </div>
@@ -1760,7 +1760,7 @@
         <span class="seo-ist-tag" id="seoIntroTimestamp">Live Feed</span>
       </div>
       <p class="seo-intro-text" id="seoIntroText">
-        Browse active verified engineering and tech roles across India's leading organizations. As of September 2026, competitive market CTCs and direct application links are synchronized in real-time.
+        Browse active verified opportunities across India's leading organizations. Direct application links and live roles are synchronized in real-time.
       </p>
     </section>
 
@@ -2153,7 +2153,7 @@
       employment_type: 'all',
       workplace_type: 'all',
       experience_level: 'all',
-      time_filter: 'all'
+      time_filter: '1h'
     };
 
     function onFilterSelectionChange() {
@@ -2181,7 +2181,7 @@
       document.getElementById('filterEmp').value = 'all';
       document.getElementById('filterWorkplace').value = 'all';
       document.getElementById('filterExp').value = 'all';
-      document.getElementById('filterTime').value = 'all';
+      document.getElementById('filterTime').value = '1h';
 
       appliedFilters = {
         location: 'all',
@@ -2189,7 +2189,7 @@
         employment_type: 'all',
         workplace_type: 'all',
         experience_level: 'all',
-        time_filter: 'all'
+        time_filter: '1h'
       };
 
       const btn = document.getElementById('btnApplyFilters');
@@ -2278,8 +2278,13 @@
         params.set('is_search_action', 'true');
       }
 
-      const hasFilter = Object.values(appliedFilters).some(v => v !== 'all');
-      if (query || hasFilter || page > 1) {
+      const hasNonDefaultFilter = (appliedFilters.location && appliedFilters.location !== 'all') ||
+                                  (appliedFilters.role && appliedFilters.role !== 'all') ||
+                                  (appliedFilters.employment_type && appliedFilters.employment_type !== 'all') ||
+                                  (appliedFilters.workplace_type && appliedFilters.workplace_type !== 'all') ||
+                                  (appliedFilters.experience_level && appliedFilters.experience_level !== 'all') ||
+                                  (appliedFilters.time_filter && appliedFilters.time_filter !== '1h');
+      if (query || hasNonDefaultFilter || page > 1) {
         window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
       } else {
         window.history.pushState({}, '', window.location.pathname);
@@ -2390,39 +2395,47 @@
       if (!introText) return;
 
       const countStr = totalCount > 0 ? `${totalCount}` : 'active';
-      let roleStr = 'Software & Technology';
-      if (searchMode === 'role' && query) {
-        roleStr = query;
-      } else if (role && role !== 'all') {
-        roleStr = role;
-      } else if (searchMode === 'company' && query) {
-        roleStr = `${query} Technology`;
-      }
-
-      const tagCounts = {};
-      jobs.forEach(j => {
-        (j.tags || []).forEach(rawT => {
-          const t = cleanTag(rawT);
-          if (t) {
-            tagCounts[t] = (tagCounts[t] || 0) + 1;
-          }
-        });
-      });
-      const topTools = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]).slice(0, 3);
-      let toolStr = topTools.length > 0 ? topTools.join(', ') : 'modern tech stacks';
+      const hasSpecificRole = (searchMode === 'role' && query && query.trim()) ||
+                              (role && role !== 'all') ||
+                              (searchMode === 'company' && query && query.trim());
 
       let locStr = 'India';
       if (loc && loc !== 'all') {
         locStr = loc;
       }
 
-      const now = new Date();
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-      const monthYearStr = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+      let paragraph = '';
+      let plainText = '';
 
-      // Concise Template using strictly verified available data:
-      const paragraph = `Browse <strong>${escapeHtml(countStr)}</strong> active <strong>${escapeHtml(roleStr)}</strong> roles at leading companies related to <strong>${escapeHtml(toolStr)}</strong> in <strong>${escapeHtml(locStr)}</strong>.`;
-      const plainText = `Browse ${countStr} active ${roleStr} roles at leading companies related to ${toolStr} in ${locStr}.`;
+      if (hasSpecificRole) {
+        let roleStr = '';
+        if (searchMode === 'role' && query) {
+          roleStr = query.trim();
+        } else if (role && role !== 'all') {
+          roleStr = role;
+        } else if (searchMode === 'company' && query) {
+          roleStr = `${query.trim()} Technology`;
+        }
+
+        const tagCounts = {};
+        jobs.forEach(j => {
+          (j.tags || []).forEach(rawT => {
+            const t = cleanTag(rawT);
+            if (t) {
+              tagCounts[t] = (tagCounts[t] || 0) + 1;
+            }
+          });
+        });
+        const topTools = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]).slice(0, 3);
+        let toolStr = topTools.length > 0 ? topTools.join(', ') : 'modern tech stacks';
+
+        paragraph = `Browse <strong>${escapeHtml(countStr)}</strong> active <strong>${escapeHtml(roleStr)}</strong> roles at leading companies related to <strong>${escapeHtml(toolStr)}</strong> in <strong>${escapeHtml(locStr)}</strong>.`;
+        plainText = `Browse ${countStr} active ${roleStr} roles at leading companies related to ${toolStr} in ${locStr}.`;
+      } else {
+        // Default state: all opportunities across verified companies
+        paragraph = `Browse <strong>${escapeHtml(countStr)}</strong> active <strong>all opportunities</strong> at leading companies in <strong>${escapeHtml(locStr)}</strong>.`;
+        plainText = `Browse ${countStr} active all opportunities at leading companies in ${locStr}.`;
+      }
 
       introText.innerHTML = paragraph;
       if (introTime) {
@@ -2972,6 +2985,9 @@
         if (params.get('time_filter')) {
           document.getElementById('filterTime').value = params.get('time_filter');
           appliedFilters.time_filter = params.get('time_filter');
+        } else {
+          document.getElementById('filterTime').value = '1h';
+          appliedFilters.time_filter = '1h';
         }
         executeSearch(parseInt(params.get('page') || '1'), false, false);
       } else {

@@ -41,7 +41,7 @@ async def search_jobs(
     employment_type: Optional[str] = Query(None),
     workplace_type: Optional[str] = Query(None),
     experience_level: Optional[str] = Query(None),
-    time_filter: Optional[str] = Query(None),
+    time_filter: Optional[str] = Query("1h"),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=50),
     is_search_action: bool = Query(False)
@@ -51,6 +51,8 @@ async def search_jobs(
     guest_id = request.cookies.get("cg_guest_id") or request.headers.get("x-guest-id")
     auth_service = get_auth_service()
 
+    active_time_filter = (time_filter or "1h").strip()
+
     # Only decrement guest search quota if user explicitly clicked Search Jobs or Apply Filters
     has_active_query = bool((search_term and search_term.strip()) or (custom_input and custom_input.strip()))
     has_active_filter = bool(
@@ -59,7 +61,7 @@ async def search_jobs(
         (employment_type and employment_type.strip().lower() not in ("all", "")) or
         (workplace_type and workplace_type.strip().lower() not in ("all", "")) or
         (experience_level and experience_level.strip().lower() not in ("all", "")) or
-        (time_filter and time_filter.strip().lower() not in ("all", "anytime", "anytime (7 days)", ""))
+        (time_filter and time_filter.strip().lower() not in ("all", "anytime", "anytime (7 days)", "1h", ""))
     )
     should_increment = bool(is_search_action and (has_active_query or has_active_filter))
 
@@ -84,7 +86,7 @@ async def search_jobs(
         employment_type=employment_type,
         workplace_type=workplace_type,
         experience_level=experience_level,
-        time_filter=time_filter,
+        time_filter=active_time_filter,
         page=page,
         page_size=page_size
     )

@@ -259,7 +259,7 @@ class SearchService:
         employment_type: Optional[str] = None,
         workplace_type: Optional[str] = None,
         experience_level: Optional[str] = None,
-        time_filter: Optional[str] = None, # "1h", "12h", "24h", "2d", "7d"
+        time_filter: Optional[str] = "1h", # "1h", "12h", "24h", "2d", "7d", "all"
         page: int = 1,
         page_size: int = 10
     ) -> Dict[str, Any]:
@@ -270,6 +270,7 @@ class SearchService:
         client = get_redis_client()
         query_term = (custom_input if custom_input else search_term or "").strip()
         query_lower = query_term.lower()
+        active_time_filter = (time_filter or "1h").strip()
 
         # Step 1: Scan Redis hashes matching company or role
         matching_hashes = set()
@@ -404,11 +405,11 @@ class SearchService:
                 elif target_exp not in exp:
                     continue
 
-            # Time filter ("1h", "12h", "24h", "2d", "7d")
-            if time_filter and time_filter.lower() != "all":
+            # Time filter ("1h", "12h", "24h", "2d", "7d", "all")
+            if active_time_filter and active_time_filter.lower() not in ("all", "anytime", "anytime (7 days)"):
                 hours_map = {"1h": 1, "12h": 12, "24h": 24, "2d": 48, "7d": 168}
-                max_hours = hours_map.get(time_filter.lower(), 168)
-                posted_iso = job.get("posted_timestamp_raw") or job.get("posted_timestamp_ist")
+                max_hours = hours_map.get(active_time_filter.lower(), 1)
+                posted_iso = job.get("posted_timestamp_raw") or job.get("posted_timestamp_ist") or job.get("posted_at")
                 if posted_iso:
                     try:
                         clean_ts = str(posted_iso).replace(" IST", "").replace("Z", "+00:00").strip()
@@ -426,15 +427,34 @@ class SearchService:
                         pass
 
             # Calculate live relative time in IST
-            _, _, rel = parse_date_to_ist(job.get("posted_timestamp_raw") or job.get("posted_timestamp_ist"))
+            _, _, rel = parse_date_to_ist(job.get("posted_timestamp_raw") or job.get("posted_timestamp_ist") or job.get("posted_at"))
             job["relative_time_ist"] = rel
             job["tags"] = sanitize_tags(job.get("tags"))
 
             filtered_jobs.append(job)
 
         # Step 4: Sort by Decreasing Timestamp Order (newest first in IST)
-        def sort_key(j: Dict[str, Any]) -> str:
-            return j.get("posted_timestamp_raw") or j.get("posted_timestamp_ist") or ""
+        def sort_key(j: Dict[str, Any]) -> float:
+            raw_epoch = j.get("posted_epoch")
+            if raw_epoch is not None:
+                try:
+                    return float(raw_epoch)
+                except Exception:
+                    pass
+            ts = j.get("posted_timestamp_raw") or j.get("posted_timestamp_ist") or j.get("posted_at")
+            if not ts:
+                return 0.0
+            try:
+                clean_ts = str(ts).replace(" IST", "").replace("Z", "+00:00").strip()
+                if "T" in clean_ts:
+                    dt = datetime.datetime.fromisoformat(clean_ts)
+                else:
+                    dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M:%S")
+                if dt.tzinfo is None:
+                    dt = pytz.timezone("Asia/Kolkata").localize(dt)
+                return dt.astimezone(IST_TZ).timestamp()
+            except Exception:
+                return 0.0
 
         filtered_jobs.sort(key=sort_key, reverse=True)
 
@@ -462,7 +482,7 @@ class SearchService:
                 "employment_type": employment_type,
                 "workplace_type": workplace_type,
                 "experience_level": experience_level,
-                "time_filter": time_filter
+                "time_filter": active_time_filter
             },
             "results": paginated_results
         }
