@@ -138,31 +138,32 @@ async def serve_logo():
 
 @app.get("/robots.txt")
 async def serve_robots():
-    return FileResponse(str(STATIC_DIR / "robots.txt"))
+    return FileResponse(str(STATIC_DIR / "robots.txt"), media_type="text/plain; charset=utf-8")
 
 @app.get("/sitemap.xml")
 async def serve_sitemap():
-    return FileResponse(str(STATIC_DIR / "sitemap.xml"))
+    return FileResponse(str(STATIC_DIR / "sitemap.xml"), media_type="application/xml; charset=utf-8")
 
 @app.get("/manifest.json")
 async def serve_manifest():
-    return FileResponse(str(STATIC_DIR / "manifest.json"))
+    return FileResponse(str(STATIC_DIR / "manifest.json"), media_type="application/manifest+json; charset=utf-8")
 
 @app.get("/schema.json")
 async def serve_schema():
-    return FileResponse(str(STATIC_DIR / "schema.json"))
+    return FileResponse(str(STATIC_DIR / "schema.json"), media_type="application/ld+json; charset=utf-8")
 
 @app.get("/humans.txt")
 async def serve_humans():
-    return FileResponse(str(STATIC_DIR / "humans.txt"))
+    return FileResponse(str(STATIC_DIR / "humans.txt"), media_type="text/plain; charset=utf-8")
 
+@app.get("/.well-known/security.txt")
 @app.get("/security.txt")
 async def serve_security():
-    return FileResponse(str(STATIC_DIR / "security.txt"))
+    return FileResponse(str(STATIC_DIR / "security.txt"), media_type="text/plain; charset=utf-8")
 
 @app.get("/telemetry.js")
 async def serve_telemetry():
-    return FileResponse(str(STATIC_DIR / "telemetry.js"), media_type="application/javascript")
+    return FileResponse(str(STATIC_DIR / "telemetry.js"), media_type="application/javascript; charset=utf-8")
 
 # Global exception handler
 @app.exception_handler(Exception)

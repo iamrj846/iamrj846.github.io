@@ -55,8 +55,18 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
     clean_str = str(date_str).strip()
     is_explicit_ist = False
 
+    # Handle numeric epoch timestamp (ms or s)
+    if isinstance(date_str, (int, float)) or (clean_str.isdigit() and len(clean_str) >= 9):
+        try:
+            val = float(clean_str)
+            if val > 1e11: # Epoch in milliseconds
+                val = val / 1000.0
+            dt = datetime.datetime.fromtimestamp(val, tz=datetime.timezone.utc)
+        except Exception:
+            dt = None
+
     # Strip explicit IST suffix if present
-    if clean_str.endswith(" IST"):
+    if dt is None and clean_str.endswith(" IST"):
         clean_str = clean_str[:-4].strip()
         is_explicit_ist = True
 
@@ -263,7 +273,7 @@ class ATSService:
                 await asyncio.sleep(0.5 * (attempt + 1))
         return []
 
-    def _parse_ats_data(self, ep: ATSEndpoint, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _parse_ats_data(self, ep: ATSEndpoint, data: Any) -> List[Dict[str, Any]]:
         platform = ep.ats_platform.lower()
         if "greenhouse" in platform:
             return self._parse_greenhouse(ep, data)
@@ -271,12 +281,17 @@ class ATSService:
             return self._parse_ashby(ep, data)
         elif "smartrecruiters" in platform:
             return self._parse_smartrecruiters(ep, data)
+        elif "lever" in platform:
+            return self._parse_lever(ep, data)
         else:
             # Try generic detection
-            if "jobs" in data and isinstance(data["jobs"], list):
-                return self._parse_greenhouse(ep, data)
-            elif "content" in data and isinstance(data["content"], list):
-                return self._parse_smartrecruiters(ep, data)
+            if isinstance(data, list):
+                return self._parse_lever(ep, data)
+            elif isinstance(data, dict):
+                if "jobs" in data and isinstance(data["jobs"], list):
+                    return self._parse_greenhouse(ep, data)
+                elif "content" in data and isinstance(data["content"], list):
+                    return self._parse_smartrecruiters(ep, data)
         return []
 
     def _parse_greenhouse(self, ep: ATSEndpoint, data: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -403,6 +418,51 @@ class ATSService:
                 "relative_time_ist": rel_time,
                 "tags": tags,
                 "ats_platform": "SmartRecruiters",
+                "ingested_at": datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+            })
+        return results
+
+    def _parse_lever(self, ep: ATSEndpoint, data: Any) -> List[Dict[str, Any]]:
+        results = []
+        jobs = data if isinstance(data, list) else data.get("jobs", data.get("data", []))
+        if not isinstance(jobs, list):
+            return []
+
+        for j in jobs:
+            if not isinstance(j, dict):
+                continue
+            title = j.get("text", "").strip()
+            cats = j.get("categories") or {}
+            loc_str = cats.get("location", "")
+            workplace_type_raw = cats.get("workplaceType", "")
+            
+            # India location verification
+            if not is_india_location(loc_str) and not is_india_location(title):
+                continue
+
+            apply_link = j.get("hostedUrl") or j.get("applyUrl") or f"https://jobs.lever.co/{ep.company_name.lower()}/{j.get('id')}"
+            created_at = j.get("createdAt")
+            ist_str, raw_iso, rel_time = parse_date_to_ist(created_at)
+
+            dept = cats.get("department", "") or cats.get("team", "")
+            tags = extract_tags(title, dept)
+            emp_type = normalize_employment_type(cats.get("commitment", ""), title)
+            workplace = normalize_workplace(loc_str, workplace_type_raw, is_remote=("remote" in loc_str.lower()))
+            exp_level = normalize_experience_level(title)
+
+            results.append({
+                "company_name": ep.company_name,
+                "role_name": title,
+                "location": loc_str or "India",
+                "employment_type": emp_type,
+                "workplace_type": workplace,
+                "experience_level": exp_level,
+                "apply_link": apply_link,
+                "posted_timestamp_ist": ist_str,
+                "posted_timestamp_raw": raw_iso,
+                "relative_time_ist": rel_time,
+                "tags": tags,
+                "ats_platform": "Lever",
                 "ingested_at": datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
             })
         return results
