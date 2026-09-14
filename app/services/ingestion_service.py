@@ -382,10 +382,10 @@ class IngestionManager:
             self.seed_initial_jobs()
 
             # 2. Fetch configured endpoints
-            # Limit concurrent fetches to avoid CPU/memory spike
-            max_concurrency = self.config.scheduler.get("max_concurrent_requests", 15)
-            # Fetch endpoints (if full_sync, query full list, else top batch)
-            sample_limit = None if full_sync else 80
+            # Limit concurrent fetches to optimize throughput
+            max_concurrency = self.config.scheduler.get("max_concurrent_requests", 40)
+            # Fetch endpoints (if full_sync, query full list, else top 1500 batch)
+            sample_limit = None if full_sync else 1500
             jobs = await self.ats_service.fetch_all_endpoints(
                 max_concurrent=max_concurrency,
                 sample_limit=sample_limit

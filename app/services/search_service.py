@@ -287,8 +287,41 @@ class SearchService:
                 c, r = parse_hash_name(k)
                 if query_lower in c.lower() or c.lower() == query_lower:
                     matching_hashes.add(k)
-            # Smart fallback: if no company matched, check if query matches roles or synonyms
+
+            # If no cached jobs in Redis, check if company is in our master ATS directory and fetch live
             if not matching_hashes:
+                matching_eps = [
+                    ep for ep in self.ats_service.endpoints
+                    if query_lower == ep.company_name.lower() or query_lower in ep.company_name.lower()
+                ]
+                if matching_eps:
+                    target_ep = matching_eps[0]
+                    try:
+                        import httpx
+                        with httpx.Client(timeout=6.0, follow_redirects=True) as sync_client:
+                            headers = {
+                                "User-Agent": "CorporateGuildJobSearch/1.0 (+https://corporateguild.com)",
+                                "Accept": "application/json"
+                            }
+                            resp = sync_client.get(target_ep.endpoint_url, headers=headers)
+                            if resp.status_code == 200:
+                                live_jobs = self.ats_service._parse_ats_data(target_ep, resp.json())
+                                if live_jobs:
+                                    from app.database import save_jobs_to_db
+                                    from app.redis_client import store_job_in_redis
+                                    save_jobs_to_db(live_jobs)
+                                    for lj in live_jobs:
+                                        store_job_in_redis(lj)
+                                    all_keys = client.keys("*|*")
+                                    for k in all_keys:
+                                        c, r = parse_hash_name(k)
+                                        if query_lower in c.lower() or c.lower() == query_lower:
+                                            matching_hashes.add(k)
+                    except Exception as e:
+                        logger.debug(f"On-demand fetch failed for {target_ep.company_name}: {e}")
+
+            # Smart fallback: only if query is generic and neither Redis nor ATS had this company
+            if not matching_hashes and len(query_term) > 3:
                 synonyms = self.get_role_synonyms(query_term)
                 all_syns = list(set(synonyms + [query_lower]))
                 for k in all_keys:

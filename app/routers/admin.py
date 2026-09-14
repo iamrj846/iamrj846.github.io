@@ -106,14 +106,22 @@ async def admin_contact_messages(admin_user: Dict[str, Any] = Depends(verify_adm
 
 @router.get("/stats")
 async def admin_stats(admin_user: Dict[str, Any] = Depends(verify_admin_session)):
+    from app.services.ats_service import get_ats_service
+    ats_svc = get_ats_service()
     db_metrics = get_admin_metrics()
     redis_summary = get_redis_summary()
     sync_status = get_sync_status()
+    total_companies = len(ats_svc.get_all_companies())
+    total_endpoints = len(ats_svc.endpoints)
     return {
         "success": True,
         "metrics": db_metrics,
         "redis": redis_summary,
-        "sync": sync_status
+        "sync": sync_status,
+        "directory": {
+            "total_companies": total_companies,
+            "total_endpoints": total_endpoints
+        }
     }
 
 @router.get("/users")
@@ -124,10 +132,10 @@ async def admin_users(admin_user: Dict[str, Any] = Depends(verify_admin_session)
 @router.post("/sync")
 async def trigger_sync(admin_user: Dict[str, Any] = Depends(verify_admin_session)):
     manager = get_ingestion_manager()
-    # Trigger cycle in background
+    # Trigger cycle in background with comprehensive sync across directory
     import asyncio
-    asyncio.create_task(manager.run_ingestion_cycle(full_sync=False))
-    return {"success": True, "message": "ATS Ingestion cycle initiated successfully."}
+    asyncio.create_task(manager.run_ingestion_cycle(full_sync=True))
+    return {"success": True, "message": "Comprehensive ATS Ingestion cycle initiated successfully."}
 
 @router.get("/sync-status")
 async def check_sync_status(admin_user: Dict[str, Any] = Depends(verify_admin_session)):
