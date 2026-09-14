@@ -283,6 +283,8 @@ class ATSService:
             return self._parse_smartrecruiters(ep, data)
         elif "lever" in platform:
             return self._parse_lever(ep, data)
+        elif "bamboohr" in platform:
+            return self._parse_bamboohr(ep, data)
         else:
             # Try generic detection
             if isinstance(data, list):
@@ -292,6 +294,8 @@ class ATSService:
                     return self._parse_greenhouse(ep, data)
                 elif "content" in data and isinstance(data["content"], list):
                     return self._parse_smartrecruiters(ep, data)
+                elif "result" in data and isinstance(data["result"], list):
+                    return self._parse_bamboohr(ep, data)
         return []
 
     def _parse_greenhouse(self, ep: ATSEndpoint, data: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -464,6 +468,60 @@ class ATSService:
                 "tags": tags,
                 "ats_platform": "Lever",
                 "ingested_at": datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+            })
+        return results
+
+    def _parse_bamboohr(self, ep: ATSEndpoint, data: Any) -> List[Dict[str, Any]]:
+        results = []
+        if not isinstance(data, dict):
+            return []
+        items = data.get("result", [])
+        if not isinstance(items, list):
+            return []
+
+        for j in items:
+            if not isinstance(j, dict):
+                continue
+            title = j.get("jobOpeningName", "").strip()
+            loc_obj = j.get("location") or {}
+            city = loc_obj.get("city", "") if isinstance(loc_obj, dict) else ""
+            state = loc_obj.get("state", "") if isinstance(loc_obj, dict) else ""
+            loc_str = f"{city}, {state}".strip(", ")
+            
+            # India location verification
+            if not is_india_location(loc_str) and not is_india_location(title):
+                continue
+
+            job_id = str(j.get("id", "")).strip()
+            # Derive apply link: https://{company}.bamboohr.com/careers/{job_id}
+            base_careers = ep.endpoint_url.replace("/careers/list", f"/careers/{job_id}")
+            apply_link = base_careers if job_id else ep.endpoint_url
+            
+            now_ist = datetime.datetime.now(IST_TZ)
+            ist_str = now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
+            raw_iso = now_ist.isoformat()
+            rel_time = "Recently"
+
+            dept = j.get("departmentLabel", "")
+            tags = extract_tags(title, dept)
+            emp_type = normalize_employment_type(j.get("employmentStatusLabel", ""), title)
+            workplace = normalize_workplace(loc_str, is_remote=bool(j.get("isRemote")))
+            exp_level = normalize_experience_level(title)
+
+            results.append({
+                "company_name": ep.company_name,
+                "role_name": title,
+                "location": loc_str or "India",
+                "employment_type": emp_type,
+                "workplace_type": workplace,
+                "experience_level": exp_level,
+                "apply_link": apply_link,
+                "posted_timestamp_ist": ist_str,
+                "posted_timestamp_raw": raw_iso,
+                "relative_time_ist": rel_time,
+                "tags": tags,
+                "ats_platform": "BambooHR",
+                "ingested_at": now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
             })
         return results
 
