@@ -1757,10 +1757,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           India Career Insights
         </span>
-        <span class="seo-ist-tag" id="seoIntroTimestamp">Live Feed</span>
+        <span class="seo-ist-tag" id="seoIntroTimestamp">Live Feed • Last 1 Hour</span>
       </div>
       <p class="seo-intro-text" id="seoIntroText">
-        Browse active verified opportunities across India's leading organizations. Direct application links and live roles are synchronized in real-time.
+        Browse active verified opportunities posted in the last 1 hour across India's leading organizations. Direct application links and live roles are synchronized in real-time.
       </p>
     </section>
 
@@ -2319,7 +2319,7 @@
         renderJobCards(data.results || []);
         updatePagination(data);
         updateBreadcrumbs(query, appliedFilters.location, appliedFilters.role, appliedFilters.workplace_type);
-        updateDynamicSeo(data.results || [], data.total_count || 0, query, appliedFilters.location, appliedFilters.role, appliedFilters.workplace_type);
+        updateDynamicSeo(data.results || [], data.total_count || 0, query, appliedFilters.location, appliedFilters.role, appliedFilters.workplace_type, appliedFilters.time_filter);
       } catch (err) {
         console.error('Search execution error:', err);
         document.getElementById('loader').style.display = 'none';
@@ -2389,7 +2389,7 @@
       resetFilters();
     }
 
-    function updateDynamicSeo(jobs, totalCount, query, loc, role, wp) {
+    function updateDynamicSeo(jobs, totalCount, query, loc, role, wp, time_filter) {
       const introText = document.getElementById('seoIntroText');
       const introTime = document.getElementById('seoIntroTimestamp');
       if (!introText) return;
@@ -2404,11 +2404,34 @@
         locStr = loc;
       }
 
+      const tf = (time_filter || appliedFilters.time_filter || '1h').toLowerCase();
+      let timeDesc = 'posted in the last 1 hour';
+      let badgeTime = 'Live Feed • Last 1 Hour';
+      if (tf === '1h') {
+        timeDesc = 'posted in the last 1 hour';
+        badgeTime = 'Live Feed • Last 1 Hour';
+      } else if (tf === '12h') {
+        timeDesc = 'posted in the last 12 hours';
+        badgeTime = 'Live Feed • Last 12h';
+      } else if (tf === '24h') {
+        timeDesc = 'posted in the last 24 hours';
+        badgeTime = 'Live Feed • Last 24h';
+      } else if (tf === '2d') {
+        timeDesc = 'posted in the last 2 days';
+        badgeTime = 'Live Feed • Last 2 Days';
+      } else if (tf === '7d') {
+        timeDesc = 'posted in the last 7 days';
+        badgeTime = 'Live Feed • Last 7 Days';
+      } else if (tf === 'all') {
+        timeDesc = 'posted across the past 7 days';
+        badgeTime = 'Live Feed • Past 7 Days';
+      }
+
       let paragraph = '';
       let plainText = '';
+      let roleStr = '';
 
       if (hasSpecificRole) {
-        let roleStr = '';
         if (searchMode === 'role' && query) {
           roleStr = query.trim();
         } else if (role && role !== 'all') {
@@ -2429,17 +2452,17 @@
         const topTools = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]).slice(0, 3);
         let toolStr = topTools.length > 0 ? topTools.join(', ') : 'modern tech stacks';
 
-        paragraph = `Browse <strong>${escapeHtml(countStr)}</strong> active <strong>${escapeHtml(roleStr)}</strong> roles at leading companies related to <strong>${escapeHtml(toolStr)}</strong> in <strong>${escapeHtml(locStr)}</strong>.`;
-        plainText = `Browse ${countStr} active ${roleStr} roles at leading companies related to ${toolStr} in ${locStr}.`;
+        paragraph = `Browse <strong>${escapeHtml(countStr)}</strong> active <strong>${escapeHtml(roleStr)}</strong> roles ${escapeHtml(timeDesc)} at leading companies related to <strong>${escapeHtml(toolStr)}</strong> in <strong>${escapeHtml(locStr)}</strong>.`;
+        plainText = `Browse ${countStr} active ${roleStr} roles ${timeDesc} at leading companies related to ${toolStr} in ${locStr}.`;
       } else {
         // Default state: all opportunities across verified companies
-        paragraph = `Browse <strong>${escapeHtml(countStr)}</strong> active <strong>all opportunities</strong> at leading companies in <strong>${escapeHtml(locStr)}</strong>.`;
-        plainText = `Browse ${countStr} active all opportunities at leading companies in ${locStr}.`;
+        paragraph = `Browse <strong>${escapeHtml(countStr)}</strong> active <strong>all opportunities</strong> ${escapeHtml(timeDesc)} at leading companies in <strong>${escapeHtml(locStr)}</strong>.`;
+        plainText = `Browse ${countStr} active all opportunities ${timeDesc} at leading companies in ${locStr}.`;
       }
 
       introText.innerHTML = paragraph;
       if (introTime) {
-        introTime.textContent = 'Live Feed';
+        introTime.textContent = badgeTime;
       }
 
       try {
@@ -2454,8 +2477,9 @@
         }
         if (ogDesc && typeof ogDesc.setAttribute === 'function') ogDesc.setAttribute('content', plainText);
 
-        document.title = `${roleStr} Jobs in ${locStr} | CorporateGuild`;
-        updateSchemaJsonLd(roleStr, locStr, plainText, jobs);
+        const pageTitleRole = hasSpecificRole ? roleStr : 'All Verified Opportunities';
+        document.title = `${pageTitleRole} in ${locStr} | CorporateGuild`;
+        updateSchemaJsonLd(pageTitleRole, locStr, plainText, jobs);
       } catch (seoErr) {
         console.warn('SEO metadata notice:', seoErr);
       }
