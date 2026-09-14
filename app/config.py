@@ -58,6 +58,7 @@ class Config:
         self.admin = self._raw.get("admin", {})
         self.scheduler = self._raw.get("scheduler", {})
         self.guest = self._raw.get("guest", {})
+        self.smtp = self._raw.get("smtp", {})
 
     @property
     def app_name(self) -> str:
@@ -122,11 +123,11 @@ class Config:
 
     @property
     def admin_username(self) -> str:
-        return os.getenv("ADMIN_USERNAME", self.admin.get("username", "iamrj846"))
+        return os.getenv("ADMIN_USERNAME", self.admin.get("username", "admin"))
 
     @property
     def admin_password_fallback(self) -> str:
-        return os.getenv("ADMIN_PASSWORD", self.admin.get("plain_password_fallback", "iamrj846"))
+        return os.getenv("ADMIN_PASSWORD", self.admin.get("plain_password_fallback", ""))
 
     @property
     def admin_dashboard_url(self) -> str:
@@ -139,6 +140,36 @@ class Config:
     @property
     def sync_interval_minutes(self) -> int:
         return int(os.getenv("SYNC_INTERVAL_MINUTES", self.scheduler.get("sync_interval_minutes", 10)))
+
+    @property
+    def smtp_host(self) -> str:
+        return os.getenv("SMTP_HOST", self.smtp.get("host", "smtp.gmail.com"))
+
+    @property
+    def smtp_port(self) -> int:
+        return int(os.getenv("SMTP_PORT", self.smtp.get("port", 587)))
+
+    @property
+    def smtp_user(self) -> str:
+        return os.getenv("SMTP_USER", os.getenv("SMTP_USERNAME", self.smtp.get("user", "")))
+
+    @property
+    def smtp_password(self) -> str:
+        return os.getenv("SMTP_PASSWORD", os.getenv("SMTP_PASS", self.smtp.get("password", "")))
+
+    @property
+    def smtp_from_email(self) -> str:
+        default_from = f"CorporateGuild <{self.smtp_user}>" if self.smtp_user else "CorporateGuild <noreply@corporateguild.com>"
+        return os.getenv("SMTP_FROM_EMAIL", self.smtp.get("from_email", default_from))
+
+    @property
+    def smtp_use_tls(self) -> bool:
+        val = os.getenv("SMTP_USE_TLS", str(self.smtp.get("use_tls", True)))
+        return str(val).lower() in ("1", "true", "yes")
+
+    @property
+    def formsubmit_token(self) -> str:
+        return os.getenv("FORMSUBMIT_TOKEN", self._raw.get("contact", {}).get("formsubmit_token", ""))
 
 _config_instance: Optional[Config] = None
 

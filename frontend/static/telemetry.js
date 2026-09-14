@@ -49,10 +49,15 @@
     document.addEventListener('DOMContentLoaded', trackVisit);
   }
 
-  // 2. Click telemetry on any button or link
+  // 2. Click telemetry on any button or link (excluding direct job apply links which have dedicated tracking)
   document.addEventListener('click', function (e) {
     const target = e.target.closest('a, button, input[type="submit"], select, .mode-tab, .suggestion-item, .page-btn, .apply-btn, .breadcrumb-item a');
     if (!target) return;
+
+    // Direct job apply links have dedicated tracking via /api/jobs/click
+    if (target.closest('.btn-apply, [onclick*="trackJobClick"]')) {
+      return;
+    }
 
     const sid = getOrCreateSessionId();
     const label = (target.innerText || target.value || target.getAttribute('aria-label') || target.title || target.tagName).trim().substring(0, 100);

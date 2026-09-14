@@ -21,6 +21,9 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class ResendOtpRequest(BaseModel):
+    email: str
+
 def get_client_ip(request: Request) -> str:
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
@@ -32,6 +35,15 @@ async def register(request: Request, payload: RegisterRequest):
     ip = get_client_ip(request)
     auth_svc = get_auth_service()
     res = auth_svc.register_user(payload.name, payload.email, payload.password, ip)
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("message"))
+    return res
+
+@router.post("/resend-otp")
+async def resend_otp(request: Request, payload: ResendOtpRequest):
+    ip = get_client_ip(request)
+    auth_svc = get_auth_service()
+    res = auth_svc.resend_otp(payload.email, ip)
     if not res.get("success"):
         raise HTTPException(status_code=400, detail=res.get("message"))
     return res
@@ -72,23 +84,60 @@ async def login(request: Request, response: Response, payload: LoginRequest):
         max_age=30 * 86400,
         httponly=True,
         samesite="lax",
-        secure=False
+        secure=False,
+        path="/"
     )
+    if res.get("user", {}).get("is_admin"):
+        from app.database import save_admin_session
+        save_admin_session(session_token, payload.email)
+        response.set_cookie(
+            key="cg_admin_session",
+            value=session_token,
+            max_age=30 * 86400,
+            httponly=True,
+            samesite="lax",
+            secure=False,
+            path="/"
+        )
     return res
 
 @router.post("/logout")
 async def logout(request: Request, response: Response):
     session_token = request.cookies.get("cg_session")
-    if session_token:
-        auth_svc = get_auth_service()
-        auth_svc.logout(session_token)
-    response.delete_cookie(key="cg_session")
+    admin_token = request.cookies.get("cg_admin_session")
+    auth_header = request.headers.get("Authorization", "")
+    bearer_token = auth_header.replace("Bearer ", "").strip() if auth_header.startswith("Bearer ") else None
+
+    tokens = set([t for t in (session_token, admin_token, bearer_token) if t])
+    auth_svc = get_auth_service()
+    from app.database import delete_admin_session
+    for t in tokens:
+        auth_svc.logout(t)
+        delete_admin_session(t)
+
+    # Invalidate both session cookies on root path
+    response.delete_cookie(key="cg_session", path="/")
+    response.delete_cookie(key="cg_admin_session", path="/")
     return {"success": True, "message": "Logged out successfully"}
 
 @router.get("/me")
-async def get_current_user(request: Request):
+async def get_current_user(request: Request, response: Response):
+    import secrets
     ip = get_client_ip(request)
     session_token = request.cookies.get("cg_session") or request.cookies.get("cg_admin_session")
+    guest_id = request.cookies.get("cg_guest_id") or request.headers.get("x-guest-id")
+    if not guest_id:
+        guest_id = f"cg_guest_{secrets.token_urlsafe(16)}"
+    if not request.cookies.get("cg_guest_id"):
+        response.set_cookie(
+            key="cg_guest_id",
+            value=guest_id,
+            max_age=365 * 86400,
+            httponly=False,
+            samesite="lax",
+            secure=False
+        )
+
     config = get_config()
     limit = config.free_search_limit
 
@@ -98,13 +147,14 @@ async def get_current_user(request: Request):
             from app.routers import admin as admin_mod
             if session_token == getattr(admin_mod.router, "_admin_token", None):
                 from app.database import get_user_by_email
-                user = get_user_by_email(f"{config.admin_username}@corporateguild.com")
+                user = get_user_by_email("jainraunak846@gmail.com") or get_user_by_email(f"{config.admin_username}@corporateguild.com")
 
         if user and user.get("is_verified", 0) == 1:
             from app.database import get_ist_now_str
             last_login = user.get("last_login") or get_ist_now_str()
             return {
                 "is_authenticated": True,
+                "guest_id": guest_id,
                 "user": {
                     "id": user["id"],
                     "name": user["name"],
@@ -124,11 +174,12 @@ async def get_current_user(request: Request):
                 "remaining_searches": 99999
             }
 
-    # Guest user
-    count = get_guest_search_count(ip)
+    # Guest user tracked by persistent guest_id cookie + IP fallback
+    count = get_guest_search_count(ip, guest_id)
     remaining = max(0, limit - count)
     return {
         "is_authenticated": False,
+        "guest_id": guest_id,
         "guest_ip": ip,
         "searches_used": count,
         "search_limit": limit,

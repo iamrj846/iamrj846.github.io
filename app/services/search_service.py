@@ -76,6 +76,32 @@ FIXED_ROLES = [
     }
 ]
 
+def sanitize_tags(raw_tags: Any) -> List[str]:
+    if not raw_tags:
+        return []
+    if isinstance(raw_tags, list):
+        items = raw_tags
+    else:
+        s = str(raw_tags).strip()
+        if s.startswith("[") and s.endswith("]"):
+            try:
+                items = json.loads(s)
+            except Exception:
+                items = s.split(",")
+        else:
+            items = s.split(",")
+
+    clean_list = []
+    for item in items:
+        if not item:
+            continue
+        cleaned = str(item).strip("[]'\"# \t\r\n")
+        for sub in re.split(r'["\',]+', cleaned):
+            c_sub = sub.strip("[]'\"# \t\r\n")
+            if c_sub and c_sub not in clean_list:
+                clean_list.append(c_sub)
+    return clean_list
+
 def role_matches(synonyms: List[str], text: Optional[str]) -> bool:
     if not text:
         return False
@@ -180,6 +206,10 @@ class SearchService:
         # Step 1: Scan Redis hashes matching company or role
         matching_hashes = set()
         all_keys = client.keys("*|*")
+        if not all_keys:
+            from app.services.ingestion_service import get_ingestion_manager
+            get_ingestion_manager().seed_initial_jobs()
+            all_keys = client.keys("*|*")
 
         if not query_term:
             matching_hashes = set(all_keys)
@@ -188,14 +218,28 @@ class SearchService:
                 c, r = parse_hash_name(k)
                 if query_lower in c.lower() or c.lower() == query_lower:
                     matching_hashes.add(k)
+            # Smart fallback: if no company matched, check if query matches roles or synonyms
+            if not matching_hashes:
+                synonyms = self.get_role_synonyms(query_term)
+                all_syns = list(set(synonyms + [query_lower]))
+                for k in all_keys:
+                    c, r = parse_hash_name(k)
+                    if role_matches(all_syns, r) or any(s in r.lower() for s in all_syns):
+                        matching_hashes.add(k)
 
         elif search_type == "role":
             synonyms = self.get_role_synonyms(query_term)
             all_syns = list(set(synonyms + [query_lower]))
             for k in all_keys:
                 c, r = parse_hash_name(k)
-                if role_matches(all_syns, r):
+                if role_matches(all_syns, r) or any(s in r.lower() for s in all_syns):
                     matching_hashes.add(k)
+            # Smart fallback: if no role matched, check if query matches company name
+            if not matching_hashes:
+                for k in all_keys:
+                    c, r = parse_hash_name(k)
+                    if query_lower in c.lower() or c.lower() == query_lower:
+                        matching_hashes.add(k)
 
         elif search_type in ("other_company", "other_role", "other", "custom"):
             tokens = [t for t in re.split(r"\s+", query_lower) if len(t) > 1]
@@ -215,6 +259,7 @@ class SearchService:
             for ts_key, val_str in hdata.items():
                 try:
                     jdata = json.loads(val_str)
+                    jdata["tags"] = sanitize_tags(jdata.get("tags"))
                     raw_jobs.append(jdata)
                 except Exception:
                     pass
@@ -224,57 +269,87 @@ class SearchService:
         now_ist = datetime.datetime.now(IST_TZ)
 
         for job in raw_jobs:
-            # If search_type was role and query was provided, strictly verify that this individual job satisfies role semantics
+            r_name = job.get("role_name", "")
+            title = job.get("title", "")
+            c_name = job.get("company_name", "")
+
+            # If search_type was role and query was provided, verify individual job satisfies role or fallback company
             if search_type == "role" and query_term:
-                r_name = job.get("role_name", "")
-                title = job.get("title", "")
                 synonyms = self.get_role_synonyms(query_term)
                 all_syns = list(set(synonyms + [query_lower]))
-                if not (role_matches(all_syns, r_name) or role_matches(all_syns, title)):
+                matches_role = role_matches(all_syns, r_name) or role_matches(all_syns, title) or any(s in r_name.lower() or s in title.lower() for s in all_syns)
+                if not matches_role and query_lower not in c_name.lower():
                     continue
 
             # Location filter
             if location_filter and location_filter.lower() != "all":
                 loc = job.get("location", "").lower()
-                if location_filter.lower() not in loc:
+                wp = job.get("workplace_type", "").lower()
+                lf = location_filter.lower()
+                if lf == "remote":
+                    if "remote" not in loc and "remote" not in wp:
+                        continue
+                elif lf not in loc:
                     continue
 
             # Role filter
             if role_filter and role_filter.lower() != "all":
-                r_name = job.get("role_name", "")
-                title = job.get("title", "")
                 r_syns = self.get_role_synonyms(role_filter)
-                if not (role_matches(r_syns, r_name) or role_matches(r_syns, title)):
+                rf_lower = role_filter.lower()
+                all_rf_syns = list(set(r_syns + [rf_lower]))
+                if not (role_matches(all_rf_syns, r_name) or role_matches(all_rf_syns, title) or any(s in r_name.lower() or s in title.lower() for s in all_rf_syns)):
                     continue
 
             # Employment type filter
             if employment_type and employment_type.lower() != "all":
                 emp = job.get("employment_type", "").lower()
-                if employment_type.lower() not in emp:
+                target_emp = employment_type.lower()
+                title_lower = title.lower()
+                if "intern" in target_emp:
+                    if "intern" not in emp and "intern" not in title_lower:
+                        continue
+                elif target_emp not in emp:
                     continue
 
             # Workplace filter
             if workplace_type and workplace_type.lower() != "all":
                 wp = job.get("workplace_type", "").lower()
-                if workplace_type.lower() not in wp:
+                loc = job.get("location", "").lower()
+                target_wp = workplace_type.lower()
+                if target_wp == "remote":
+                    if "remote" not in wp and "remote" not in loc:
+                        continue
+                elif target_wp not in wp:
                     continue
 
             # Experience level filter
             if experience_level and experience_level.lower() != "all":
                 exp = job.get("experience_level", "").lower()
-                if experience_level.lower() not in exp:
+                title_lower = title.lower()
+                target_exp = experience_level.lower()
+                if "entry" in target_exp:
+                    if "entry" not in exp and "intern" not in title_lower and "fresher" not in title_lower:
+                        continue
+                elif "senior" in target_exp:
+                    if "senior" not in exp and "sr" not in title_lower and "lead" not in title_lower:
+                        continue
+                elif target_exp not in exp:
                     continue
 
             # Time filter ("1h", "12h", "24h", "2d", "7d")
             if time_filter and time_filter.lower() != "all":
                 hours_map = {"1h": 1, "12h": 12, "24h": 24, "2d": 48, "7d": 168}
                 max_hours = hours_map.get(time_filter.lower(), 168)
-                posted_iso = job.get("posted_timestamp_raw")
+                posted_iso = job.get("posted_timestamp_raw") or job.get("posted_timestamp_ist")
                 if posted_iso:
                     try:
-                        dt = datetime.datetime.fromisoformat(posted_iso.replace("Z", "+00:00"))
+                        clean_ts = str(posted_iso).replace(" IST", "").replace("Z", "+00:00").strip()
+                        if "T" in clean_ts:
+                            dt = datetime.datetime.fromisoformat(clean_ts)
+                        else:
+                            dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M:%S")
                         if dt.tzinfo is None:
-                            dt = pytz.utc.localize(dt)
+                            dt = pytz.timezone("Asia/Kolkata").localize(dt)
                         ist_dt = dt.astimezone(IST_TZ)
                         diff_hours = (now_ist - ist_dt).total_seconds() / 3600.0
                         if diff_hours > max_hours:
@@ -285,6 +360,7 @@ class SearchService:
             # Calculate live relative time in IST
             _, _, rel = parse_date_to_ist(job.get("posted_timestamp_raw") or job.get("posted_timestamp_ist"))
             job["relative_time_ist"] = rel
+            job["tags"] = sanitize_tags(job.get("tags"))
 
             filtered_jobs.append(job)
 

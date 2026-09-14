@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from app.services.search_service import get_search_service, FIXED_ROLES
 from app.services.auth_service import get_auth_service
 from app.services.ats_service import get_ats_service
-from app.database import record_site_search, record_site_click
+from app.database import record_site_search, record_site_click, record_job_apply_click
 
 router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
 
@@ -43,14 +43,28 @@ async def search_jobs(
     experience_level: Optional[str] = Query(None),
     time_filter: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
-    page_size: int = Query(10, ge=1, le=50)
+    page_size: int = Query(10, ge=1, le=50),
+    is_search_action: bool = Query(False)
 ):
     ip = get_client_ip(request)
     session_token = request.cookies.get("cg_session") or request.cookies.get("cg_admin_session")
+    guest_id = request.cookies.get("cg_guest_id") or request.headers.get("x-guest-id")
     auth_service = get_auth_service()
 
-    # Quota check: 5 free searches for guests
-    quota = auth_service.check_search_allowed(ip, session_token)
+    # Only decrement guest search quota if user explicitly clicked Search Jobs or Apply Filters
+    has_active_query = bool((search_term and search_term.strip()) or (custom_input and custom_input.strip()))
+    has_active_filter = bool(
+        (location and location.strip().lower() not in ("all", "")) or
+        (role and role.strip().lower() not in ("all", "")) or
+        (employment_type and employment_type.strip().lower() not in ("all", "")) or
+        (workplace_type and workplace_type.strip().lower() not in ("all", "")) or
+        (experience_level and experience_level.strip().lower() not in ("all", "")) or
+        (time_filter and time_filter.strip().lower() not in ("all", "anytime", "anytime (7 days)", ""))
+    )
+    should_increment = bool(is_search_action and (has_active_query or has_active_filter))
+
+    # Quota check: 5 free searches for guests (tracked by persistent guest cookie + IP fallback)
+    quota = auth_service.check_search_allowed(ip, session_token, guest_id, increment=should_increment)
     if not quota["allowed"]:
         return {
             "success": False,
@@ -82,6 +96,7 @@ async def search_jobs(
     data["success"] = True
     data["requires_auth"] = False
     data["remaining_searches"] = quota.get("remaining", 99999)
+    data["guest_searches_remaining"] = quota.get("remaining") if not quota.get("is_authenticated") else None
     data["is_authenticated"] = quota.get("is_authenticated", False)
 
     return data
@@ -92,7 +107,14 @@ async def track_click(request: Request, payload: ClickRequest):
     session_token = request.cookies.get("cg_session") or request.cookies.get("cg_admin_session")
     auth_service = get_auth_service()
     auth_service.record_job_click(ip, session_token, payload.model_dump())
-    record_site_click(session_token, ip, target_element="job_apply_btn", target_label=f"{payload.company_name} - {payload.role_name}", page_path="/")
+    record_job_apply_click(
+        session_token=session_token,
+        ip_address=ip,
+        company_name=payload.company_name,
+        role_name=payload.role_name,
+        apply_link=payload.apply_link or "",
+        page_path="/"
+    )
     return {"success": True}
 
 @router.get("/metadata")

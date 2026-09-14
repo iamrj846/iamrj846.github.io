@@ -52,12 +52,43 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
         return ist_str, raw_iso, "Just now"
 
     dt = None
+    clean_str = str(date_str).strip()
+    is_explicit_ist = False
+
+    # Strip explicit IST suffix if present
+    if clean_str.endswith(" IST"):
+        clean_str = clean_str[:-4].strip()
+        is_explicit_ist = True
+
     try:
-        # Clean string
-        cleaned = date_str.replace("Z", "+00:00")
-        dt = datetime.datetime.fromisoformat(cleaned)
+        cleaned_iso = clean_str.replace("Z", "+00:00")
+        dt = datetime.datetime.fromisoformat(cleaned_iso)
+        if is_explicit_ist and dt.tzinfo is None:
+            dt = IST_TZ.localize(dt)
     except Exception:
-        # Fallback regex parsing
+        pass
+
+    if dt is None:
+        # Try standard datetime formats
+        for fmt in (
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M",
+            "%Y-%m-%d",
+            "%d-%m-%Y %H:%M:%S",
+            "%d/%m/%Y %H:%M:%S",
+            "%b %d, %Y",
+            "%B %d, %Y"
+        ):
+            try:
+                dt = datetime.datetime.strptime(clean_str, fmt)
+                dt = IST_TZ.localize(dt)
+                break
+            except Exception:
+                continue
+
+    if dt is None:
+        # Fallback regex / email parsing
         try:
             from email.utils import parsedate_to_datetime
             dt = parsedate_to_datetime(date_str)
@@ -68,23 +99,25 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
     raw_iso = ist_dt.isoformat()
     ist_str = ist_dt.strftime("%Y-%m-%d %H:%M:%S IST")
 
-    # Relative time string in IST
+    # Relative time string
     diff = now_ist - ist_dt
     seconds = int(diff.total_seconds())
-    if seconds < 0:
+    if seconds < 60:
         rel = "Just now"
-    elif seconds < 60:
-        rel = f"{seconds}s ago"
     elif seconds < 3600:
-        rel = f"{seconds // 60}m ago"
+        rel = f"{max(1, seconds // 60)}m ago"
     elif seconds < 86400:
-        rel = f"{seconds // 3600}h ago"
+        rel = f"{max(1, seconds // 3600)}h ago"
     elif seconds < 172800:
-        rel = f"Yesterday at {ist_dt.strftime('%I:%M %p IST')}"
+        rel = "1 day ago"
     elif seconds < 604800:
-        rel = f"{seconds // 86400} days ago"
+        days = seconds // 86400
+        rel = f"{days} days ago"
+    elif seconds < 2592000:
+        weeks = max(1, seconds // 604800)
+        rel = f"{weeks} week{'s' if weeks > 1 else ''} ago"
     else:
-        rel = ist_dt.strftime("%d %b %Y, %I:%M %p IST")
+        rel = ist_dt.strftime("%d %b %Y")
 
     return ist_str, raw_iso, rel
 

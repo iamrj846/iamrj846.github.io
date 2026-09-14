@@ -23,16 +23,18 @@ class AuthService:
     def generate_otp(self) -> str:
         return f"{random.randint(100000, 999999)}"
 
-    def check_search_allowed(self, ip_address: str, session_token: Optional[str]) -> Dict[str, Any]:
+    def check_search_allowed(self, ip_address: str, session_token: Optional[str], guest_id: Optional[str] = None, increment: bool = True) -> Dict[str, Any]:
         """
         Validates if search is permitted:
         - Authenticated users: UNLIMITED
-        - Guests: maximum 5 searches tracked per IP address
+        - Guests: maximum 5 searches tracked per persistent guest cookie and fallback IP.
+          Only decrements when increment=True (i.e. user explicitly clicked Search or Apply Filters).
         """
         user = get_user_by_session(session_token) if session_token else None
         if user and user.get("is_verified", 0) == 1:
-            increment_user_metric(user["id"], "total_searches")
-            log_activity(user["id"], ip_address, "search", "authenticated search")
+            if increment:
+                increment_user_metric(user["id"], "total_searches")
+                log_activity(user["id"], ip_address, "search", "authenticated search")
             return {
                 "allowed": True,
                 "remaining": 99999,
@@ -40,8 +42,8 @@ class AuthService:
                 "user": {"name": user["name"], "email": user["email"]}
             }
 
-        # Guest mode
-        current_searches = get_guest_search_count(ip_address)
+        # Guest mode (tracked by persistent guest device cookie + IP fallback)
+        current_searches = get_guest_search_count(ip_address, guest_id)
         limit = self.config.free_search_limit
 
         if current_searches >= limit:
@@ -54,11 +56,21 @@ class AuthService:
                 "message": f"You have reached your {limit} free searches. Please sign up or log in to unlock unlimited searches."
             }
 
-        # Allow search & increment count
-        new_count = increment_guest_search(ip_address)
-        remaining = max(0, limit - new_count)
-        log_activity(None, ip_address, "search", f"guest search #{new_count}")
+        if not increment:
+            # Read-only check (e.g. initial page load, feed browsing, pagination)
+            remaining = max(0, limit - current_searches)
+            return {
+                "allowed": True,
+                "remaining": remaining,
+                "is_authenticated": False,
+                "current_count": current_searches,
+                "limit": limit
+            }
 
+        # Allow search & increment count on intentional search or filter action
+        new_count = increment_guest_search(ip_address, guest_id)
+        remaining = max(0, limit - new_count)
+        log_activity(None, ip_address, "search", f"guest search #{new_count} (device: {guest_id or ip_address})")
         return {
             "allowed": True,
             "remaining": remaining,
@@ -77,6 +89,9 @@ class AuthService:
         existing = get_user_by_email(email)
         otp = self.generate_otp()
         expiry = (get_ist_now() + datetime.timedelta(minutes=15)).isoformat()
+        user_name = name or email.split("@")[0]
+
+        from app.services.email_service import send_otp_email
 
         if existing:
             if existing.get("is_verified", 0) == 1:
@@ -84,22 +99,44 @@ class AuthService:
             else:
                 # Update OTP for unverified existing account
                 set_user_otp(email, otp, expiry)
-                logger.info(f"Generated new OTP for unverified user {email}: {otp}")
+                logger.info(f"Generated fresh OTP for unverified user {email}")
+                send_otp_email(email, otp, existing.get("name") or user_name)
                 return {
                     "success": True,
-                    "message": "Verification OTP sent to your email.",
-                    "dev_otp": otp # Exposed for easy local testing
+                    "message": "Verification code sent to your email. Please check your inbox."
                 }
 
         pw_hash = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-        create_user(name or email.split("@")[0], email, pw_hash, otp, expiry, ip_address)
+        create_user(user_name, email, pw_hash, otp, expiry, ip_address)
         log_activity(None, ip_address, "signup_init", f"Registered {email}")
-        logger.info(f"Signup initiated for {email} with OTP: {otp}")
+        logger.info(f"Signup initiated for {email}")
+        send_otp_email(email, otp, user_name)
 
         return {
             "success": True,
-            "message": "Verification OTP sent to your email. Please enter OTP to complete registration.",
-            "dev_otp": otp
+            "message": "Verification code sent to your email. Please enter the 6-digit code to complete registration."
+        }
+
+    def resend_otp(self, email: str, ip_address: str = "") -> Dict[str, Any]:
+        email = email.strip().lower()
+        user = get_user_by_email(email)
+        if not user:
+            return {"success": False, "message": "No account found with this email address."}
+        if user.get("is_verified", 0) == 1:
+            return {"success": False, "message": "This account is already verified. Please log in."}
+
+        otp = self.generate_otp()
+        expiry = (get_ist_now() + datetime.timedelta(minutes=15)).isoformat()
+        set_user_otp(email, otp, expiry)
+
+        from app.services.email_service import send_otp_email
+        send_otp_email(email, otp, user.get("name", ""))
+        log_activity(user["id"], ip_address, "otp_resend", f"Resent OTP for {email}")
+        logger.info(f"Resent OTP for {email}")
+
+        return {
+            "success": True,
+            "message": "A fresh 6-digit verification code has been sent to your email."
         }
 
     def verify_otp(self, email: str, otp: str, ip_address: str = "") -> Dict[str, Any]:
@@ -126,7 +163,20 @@ class AuthService:
         email = email.strip().lower()
         user = get_user_by_email(email)
         if not user:
+            from app.database import get_db_connection
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM users WHERE LOWER(name) = ? OR LOWER(email) = ?", (email, email))
+            row = cur.fetchone()
+            conn.close()
+            if row:
+                user = dict(row)
+
+        if not user:
             return {"success": False, "message": "Invalid email or password."}
+
+        if user.get("is_blocked", 0) == 1:
+            return {"success": False, "message": "This account has been suspended. Please contact support."}
 
         # Check password
         try:
@@ -136,7 +186,7 @@ class AuthService:
 
         if not pw_ok:
             # Fallback for plain admin password in config
-            if email.startswith(self.config.admin_username) and password == self.config.admin_password_fallback:
+            if (email.startswith(self.config.admin_username) or email in ("jainraunak846@gmail.com", f"{self.config.admin_username}@corporateguild.com")) and password == self.config.admin_password_fallback:
                 pw_ok = True
 
         if not pw_ok:
@@ -163,10 +213,9 @@ class AuthService:
     def record_job_click(self, ip_address: str, session_token: Optional[str], job_details: Dict[str, Any]):
         user = get_user_by_session(session_token) if session_token else None
         if user:
-            increment_user_metric(user["id"], "total_clicks")
-            log_activity(user["id"], ip_address, "click", f"Clicked: {job_details.get('company_name')} - {job_details.get('role_name')}")
+            log_activity(user["id"], ip_address, "job_apply", f"Applied: {job_details.get('company_name')} - {job_details.get('role_name')}")
         else:
-            log_activity(None, ip_address, "click", f"Guest Click: {job_details.get('company_name')} - {job_details.get('role_name')}")
+            log_activity(None, ip_address, "job_apply", f"Guest Applied: {job_details.get('company_name')} - {job_details.get('role_name')}")
 
 _auth_service: Optional[AuthService] = None
 

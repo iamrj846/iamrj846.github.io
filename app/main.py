@@ -14,7 +14,7 @@ from app.config import get_config, BASE_DIR, FRONTEND_DIR, STATIC_DIR
 from app.database import init_db
 from app.redis_client import get_redis_client
 from app.services.ingestion_service import get_ingestion_manager
-from app.routers import jobs, auth, admin, telemetry
+from app.routers import jobs, auth, admin, telemetry, contact
 
 # Setup logging
 log_handlers = [logging.StreamHandler()]
@@ -80,6 +80,7 @@ app.include_router(jobs.router)
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(telemetry.router)
+app.include_router(contact.router)
 
 # Mount Static Files directory
 if STATIC_DIR.exists():
@@ -92,6 +93,12 @@ if STATIC_DIR.exists():
 async def serve_home():
     # Primary landing is the Job Search Portal
     return FileResponse(str(FRONTEND_DIR / "index.html"))
+
+@app.get("/favicon.ico")
+async def serve_favicon():
+    if (STATIC_DIR / "favicon.ico").exists():
+        return FileResponse(str(STATIC_DIR / "favicon.ico"))
+    return FileResponse(str(STATIC_DIR / "logo.png"))
 
 @app.get("/jobs")
 @app.get("/jobs.html")

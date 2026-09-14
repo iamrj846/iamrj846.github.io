@@ -1,35 +1,45 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# CorporateGuild - Cron Job Setup for Oracle Cloud Keep-Alive
+# CorporateGuild - Cron Job Setup for Oracle Cloud (Backup & Keep-Alive)
 # ==============================================================================
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+BACKUP_SCRIPT="$WORKSPACE_ROOT/scripts/backup_to_oci.sh"
 KEEPALIVE_SCRIPT="$WORKSPACE_ROOT/scripts/oracle_keepalive.sh"
-LOG_FILE="$WORKSPACE_ROOT/logs/keepalive.log"
 
-CRON_CMD="*/10 * * * * /bin/bash $KEEPALIVE_SCRIPT >> $LOG_FILE 2>&1"
+mkdir -p "$WORKSPACE_ROOT/logs" "$WORKSPACE_ROOT/backups"
+chmod +x "$BACKUP_SCRIPT" "$KEEPALIVE_SCRIPT" 2>/dev/null || true
+
+BACKUP_CRON="0 */2 * * * /bin/bash $BACKUP_SCRIPT >> $WORKSPACE_ROOT/logs/backup.log 2>&1"
+KEEPALIVE_CRON="*/10 * * * * /bin/bash $KEEPALIVE_SCRIPT >> $WORKSPACE_ROOT/logs/keepalive.log 2>&1"
 
 echo "========================================================================"
-echo "  🕒 Setting up 10-Minute Anti-Idle Keep-Alive Cron Job"
+echo "  🕒 Setting up CorporateGuild Production Cron Jobs"
 echo "========================================================================"
-echo "Command to schedule:"
-echo "  $CRON_CMD"
+echo "1. 2-Hour SQLite Backup to OCI Object Storage:"
+echo "   $BACKUP_CRON"
+echo "2. 10-Minute Anti-Idle Keep-Alive:"
+echo "   $KEEPALIVE_CRON"
 echo ""
 
-# Attempt to install to user crontab
 if command -v crontab &> /dev/null; then
-    EXISTING_CRON=$(crontab -l 2>/dev/null || true)
-    if echo "$EXISTING_CRON" | grep -q "oracle_keepalive.sh"; then
-        echo "✅ Keep-Alive cron job is already installed in user crontab."
-    else
-        echo "⚙️ Adding keep-alive entry to user crontab..."
-        (echo "$EXISTING_CRON"; echo "# CorporateGuild Oracle Cloud Anti-Idle KeepAlive (Every 10 Minutes)"; echo "$CRON_CMD") | crontab -
-        echo "🎉 Successfully installed! Current crontab entries:"
-        crontab -l | tail -n 3
-    fi
+    EXISTING_CRON=$(crontab -l 2>/dev/null | grep -v "backup_to_oci.sh" | grep -v "oracle_keepalive.sh" || true)
+    
+    (
+        if [ -n "$EXISTING_CRON" ]; then
+            echo "$EXISTING_CRON"
+        fi
+        echo "# CorporateGuild 2-Hour SQLite Backup to OCI Object Storage"
+        echo "$BACKUP_CRON"
+        echo "# CorporateGuild 10-Minute Anti-Idle Keep-Alive"
+        echo "$KEEPALIVE_CRON"
+    ) | crontab -
+
+    echo "🎉 Successfully installed! Active crontab entries:"
+    crontab -l
 else
-    echo "⚠️ 'crontab' binary not found. You can add the following line to your system cron:"
-    echo "  $CRON_CMD"
+    echo "⚠️ 'crontab' binary not found. Please install cron or add manually."
 fi

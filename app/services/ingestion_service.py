@@ -254,6 +254,30 @@ INITIAL_SEED_JOBS = [
     }
 ]
 
+def clean_tags_from_raw(raw_tags: Any) -> List[str]:
+    if not raw_tags:
+        return []
+    if isinstance(raw_tags, list):
+        items = raw_tags
+    else:
+        s = str(raw_tags).strip()
+        if s.startswith("[") and s.endswith("]"):
+            try:
+                items = json.loads(s)
+            except Exception:
+                items = s.split(",")
+        else:
+            items = s.split(",")
+    
+    cleaned = []
+    for item in items:
+        if not item:
+            continue
+        cleaned_item = str(item).strip("[]'\"# \t\r\n")
+        if cleaned_item and cleaned_item not in cleaned:
+            cleaned.append(cleaned_item)
+    return cleaned
+
 class IngestionManager:
     def __init__(self):
         self.config = get_config()
@@ -270,8 +294,40 @@ class IngestionManager:
             ok = store_job_in_redis(j_copy, ttl_seconds=self.config.redis_ttl_seconds)
             if ok:
                 count += 1
-        # Persist to SQLite jobs table
+        # Persist core seed jobs to SQLite
         save_jobs_to_db(INITIAL_SEED_JOBS)
+
+        # Also hydrate all active jobs from SQLite into Redis
+        try:
+            from app.database import get_db_connection
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT * FROM jobs WHERE is_active = 1")
+            rows = cur.fetchall()
+            for row in rows:
+                ist_str, raw_iso, rel_time = parse_date_to_ist(row["posted_at"])
+                j = {
+                    "id": row["id"],
+                    "company_name": row["company"],
+                    "role_name": row["role_category"] or row["title"],
+                    "title": row["title"],
+                    "location": row["location"],
+                    "employment_type": "Full time",
+                    "workplace_type": row["workplace_type"] or "Hybrid",
+                    "experience_level": row["experience_level"] or "Entry level",
+                    "apply_link": row["apply_url"],
+                    "posted_timestamp_ist": ist_str,
+                    "posted_timestamp_raw": raw_iso,
+                    "relative_time_ist": rel_time,
+                    "tags": clean_tags_from_raw(row["tags"]),
+                    "ats_platform": row["source"]
+                }
+                if store_job_in_redis(j, ttl_seconds=self.config.redis_ttl_seconds):
+                    count += 1
+            conn.close()
+        except Exception as e:
+            logger.error(f"Error hydrating SQLite jobs to Redis: {e}")
+
         logger.info(f"Seeded {count} core India tech jobs into Redis and SQLite database.")
         return count
 
