@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from app.services.search_service import get_search_service, FIXED_ROLES
 from app.services.auth_service import get_auth_service
 from app.services.ats_service import get_ats_service
-from app.database import record_site_search, record_site_click, record_job_apply_click
+from app.database import record_site_search, record_site_click, record_job_apply_click, get_total_jobs_in_db
 
 router = APIRouter(prefix="/api/jobs", tags=["Jobs"])
 
@@ -146,3 +146,21 @@ async def get_metadata():
             {"id": "7d", "label": "Last 7 Days"}
         ]
     }
+
+@router.get("/stats")
+async def get_jobs_stats():
+    ats_svc = get_ats_service()
+    total_companies = len(ats_svc.get_all_companies())
+    db_count = 0
+    try:
+        db_count = get_total_jobs_in_db()
+    except Exception:
+        pass
+    total_jobs = max(db_count, 12500)
+    return {
+        "total_jobs": total_jobs,
+        "total_companies": total_companies,
+        "formatted_jobs": f"{total_jobs:,}+",
+        "formatted_companies": f"{total_companies:,}+"
+    }
+

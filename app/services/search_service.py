@@ -16,63 +16,131 @@ IST_TZ = pytz.timezone("Asia/Kolkata")
 FIXED_ROLES = [
     {
         "role": "Software Engineer",
-        "synonyms": ["software developer", "sde", "swe", "programmer", "software development engineer"]
+        "synonyms": ["software developer", "sde", "swe", "programmer", "software development engineer", "graduate engineer trainee", "member of technical staff"]
     },
     {
         "role": "Backend Engineer",
-        "synonyms": ["backend developer", "api developer", "python developer", "java developer", "golang developer", "node.js developer"]
+        "synonyms": ["backend developer", "api developer", "python developer", "java developer", "golang developer", "node.js developer", "c++ developer", "spring boot developer"]
     },
     {
         "role": "Frontend Engineer",
-        "synonyms": ["frontend developer", "ui developer", "react developer", "web developer", "angular developer"]
+        "synonyms": ["frontend developer", "ui developer", "react developer", "web developer", "angular developer", "vue developer", "next.js developer", "javascript developer"]
     },
     {
         "role": "Full Stack Engineer",
-        "synonyms": ["full stack developer", "web application developer", "mern developer"]
+        "synonyms": ["full stack developer", "web application developer", "mern developer", "mean developer", "fullstack"]
     },
     {
-        "role": "Data Engineer",
-        "synonyms": ["big data engineer", "etl developer", "data platform engineer", "snowflake developer"]
+        "role": "Mobile Engineer",
+        "synonyms": ["android developer", "ios developer", "flutter developer", "react native developer", "mobile app developer", "swift developer", "kotlin developer"]
     },
     {
         "role": "AI / Machine Learning Engineer",
-        "synonyms": ["ai engineer", "machine learning engineer", "ml engineer", "data scientist", "deep learning", "nlp engineer"]
+        "synonyms": ["ai engineer", "machine learning engineer", "ml engineer", "deep learning", "nlp engineer", "computer vision", "llm engineer", "genai developer"]
     },
     {
-        "role": "DevOps / SRE",
-        "synonyms": ["site reliability engineer", "cloud engineer", "infrastructure engineer", "platform engineer", "sre", "kubernetes engineer"]
+        "role": "Data Scientist",
+        "synonyms": ["data scientist", "applied scientist", "ai scientist", "quantitative analyst", "statistical modeler", "research scientist"]
+    },
+    {
+        "role": "Data Engineer",
+        "synonyms": ["big data engineer", "etl developer", "data platform engineer", "snowflake developer", "spark developer", "data pipeline developer"]
+    },
+    {
+        "role": "Data Analyst / BI",
+        "synonyms": ["data analyst", "business intelligence analyst", "tableau developer", "power bi developer", "bi analyst", "sql analyst", "product analyst"]
+    },
+    {
+        "role": "DevOps / Cloud Engineer",
+        "synonyms": ["devops engineer", "cloud engineer", "cloud architect", "infrastructure engineer", "platform engineer", "aws engineer", "azure engineer", "gcp engineer", "terraform"]
+    },
+    {
+        "role": "Site Reliability Engineer (SRE)",
+        "synonyms": ["site reliability engineer", "sre", "systems engineer", "production engineer", "reliability engineer", "kubernetes engineer"]
+    },
+    {
+        "role": "Cybersecurity Engineer",
+        "synonyms": ["security analyst", "infosec", "penetration tester", "security engineer", "appsec", "cloud security", "soc analyst", "cyber security specialist"]
+    },
+    {
+        "role": "QA / SDET",
+        "synonyms": ["quality assurance", "sdet", "test engineer", "automation engineer", "qa engineer", "software tester", "qa lead", "manual tester"]
     },
     {
         "role": "Product Manager",
         "synonyms": ["product manager", "product management", "associate product manager", "technical product manager", "group product manager", "product lead", "product owner", "head of product", "vp product", "apm", "tpm", "principal product manager"]
     },
     {
-        "role": "QA / SDET",
-        "synonyms": ["quality assurance", "sdet", "test engineer", "automation engineer", "qa engineer"]
+        "role": "Engineering Manager / Lead",
+        "synonyms": ["engineering manager", "tech lead", "lead engineer", "director of engineering", "vp engineering", "software engineering manager", "architect"]
+    },
+    {
+        "role": "Solutions Architect",
+        "synonyms": ["solutions architect", "enterprise architect", "technical architect", "systems architect", "pre-sales architect"]
+    },
+    {
+        "role": "Technical Program Manager",
+        "synonyms": ["technical program manager", "tpm", "program manager", "project manager", "scrum master", "agile coach", "delivery manager"]
     },
     {
         "role": "UI/UX Designer",
-        "synonyms": ["product designer", "user experience designer", "visual designer", "interaction designer"]
+        "synonyms": ["product designer", "user experience designer", "visual designer", "interaction designer", "ux researcher", "ui designer", "figma designer"]
+    },
+    {
+        "role": "Graphic / Brand Designer",
+        "synonyms": ["graphic designer", "brand designer", "motion designer", "creative designer", "multimedia artist", "illustrator"]
     },
     {
         "role": "Human Resources / Recruiter",
-        "synonyms": ["talent acquisition", "hr generalist", "hr intern", "people operations", "recruiter", "talent partner"]
+        "synonyms": ["talent acquisition", "hr generalist", "hr intern", "people operations", "recruiter", "talent partner", "technical recruiter", "hrbp", "human resources manager"]
     },
     {
         "role": "Sales / Business Development",
-        "synonyms": ["account executive", "bdr", "sdr", "business development associate", "enterprise sales"]
+        "synonyms": ["account executive", "bdr", "sdr", "business development associate", "enterprise sales", "sales manager", "inside sales", "business development manager"]
     },
     {
-        "role": "Marketing Specialist",
-        "synonyms": ["growth marketer", "content strategist", "seo specialist", "digital marketer"]
+        "role": "Customer Success / Account Manager",
+        "synonyms": ["customer success manager", "csm", "account manager", "client success", "relationship manager", "customer onboarding specialist"]
     },
     {
-        "role": "Finance / Operations",
-        "synonyms": ["financial analyst", "accountant", "operations manager", "accounts receivable"]
+        "role": "Marketing / Growth Specialist",
+        "synonyms": ["growth marketer", "content strategist", "digital marketer", "performance marketer", "brand manager", "campaign manager", "social media manager"]
     },
     {
-        "role": "Cybersecurity Engineer",
-        "synonyms": ["security analyst", "infosec", "penetration tester", "security engineer"]
+        "role": "Content Writer / Copywriter",
+        "synonyms": ["content writer", "copywriter", "technical writer", "content creator", "documentation specialist", "editorial lead"]
+    },
+    {
+        "role": "SEO / SEM Specialist",
+        "synonyms": ["seo specialist", "search engine optimization", "sem specialist", "ppc specialist", "performance marketing", "organic search manager"]
+    },
+    {
+        "role": "Finance / Accounting",
+        "synonyms": ["financial analyst", "accountant", "chartered accountant", "accounts receivable", "accounts payable", "finance manager", "controller", "auditor"]
+    },
+    {
+        "role": "Operations / Supply Chain",
+        "synonyms": ["operations manager", "operations associate", "supply chain analyst", "logistics manager", "procurement specialist", "inventory manager"]
+    },
+    {
+        "role": "Legal / Compliance Specialist",
+        "synonyms": ["legal counsel", "compliance officer", "corporate counsel", "regulatory affairs", "risk analyst", "contract manager"]
+    },
+    {
+        "role": "Technical Support / IT",
+        "synonyms": ["it support", "technical support engineer", "application support", "helpdesk specialist", "desktop support", "customer support engineer"]
+    },
+    {
+        "role": "Hardware / Embedded Engineer",
+        "synonyms": ["embedded engineer", "firmware developer", "iot engineer", "vlsi engineer", "hardware engineer", "electronics engineer", "robotics engineer"]
+    },
+    {
+        "role": "Business Analyst / Strategy",
+        "synonyms": ["business analyst", "strategy analyst", "management consultant", "operations analyst", "business operations", "bizops", "strategy associate", "commercial analyst"]
+    },
+    {
+        "role": "Chief of Staff / Founder's Office",
+        "synonyms": ["founder's office", "chief of staff", "executive assistant", "business manager", "general management associate", "special projects lead"]
     }
 ]
 
