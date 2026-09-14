@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# CorporateGuild - Production India Job Search Portal Local Runner
+# CorporateGuild - Production Job Search Portal Local Runner
 # ==============================================================================
 
 set -e
@@ -9,7 +9,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
 echo "========================================================================"
-echo "  🚀 Starting CorporateGuild India Job Search Portal & Platform Services"
+echo "  🚀 Starting CorporateGuild Job Search Portal & Platform Services"
 echo "========================================================================"
 
 # 1. Check Python 3
@@ -89,7 +89,7 @@ from app.redis_client import get_redis_client
 
 mgr = get_ingestion_manager()
 seeded = mgr.seed_initial_jobs()
-print(f'   ✅ Seeded {seeded} core verified India tech positions.')
+print(f'   ✅ Seeded {seeded} core verified positions.')
 
 # Quick non-blocking sync attempt
 async def sync():

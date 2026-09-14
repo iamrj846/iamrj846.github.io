@@ -61,7 +61,7 @@ config = get_config()
 
 app = FastAPI(
     title=config.app_name,
-    description="Production India Job Search Portal & Career Network API",
+    description="Production Job Search Portal & Career Network API",
     version="1.0.0",
     lifespan=lifespan
 )

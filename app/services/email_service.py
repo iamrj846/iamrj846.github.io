@@ -116,7 +116,7 @@ def build_otp_html(otp: str, user_name: str = "") -> str:
                 <span class="brand-accent" style="color:#4f46e5; font-weight:900;">Corporate</span>Guild
               </div>
               <div class="brand-subtitle" style="font-size:12.5px; color:#64748b; font-weight:600; margin-top:4px; letter-spacing:0.3px;">
-                Verified Tech Careers &bull; ATS Direct Feed
+                Verified Careers &bull; ATS Direct Feed
               </div>
             </td>
           </tr>
