@@ -109,13 +109,15 @@ def store_job_in_redis(job_data: Dict[str, Any], ttl_seconds: Optional[int] = No
     if not company or not role:
         return False
 
+    apply_link = (job_data.get("apply_link") or job_data.get("apply_url") or "").strip()
+    field_key = apply_link if apply_link else str(posted_ts)
     hash_key = make_hash_name(company, role)
     val_str = json.dumps(job_data)
 
     client = get_redis_client()
     try:
         pipe = client.pipeline()
-        pipe.hset(hash_key, str(posted_ts), val_str)
+        pipe.hset(hash_key, field_key, val_str)
         pipe.expire(hash_key, ttl_seconds)
         pipe.execute()
         return True

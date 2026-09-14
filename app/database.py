@@ -406,12 +406,21 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
     cur = conn.cursor()
     count = 0
     now_str = get_ist_now_str()
+    import hashlib
     for j in jobs_list:
         c_name = j.get("company_name") or j.get("company", "Tech Enterprise")
-        r_name = j.get("role_name") or j.get("title", "Software Engineer")
+        actual_title = j.get("title") or j.get("role_name", "Software Engineer")
+        role_cat = j.get("role_category") or j.get("role_name") or actual_title
         p_time = j.get("posted_timestamp_ist") or j.get("posted_at") or now_str
-        job_id = j.get("id") or f"{c_name}_{r_name}_{p_time}"
-        job_id = "".join([c if c.isalnum() or c in ('_', '-') else '_' for c in str(job_id)])[:120]
+        apply_link_val = (j.get("apply_link") or j.get("apply_url") or "").strip()
+
+        # Deterministic unique job_id based on normalized apply URL hash to prevent duplicates
+        if apply_link_val and apply_link_val.startswith("http"):
+            url_hash = hashlib.sha256(apply_link_val.lower().rstrip("/").encode("utf-8")).hexdigest()[:16]
+            raw_id = f"{c_name[:25]}_{actual_title[:35]}_{url_hash}"
+        else:
+            raw_id = j.get("id") or f"{c_name}_{actual_title}_{p_time}"
+        job_id = "".join([c if c.isalnum() or c in ('_', '-') else '_' for c in str(raw_id)])[:120]
         
         tags_val = j.get("tags", [])
         tags_json = json.dumps(tags_val) if isinstance(tags_val, (list, dict)) else str(tags_val)
@@ -441,10 +450,10 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
             updated_at = excluded.updated_at
         """, (
             job_id,
-            r_name,
+            actual_title,
             c_name,
             j.get("location", "Bengaluru, Karnataka, India"),
-            j.get("role_category") or r_name,
+            role_cat,
             j.get("workplace_type", "In office"),
             j.get("salary_range", "Competitive Market CTC"),
             j.get("experience_level", "Senior"),
@@ -452,7 +461,7 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
             tags_json,
             skills_json,
             j.get("description", ""),
-            j.get("apply_link") or j.get("apply_url", "https://corporateguild.com"),
+            apply_link_val or "https://corporateguild.com",
             p_time,
             now_str
         ))

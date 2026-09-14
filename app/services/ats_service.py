@@ -542,7 +542,17 @@ class ATSService:
                 clean_loc = extract_india_location(loc_str)
 
             comp_name = j.get("company", {}).get("name") or ep.company_name
-            apply_link = j.get("postingUrl") or j.get("ref") or f"https://jobs.smartrecruiters.com/{ep.company_name}/{j.get('id')}"
+            comp_identifier = j.get("company", {}).get("identifier") or ep.company_name
+            job_id = j.get("id")
+            
+            # Construct direct public job application URL (never use j.get('ref') which is an internal API endpoint returning raw JSON)
+            posting_url = j.get("postingUrl")
+            if posting_url and "jobs.smartrecruiters.com" in str(posting_url):
+                apply_link = posting_url
+            elif job_id:
+                apply_link = f"https://jobs.smartrecruiters.com/{comp_identifier}/{job_id}"
+            else:
+                apply_link = f"https://jobs.smartrecruiters.com/{comp_identifier}"
             released_at = j.get("releasedDate")
             ist_str, raw_iso, rel_time = parse_date_to_ist(released_at)
 

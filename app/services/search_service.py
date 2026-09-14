@@ -12,137 +12,270 @@ from app.services.ats_service import get_ats_service, parse_date_to_ist, is_indi
 logger = logging.getLogger("search_service")
 IST_TZ = pytz.timezone("Asia/Kolkata")
 
-# Fixed roles catalog with semantic synonyms
+# Fixed roles catalog with comprehensive semantic synonyms, industry acronyms, and related job titles
 FIXED_ROLES = [
     {
         "role": "Software Engineer",
-        "synonyms": ["software developer", "sde", "swe", "programmer", "software development engineer", "graduate engineer trainee", "member of technical staff"]
+        "synonyms": [
+            "sde", "swe", "software developer", "software development engineer", 
+            "programmer", "developer", "sde 1", "sde 2", "sde 3", "sde-1", "sde-2", 
+            "graduate engineer trainee", "member of technical staff", "mts", 
+            "software engineer 1", "software engineer 2", "engineer"
+        ]
     },
     {
         "role": "Backend Engineer",
-        "synonyms": ["backend developer", "api developer", "python developer", "java developer", "golang developer", "node.js developer", "c++ developer", "spring boot developer"]
+        "synonyms": [
+            "backend", "backend developer", "api developer", "server engineer", 
+            "microservices", "python developer", "java developer", "golang developer", 
+            "node.js developer", "node developer", "c++ developer", "spring boot developer", 
+            "django developer", "fastapi developer", "backend software engineer"
+        ]
     },
     {
         "role": "Frontend Engineer",
-        "synonyms": ["frontend developer", "ui developer", "react developer", "web developer", "angular developer", "vue developer", "next.js developer", "javascript developer"]
+        "synonyms": [
+            "frontend", "frontend developer", "ui developer", "react developer", 
+            "web developer", "angular developer", "vue developer", "next.js developer", 
+            "javascript developer", "typescript developer", "html", "css", "frontend engineer"
+        ]
     },
     {
         "role": "Full Stack Engineer",
-        "synonyms": ["full stack developer", "web application developer", "mern developer", "mean developer", "fullstack"]
+        "synonyms": [
+            "full stack", "fullstack", "full stack developer", "web application developer", 
+            "mern developer", "mean developer", "fullstack developer", "full stack engineer"
+        ]
     },
     {
         "role": "Mobile Engineer",
-        "synonyms": ["android developer", "ios developer", "flutter developer", "react native developer", "mobile app developer", "swift developer", "kotlin developer"]
+        "synonyms": [
+            "mobile", "mobile engineer", "mobile developer", "apps", "apps engineer", 
+            "apps developer", "app developer", "android", "android developer", "android engineer", 
+            "ios", "ios developer", "ios engineer", "flutter", "flutter developer", 
+            "react native", "react native developer", "swift developer", "swift", 
+            "kotlin developer", "kotlin", "mobile app developer"
+        ]
     },
     {
         "role": "AI / Machine Learning Engineer",
-        "synonyms": ["ai engineer", "machine learning engineer", "ml engineer", "deep learning", "nlp engineer", "computer vision", "llm engineer", "genai developer"]
+        "synonyms": [
+            "ai", "ml", "ai engineer", "machine learning engineer", "machine learning", 
+            "ml engineer", "deep learning", "nlp engineer", "nlp", "computer vision", 
+            "llm engineer", "llm", "genai developer", "genai", "generative ai", 
+            "artificial intelligence", "data scientist - ai"
+        ]
     },
     {
         "role": "Data Scientist",
-        "synonyms": ["data scientist", "applied scientist", "ai scientist", "quantitative analyst", "statistical modeler", "research scientist"]
+        "synonyms": [
+            "data science", "data scientist", "applied scientist", "ai scientist", 
+            "quantitative analyst", "statistical modeler", "research scientist", "statistician"
+        ]
     },
     {
         "role": "Data Engineer",
-        "synonyms": ["big data engineer", "etl developer", "data platform engineer", "snowflake developer", "spark developer", "data pipeline developer"]
+        "synonyms": [
+            "data engineer", "big data engineer", "big data", "etl developer", "etl", 
+            "data platform engineer", "snowflake developer", "spark developer", 
+            "data pipeline developer", "data infrastructure"
+        ]
     },
     {
         "role": "Data Analyst / BI",
-        "synonyms": ["data analyst", "business intelligence analyst", "tableau developer", "power bi developer", "bi analyst", "sql analyst", "product analyst"]
+        "synonyms": [
+            "data analyst", "business intelligence", "business intelligence analyst", 
+            "bi", "bi analyst", "tableau developer", "power bi developer", "power bi", 
+            "sql analyst", "product analyst", "analytics consultant", "reporting analyst"
+        ]
     },
     {
         "role": "DevOps / Cloud Engineer",
-        "synonyms": ["devops engineer", "cloud engineer", "cloud architect", "infrastructure engineer", "platform engineer", "aws engineer", "azure engineer", "gcp engineer", "terraform"]
+        "synonyms": [
+            "devops", "devops engineer", "cloud engineer", "cloud", "cloud architect", 
+            "infrastructure engineer", "infrastructure", "platform engineer", "aws engineer", 
+            "aws", "azure engineer", "azure", "gcp engineer", "gcp", "terraform", 
+            "ci/cd", "build and release engineer"
+        ]
     },
     {
         "role": "Site Reliability Engineer (SRE)",
-        "synonyms": ["site reliability engineer", "sre", "systems engineer", "production engineer", "reliability engineer", "kubernetes engineer"]
+        "synonyms": [
+            "sre", "site reliability engineer", "site reliability", "systems engineer", 
+            "production engineer", "reliability engineer", "kubernetes engineer", "kubernetes"
+        ]
     },
     {
         "role": "Cybersecurity Engineer",
-        "synonyms": ["security analyst", "infosec", "penetration tester", "security engineer", "appsec", "cloud security", "soc analyst", "cyber security specialist"]
+        "synonyms": [
+            "security analyst", "infosec", "penetration tester", "security engineer", 
+            "appsec", "cloud security", "soc analyst", "cyber security specialist", 
+            "cybersecurity", "information security", "vulnerability analyst"
+        ]
     },
     {
         "role": "QA / SDET",
-        "synonyms": ["quality assurance", "sdet", "test engineer", "automation engineer", "qa engineer", "software tester", "qa lead", "manual tester"]
+        "synonyms": [
+            "qa", "sdet", "quality assurance", "test engineer", "automation engineer", 
+            "automation tester", "qa engineer", "software tester", "qa lead", "manual tester", 
+            "software developer in test", "quality engineer", "testing"
+        ]
     },
     {
         "role": "Product Manager",
-        "synonyms": ["product manager", "product management", "associate product manager", "technical product manager", "group product manager", "product lead", "product owner", "head of product", "vp product", "apm", "tpm", "principal product manager"]
+        "synonyms": [
+            "pm", "product manager", "product management", "associate product manager", 
+            "apm", "technical product manager", "tpm", "group product manager", 
+            "product lead", "product owner", "head of product", "vp product", 
+            "principal product manager"
+        ]
     },
     {
         "role": "Engineering Manager / Lead",
-        "synonyms": ["engineering manager", "tech lead", "lead engineer", "director of engineering", "vp engineering", "software engineering manager", "architect"]
+        "synonyms": [
+            "engineering manager", "tech lead", "lead engineer", "director of engineering", 
+            "vp engineering", "software engineering manager", "architect", "engineering lead", 
+            "principal engineer", "staff engineer"
+        ]
     },
     {
         "role": "Solutions Architect",
-        "synonyms": ["solutions architect", "enterprise architect", "technical architect", "systems architect", "pre-sales architect"]
+        "synonyms": [
+            "solutions architect", "enterprise architect", "technical architect", 
+            "systems architect", "pre-sales architect", "solution architect", "customer architect"
+        ]
     },
     {
         "role": "Technical Program Manager",
-        "synonyms": ["technical program manager", "tpm", "program manager", "project manager", "scrum master", "agile coach", "delivery manager"]
+        "synonyms": [
+            "technical program manager", "tpm", "program manager", "project manager", 
+            "scrum master", "agile coach", "delivery manager"
+        ]
     },
     {
         "role": "UI/UX Designer",
-        "synonyms": ["product designer", "user experience designer", "visual designer", "interaction designer", "ux researcher", "ui designer", "figma designer"]
+        "synonyms": [
+            "ui", "ux", "ui/ux", "ui ux", "product designer", "user experience designer", 
+            "visual designer", "interaction designer", "ux researcher", "ui designer", 
+            "figma designer", "design lead"
+        ]
     },
     {
         "role": "Graphic / Brand Designer",
-        "synonyms": ["graphic designer", "brand designer", "motion designer", "creative designer", "multimedia artist", "illustrator"]
+        "synonyms": [
+            "graphic designer", "brand designer", "motion designer", "creative designer", 
+            "multimedia artist", "illustrator", "visual designer"
+        ]
     },
     {
         "role": "Human Resources / Recruiter",
-        "synonyms": ["talent acquisition", "hr generalist", "hr intern", "people operations", "recruiter", "talent partner", "technical recruiter", "hrbp", "human resources manager"]
+        "synonyms": [
+            "hr", "human resource", "human resources", "talent acquisition", "recruiter", 
+            "recruitment", "people operations", "people partner", "talent partner", 
+            "technical recruiter", "hrbp", "human resources business partner", 
+            "hr generalist", "hr intern", "human resources manager", "hr manager", 
+            "hr coordinator", "hr executive", "people team"
+        ]
     },
     {
         "role": "Sales / Business Development",
-        "synonyms": ["account executive", "bdr", "sdr", "business development associate", "enterprise sales", "sales manager", "inside sales", "business development manager"]
+        "synonyms": [
+            "sales", "business development", "bdr", "sdr", "account executive", 
+            "business development associate", "bda", "enterprise sales", "sales manager", 
+            "inside sales", "business development manager", "sales development representative"
+        ]
     },
     {
         "role": "Customer Success / Account Manager",
-        "synonyms": ["customer success manager", "csm", "account manager", "client success", "relationship manager", "customer onboarding specialist"]
+        "synonyms": [
+            "customer success", "customer success manager", "csm", "account manager", 
+            "client success", "relationship manager", "customer onboarding specialist", 
+            "customer experience", "client partner"
+        ]
     },
     {
         "role": "Marketing / Growth Specialist",
-        "synonyms": ["growth marketer", "content strategist", "digital marketer", "performance marketer", "brand manager", "campaign manager", "social media manager"]
+        "synonyms": [
+            "marketing", "digital marketing", "digital marketer", "social media", 
+            "social media executive", "social media manager", "social media specialist", 
+            "growth marketer", "growth marketing", "content strategist", "performance marketer", 
+            "performance marketing", "brand manager", "campaign manager", "marketing manager", 
+            "marketing executive", "growth lead"
+        ]
     },
     {
         "role": "Content Writer / Copywriter",
-        "synonyms": ["content writer", "copywriter", "technical writer", "content creator", "documentation specialist", "editorial lead"]
+        "synonyms": [
+            "content writer", "copywriter", "technical writer", "content creator", 
+            "documentation specialist", "editorial lead", "content specialist"
+        ]
     },
     {
         "role": "SEO / SEM Specialist",
-        "synonyms": ["seo specialist", "search engine optimization", "sem specialist", "ppc specialist", "performance marketing", "organic search manager"]
+        "synonyms": [
+            "seo", "sem", "seo specialist", "search engine optimization", "sem specialist", 
+            "ppc specialist", "ppc", "performance marketing", "organic search manager", 
+            "search marketing"
+        ]
     },
     {
         "role": "Finance / Accounting",
-        "synonyms": ["financial analyst", "accountant", "chartered accountant", "accounts receivable", "accounts payable", "finance manager", "controller", "auditor"]
+        "synonyms": [
+            "finance", "accounting", "financial analyst", "accountant", "chartered accountant", 
+            "ca", "accounts receivable", "accounts payable", "finance manager", 
+            "controller", "auditor", "fp&a"
+        ]
     },
     {
         "role": "Operations / Supply Chain",
-        "synonyms": ["operations manager", "operations associate", "supply chain analyst", "logistics manager", "procurement specialist", "inventory manager"]
+        "synonyms": [
+            "operations", "operations manager", "operations associate", "supply chain", 
+            "supply chain analyst", "logistics manager", "logistics", "procurement specialist", 
+            "procurement", "inventory manager", "business operations"
+        ]
     },
     {
         "role": "Legal / Compliance Specialist",
-        "synonyms": ["legal counsel", "compliance officer", "corporate counsel", "regulatory affairs", "risk analyst", "contract manager"]
+        "synonyms": [
+            "legal", "legal counsel", "compliance", "compliance officer", "corporate counsel", 
+            "regulatory affairs", "risk analyst", "contract manager"
+        ]
     },
     {
         "role": "Technical Support / IT",
-        "synonyms": ["it support", "technical support engineer", "application support", "helpdesk specialist", "desktop support", "customer support engineer"]
+        "synonyms": [
+            "it support", "technical support engineer", "technical support", "application support", 
+            "helpdesk specialist", "desktop support", "customer support engineer", "it administrator"
+        ]
     },
     {
         "role": "Hardware / Embedded Engineer",
-        "synonyms": ["embedded engineer", "firmware developer", "iot engineer", "vlsi engineer", "hardware engineer", "electronics engineer", "robotics engineer"]
+        "synonyms": [
+            "embedded engineer", "firmware developer", "iot engineer", "vlsi engineer", 
+            "hardware engineer", "electronics engineer", "robotics engineer"
+        ]
     },
     {
         "role": "Business Analyst / Strategy",
-        "synonyms": ["business analyst", "strategy analyst", "management consultant", "operations analyst", "business operations", "bizops", "strategy associate", "commercial analyst"]
+        "synonyms": [
+            "business analyst", "strategy analyst", "management consultant", "operations analyst", 
+            "business operations", "bizops", "strategy associate", "commercial analyst"
+        ]
     },
     {
         "role": "Chief of Staff / Founder's Office",
-        "synonyms": ["founder's office", "chief of staff", "executive assistant", "business manager", "general management associate", "special projects lead"]
+        "synonyms": [
+            "founder's office", "chief of staff", "executive assistant", "business manager", 
+            "general management associate", "special projects lead"
+        ]
     }
 ]
+
+try:
+    from rapidfuzz import fuzz
+    HAS_RAPIDFUZZ = True
+except ImportError:
+    HAS_RAPIDFUZZ = False
 
 def sanitize_tags(raw_tags: Any) -> List[str]:
     if not raw_tags:
@@ -181,7 +314,53 @@ def role_matches(synonyms: List[str], text: Optional[str]) -> bool:
         pattern = rf"\b{re.escape(s)}\b"
         if re.search(pattern, text_lower):
             return True
+        if " " in s and s in text_lower:
+            return True
     return False
+
+def calculate_semantic_relevance(query: str, title: str, role_cat: str = "", tags: List[str] = None, synonyms: List[str] = None) -> float:
+    """
+    Computes a semantic relevance score from 0.0 to 100.0.
+    Considers exact phrase, word boundary regex, taxonomy synonyms, and RapidFuzz token matching.
+    """
+    if not query:
+        return 1.0
+    q = query.strip().lower()
+    combined_target = f"{title} {role_cat} {' '.join(tags or [])}".strip().lower()
+
+    if q == title.strip().lower():
+        return 100.0
+    if re.search(rf"\b{re.escape(q)}\b", title.lower()):
+        return 95.0
+    if q in title.lower():
+        return 90.0
+
+    # Synonym check
+    if synonyms:
+        for syn in synonyms:
+            s_clean = syn.strip().lower()
+            if not s_clean:
+                continue
+            if re.search(rf"\b{re.escape(s_clean)}\b", title.lower()):
+                return 88.0
+            if " " in s_clean and s_clean in title.lower():
+                return 85.0
+            if re.search(rf"\b{re.escape(s_clean)}\b", combined_target):
+                return 75.0
+
+    # Rapidfuzz token set and partial ratio matching
+    if HAS_RAPIDFUZZ:
+        token_score = fuzz.token_set_ratio(q, title.lower())
+        if token_score >= 70:
+            return float(token_score * 0.8)
+        partial_score = fuzz.partial_ratio(q, title.lower())
+        if partial_score >= 80:
+            return float(partial_score * 0.75)
+        combined_token = fuzz.token_set_ratio(q, combined_target)
+        if combined_token >= 75:
+            return float(combined_token * 0.65)
+
+    return 0.0
 
 class SearchService:
     def __init__(self):
@@ -244,9 +423,19 @@ class SearchService:
 
     def get_role_synonyms(self, role_name: str) -> List[str]:
         target = role_name.strip().lower()
+        if not target:
+            return []
+        syns_found = set()
         for item in FIXED_ROLES:
-            if item["role"].lower() == target or target in [s.lower() for s in item["synonyms"]]:
-                return [item["role"].lower()] + [s.lower() for s in item["synonyms"]]
+            r_lower = item["role"].lower()
+            all_s = [r_lower] + [s.lower() for s in item["synonyms"]]
+            if target == r_lower or target in all_s:
+                syns_found.update(all_s)
+            elif len(target) >= 2 and any(s == target or (len(s) >= 3 and s in target) or (len(target) >= 3 and target in s) for s in all_s):
+                syns_found.update(all_s)
+
+        if syns_found:
+            return list(syns_found)
         return [target]
 
     def search_jobs(
@@ -336,6 +525,8 @@ class SearchService:
                 c, r = parse_hash_name(k)
                 if role_matches(all_syns, r) or any(s in r.lower() for s in all_syns):
                     matching_hashes.add(k)
+                elif HAS_RAPIDFUZZ and fuzz.token_set_ratio(query_lower, r.lower()) >= 75:
+                    matching_hashes.add(k)
             # Smart fallback: if no role matched, check if query matches company name
             if not matching_hashes:
                 for k in all_keys:
@@ -346,10 +537,13 @@ class SearchService:
         elif search_type in ("other_company", "other_role", "other", "custom"):
             tokens = [t for t in re.split(r"\s+", query_lower) if len(t) > 1]
             synonyms = self.get_role_synonyms(query_term)
+            all_syns = list(set(synonyms + [query_lower]))
             for k in all_keys:
                 c, r = parse_hash_name(k)
                 combined = f"{c} {r}".lower()
-                if not tokens or any(t in combined for t in tokens) or role_matches(synonyms, combined):
+                if not tokens or any(t in combined for t in tokens) or role_matches(all_syns, combined):
+                    matching_hashes.add(k)
+                elif HAS_RAPIDFUZZ and (fuzz.token_set_ratio(query_lower, r.lower()) >= 70 or fuzz.token_set_ratio(query_lower, combined) >= 75):
                     matching_hashes.add(k)
         else:
             matching_hashes = set(all_keys)
@@ -395,6 +589,10 @@ class SearchService:
                 synonyms = self.get_role_synonyms(query_term)
                 all_syns = list(set(synonyms + [query_lower]))
                 matches_role = role_matches(all_syns, r_name) or role_matches(all_syns, title) or any(s in r_name.lower() or s in title.lower() for s in all_syns)
+                if not matches_role:
+                    rel_score = calculate_semantic_relevance(query_term, title, r_name, job.get("tags"), all_syns)
+                    if rel_score >= 60.0:
+                        matches_role = True
                 if not matches_role and query_lower not in c_name.lower():
                     continue
 
@@ -481,17 +679,47 @@ class SearchService:
 
             filtered_jobs.append(job)
 
-        # Step 4: Sort by Decreasing Timestamp Order (newest first in IST)
+        # Step 4: Strict Deduplication by normalized apply_link and (company, title, location)
+        seen_urls = set()
+        seen_tuples = set()
+        deduped_jobs = []
+        for job in filtered_jobs:
+            link = (job.get("apply_link") or "").strip().rstrip("/").lower()
+            comp = (job.get("company_name") or "").strip().lower()
+            t_name = (job.get("role_name") or job.get("title") or "").strip().lower()
+            l_name = (job.get("location") or "").strip().lower()
+
+            if link and link in seen_urls:
+                continue
+            tup_key = (comp, t_name, l_name)
+            if tup_key in seen_tuples:
+                continue
+
+            if link:
+                seen_urls.add(link)
+            seen_tuples.add(tup_key)
+            deduped_jobs.append(job)
+
+        filtered_jobs = deduped_jobs
+
+        # Step 5: Sort by Decreasing Timestamp Order (newest first in IST) with Semantic Relevance
         def sort_key(j: Dict[str, Any]) -> float:
+            rel_boost = 0.0
+            if query_term:
+                syns = self.get_role_synonyms(query_term)
+                score = calculate_semantic_relevance(query_term, j.get("title", ""), j.get("role_name", ""), j.get("tags"), syns)
+                if score >= 75.0:
+                    rel_boost = score * 100000.0
+
             raw_epoch = j.get("posted_epoch")
             if raw_epoch is not None:
                 try:
-                    return float(raw_epoch)
+                    return float(raw_epoch) + rel_boost
                 except Exception:
                     pass
             ts = j.get("posted_timestamp_raw") or j.get("posted_timestamp_ist") or j.get("posted_at")
             if not ts:
-                return 0.0
+                return rel_boost
             try:
                 clean_ts = str(ts).replace(" IST", "").replace("Z", "+00:00").strip()
                 if "T" in clean_ts:
@@ -500,9 +728,9 @@ class SearchService:
                     dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M:%S")
                 if dt.tzinfo is None:
                     dt = pytz.timezone("Asia/Kolkata").localize(dt)
-                return dt.astimezone(IST_TZ).timestamp()
+                return dt.astimezone(IST_TZ).timestamp() + rel_boost
             except Exception:
-                return 0.0
+                return rel_boost
 
         filtered_jobs.sort(key=sort_key, reverse=True)
 
