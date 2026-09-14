@@ -16,15 +16,53 @@ logger = logging.getLogger("ats_service")
 
 IST_TZ = pytz.timezone("Asia/Kolkata")
 
-# Canonical India location keywords
-INDIA_LOCATION_KEYWORDS = [
-    "india", "bengaluru", "bangalore", "mumbai", "pune", "hyderabad", 
-    "gurugram", "gurgaon", "noida", "delhi", "new delhi", "chennai", 
-    "kolkata", "ahmedabad", "jaipur", "indore", "kochi", "cochin",
-    "chandigarh", "coimbatore", "thiruvananthapuram", "trivandrum",
-    "bhubaneswar", "mysore", "mysuru", "mangalore", "nagpur", "remote - india",
-    "india - remote", "remote, india", "remote (india)", "anywhere in india"
+# Canonical Indian cities, metros, IT hubs, and states (used for strict word-boundary matching)
+INDIA_CITIES_AND_STATES = [
+    # Top IT Hubs & Metros
+    "bengaluru", "bangalore", "mumbai", "bombay", "pune", "hyderabad", "secunderabad",
+    "gurugram", "gurgaon", "noida", "greater noida", "delhi", "new delhi", "chennai", "madras",
+    "kolkata", "calcutta", "ahmedabad", "jaipur", "indore", "kochi", "cochin", "ernakulam",
+    "chandigarh", "mohali", "panchkula", "coimbatore", "thiruvananthapuram", "trivandrum",
+    "bhubaneswar", "mysore", "mysuru", "mangalore", "mangaluru", "nagpur", "surat",
+    "vadodara", "baroda", "visakhapatnam", "vizag", "bhopal", "lucknow", "patna",
+    "ludhiana", "agra", "nashik", "rajkot", "varanasi", "amritsar", "navi mumbai", "thane",
+    "ghaziabad", "faridabad", "guwahati", "dehradun", "hubli", "dharwad", "tiruchirappalli",
+    "trichy", "madurai", "vijayawada", "guntur", "warangal", "jamshedpur", "ranchi", "cuttack",
+    # States & Union Territories
+    "karnataka", "maharashtra", "telangana", "tamil nadu", "tamilnadu", "haryana",
+    "uttar pradesh", "west bengal", "gujarat", "rajasthan", "kerala", "andhra pradesh",
+    "punjab", "odisha", "orissa", "madhya pradesh", "bihar", "assam", "goa", "uttarakhand",
+    "himachal pradesh", "jharkhand", "chhattisgarh"
 ]
+
+FOREIGN_RESTRICTED_REMOTES = [
+    r"\bus\s*only\b", r"\bus\s*remote\b", r"\bremote\s*-\s*us\b", r"\bremote\s*\(us\)\b",
+    r"\bremote\s*,\s*us\b", r"\bremote\s*-\s*usa\b", r"\bremote\s*,\s*usa\b",
+    r"\bamericas\b", r"\bnorth\s*america\b", r"\bemea\b", r"\blatam\b",
+    r"\beurope\b", r"\buk\s*only\b", r"\bcanada\s*only\b", r"\baus\s*only\b"
+]
+
+FOREIGN_TERRITORIES = [
+    "united states", "usa", "u.s.", "u.s.a.", "united kingdom", "great britain",
+    "england", "scotland", "wales", "ireland", "dublin", "canada", "australia",
+    "germany", "france", "spain", "italy", "netherlands", "switzerland", "sweden",
+    "poland", "japan", "china", "singapore", "israel", "uae", "dubai", "hong kong",
+    "new zealand", "austria", "belgium", "denmark", "norway", "finland",
+    "london", "paris", "berlin", "montreal", "toronto", "vancouver", "warsaw",
+    "sydney", "melbourne", "tokyo", "zurich", "geneva", "amsterdam", "madrid",
+    "alabama", "alaska", "arizona", "arkansas", "california", "colorado", "connecticut",
+    "delaware", "florida", "georgia", "hawaii", "idaho", "illinois", "indiana", "iowa",
+    "kansas", "kentucky", "louisiana", "maine", "maryland", "massachusetts", "michigan",
+    "minnesota", "mississippi", "missouri", "montana", "nebraska", "nevada", "new hampshire",
+    "new jersey", "new mexico", "new york", "north carolina", "north dakota", "ohio",
+    "oklahoma", "oregon", "pennsylvania", "rhode island", "south carolina", "south dakota",
+    "tennessee", "texas", "utah", "vermont", "virginia", "washington", "west virginia",
+    "wisconsin", "wyoming", "indianapolis"
+]
+
+INDIA_LOCATION_KEYWORDS = [
+    "india", "remote - india", "india - remote", "remote, india", "remote (india)", "anywhere in india"
+] + INDIA_CITIES_AND_STATES
 
 COMMON_TECH_TAGS = [
     "Python", "Java", "JavaScript", "TypeScript", "React", "Node.js", "Go", "Golang",
@@ -131,16 +169,108 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
 
     return ist_str, raw_iso, rel
 
-def is_india_location(location_str: str, country_code: str = "") -> bool:
-    if country_code and country_code.lower() in ("in", "ind", "india"):
+GENERIC_REMOTE_KEYWORDS = [
+    "remote", "anywhere", "worldwide", "global", "work from home", "wfh", "remote - global",
+    "remote - worldwide", "work from anywhere", "anywhere in the world"
+]
+
+def is_india_location(location_str: str, country_code: str = "", workplace_type: str = "") -> bool:
+    """
+    Strictly verifies if a position is located in India or is an eligible unconstrained Remote role.
+    Prevents false positives from US locations like Indiana/Indianapolis, and rejects foreign-only locations like Dublin/London/Atlanta.
+    """
+    if country_code and country_code.strip().lower() in ("in", "ind", "india"):
         return True
-    if not location_str:
-        return False
-    loc_lower = location_str.lower()
-    for kw in INDIA_LOCATION_KEYWORDS:
-        if kw in loc_lower:
+
+    loc_clean = (location_str or "").strip().lower()
+    wp_clean = (workplace_type or "").strip().lower()
+
+    if not loc_clean:
+        if wp_clean == "remote":
             return True
+        return False
+
+    # 1. Eliminate false positives from US locations containing 'indian' (e.g. Indiana, Indianapolis)
+    loc_without_us_indian = re.sub(
+        r"\b(indiana|indianapolis|indian\s+river|indian\s+wells|indian\s+trail|indianola)\b",
+        "",
+        loc_clean
+    )
+
+    # 2. Check for explicit India country reference
+    has_india_word = bool(re.search(r"\b(india|indian)\b", loc_without_us_indian))
+
+    # 3. Check for recognized Indian cities, metros, and states
+    has_indian_city = False
+    for city in INDIA_CITIES_AND_STATES:
+        if re.search(r"\b" + re.escape(city) + r"\b", loc_clean):
+            has_indian_city = True
+            break
+
+    # If explicit Indian city or country is present, it is valid!
+    if has_india_word or has_indian_city:
+        return True
+
+    # 4. If no Indian city/country is present:
+    # A job can ONLY qualify if the location string itself is purely generic Remote (e.g. 'Remote', 'Worldwide')
+    # If the location specifies a physical location (e.g. 'Atlanta', 'Boston', 'Dublin', 'Chicago'), it is NOT India!
+    has_foreign_restricted = any(bool(re.search(pat, loc_clean)) for pat in FOREIGN_RESTRICTED_REMOTES)
+    if has_foreign_restricted:
+        return False
+
+    has_foreign = any(re.search(r"\b" + re.escape(fc) + r"\b", loc_clean) for fc in FOREIGN_TERRITORIES)
+    has_us_code = bool(re.search(r",\s*(al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|wi|wy)\b", loc_clean))
+    if has_foreign or has_us_code:
+        return False
+
+    # Check if the string is purely generic remote terms (e.g. 'Remote', 'Remote / Work From Home')
+    stripped = loc_clean
+    for kw in GENERIC_REMOTE_KEYWORDS:
+        stripped = re.sub(r"\b" + re.escape(kw) + r"\b", "", stripped)
+    stripped = re.sub(r"[\s,\-–—/|()]+", "", stripped)
+
+    if not stripped and (wp_clean == "remote" or any(kw in loc_clean for kw in GENERIC_REMOTE_KEYWORDS)):
+        return True
+
     return False
+
+def extract_india_location(location_str: str) -> str:
+    """
+    Extracts the clean Indian location from a multi-location string.
+    Example: 'Bengaluru, Karnataka, India; Berlin, Germany; Dublin, Ireland' -> 'Bengaluru, Karnataka, India'
+             'London, New York, Singapore, Boston, Bangalore' -> 'Bangalore, India'
+    """
+    if not location_str:
+        return "India"
+    s = location_str.strip()
+
+    # Semicolon, pipe, or newline delimited multi-locations
+    delims = [";", "|", "\n"]
+    for d in delims:
+        if d in s:
+            parts = [p.strip() for p in s.split(d) if p.strip()]
+            for part in parts:
+                p_lower = part.lower()
+                clean_p = re.sub(r"\b(indiana|indianapolis|indian\s+river|indian\s+wells|indian\s+trail|indianola)\b", "", p_lower)
+                if re.search(r"\b(india|indian)\b", clean_p) or any(re.search(r"\b" + re.escape(c) + r"\b", p_lower) for c in INDIA_CITIES_AND_STATES):
+                    return part
+
+    # Comma-delimited list of worldwide cities (e.g. 'Montreal, Bangalore, Warsaw' or 'London & Bangalore')
+    norm_s = s.replace(" & ", ", ").replace(" and ", ", ")
+    if "," in norm_s:
+        parts = [p.strip() for p in norm_s.split(",") if p.strip()]
+        if len(parts) >= 2:
+            has_foreign_part = any(any(re.search(r"\b" + re.escape(fc) + r"\b", p.lower()) for fc in FOREIGN_TERRITORIES) for p in parts)
+            if has_foreign_part:
+                for part in parts:
+                    p_lower = part.lower()
+                    clean_p = re.sub(r"\b(indiana|indianapolis|indian\s+river|indian\s+wells|indian\s+trail|indianola)\b", "", p_lower)
+                    if re.search(r"\b(india|indian)\b", clean_p) or any(re.search(r"\b" + re.escape(c) + r"\b", p_lower) for c in INDIA_CITIES_AND_STATES):
+                        if "india" in p_lower:
+                            return part
+                        return f"{part}, India"
+
+    return s
 
 def extract_tags(title: str, dept: str = "", raw_text: str = "") -> List[str]:
     combined = f"{title} {dept} {raw_text}".lower()
@@ -307,8 +437,13 @@ class ATSService:
             title = j.get("title", "").strip()
             
             # India location verification
-            if not is_india_location(loc_name) and not is_india_location(title):
-                continue
+            if not is_india_location(loc_name):
+                if not loc_name.strip() and is_india_location(title):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(loc_name)
 
             apply_link = j.get("absolute_url") or f"https://boards.greenhouse.io/{ep.company_name.lower()}/jobs/{j.get('id')}"
             updated_at = j.get("updated_at") or j.get("first_published")
@@ -324,7 +459,7 @@ class ATSService:
             results.append({
                 "company_name": ep.company_name,
                 "role_name": title,
-                "location": loc_name or "India",
+                "location": clean_loc or "India",
                 "employment_type": emp_type,
                 "workplace_type": workplace,
                 "experience_level": exp_level,
@@ -349,9 +484,14 @@ class ATSService:
             
             # Check secondary locations for India
             sec_locs = [str(sl.get("location", "")) for sl in j.get("secondaryLocations", []) if isinstance(sl, dict)]
-            combined_loc = f"{loc_name} {' '.join(sec_locs)}"
-            if not is_india_location(combined_loc) and not is_india_location(title):
-                continue
+            combined_loc = f"{loc_name}; {'; '.join(sec_locs)}".strip("; ")
+            if not is_india_location(combined_loc, workplace_type=workplace_type_raw):
+                if not combined_loc.strip() and is_india_location(title):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(combined_loc)
 
             apply_link = j.get("applyUrl") or j.get("jobUrl") or f"https://jobs.ashbyhq.com/{ep.company_name.lower()}/{j.get('id')}"
             published_at = j.get("publishedAt")
@@ -366,7 +506,7 @@ class ATSService:
             results.append({
                 "company_name": ep.company_name,
                 "role_name": title,
-                "location": loc_name or "India",
+                "location": clean_loc or "India",
                 "employment_type": emp_type,
                 "workplace_type": workplace,
                 "experience_level": exp_level,
@@ -391,8 +531,13 @@ class ATSService:
             country = loc_obj.get("country", "")
             loc_str = f"{city}, {region}, {country}".strip(", ")
 
-            if not is_india_location(loc_str, country) and not is_india_location(title):
-                continue
+            if not is_india_location(loc_str, country_code=country):
+                if not loc_str.strip() and is_india_location(title):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(loc_str)
 
             comp_name = j.get("company", {}).get("name") or ep.company_name
             apply_link = j.get("postingUrl") or j.get("ref") or f"https://jobs.smartrecruiters.com/{ep.company_name}/{j.get('id')}"
@@ -412,7 +557,7 @@ class ATSService:
             results.append({
                 "company_name": comp_name,
                 "role_name": title,
-                "location": loc_str or "India",
+                "location": clean_loc or "India",
                 "employment_type": emp_type,
                 "workplace_type": workplace,
                 "experience_level": exp_level,
@@ -441,8 +586,13 @@ class ATSService:
             workplace_type_raw = cats.get("workplaceType", "")
             
             # India location verification
-            if not is_india_location(loc_str) and not is_india_location(title):
-                continue
+            if not is_india_location(loc_str, workplace_type=workplace_type_raw):
+                if not loc_str.strip() and is_india_location(title):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(loc_str)
 
             apply_link = j.get("hostedUrl") or j.get("applyUrl") or f"https://jobs.lever.co/{ep.company_name.lower()}/{j.get('id')}"
             created_at = j.get("createdAt")
@@ -457,7 +607,7 @@ class ATSService:
             results.append({
                 "company_name": ep.company_name,
                 "role_name": title,
-                "location": loc_str or "India",
+                "location": clean_loc or "India",
                 "employment_type": emp_type,
                 "workplace_type": workplace,
                 "experience_level": exp_level,
@@ -487,10 +637,16 @@ class ATSService:
             city = loc_obj.get("city", "") if isinstance(loc_obj, dict) else ""
             state = loc_obj.get("state", "") if isinstance(loc_obj, dict) else ""
             loc_str = f"{city}, {state}".strip(", ")
+            is_rem = bool(j.get("isRemote"))
             
             # India location verification
-            if not is_india_location(loc_str) and not is_india_location(title):
-                continue
+            if not is_india_location(loc_str, workplace_type="Remote" if is_rem else ""):
+                if not loc_str.strip() and is_india_location(title):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(loc_str)
 
             job_id = str(j.get("id", "")).strip()
             # Derive apply link: https://{company}.bamboohr.com/careers/{job_id}
@@ -511,7 +667,7 @@ class ATSService:
             results.append({
                 "company_name": ep.company_name,
                 "role_name": title,
-                "location": loc_str or "India",
+                "location": clean_loc or "India",
                 "employment_type": emp_type,
                 "workplace_type": workplace,
                 "experience_level": exp_level,

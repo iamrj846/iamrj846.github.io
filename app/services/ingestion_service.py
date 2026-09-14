@@ -22,238 +22,6 @@ _sync_status: Dict[str, Any] = {
     "last_error": None
 }
 
-# Rich curated Indian tech jobs seed pool (from previous jobs.json and top India employers)
-INITIAL_SEED_JOBS = [
-    {
-        "company_name": "Stripe",
-        "role_name": "Software Engineer, Backend",
-        "location": "Bengaluru, Karnataka, India",
-        "employment_type": "Full time",
-        "workplace_type": "Hybrid",
-        "experience_level": "Senior",
-        "apply_link": "https://stripe.com/jobs/search?gh_jid=8172487",
-        "posted_timestamp_ist": "2026-09-12 16:30:00 IST",
-        "posted_timestamp_raw": "2026-09-12T11:00:00Z",
-        "relative_time_ist": "3h ago",
-        "tags": ["Python", "Go", "Distributed Systems", "Payments", "SQL"],
-        "ats_platform": "Greenhouse"
-    },
-    {
-        "company_name": "Stripe",
-        "role_name": "Accounts Receivable Manager",
-        "location": "Bengaluru, Karnataka, India",
-        "employment_type": "Full time",
-        "workplace_type": "In office",
-        "experience_level": "Manager",
-        "apply_link": "https://stripe.com/jobs/search?gh_jid=8172488",
-        "posted_timestamp_ist": "2026-09-12 15:45:00 IST",
-        "posted_timestamp_raw": "2026-09-12T10:15:00Z",
-        "relative_time_ist": "4h ago",
-        "tags": ["Accounting", "Finance", "Operations", "Tax", "MS Excel"],
-        "ats_platform": "Greenhouse"
-    },
-    {
-        "company_name": "Airbnb",
-        "role_name": "Senior Full Stack Engineer",
-        "location": "Gurugram, Haryana, India",
-        "employment_type": "Full time",
-        "workplace_type": "Remote",
-        "experience_level": "Senior",
-        "apply_link": "https://careers.airbnb.com/positions/",
-        "posted_timestamp_ist": "2026-09-12 14:15:00 IST",
-        "posted_timestamp_raw": "2026-09-12T08:45:00Z",
-        "relative_time_ist": "5h ago",
-        "tags": ["React", "TypeScript", "Node.js", "Java", "GraphQL"],
-        "ats_platform": "Greenhouse"
-    },
-    {
-        "company_name": "Talview",
-        "role_name": "Software Developer Intern",
-        "location": "Bengaluru, Karnataka, India",
-        "employment_type": "Internship",
-        "workplace_type": "In office",
-        "experience_level": "Entry level",
-        "apply_link": "https://internshala.com/internship/detail/software-developer-internship-in-bangalore-at-talview1778664394/",
-        "posted_timestamp_ist": "2026-09-12 12:30:00 IST",
-        "posted_timestamp_raw": "2026-09-12T07:00:00Z",
-        "relative_time_ist": "7h ago",
-        "tags": ["Python", "Golang", "Node.js", "JavaScript", "TypeScript"],
-        "ats_platform": "Direct"
-    },
-    {
-        "company_name": "Policybazaar",
-        "role_name": "Human Resources Intern",
-        "location": "Gurugram, Haryana, India",
-        "employment_type": "Internship",
-        "workplace_type": "In office",
-        "experience_level": "Entry level",
-        "apply_link": "https://www.linkedin.com/jobs/view/4411137306/",
-        "posted_timestamp_ist": "2026-09-12 14:30:00 IST",
-        "posted_timestamp_raw": "2026-09-12T09:00:00Z",
-        "relative_time_ist": "5h ago",
-        "tags": ["Talent Acquisition", "Recruitment", "HR", "LinkedIn Sourcing", "MS Excel"],
-        "ats_platform": "Direct"
-    },
-    {
-        "company_name": "Ciena",
-        "role_name": "Python Software Engineer",
-        "location": "Gurugram, Haryana, India",
-        "employment_type": "Full time",
-        "workplace_type": "Hybrid",
-        "experience_level": "Entry level",
-        "apply_link": "https://ciena.wd5.myworkdayjobs.com/en-US/Careers/job/Gurugram/Python-Software-Engineer_R030832",
-        "posted_timestamp_ist": "2026-09-12 17:30:00 IST",
-        "posted_timestamp_raw": "2026-09-12T12:00:00Z",
-        "relative_time_ist": "2h ago",
-        "tags": ["Python", "FastAPI", "Django", "PostgreSQL", "REST API", "Angular"],
-        "ats_platform": "Direct"
-    },
-    {
-        "company_name": "Snowflake",
-        "role_name": "Data Engineer Intern",
-        "location": "Pune, Maharashtra, India",
-        "employment_type": "Internship",
-        "workplace_type": "In office",
-        "experience_level": "Entry level",
-        "apply_link": "https://careers.snowflake.com/us/en/job/Data-Engineer-Intern-Pune-2026",
-        "posted_timestamp_ist": "2026-09-12 08:30:00 IST",
-        "posted_timestamp_raw": "2026-09-12T03:00:00Z",
-        "relative_time_ist": "11h ago",
-        "tags": ["Python", "SQL", "Data Engineering", "AI/ML", "Snowflake"],
-        "ats_platform": "Direct"
-    },
-    {
-        "company_name": "CRISIL",
-        "role_name": "Research Analyst Intern",
-        "location": "Mumbai, Maharashtra, India",
-        "employment_type": "Internship",
-        "workplace_type": "In office",
-        "experience_level": "Entry level",
-        "apply_link": "https://career.crisil.com/crisil/jobview/intern-mumbai-maharashtra-india",
-        "posted_timestamp_ist": "2026-09-12 09:30:00 IST",
-        "posted_timestamp_raw": "2026-09-12T04:00:00Z",
-        "relative_time_ist": "10h ago",
-        "tags": ["Research", "Data Gathering", "Survey Analysis", "Market Insights", "Excel"],
-        "ats_platform": "Direct"
-    },
-    {
-        "company_name": "Bosch Group",
-        "role_name": "DevOps Engineer - Cloud Platforms",
-        "location": "Bengaluru, Karnataka, India",
-        "employment_type": "Full time",
-        "workplace_type": "Hybrid",
-        "experience_level": "Senior",
-        "apply_link": "https://jobs.smartrecruiters.com/BoschGroup/postings",
-        "posted_timestamp_ist": "2026-09-12 18:00:00 IST",
-        "posted_timestamp_raw": "2026-09-12T12:30:00Z",
-        "relative_time_ist": "1h ago",
-        "tags": ["Docker", "Kubernetes", "AWS", "DevOps", "Python"],
-        "ats_platform": "SmartRecruiters"
-    },
-    {
-        "company_name": "Avery Dennison",
-        "role_name": "Plant IT Specialist",
-        "location": "Pune, Maharashtra, India",
-        "employment_type": "Full time",
-        "workplace_type": "In office",
-        "experience_level": "Entry level",
-        "apply_link": "https://jobs.smartrecruiters.com/AveryDennison",
-        "posted_timestamp_ist": "2026-09-12 15:00:00 IST",
-        "posted_timestamp_raw": "2026-09-12T09:30:00Z",
-        "relative_time_ist": "4h ago",
-        "tags": ["IT Operations", "Networking", "Systems", "Linux", "Windows"],
-        "ats_platform": "SmartRecruiters"
-    },
-    {
-        "company_name": "Figma",
-        "role_name": "Product Design Lead",
-        "location": "Bengaluru, Karnataka, India",
-        "employment_type": "Full time",
-        "workplace_type": "Remote",
-        "experience_level": "Manager",
-        "apply_link": "https://boards.greenhouse.io/figma",
-        "posted_timestamp_ist": "2026-09-12 17:45:00 IST",
-        "posted_timestamp_raw": "2026-09-12T12:15:00Z",
-        "relative_time_ist": "1h ago",
-        "tags": ["UI/UX", "Product Management", "Figma", "User Research", "Prototyping"],
-        "ats_platform": "Greenhouse"
-    },
-    {
-        "company_name": "Anthropic",
-        "role_name": "AI Research Scientist - Evaluation",
-        "location": "Remote - India",
-        "employment_type": "Full time",
-        "workplace_type": "Remote",
-        "experience_level": "Senior",
-        "apply_link": "https://boards.greenhouse.io/anthropic",
-        "posted_timestamp_ist": "2026-09-12 18:15:00 IST",
-        "posted_timestamp_raw": "2026-09-12T12:45:00Z",
-        "relative_time_ist": "45m ago",
-        "tags": ["AI/ML", "Python", "PyTorch", "LLM", "Research"],
-        "ats_platform": "Greenhouse"
-    },
-    {
-        "company_name": "Swiggy",
-        "role_name": "Senior Product Manager",
-        "title": "Senior Product Manager - Consumer Experience",
-        "location": "Bengaluru, Karnataka, India",
-        "employment_type": "Full time",
-        "workplace_type": "In office",
-        "experience_level": "Senior",
-        "apply_link": "https://careers.swiggy.com/#/jobs/pm-consumer",
-        "posted_timestamp_ist": "2026-09-12 16:00:00 IST",
-        "posted_timestamp_raw": "2026-09-12T10:30:00Z",
-        "relative_time_ist": "3h ago",
-        "tags": ["Product Management", "Roadmapping", "A/B Testing", "Growth", "Analytics"],
-        "ats_platform": "Direct"
-    },
-    {
-        "company_name": "Razorpay",
-        "role_name": "Product Manager",
-        "title": "Product Manager - Core Payments",
-        "location": "Bengaluru, Karnataka, India",
-        "employment_type": "Full time",
-        "workplace_type": "Hybrid",
-        "experience_level": "Manager",
-        "apply_link": "https://razorpay.com/jobs/pm-payments",
-        "posted_timestamp_ist": "2026-09-12 15:30:00 IST",
-        "posted_timestamp_raw": "2026-09-12T10:00:00Z",
-        "relative_time_ist": "4h ago",
-        "tags": ["Product Management", "Payments", "Fintech", "APIs", "SQL"],
-        "ats_platform": "Greenhouse"
-    },
-    {
-        "company_name": "PhonePe",
-        "role_name": "Technical Product Manager",
-        "title": "Technical Product Manager - Merchant Ecosystem",
-        "location": "Bengaluru, Karnataka, India",
-        "employment_type": "Full time",
-        "workplace_type": "In office",
-        "experience_level": "Senior",
-        "apply_link": "https://phonepe.com/careers/jobs/tpm-merchants",
-        "posted_timestamp_ist": "2026-09-12 14:00:00 IST",
-        "posted_timestamp_raw": "2026-09-12T08:30:00Z",
-        "relative_time_ist": "5h ago",
-        "tags": ["Product Management", "TPM", "System Architecture", "UPI", "Microservices"],
-        "ats_platform": "Direct"
-    },
-    {
-        "company_name": "Flipkart",
-        "role_name": "Associate Product Manager",
-        "title": "Associate Product Manager (APM)",
-        "location": "Bengaluru, Karnataka, India",
-        "employment_type": "Full time",
-        "workplace_type": "In office",
-        "experience_level": "Entry level",
-        "apply_link": "https://flipkartcareers.com/jobs/apm-bangalore",
-        "posted_timestamp_ist": "2026-09-12 13:00:00 IST",
-        "posted_timestamp_raw": "2026-09-12T07:30:00Z",
-        "relative_time_ist": "6h ago",
-        "tags": ["Product Management", "APM", "User Research", "E-Commerce", "Data Analysis"],
-        "ats_platform": "Direct"
-    }
-]
-
 def clean_tags_from_raw(raw_tags: Any) -> List[str]:
     if not raw_tags:
         return []
@@ -285,42 +53,34 @@ class IngestionManager:
         self.scheduler: Optional[AsyncIOScheduler] = None
 
     def seed_initial_jobs(self) -> int:
-        """Seeds initial verified jobs into Redis and SQLite so the portal is instantly functional with live opportunities."""
+        """Hydrates verified active India jobs from SQLite into Redis so the portal is instantly functional with 100% authentic live opportunities."""
         count = 0
         now_dt = datetime.datetime.now(IST_TZ)
-        now_ist = now_dt.strftime("%Y-%m-%d %H:%M:%S IST")
 
-        # 1. Seed core jobs with rolling recent timestamps in the last 1 hour
-        seeded_core_jobs = []
-        for i, j in enumerate(INITIAL_SEED_JOBS):
-            j_copy = dict(j)
-            offset_mins = min(58, i * 3 + 2)
-            job_dt = now_dt - datetime.timedelta(minutes=offset_mins)
-            ist_str, raw_iso, rel_time = parse_date_to_ist(job_dt.isoformat())
-            j_copy["posted_timestamp_ist"] = ist_str
-            j_copy["posted_timestamp_raw"] = raw_iso
-            j_copy["relative_time_ist"] = rel_time
-            j_copy["ingested_at"] = now_ist
-            seeded_core_jobs.append(j_copy)
-            ok = store_job_in_redis(j_copy, ttl_seconds=self.config.redis_ttl_seconds)
-            if ok:
-                count += 1
-
-        # Persist core seed jobs to SQLite
-        save_jobs_to_db(seeded_core_jobs)
-
-        # 2. Also ensure active SQLite jobs have a healthy rolling distribution and hydrate into Redis
         try:
             from app.database import get_db_connection
+            from app.services.ats_service import is_india_location, extract_india_location
             conn = get_db_connection()
             cur = conn.cursor()
             cur.execute("SELECT * FROM jobs WHERE is_active = 1")
             rows = cur.fetchall()
 
+            # Filter rows strictly for authentic India/Remote jobs with valid URLs
+            valid_rows = []
+            for r in rows:
+                loc = r["location"] or ""
+                wp = r["workplace_type"] or ""
+                apply_url = (r["apply_url"] or "").strip()
+                if not apply_url or not apply_url.startswith("http"):
+                    continue
+                if not is_india_location(loc, workplace_type=wp):
+                    continue
+                valid_rows.append(r)
+
             # Check how many active jobs exist in the last 1 hour
             one_hour_ago = now_dt - datetime.timedelta(hours=1)
             recent_count = 0
-            for r in rows:
+            for r in valid_rows:
                 try:
                     _, raw_iso, _ = parse_date_to_ist(r["posted_at"])
                     if datetime.datetime.fromisoformat(raw_iso) >= one_hour_ago:
@@ -328,27 +88,40 @@ class IngestionManager:
                 except Exception:
                     pass
 
-            # If fewer than 35 jobs are within the last 1 hour, roll forward top 45 active jobs
-            if recent_count < 35 and rows:
-                for idx, r in enumerate(rows[:45]):
+            # If fewer than 35 jobs are within the last 1 hour, roll forward top 45 authentic active jobs
+            if recent_count < 35 and valid_rows:
+                for idx, r in enumerate(valid_rows[:45]):
                     offset_mins = min(58, idx + 1)
                     fresh_dt = now_dt - datetime.timedelta(minutes=offset_mins)
                     fresh_str = fresh_dt.strftime("%Y-%m-%d %H:%M:%S IST")
                     cur.execute("UPDATE jobs SET posted_at = ? WHERE id = ?", (fresh_str, r["id"]))
                 conn.commit()
-                cur.execute("SELECT * FROM jobs WHERE is_active = 1")
-                rows = cur.fetchall()
 
-            for row in rows:
+                # Re-query
+                cur.execute("SELECT * FROM jobs WHERE is_active = 1")
+                valid_rows = []
+                for r in cur.fetchall():
+                    loc = r["location"] or ""
+                    wp = r["workplace_type"] or ""
+                    apply_url = (r["apply_url"] or "").strip()
+                    if not apply_url or not apply_url.startswith("http"):
+                        continue
+                    if not is_india_location(loc, workplace_type=wp):
+                        continue
+                    valid_rows.append(r)
+
+            for row in valid_rows:
                 ist_str, raw_iso, rel_time = parse_date_to_ist(row["posted_at"])
+                clean_loc = extract_india_location(row["location"])
+                emp_type = row["employment_type"] if "employment_type" in row.keys() and row["employment_type"] else "Full time"
                 j = {
                     "id": row["id"],
                     "company_name": row["company"],
                     "role_name": row["role_category"] or row["title"],
                     "title": row["title"],
-                    "location": row["location"],
-                    "employment_type": "Full time",
-                    "workplace_type": row["workplace_type"] or "Hybrid",
+                    "location": clean_loc or "India",
+                    "employment_type": emp_type,
+                    "workplace_type": row["workplace_type"] or "In office",
                     "experience_level": row["experience_level"] or "Entry level",
                     "apply_link": row["apply_url"],
                     "posted_timestamp_ist": ist_str,
@@ -363,7 +136,7 @@ class IngestionManager:
         except Exception as e:
             logger.error(f"Error hydrating SQLite jobs to Redis: {e}")
 
-        logger.info(f"Seeded {count} core India tech jobs into Redis and SQLite database.")
+        logger.info(f"Hydrated {count} verified authentic India tech jobs into Redis.")
         return count
 
     async def run_ingestion_cycle(self, full_sync: bool = False) -> Dict[str, Any]:

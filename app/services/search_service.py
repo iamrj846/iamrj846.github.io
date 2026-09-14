@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional, Set, Tuple
 
 from app.config import get_config
 from app.redis_client import get_redis_client, parse_hash_name
-from app.services.ats_service import get_ats_service, parse_date_to_ist
+from app.services.ats_service import get_ats_service, parse_date_to_ist, is_india_location, extract_india_location
 
 logger = logging.getLogger("search_service")
 IST_TZ = pytz.timezone("Asia/Kolkata")
@@ -371,6 +371,21 @@ class SearchService:
         now_ist = datetime.datetime.now(IST_TZ)
 
         for job in raw_jobs:
+            loc = job.get("location", "")
+            wp = job.get("workplace_type", "")
+            apply_link = (job.get("apply_link") or "").strip()
+
+            # Defense-in-depth: Strict India & Remote validation
+            if not apply_link or not apply_link.startswith("http"):
+                continue
+            if not is_india_location(loc, workplace_type=wp):
+                continue
+
+            # Ensure location string is clean
+            clean_loc = extract_india_location(loc)
+            if clean_loc:
+                job["location"] = clean_loc
+
             r_name = job.get("role_name", "")
             title = job.get("title", "")
             c_name = job.get("company_name", "")
