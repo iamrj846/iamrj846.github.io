@@ -420,6 +420,64 @@
       cursor: pointer; transition: all 0.15s;
     }
     .btn-action-delete:hover { background: #FEE2E2; }
+
+    /* Analytics Tab Group & Tables */
+    .analytics-tab-group {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .analytics-tab-btn {
+      background: #F1F5F9;
+      color: var(--txt-dim);
+      border: 1px solid var(--bdr);
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .analytics-tab-btn:hover {
+      background: #E2E8F0;
+      color: var(--txt);
+    }
+    .analytics-tab-btn.active {
+      background: #4F46E5;
+      color: #FFFFFF;
+      border-color: #4338CA;
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+    }
+    .analytics-search-input {
+      padding: 7px 12px;
+      border: 1px solid var(--bdr);
+      border-radius: 8px;
+      font-size: 12.5px;
+      background: #FFFFFF;
+      color: var(--txt);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .analytics-search-input:focus {
+      border-color: #4F46E5;
+      box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+    .meter-bar-container {
+      width: 100%;
+      height: 6px;
+      background: #E2E8F0;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .meter-bar-fill {
+      height: 100%;
+      background: #4F46E5;
+      border-radius: 3px;
+    }
   </style>
 </head>
 <body>
@@ -504,6 +562,26 @@
     </div>
 
     <div class="kpi-grid">
+      <div class="kpi-card" style="border-left: 4px solid #4F46E5;">
+        <div class="kpi-lbl">Total Jobs in Redis</div>
+        <div class="kpi-val" id="kpiRedis" style="color: #4F46E5;">--</div>
+        <div style="font-size: 11px; color: var(--txt-dim); margin-top: 4px; font-weight: 500;">Active Hashes in RAM</div>
+      </div>
+      <div class="kpi-card" style="border-left: 4px solid #D97706;">
+        <div class="kpi-lbl">Total Jobs in Database</div>
+        <div class="kpi-val" id="kpiDbJobs" style="color: #D97706;">--</div>
+        <div style="font-size: 11px; color: var(--txt-dim); margin-top: 4px; font-weight: 500;">Active in SQLite Store</div>
+      </div>
+      <div class="kpi-card" style="border-left: 4px solid #059669;">
+        <div class="kpi-lbl">Active Companies (DB)</div>
+        <div class="kpi-val" id="kpiDbCompanies" style="color: #059669;">--</div>
+        <div style="font-size: 11px; color: var(--txt-dim); margin-top: 4px; font-weight: 500;">Distinct Employers</div>
+      </div>
+      <div class="kpi-card" style="border-left: 4px solid #8B5CF6;">
+        <div class="kpi-lbl">Unique Roles (DB)</div>
+        <div class="kpi-val" id="kpiDbRoles" style="color: #8B5CF6;">--</div>
+        <div style="font-size: 11px; color: var(--txt-dim); margin-top: 4px; font-weight: 500;">Distinct Job Titles</div>
+      </div>
       <div class="kpi-card">
         <div class="kpi-lbl">Total Registered Users</div>
         <div class="kpi-val" id="kpiUsers">--</div>
@@ -529,15 +607,168 @@
         <div class="kpi-val" id="kpiCompanies" style="color: #059669;">9,332+</div>
         <div style="font-size: 11px; color: var(--txt-dim); margin-top: 4px; font-weight: 500;">Public ATS JSON Boards</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-lbl">Verified Live Jobs (DB)</div>
-        <div class="kpi-val" id="kpiDbJobs" style="color: #D97706;">--</div>
-        <div style="font-size: 11px; color: var(--txt-dim); margin-top: 4px; font-weight: 500;">Active in SQLite Store</div>
+    </div>
+
+    <!-- Tabular Analytics Section -->
+    <div class="table-card" style="margin-bottom: 28px;">
+      <div class="table-header" style="flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 16px; font-weight: 800;">Platform &amp; Database Breakdown Analytics</span>
+          <span style="font-size: 12px; color: var(--txt-muted);" id="analyticsSummaryBadge">Loading analytics...</span>
+        </div>
+        <!-- Tab Navigation Buttons -->
+        <div class="analytics-tab-group">
+          <button type="button" class="analytics-tab-btn active" onclick="switchAnalyticsTab('companies', this)">🏢 Companies Breakdown</button>
+          <button type="button" class="analytics-tab-btn" onclick="switchAnalyticsTab('roles', this)">💼 Roles &amp; Density</button>
+          <button type="button" class="analytics-tab-btn" onclick="switchAnalyticsTab('datewise', this)">📅 Datewise Split</button>
+          <button type="button" class="analytics-tab-btn" onclick="switchAnalyticsTab('sources', this)">⚙️ ATS Sources</button>
+          <button type="button" class="analytics-tab-btn" onclick="switchAnalyticsTab('distributions', this)">📊 Workplace &amp; Exp</button>
+        </div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-lbl">Redis Active Job Hashes</div>
-        <div class="kpi-val" id="kpiRedis" style="color: #4F46E5;">--</div>
-        <div style="font-size: 11px; color: var(--txt-dim); margin-top: 4px; font-weight: 500;">Cached {Company}|{Role} in RAM</div>
+
+      <!-- Tab Content: Companies Breakdown -->
+      <div id="tabCompanies" class="analytics-tab-content" style="display: block;">
+        <div style="padding: 12px 20px; background: #FAF5FF; border-bottom: 1px solid var(--bdr); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="font-size: 13px; color: #6B21A8; font-weight: 600;">
+            🏢 Showing company-level metrics, total active jobs, unique roles per company, and primary locations.
+          </div>
+          <input type="text" id="companySearchInput" class="analytics-search-input" placeholder="🔍 Filter by company name or ATS..." oninput="filterCompaniesTable()" style="width: 260px; max-width: 100%;" />
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th>Company Name</th>
+                <th>ATS Source</th>
+                <th>Total Jobs in DB</th>
+                <th>Unique Roles</th>
+                <th>Avg Roles / Job</th>
+                <th>Primary Location</th>
+                <th>Latest Ingested Post</th>
+              </tr>
+            </thead>
+            <tbody id="companiesTableBody">
+              <tr><td colspan="8" style="text-align: center; color: var(--txt-muted); padding: 24px;">Loading company metrics...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content: Roles & Density -->
+      <div id="tabRoles" class="analytics-tab-content" style="display: none;">
+        <div style="padding: 12px 20px; background: #EFF6FF; border-bottom: 1px solid var(--bdr); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="font-size: 13px; color: #1E40AF; font-weight: 600;">
+            💼 Showing role titles, active openings across India, and hiring company counts.
+          </div>
+          <input type="text" id="roleSearchInput" class="analytics-search-input" placeholder="🔍 Filter by role title or category..." oninput="filterRolesTable()" style="width: 260px; max-width: 100%;" />
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 50px;">#</th>
+                <th>Job Title / Role</th>
+                <th>Category</th>
+                <th>Total Active Openings</th>
+                <th>Hiring Companies</th>
+                <th>Location Reach</th>
+              </tr>
+            </thead>
+            <tbody id="rolesTableBody">
+              <tr><td colspan="6" style="text-align: center; color: var(--txt-muted); padding: 24px;">Loading roles distribution...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content: Datewise Split -->
+      <div id="tabDatewise" class="analytics-tab-content" style="display: none;">
+        <div style="padding: 12px 20px; background: #F0FDF4; border-bottom: 1px solid var(--bdr); font-size: 13px; color: #166534; font-weight: 600;">
+          📅 Historical posting volume and active listings count grouped by calendar date (IST).
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Date (YYYY-MM-DD)</th>
+                <th>Total Jobs Posted</th>
+                <th>Active Jobs Currently</th>
+                <th>Hiring Companies Active</th>
+                <th>Posting Volume Indicator</th>
+              </tr>
+            </thead>
+            <tbody id="datewiseTableBody">
+              <tr><td colspan="5" style="text-align: center; color: var(--txt-muted); padding: 24px;">Loading datewise split...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content: ATS Source Breakdown -->
+      <div id="tabSources" class="analytics-tab-content" style="display: none;">
+        <div style="padding: 12px 20px; background: #FFFBEB; border-bottom: 1px solid var(--bdr); font-size: 13px; color: #92400E; font-weight: 600;">
+          ⚙️ Breakdown of verified job listings and employer domains by ATS provider.
+        </div>
+        <div class="table-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>ATS Platform</th>
+                <th>Active Jobs in Database</th>
+                <th>Companies Supported</th>
+                <th>Share of Job Database</th>
+                <th>Ingestion Status</th>
+              </tr>
+            </thead>
+            <tbody id="sourcesTableBody">
+              <tr><td colspan="5" style="text-align: center; color: var(--txt-muted); padding: 24px;">Loading ATS breakdown...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab Content: Workplace & Experience Distribution -->
+      <div id="tabDistributions" class="analytics-tab-content" style="display: none;">
+        <div style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+          <!-- Workplace Types Card -->
+          <div style="border: 1px solid var(--bdr); border-radius: 14px; padding: 18px; background: #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="font-weight: 800; font-size: 14px; margin-bottom: 14px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
+              <span>🏢 Workplace Mode Distribution</span>
+            </div>
+            <table style="width: 100%;">
+              <thead>
+                <tr>
+                  <th>Workplace Type</th>
+                  <th>Job Count</th>
+                  <th>Share of Database</th>
+                </tr>
+              </thead>
+              <tbody id="workplaceTableBody">
+                <tr><td colspan="3" style="text-align: center; color: var(--txt-muted);">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Experience Levels Card -->
+          <div style="border: 1px solid var(--bdr); border-radius: 14px; padding: 18px; background: #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="font-weight: 800; font-size: 14px; margin-bottom: 14px; color: var(--txt); display: flex; align-items: center; gap: 8px;">
+              <span>🎓 Experience Level Distribution</span>
+            </div>
+            <table style="width: 100%;">
+              <thead>
+                <tr>
+                  <th>Experience Level</th>
+                  <th>Job Count</th>
+                  <th>Share of Database</th>
+                </tr>
+              </thead>
+              <tbody id="experienceTableBody">
+                <tr><td colspan="3" style="text-align: center; color: var(--txt-muted);">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -691,11 +922,22 @@
       }
     }
 
+    let currentAnalyticsData = null;
+
+    function switchAnalyticsTab(tabId, btn) {
+      document.querySelectorAll('.analytics-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.analytics-tab-content').forEach(c => c.style.display = 'none');
+      btn.classList.add('active');
+      const target = document.getElementById('tab' + tabId.charAt(0).toUpperCase() + tabId.slice(1));
+      if (target) target.style.display = 'block';
+    }
+
     async function loadAdminData() {
       try {
         const headers = getAdminHeaders();
-        const [statsRes, usersRes, contactsRes] = await Promise.all([
+        const [statsRes, analyticsRes, usersRes, contactsRes] = await Promise.all([
           fetch('/api/admin/stats', { headers }).catch(e => ({ ok: false, status: 0, error: e })),
+          fetch('/api/admin/analytics', { headers }).catch(e => ({ ok: false, status: 0, error: e })),
           fetch('/api/admin/users', { headers }).catch(e => ({ ok: false, status: 0, error: e })),
           fetch('/api/admin/contacts', { headers }).catch(e => ({ ok: false, status: 0, error: e }))
         ]);
@@ -722,14 +964,31 @@
               if (document.getElementById('kpiCompanies')) {
                 document.getElementById('kpiCompanies').textContent = (d.total_companies ? d.total_companies.toLocaleString() + '+' : '9,332+');
               }
+              document.getElementById('kpiRedis').textContent = (r.total_hashes ? r.total_hashes.toLocaleString() : '0');
               if (document.getElementById('kpiDbJobs')) {
                 document.getElementById('kpiDbJobs').textContent = (m.total_jobs_in_db ? m.total_jobs_in_db.toLocaleString() : '0');
               }
-              document.getElementById('kpiRedis').textContent = (r.total_hashes ? r.total_hashes.toLocaleString() : '0');
+              if (document.getElementById('kpiDbCompanies')) {
+                document.getElementById('kpiDbCompanies').textContent = (m.total_companies_in_db ? m.total_companies_in_db.toLocaleString() : '0');
+              }
+              if (document.getElementById('kpiDbRoles')) {
+                document.getElementById('kpiDbRoles').textContent = (m.total_roles_in_db ? m.total_roles_in_db.toLocaleString() : '0');
+              }
               document.getElementById('lastRefreshed').textContent = 'Last sync: ' + new Date().toLocaleTimeString('en-IN') + ' IST';
             }
           } catch (e) {
             console.error('Failed to parse admin stats:', e);
+          }
+        }
+
+        if (analyticsRes.ok) {
+          try {
+            const aData = await analyticsRes.json();
+            if (aData.success && aData.analytics) {
+              renderAllAnalytics(aData.analytics);
+            }
+          } catch (e) {
+            console.error('Failed to parse analytics:', e);
           }
         }
 
@@ -768,6 +1027,177 @@
         }
       } catch (e) {
         console.error('Failed to load admin dashboard data:', e);
+      }
+    }
+
+    function renderAllAnalytics(data) {
+      currentAnalyticsData = data;
+      const summary = data.summary || {};
+      const badgeEl = document.getElementById('analyticsSummaryBadge');
+      if (badgeEl) {
+        badgeEl.textContent = `${(summary.total_jobs || 0).toLocaleString()} jobs across ${(summary.total_companies || 0).toLocaleString()} employers (${(summary.avg_jobs_per_company || 0)} jobs/co avg)`;
+      }
+
+      renderCompaniesTable(data.companies_breakdown || []);
+      renderRolesTable(data.roles_breakdown || []);
+      renderDatewiseTable(data.datewise_split || []);
+      renderSourcesTable(data.sources_breakdown || [], summary.total_jobs || 1);
+      renderDistributions(data.workplace_breakdown || [], data.experience_breakdown || [], summary.total_jobs || 1);
+    }
+
+    function renderCompaniesTable(list) {
+      const tbody = document.getElementById('companiesTableBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--txt-muted); padding: 24px;">No companies found in database.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map((c, idx) => {
+        const avgRatio = c.total_jobs > 0 ? (c.unique_roles / c.total_jobs).toFixed(2) : '1.00';
+        return `
+          <tr>
+            <td style="color: var(--txt-dim); font-weight: 700;">#${idx + 1}</td>
+            <td><strong style="color: var(--txt);">${escapeHtml(c.company)}</strong></td>
+            <td><span class="badge badge-purple">${escapeHtml(c.source)}</span></td>
+            <td><strong style="color: #2563EB;">${(c.total_jobs || 0).toLocaleString()}</strong></td>
+            <td><span style="font-weight: 700; color: #059669;">${(c.unique_roles || 0).toLocaleString()}</span></td>
+            <td style="color: var(--txt-muted); font-size: 12px;">${avgRatio} roles/job</td>
+            <td style="font-size: 12px; color: var(--txt-dim); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeQuotes(c.top_location)}">${escapeHtml(c.top_location)}</td>
+            <td style="font-size: 12px; color: var(--txt-muted); white-space: nowrap;">${escapeHtml(c.latest_posted)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function filterCompaniesTable() {
+      if (!currentAnalyticsData || !currentAnalyticsData.companies_breakdown) return;
+      const q = (document.getElementById('companySearchInput').value || '').trim().toLowerCase();
+      const filtered = currentAnalyticsData.companies_breakdown.filter(c => 
+        c.company.toLowerCase().includes(q) || 
+        c.source.toLowerCase().includes(q) || 
+        c.top_location.toLowerCase().includes(q)
+      );
+      renderCompaniesTable(filtered);
+    }
+
+    function renderRolesTable(list) {
+      const tbody = document.getElementById('rolesTableBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--txt-muted); padding: 24px;">No roles found in database.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map((r, idx) => `
+        <tr>
+          <td style="color: var(--txt-dim); font-weight: 700;">#${idx + 1}</td>
+          <td><strong style="color: var(--txt);">${escapeHtml(r.role)}</strong></td>
+          <td><span class="badge badge-gray">${escapeHtml(r.category)}</span></td>
+          <td><strong style="color: #4F46E5;">${(r.job_count || 0).toLocaleString()} postings</strong></td>
+          <td><span class="badge badge-green">${(r.company_count || 0).toLocaleString()} companies</span></td>
+          <td style="font-size: 12px; color: var(--txt-muted);">${(r.location_count || 0)} locations</td>
+        </tr>
+      `).join('');
+    }
+
+    function filterRolesTable() {
+      if (!currentAnalyticsData || !currentAnalyticsData.roles_breakdown) return;
+      const q = (document.getElementById('roleSearchInput').value || '').trim().toLowerCase();
+      const filtered = currentAnalyticsData.roles_breakdown.filter(r => 
+        r.role.toLowerCase().includes(q) || 
+        r.category.toLowerCase().includes(q)
+      );
+      renderRolesTable(filtered);
+    }
+
+    function renderDatewiseTable(list) {
+      const tbody = document.getElementById('datewiseTableBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--txt-muted); padding: 24px;">No datewise records found.</td></tr>';
+        return;
+      }
+      const maxCount = Math.max(...list.map(d => d.total_posted || 0), 1);
+      tbody.innerHTML = list.map(d => {
+        const pct = Math.round(((d.total_posted || 0) / maxCount) * 100);
+        return `
+          <tr>
+            <td><strong>📅 ${escapeHtml(d.date)}</strong></td>
+            <td><strong style="color: #2563EB;">${(d.total_posted || 0).toLocaleString()}</strong> jobs</td>
+            <td><span style="color: #059669; font-weight: 700;">${(d.active_jobs || 0).toLocaleString()}</span> active</td>
+            <td><span class="badge badge-purple">${(d.company_count || 0).toLocaleString()} companies</span></td>
+            <td style="width: 220px;">
+              <div style="font-size: 11px; color: var(--txt-dim); margin-bottom: 2px;">${pct}% of peak</div>
+              <div class="meter-bar-container">
+                <div class="meter-bar-fill" style="width: ${pct}%;"></div>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderSourcesTable(list, totalJobs) {
+      const tbody = document.getElementById('sourcesTableBody');
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--txt-muted); padding: 24px;">No ATS source records found.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(s => `
+        <tr>
+          <td><strong>⚡ ${escapeHtml(s.source)}</strong></td>
+          <td><strong style="color: #4F46E5;">${(s.job_count || 0).toLocaleString()}</strong> jobs</td>
+          <td><span class="badge badge-purple">${(s.company_count || 0).toLocaleString()} companies</span></td>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 700; width: 45px;">${s.share_pct}%</span>
+              <div class="meter-bar-container" style="flex: 1;">
+                <div class="meter-bar-fill" style="width: ${s.share_pct}%; background: #059669;"></div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge badge-green">Healthy / Active</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderDistributions(workplaces, experiences, totalJobs) {
+      const wpBody = document.getElementById('workplaceTableBody');
+      if (wpBody) {
+        wpBody.innerHTML = workplaces.map(w => {
+          const pct = Math.round(((w.job_count || 0) / totalJobs) * 100);
+          return `
+            <tr>
+              <td><strong>${escapeHtml(w.workplace_type)}</strong></td>
+              <td><strong style="color: #2563EB;">${(w.job_count || 0).toLocaleString()}</strong></td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 11.5px; font-weight: 700; width: 35px;">${pct}%</span>
+                  <div class="meter-bar-container" style="flex: 1;">
+                    <div class="meter-bar-fill" style="width: ${pct}%; background: #4F46E5;"></div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      const expBody = document.getElementById('experienceTableBody');
+      if (expBody) {
+        expBody.innerHTML = experiences.map(e => {
+          const pct = Math.round(((e.job_count || 0) / totalJobs) * 100);
+          return `
+            <tr>
+              <td><strong>${escapeHtml(e.experience_level)}</strong></td>
+              <td><strong style="color: #059669;">${(e.job_count || 0).toLocaleString()}</strong></td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 11.5px; font-weight: 700; width: 35px;">${pct}%</span>
+                  <div class="meter-bar-container" style="flex: 1;">
+                    <div class="meter-bar-fill" style="width: ${pct}%; background: #D97706;"></div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
       }
     }
 

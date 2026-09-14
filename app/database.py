@@ -576,7 +576,15 @@ def get_admin_metrics() -> Dict[str, Any]:
     total_visits = max(telem_visits, u_visits + g_visitors, unique_visit_sessions)
 
     cur.execute("SELECT COUNT(*) FROM jobs WHERE is_active = 1")
-    total_jobs_in_db = cur.fetchone()[0]
+    total_jobs_in_db = cur.fetchone()[0] or 0
+
+    cur.execute("SELECT COUNT(DISTINCT company) FROM jobs WHERE is_active = 1")
+    total_companies_in_db = cur.fetchone()[0] or 0
+
+    cur.execute("SELECT COUNT(DISTINCT title) FROM jobs WHERE is_active = 1")
+    total_roles_in_db = cur.fetchone()[0] or 0
+
+    avg_jobs_per_company = round(total_jobs_in_db / total_companies_in_db, 1) if total_companies_in_db > 0 else 0
 
     conn.close()
     return {
@@ -587,7 +595,168 @@ def get_admin_metrics() -> Dict[str, Any]:
         "total_visits": total_visits,
         "guest_visitors": g_visitors,
         "guest_searches": g_searches,
-        "total_jobs_in_db": total_jobs_in_db
+        "total_jobs_in_db": total_jobs_in_db,
+        "total_companies_in_db": total_companies_in_db,
+        "total_roles_in_db": total_roles_in_db,
+        "avg_jobs_per_company": avg_jobs_per_company
+    }
+
+def get_database_analytics() -> Dict[str, Any]:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # Summary
+    cur.execute("SELECT COUNT(*) FROM jobs WHERE is_active = 1")
+    total_jobs = cur.fetchone()[0] or 0
+    cur.execute("SELECT COUNT(DISTINCT company) FROM jobs WHERE is_active = 1")
+    total_companies = cur.fetchone()[0] or 0
+    cur.execute("SELECT COUNT(DISTINCT title) FROM jobs WHERE is_active = 1")
+    total_roles = cur.fetchone()[0] or 0
+    avg_jobs_per_company = round(total_jobs / total_companies, 1) if total_companies > 0 else 0
+    avg_roles_per_company = round(total_roles / total_companies, 1) if total_companies > 0 else 0
+
+    # 1. Company Breakdown: company, source, total_jobs, unique_roles, top location, latest posted
+    cur.execute("""
+        SELECT 
+            company,
+            COALESCE(source, 'ATS') as source,
+            COUNT(*) as total_jobs,
+            COUNT(DISTINCT title) as unique_roles,
+            location,
+            MAX(posted_at) as latest_posted
+        FROM jobs 
+        WHERE is_active = 1 
+        GROUP BY company 
+        ORDER BY total_jobs DESC, unique_roles DESC
+        LIMIT 100
+    """)
+    companies_breakdown = [
+        {
+            "company": r["company"],
+            "source": r["source"],
+            "total_jobs": r["total_jobs"],
+            "unique_roles": r["unique_roles"],
+            "top_location": r["location"] or "India / Remote",
+            "latest_posted": r["latest_posted"] or "-"
+        }
+        for r in cur.fetchall()
+    ]
+
+    # 2. Roles & Category Breakdown: title, job_count, company_count
+    cur.execute("""
+        SELECT 
+            title,
+            COALESCE(role_category, 'Engineering') as role_category,
+            COUNT(*) as job_count,
+            COUNT(DISTINCT company) as company_count,
+            COUNT(DISTINCT location) as location_count
+        FROM jobs 
+        WHERE is_active = 1 
+        GROUP BY title 
+        ORDER BY job_count DESC, company_count DESC
+        LIMIT 100
+    """)
+    roles_breakdown = [
+        {
+            "role": r["title"],
+            "category": r["role_category"],
+            "job_count": r["job_count"],
+            "company_count": r["company_count"],
+            "location_count": r["location_count"]
+        }
+        for r in cur.fetchall()
+    ]
+
+    # 3. Datewise Posting Split: post_date, total_posted, active_jobs, company_count
+    cur.execute("""
+        SELECT 
+            SUBSTR(posted_at, 1, 10) as post_date,
+            COUNT(*) as total_posted,
+            SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_jobs,
+            COUNT(DISTINCT company) as company_count
+        FROM jobs 
+        WHERE post_date IS NOT NULL AND post_date != ''
+        GROUP BY post_date 
+        ORDER BY post_date DESC 
+        LIMIT 60
+    """)
+    datewise_split = [
+        {
+            "date": r["post_date"],
+            "total_posted": r["total_posted"],
+            "active_jobs": r["active_jobs"],
+            "company_count": r["company_count"]
+        }
+        for r in cur.fetchall()
+    ]
+
+    # 4. ATS Source Split: source, job_count, company_count, share_pct
+    cur.execute("""
+        SELECT 
+            COALESCE(source, 'Unknown') as source,
+            COUNT(*) as job_count,
+            COUNT(DISTINCT company) as company_count
+        FROM jobs 
+        WHERE is_active = 1 
+        GROUP BY source 
+        ORDER BY job_count DESC
+    """)
+    sources_breakdown = []
+    for r in cur.fetchall():
+        pct = round((r["job_count"] / total_jobs) * 100, 1) if total_jobs > 0 else 0
+        sources_breakdown.append({
+            "source": r["source"],
+            "job_count": r["job_count"],
+            "company_count": r["company_count"],
+            "share_pct": pct
+        })
+
+    # 5. Workplace Type Breakdown
+    cur.execute("""
+        SELECT 
+            COALESCE(workplace_type, 'Not Specified') as workplace_type,
+            COUNT(*) as job_count
+        FROM jobs 
+        WHERE is_active = 1 
+        GROUP BY workplace_type 
+        ORDER BY job_count DESC
+    """)
+    workplace_breakdown = [
+        {"workplace_type": r["workplace_type"], "job_count": r["job_count"]}
+        for r in cur.fetchall()
+    ]
+
+    # 6. Experience Level Breakdown
+    cur.execute("""
+        SELECT 
+            COALESCE(experience_level, 'Not Specified') as experience_level,
+            COUNT(*) as job_count
+        FROM jobs 
+        WHERE is_active = 1 
+        GROUP BY experience_level 
+        ORDER BY job_count DESC
+    """)
+    experience_breakdown = [
+        {"experience_level": r["experience_level"], "job_count": r["job_count"]}
+        for r in cur.fetchall()
+    ]
+
+    conn.close()
+
+    return {
+        "summary": {
+            "total_jobs": total_jobs,
+            "total_companies": total_companies,
+            "total_roles": total_roles,
+            "avg_jobs_per_company": avg_jobs_per_company,
+            "avg_roles_per_company": avg_roles_per_company
+        },
+        "companies_breakdown": companies_breakdown,
+        "roles_breakdown": roles_breakdown,
+        "datewise_split": datewise_split,
+        "sources_breakdown": sources_breakdown,
+        "workplace_breakdown": workplace_breakdown,
+        "experience_breakdown": experience_breakdown
     }
 
 def get_all_users() -> List[Dict[str, Any]]:

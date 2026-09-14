@@ -6,6 +6,7 @@ import secrets
 from app.config import get_config
 from app.database import (
     get_admin_metrics,
+    get_database_analytics,
     get_all_users,
     get_user_by_session,
     save_admin_session,
@@ -122,6 +123,14 @@ async def admin_stats(admin_user: Dict[str, Any] = Depends(verify_admin_session)
             "total_companies": total_companies,
             "total_endpoints": total_endpoints
         }
+    }
+
+@router.get("/analytics")
+async def admin_analytics(admin_user: Dict[str, Any] = Depends(verify_admin_session)):
+    analytics = get_database_analytics()
+    return {
+        "success": True,
+        "analytics": analytics
     }
 
 @router.get("/users")
