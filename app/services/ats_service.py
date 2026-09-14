@@ -144,6 +144,8 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
             dt = now_ist
 
     ist_dt = to_ist(dt)
+    if ist_dt.year < 2020 or ist_dt.year > 2030:
+        ist_dt = now_ist
     raw_iso = ist_dt.isoformat()
     ist_str = ist_dt.strftime("%Y-%m-%d %H:%M:%S IST")
 

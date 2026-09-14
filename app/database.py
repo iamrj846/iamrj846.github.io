@@ -615,20 +615,27 @@ def get_database_analytics() -> Dict[str, Any]:
     avg_jobs_per_company = round(total_jobs / total_companies, 1) if total_companies > 0 else 0
     avg_roles_per_company = round(total_roles / total_companies, 1) if total_companies > 0 else 0
 
-    # 1. Company Breakdown: company, source, total_jobs, unique_roles, top location, latest posted
+    # 1. Company Breakdown: company, source, total_jobs, unique_roles, true primary location, latest posted
     cur.execute("""
+        WITH comp_loc AS (
+            SELECT company, location, COUNT(*) as cnt,
+                   ROW_NUMBER() OVER(PARTITION BY company ORDER BY COUNT(*) DESC, location ASC) as rn
+            FROM jobs 
+            WHERE is_active = 1 
+            GROUP BY company, location
+        )
         SELECT 
-            company,
-            COALESCE(source, 'ATS') as source,
+            j.company,
+            COALESCE(j.source, 'ATS') as source,
             COUNT(*) as total_jobs,
-            COUNT(DISTINCT title) as unique_roles,
-            location,
-            MAX(posted_at) as latest_posted
-        FROM jobs 
-        WHERE is_active = 1 
-        GROUP BY company 
+            COUNT(DISTINCT j.title) as unique_roles,
+            COALESCE(cl.location, 'Remote') as top_location,
+            MAX(j.posted_at) as latest_posted
+        FROM jobs j
+        LEFT JOIN comp_loc cl ON j.company = cl.company AND cl.rn = 1
+        WHERE j.is_active = 1 
+        GROUP BY j.company 
         ORDER BY total_jobs DESC, unique_roles DESC
-        LIMIT 100
     """)
     companies_breakdown = [
         {
@@ -636,17 +643,17 @@ def get_database_analytics() -> Dict[str, Any]:
             "source": r["source"],
             "total_jobs": r["total_jobs"],
             "unique_roles": r["unique_roles"],
-            "top_location": r["location"] or "India / Remote",
+            "top_location": r["top_location"] or "Remote",
             "latest_posted": r["latest_posted"] or "-"
         }
         for r in cur.fetchall()
     ]
 
-    # 2. Roles & Category Breakdown: title, job_count, company_count
+    # 2. Roles & Category Breakdown: title, job_count, company_count, location_count
     cur.execute("""
         SELECT 
             title,
-            COALESCE(role_category, 'Engineering') as role_category,
+            COALESCE(NULLIF(role_category, ''), 'General') as role_category,
             COUNT(*) as job_count,
             COUNT(DISTINCT company) as company_count,
             COUNT(DISTINCT location) as location_count
@@ -654,7 +661,6 @@ def get_database_analytics() -> Dict[str, Any]:
         WHERE is_active = 1 
         GROUP BY title 
         ORDER BY job_count DESC, company_count DESC
-        LIMIT 100
     """)
     roles_breakdown = [
         {
@@ -675,10 +681,9 @@ def get_database_analytics() -> Dict[str, Any]:
             SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_jobs,
             COUNT(DISTINCT company) as company_count
         FROM jobs 
-        WHERE post_date IS NOT NULL AND post_date != ''
+        WHERE posted_at >= '2020-01-01' AND posted_at != ''
         GROUP BY post_date 
-        ORDER BY post_date DESC 
-        LIMIT 60
+        ORDER BY post_date DESC
     """)
     datewise_split = [
         {
