@@ -100,7 +100,12 @@ class AuthService:
                 # Update OTP for unverified existing account
                 set_user_otp(email, otp, expiry)
                 logger.info(f"Generated fresh OTP for unverified user {email}")
-                send_otp_email(email, otp, existing.get("name") or user_name)
+                email_sent = send_otp_email(email, otp, existing.get("name") or user_name)
+                if not email_sent:
+                    return {
+                        "success": False,
+                        "message": "Failed to send verification email. Please try again later."
+                    }
                 return {
                     "success": True,
                     "message": "Verification code sent to your email. Please check your inbox."
@@ -110,7 +115,13 @@ class AuthService:
         create_user(user_name, email, pw_hash, otp, expiry, ip_address)
         log_activity(None, ip_address, "signup_init", f"Registered {email}")
         logger.info(f"Signup initiated for {email}")
-        send_otp_email(email, otp, user_name)
+        
+        email_sent = send_otp_email(email, otp, user_name)
+        if not email_sent:
+            return {
+                "success": False,
+                "message": "Failed to send verification email. Please try again later."
+            }
 
         return {
             "success": True,
@@ -130,7 +141,12 @@ class AuthService:
         set_user_otp(email, otp, expiry)
 
         from app.services.email_service import send_otp_email
-        send_otp_email(email, otp, user.get("name", ""))
+        email_sent = send_otp_email(email, otp, user.get("name", ""))
+        if not email_sent:
+            return {
+                "success": False,
+                "message": "Failed to send verification email. Please try again later."
+            }
         log_activity(user["id"], ip_address, "otp_resend", f"Resent OTP for {email}")
         logger.info(f"Resent OTP for {email}")
 
@@ -191,6 +207,9 @@ class AuthService:
 
         if not pw_ok:
             return {"success": False, "message": "Invalid email or password."}
+
+        if user.get("is_verified", 0) == 0:
+            return {"success": False, "message": "Account not verified. Please register or verify your email OTP to continue."}
 
         session_token = secrets.token_urlsafe(32)
         update_user_login(user["id"], session_token, ip_address)

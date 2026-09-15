@@ -91,9 +91,15 @@ async def search_jobs(
         page_size=page_size
     )
 
+
     # Record search telemetry in SQLite
     q_str = (custom_input or search_term or role or "").strip()
+    import time
+    from app.services.metrics_service import get_metrics_service
+    db_start = time.time()
     record_site_search(session_token, ip, query=q_str, page_path="/")
+    get_metrics_service().record_db_latency((time.time() - db_start) * 1000)
+
 
     data["success"] = True
     data["requires_auth"] = False

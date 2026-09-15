@@ -1895,7 +1895,7 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
             <span>Reset Filters</span>
           </button>
-          <button class="apply-filter-btn" onclick="applyFiltersAndSearch()">
+          <button class="apply-filter-btn" onclick="applyFilters()">
             <span>Apply Filters</span>
           </button>
         </div>
@@ -2077,7 +2077,7 @@
       <!-- Signup Form -->
       <form id="signupForm" class="auth-form" onsubmit="handleSignup(event)">
         <input type="text" id="suName" placeholder="Full Name" required />
-        <input type="email" id="suEmail" placeholder="Email Address" required />
+        <input type="email" id="suEmail" placeholder="Email Address" required oninput="document.getElementById('authError').style.display='none'" />
         <input type="password" id="suPass" placeholder="Password (min 6 characters)" minlength="6" required />
         <button type="submit" class="auth-submit-btn">Create Free Account 🚀</button>
       </form>
@@ -2094,7 +2094,7 @@
 
       <!-- Login Form -->
       <form id="loginForm" class="auth-form" style="display: none;" onsubmit="handleLogin(event)">
-        <input type="email" id="liEmail" placeholder="Email Address" required />
+        <input type="email" id="liEmail" placeholder="Email Address" required oninput="document.getElementById('authError').style.display='none'" />
         <input type="password" id="liPass" placeholder="Password" required />
         <button type="submit" class="auth-submit-btn">Log In 🔐</button>
       </form>
@@ -2320,6 +2320,7 @@
     function onFilterSelectionChange() {
       const btn = document.getElementById('btnApplyFilters');
       if (btn) btn.classList.add('dirty');
+      applyFilters();
     }
 
     function applyFilters() {
@@ -2483,7 +2484,7 @@
         renderJobCards(data.results || []);
         updatePagination(data);
         updateBreadcrumbs(query, appliedFilters.location, appliedFilters.role, appliedFilters.workplace_type);
-        updateDynamicSeo(data.results || [], data.total_count || 0, query, appliedFilters.location, appliedFilters.role, appliedFilters.workplace_type, appliedFilters.time_filter);
+        updateDynamicSeo(data.results || [], data.total_count || 0, query, appliedFilters.location, appliedFilters.role, appliedFilters.workplace_type, appliedFilters.time_filter, appliedFilters.employment_type, appliedFilters.experience_level);
       } catch (err) {
         console.error('Search execution error:', err);
         document.getElementById('loader').style.display = 'none';
@@ -2553,84 +2554,68 @@
       resetFilters();
     }
 
-    function updateDynamicSeo(jobs, totalCount, query, loc, role, wp, time_filter) {
+    function updateDynamicSeo(jobs, totalCount, query, loc, role, wp, time_filter, emp_type, exp_level) {
       const introText = document.getElementById('seoIntroText');
       const introTime = document.getElementById('seoIntroTimestamp');
       if (!introText) return;
 
-      const countStr = totalCount > 0 ? `${totalCount}` : 'active';
-      const hasSpecificRole = (searchMode === 'role' && query && query.trim()) ||
-                              (role && role !== 'all') ||
+      const countStr = totalCount > 0 ? `${totalCount}` : '0';
+      const hasSpecificRole = (searchMode === 'role' && query && query.trim()) || 
+                              (role && role !== 'all') || 
                               (searchMode === 'company' && query && query.trim());
 
       let locStr = '';
-      if (loc && loc !== 'all') {
-        locStr = loc;
-      }
+      if (loc && loc !== 'all') locStr = loc;
 
       const tf = (time_filter || appliedFilters.time_filter || '1h').toLowerCase();
-      let timeDesc = 'posted in the last 1 hour';
+      let timeDesc = 'in the last 1 hour';
       let badgeTime = 'Live Feed • Last 1 Hour';
-      if (tf === '1h') {
-        timeDesc = 'posted in the last 1 hour';
-        badgeTime = 'Live Feed • Last 1 Hour';
-      } else if (tf === '12h') {
-        timeDesc = 'posted in the last 12 hours';
-        badgeTime = 'Live Feed • Last 12h';
-      } else if (tf === '24h') {
-        timeDesc = 'posted in the last 24 hours';
-        badgeTime = 'Live Feed • Last 24h';
-      } else if (tf === '2d') {
-        timeDesc = 'posted in the last 2 days';
-        badgeTime = 'Live Feed • Last 2 Days';
-      } else if (tf === '7d') {
-        timeDesc = 'posted in the last 7 days';
-        badgeTime = 'Live Feed • Last 7 Days';
-      } else if (tf === 'all') {
-        timeDesc = 'posted across the past 7 days';
-        badgeTime = 'Live Feed • Past 7 Days';
+      if (tf === '1h') { timeDesc = 'in the last 1 hour'; badgeTime = 'Live Feed • Last 1 Hour'; }
+      else if (tf === '12h') { timeDesc = 'in the last 12 hours'; badgeTime = 'Live Feed • Last 12h'; }
+      else if (tf === '24h') { timeDesc = 'in the last 24 hours'; badgeTime = 'Live Feed • Last 24h'; }
+      else if (tf === '2d') { timeDesc = 'in the last 2 days'; badgeTime = 'Live Feed • Last 2 Days'; }
+      else if (tf === '7d') { timeDesc = 'in the last 7 days'; badgeTime = 'Live Feed • Last 7 Days'; }
+      else if (tf === 'all') { timeDesc = 'across the past 7 days'; badgeTime = 'Live Feed • Past 7 Days'; }
+
+      let expStr = '';
+      if (exp_level && exp_level !== 'all') {
+        if (exp_level === 'Entry level') expStr = 'Entry Level / Graduate ';
+        else if (exp_level === 'Manager') expStr = 'Manager / Lead ';
+        else expStr = exp_level + ' ';
       }
+
+      let empStr = '';
+      if (emp_type && emp_type !== 'all') {
+        empStr = emp_type + ' ';
+      }
+
+      let roleStr = '';
+      if (hasSpecificRole) {
+        if (searchMode === 'role' && query) roleStr = query.trim();
+        else if (role && role !== 'all') roleStr = role;
+        else if (searchMode === 'company' && query) roleStr = query.trim();
+      }
+
+      const roleDisplay = hasSpecificRole ? escapeHtml(roleStr) + ' roles' : 'opportunities';
+      const locSuffix = locStr ? ` in <strong>${escapeHtml(locStr)}</strong>` : '';
+      const locSuffixPlain = locStr ? ` in ${locStr}` : '';
+      
+      const fullRolePlain = `${expStr}${empStr}${hasSpecificRole ? roleStr + ' roles' : 'opportunities'}`.trim();
+      const fullRoleHtml = `${escapeHtml(expStr)}${escapeHtml(empStr)}<strong>${hasSpecificRole ? escapeHtml(roleStr) : 'all'}</strong> ${hasSpecificRole ? 'roles' : 'opportunities'}`.trim();
 
       let paragraph = '';
       let plainText = '';
-      let roleStr = '';
-      const locSuffix = locStr ? ` in <strong>${escapeHtml(locStr)}</strong>` : '';
-      const locSuffixPlain = locStr ? ` in ${locStr}` : '';
 
-      if (hasSpecificRole) {
-        if (searchMode === 'role' && query) {
-          roleStr = query.trim();
-        } else if (role && role !== 'all') {
-          roleStr = role;
-        } else if (searchMode === 'company' && query) {
-          roleStr = query.trim();
-        }
-
-        const tagCounts = {};
-        jobs.forEach(j => {
-          (j.tags || []).forEach(rawT => {
-            const t = cleanTag(rawT);
-            if (t) {
-              tagCounts[t] = (tagCounts[t] || 0) + 1;
-            }
-          });
-        });
-        const topTools = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]).slice(0, 3);
-        const toolStr = topTools.length > 0 ? ` related to <strong>${escapeHtml(topTools.join(', '))}</strong>` : '';
-        const toolStrPlain = topTools.length > 0 ? ` related to ${topTools.join(', ')}` : '';
-
-        paragraph = `Browse <strong>${escapeHtml(countStr)}</strong> active <strong>${escapeHtml(roleStr)}</strong> roles ${escapeHtml(timeDesc)} at leading companies${toolStr}${locSuffix}.`;
-        plainText = `Browse ${countStr} active ${roleStr} roles ${timeDesc} at leading companies${toolStrPlain}${locSuffixPlain}.`;
+      if (totalCount > 0) {
+        paragraph = `Browse <strong>${countStr}</strong> active ${fullRoleHtml} posted ${timeDesc} at leading companies${locSuffix}.`;
+        plainText = `Browse ${countStr} active ${fullRolePlain} posted ${timeDesc} at leading companies${locSuffixPlain}.`;
       } else {
-        // Default state: all opportunities across verified companies
-        paragraph = `Browse <strong>${escapeHtml(countStr)}</strong> active <strong>all opportunities</strong> ${escapeHtml(timeDesc)} at leading companies${locSuffix}.`;
-        plainText = `Browse ${countStr} active all opportunities ${timeDesc} at leading companies${locSuffixPlain}.`;
+        paragraph = `No results returned for ${fullRoleHtml} ${timeDesc} at leading companies${locSuffix}. Please try again for a different role, company, duration, or filter.`;
+        plainText = `No results returned for ${fullRolePlain} ${timeDesc} at leading companies${locSuffixPlain}. Please try again for a different role, company, duration, or filter.`;
       }
 
       introText.innerHTML = paragraph;
-      if (introTime) {
-        introTime.textContent = badgeTime;
-      }
+      if (introTime) introTime.textContent = badgeTime;
 
       try {
         const metaDesc = document.querySelector('meta[name="description"]');
@@ -2784,7 +2769,7 @@
 
           <div class="job-disclaimer-note" title="Job openings fill up rapidly and employers may close, pause, or update listings at any time. Direct employer application portals reflect the latest real-time vacancy status.">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            <span>Applications fill rapidly. Direct apply link reflects real-time employer status.</span>
+            <span>The search result or job posting status may not be perfect due to constant changes in job portals, ATS providers. This is only a near realtime search result.</span>
           </div>
         </article>
       `).join('');

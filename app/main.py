@@ -49,6 +49,9 @@ async def lifespan(app: FastAPI):
     
     # Start 30-minute recurring scheduler
     ingestion_mgr.start_scheduler()
+    
+    from app.services.metrics_service import get_metrics_service
+    get_metrics_service().start_flusher()
     logger.info("CorporateGuild server ready.")
     
     yield
@@ -56,6 +59,7 @@ async def lifespan(app: FastAPI):
     # Shutdown tasks
     logger.info("Shutting down background scheduler...")
     ingestion_mgr.stop_scheduler()
+    get_metrics_service().stop_flusher()
 
 config = get_config()
 
@@ -67,6 +71,27 @@ app = FastAPI(
 )
 
 # CORS
+
+from app.services.metrics_service import get_metrics_service
+import time
+
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    if request.url.path == "/api/jobs/search":
+        start_time = time.time()
+        response = await call_next(request)
+        duration_ms = (time.time() - start_time) * 1000
+        metrics = get_metrics_service()
+        metrics.increment_search()
+        metrics.record_search_latency(duration_ms)
+        return response
+    elif request.url.path == "/api/jobs/click":
+        metrics = get_metrics_service()
+        metrics.increment_click()
+        return await call_next(request)
+    else:
+        return await call_next(request)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

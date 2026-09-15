@@ -20,7 +20,7 @@ FIXED_ROLES = [
             "sde", "swe", "software developer", "software development engineer", 
             "programmer", "developer", "sde 1", "sde 2", "sde 3", "sde-1", "sde-2", 
             "graduate engineer trainee", "member of technical staff", "mts", 
-            "software engineer 1", "software engineer 2", "engineer"
+            "software engineer 1", "software engineer 2"
         ]
     },
     {
@@ -462,8 +462,16 @@ class SearchService:
         active_time_filter = (time_filter or "1h").strip()
 
         # Step 1: Scan Redis hashes matching company or role
+
+        import time
+        from app.services.metrics_service import get_metrics_service
+        metrics_svc = get_metrics_service()
+
+        redis_start = time.time()
         matching_hashes = set()
         all_keys = client.keys("*|*")
+        metrics_svc.record_redis_latency((time.time() - redis_start) * 1000)
+
         if not all_keys:
             from app.services.ingestion_service import get_ingestion_manager
             get_ingestion_manager().seed_initial_jobs()
@@ -515,7 +523,7 @@ class SearchService:
                 all_syns = list(set(synonyms + [query_lower]))
                 for k in all_keys:
                     c, r = parse_hash_name(k)
-                    if role_matches(all_syns, r) or any(s in r.lower() for s in all_syns):
+                    if role_matches(all_syns, r):
                         matching_hashes.add(k)
 
         elif search_type == "role":
@@ -523,7 +531,7 @@ class SearchService:
             all_syns = list(set(synonyms + [query_lower]))
             for k in all_keys:
                 c, r = parse_hash_name(k)
-                if role_matches(all_syns, r) or any(s in r.lower() for s in all_syns):
+                if role_matches(all_syns, r):
                     matching_hashes.add(k)
                 elif HAS_RAPIDFUZZ and fuzz.token_set_ratio(query_lower, r.lower()) >= 75:
                     matching_hashes.add(k)
@@ -541,7 +549,7 @@ class SearchService:
             for k in all_keys:
                 c, r = parse_hash_name(k)
                 combined = f"{c} {r}".lower()
-                if not tokens or any(t in combined for t in tokens) or role_matches(all_syns, combined):
+                if role_matches(all_syns, combined) or (tokens and all(t in combined for t in tokens)):
                     matching_hashes.add(k)
                 elif HAS_RAPIDFUZZ and (fuzz.token_set_ratio(query_lower, r.lower()) >= 70 or fuzz.token_set_ratio(query_lower, combined) >= 75):
                     matching_hashes.add(k)

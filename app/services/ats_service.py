@@ -391,7 +391,11 @@ class ATSService:
 
         for attempt in range(retries):
             try:
-                resp = await client.get(ep.endpoint_url, headers=headers, timeout=self.config.scheduler.get("request_timeout_seconds", 10))
+                if "myworkdayjobs.com/wday/cxs" in ep.endpoint_url:
+                    payload = {"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": "India"}
+                    resp = await client.post(ep.endpoint_url, headers=headers, json=payload, timeout=self.config.scheduler.get("request_timeout_seconds", 10))
+                else:
+                    resp = await client.get(ep.endpoint_url, headers=headers, timeout=self.config.scheduler.get("request_timeout_seconds", 10))
                 if resp.status_code == 200:
                     data = resp.json()
                     return self._parse_ats_data(ep, data)
@@ -417,6 +421,10 @@ class ATSService:
             return self._parse_lever(ep, data)
         elif "bamboohr" in platform:
             return self._parse_bamboohr(ep, data)
+        elif "oracle" in platform:
+            return self._parse_oracle(ep, data)
+        elif "workday" in platform:
+            return self._parse_workday(ep, data)
         else:
             # Try generic detection
             if isinstance(data, list):
@@ -428,6 +436,8 @@ class ATSService:
                     return self._parse_smartrecruiters(ep, data)
                 elif "result" in data and isinstance(data["result"], list):
                     return self._parse_bamboohr(ep, data)
+                elif "items" in data and data["items"] and isinstance(data["items"], list) and "requisitionList" in data["items"][0]:
+                    return self._parse_oracle(ep, data)
         return []
 
     def _parse_greenhouse(self, ep: ATSEndpoint, data: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -447,7 +457,14 @@ class ATSService:
             else:
                 clean_loc = extract_india_location(loc_name)
 
-            apply_link = j.get("absolute_url") or f"https://boards.greenhouse.io/{ep.company_name.lower()}/jobs/{j.get('id')}"
+            apply_link = j.get("absolute_url", "")
+            # Ensure it's a web URL, not an API JSON endpoint
+            if not apply_link or "api.greenhouse" in apply_link or "boards-api" in apply_link:
+                board_match = re.search(r'boards/([^/]+)/jobs', ep.endpoint_url)
+                board_token = board_match.group(1) if board_match else ep.company_name.lower()
+                apply_link = f"https://boards.greenhouse.io/{board_token}/jobs/{j.get('id')}"
+            elif "api." in apply_link:
+                apply_link = apply_link.replace("api.", "boards.")
             updated_at = j.get("updated_at") or j.get("first_published")
             ist_str, raw_iso, rel_time = parse_date_to_ist(updated_at)
             
@@ -691,6 +708,137 @@ class ATSService:
                 "ats_platform": "BambooHR",
                 "ingested_at": now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
             })
+        return results
+
+
+    def _parse_oracle(self, ep: ATSEndpoint, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        results = []
+        items = data.get("items", [])
+        if not items:
+            return results
+        
+        req_list = items[0].get("requisitionList", [])
+        
+        # Extract site number from endpoint_url or default to CX_1
+        site_number = "CX_1"
+        import re
+        m = re.search(r'siteNumber=([A-Za-z0-9_]+)', ep.endpoint_url)
+        if m:
+            site_number = m.group(1)
+            
+        base_url = ep.endpoint_url.split('/hcmRestApi')[0]
+        
+        for j in req_list:
+            title = j.get("Title", "").strip()
+            loc_name = j.get("PrimaryLocation", "")
+            
+            # India location verification
+            if not is_india_location(loc_name):
+                if not loc_name.strip() and is_india_location(title):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(loc_name)
+                
+            job_id = j.get("Id", "")
+            if not job_id:
+                continue
+                
+            apply_link = f"{base_url}/hcmUI/CandidateExperience/en/sites/{site_number}/job/{job_id}"
+            
+            posted_date = j.get("PostedDate")
+            ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
+            
+            dept_str = j.get("JobFunction", "") or j.get("JobFamily", "") or ""
+            tags = extract_tags(title, dept_str)
+            
+            worker_type = j.get("WorkerType", "") or j.get("JobType", "") or ""
+            emp_type = normalize_employment_type(worker_type, title)
+            
+            wp_code = j.get("WorkplaceType", "") or j.get("WorkplaceTypeCode", "") or ""
+            workplace = normalize_workplace(loc_name, is_remote=("remote" in loc_name.lower() or "remote" in wp_code.lower()))
+            
+            exp_level = normalize_experience_level(title)
+            
+            results.append({
+                "job_title": title,
+                "company_name": ep.company_name,
+                "location": clean_loc,
+                "apply_url": apply_link,
+                "job_updated_at": ist_str,
+                "raw_timestamp": raw_iso,
+                "relative_time": rel_time,
+                "tags": tags,
+                "employment_type": emp_type,
+                "workplace_type": workplace,
+                "experience_level": exp_level,
+                "ats_platform": "Oracle",
+                "ingested_at": datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+            })
+            
+        return results
+
+
+    def _parse_workday(self, ep: ATSEndpoint, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        results = []
+        jobs = data.get("jobPostings", [])
+        if not jobs:
+            return results
+            
+        import re
+        m = re.search(r'https://([^.]+)\.([^.]+)\.myworkdayjobs\.com/wday/cxs/([^/]+)/([^/]+)/jobs', ep.endpoint_url)
+        if not m:
+            return results
+            
+        company, wd_domain, tenant, path = m.groups()
+        base_url = f"https://{company}.{wd_domain}.myworkdayjobs.com/en-US/{path}"
+
+        for j in jobs:
+            title = j.get("title", "").strip()
+            loc_name = j.get("locationsText", "")
+            
+            # India location verification
+            if not is_india_location(loc_name):
+                if not loc_name.strip() and is_india_location(title):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(loc_name)
+                
+            external_path = j.get("externalPath", "")
+            if not external_path:
+                continue
+                
+            apply_link = f"{base_url}{external_path}"
+            posted_date = j.get("postedOn", "")
+            # postedOn is usually "Posted 2 Days Ago" or "Posted Today"
+            ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
+            
+            bullets = " ".join(j.get("bulletFields", []))
+            tags = extract_tags(title, bullets)
+            
+            emp_type = normalize_employment_type(bullets, title)
+            workplace = normalize_workplace(loc_name, is_remote=("remote" in loc_name.lower() or "remote" in bullets.lower()))
+            exp_level = normalize_experience_level(title)
+            
+            results.append({
+                "job_title": title,
+                "company_name": ep.company_name,
+                "location": clean_loc,
+                "apply_url": apply_link,
+                "job_updated_at": ist_str,
+                "raw_timestamp": raw_iso,
+                "relative_time": rel_time or posted_date,
+                "tags": tags,
+                "employment_type": emp_type,
+                "workplace_type": workplace,
+                "experience_level": exp_level,
+                "ats_platform": "Workday",
+                "ingested_at": datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+            })
+            
         return results
 
     async def fetch_all_endpoints(self, max_concurrent: int = 15, sample_limit: Optional[int] = None) -> List[Dict[str, Any]]:
