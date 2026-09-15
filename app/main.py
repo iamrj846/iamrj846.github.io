@@ -5,7 +5,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -129,6 +129,14 @@ async def serve_favicon():
 @app.get("/jobs.html")
 async def serve_jobs():
     return FileResponse(str(FRONTEND_DIR / "jobs.html"))
+
+@app.get("/jobs/{slug}")
+async def serve_article(slug: str):
+    path = FRONTEND_DIR / "jobs" / slug
+    if path.exists() and path.is_file():
+        return FileResponse(str(path))
+    raise HTTPException(status_code=404, detail="Not Found")
+
 
 @app.get("/portfolio")
 @app.get("/portfolio.html")
