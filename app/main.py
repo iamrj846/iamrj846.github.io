@@ -144,6 +144,10 @@ async def serve_portfolio():
     return FileResponse(str(FRONTEND_DIR / "portfolio.html"))
 
 @app.get("/contact")
+@app.get("/articles.html", response_class=FileResponse)
+async def articles_page():
+    return FileResponse(str(FRONTEND_DIR / "articles.html"))
+
 @app.get("/contact.html")
 async def serve_contact():
     return FileResponse(str(FRONTEND_DIR / "contact.html"))

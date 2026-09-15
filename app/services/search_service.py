@@ -386,15 +386,46 @@ class SearchService:
         try:
             client = get_redis_client()
             keys = client.keys("*|*")
+            tz = pytz.timezone("Asia/Kolkata")
+            now_ist = datetime.datetime.now(tz)
+            
             for k in keys:
                 k_str = k.decode("utf-8") if isinstance(k, bytes) else k
                 c, r = parse_hash_name(k_str)
-                if c:
-                    active_companies.add(c.lower())
-                if r:
-                    active_roles.add(r.lower())
-        except Exception:
-            pass
+                if not c and not r: continue
+                
+                # Check if this hash has ANY job posted in the last 7 days (168 hours)
+                hdata = client.hgetall(k)
+                if not hdata: continue
+                
+                has_active = False
+                for field, val_str in hdata.items():
+                    try:
+                        import json
+                        job_data = json.loads(val_str)
+                        posted_iso = job_data.get("posted_timestamp_ist") or job_data.get("posted_timestamp_raw") or job_data.get("posted_at")
+                        if posted_iso:
+                            clean_ts = str(posted_iso).replace(" IST", "").replace("Z", "+00:00").strip()
+                            if "T" in clean_ts:
+                                dt = datetime.datetime.fromisoformat(clean_ts)
+                            else:
+                                dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M:%S")
+                            if dt.tzinfo is None:
+                                dt = pytz.timezone("Asia/Kolkata").localize(dt)
+                            ist_dt = dt.astimezone(tz)
+                            if (now_ist - ist_dt).total_seconds() / 3600.0 <= 168:
+                                has_active = True
+                                break
+                    except Exception:
+                        pass
+                
+                if has_active:
+                    if c:
+                        active_companies.add(c.lower())
+                    if r:
+                        active_roles.add(r.lower())
+        except Exception as e:
+            logger.debug(f"Redis active-suggestions query error: {e}")
 
         # --- DB fallback: last 7 days ---
         try:
