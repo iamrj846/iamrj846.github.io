@@ -1023,7 +1023,82 @@
     </div>
   </div>
 
+  
   <script>
+  let charts = {};
+
+  async function fetchSystemMetrics() {
+    const hours = document.getElementById('metricsTimeRange').value;
+    try {
+      const res = await fetch(`/api/admin/system_metrics?hours=${hours}`, { headers: getAdminHeaders() });
+      if (res.status === 401 || res.status === 403) return;
+      const data = await res.json();
+      if (data.success) {
+        renderCharts(data.metrics.reverse());
+      }
+    } catch(e) {
+      console.error("Error fetching system metrics:", e);
+    }
+  }
+
+  function renderCharts(metrics) {
+    const labels = metrics.map(m => {
+      const d = new Date(m.ts * 1000);
+      return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+    });
+
+    const createOrUpdateChart = (id, datasets) => {
+      const ctx = document.getElementById(id);
+      if (!ctx) return;
+      if (charts[id]) {
+        charts[id].data.labels = labels;
+        charts[id].data.datasets = datasets;
+        charts[id].update();
+      } else {
+        charts[id] = new Chart(ctx, {
+          type: 'line',
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            elements: { point: { radius: 1 }, line: { tension: 0.3, borderWidth: 2 } },
+            plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10 } } } },
+            scales: {
+              x: { grid: { display: false }, ticks: { maxTicksLimit: 12 } },
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      }
+    };
+
+    createOrUpdateChart('cpuChart', [{
+      label: 'CPU %', data: metrics.map(m => m.cpu), borderColor: '#4F46E5', backgroundColor: '#4F46E533', fill: true
+    }]);
+
+    createOrUpdateChart('memChart', [{
+      label: 'Memory %', data: metrics.map(m => m.mem), borderColor: '#DB2777', backgroundColor: '#DB277733', fill: true
+    }]);
+
+    createOrUpdateChart('tpsChart', [
+      { label: 'Search TPS', data: metrics.map(m => m.tps_search), borderColor: '#059669', backgroundColor: '#05966933', fill: true },
+      { label: 'Click TPS', data: metrics.map(m => m.tps_click), borderColor: '#D97706', backgroundColor: '#D9770633', fill: true }
+    ]);
+
+    const getLatDatasets = (key) => [
+      { label: 'P99', data: metrics.map(m => m[key].p99), borderColor: '#EF4444' },
+      { label: 'P95', data: metrics.map(m => m[key].p95), borderColor: '#F59E0B' },
+      { label: 'P90', data: metrics.map(m => m[key].p90), borderColor: '#3B82F6' },
+      { label: 'P85', data: metrics.map(m => m[key].p85), borderColor: '#8B5CF6' },
+      { label: 'Avg', data: metrics.map(m => m[key].avg), borderColor: '#10B981', borderDash: [5, 5] }
+    ];
+
+    createOrUpdateChart('latSearchChart', getLatDatasets('lat_search'));
+    createOrUpdateChart('latRedisChart', getLatDatasets('lat_redis'));
+    createOrUpdateChart('latDbChart', getLatDatasets('lat_db'));
+  }
+
     let isAuthed = false;
 
     function getAdminHeaders() {
@@ -1056,6 +1131,7 @@
           document.getElementById('authOverlay').style.display = 'none';
           isAuthed = true;
           loadAdminData();
+    fetchSystemMetrics();
         } else {
           err.textContent = data.detail || 'Authentication failed.';
           err.style.display = 'block';
@@ -1632,6 +1708,7 @@
           document.getElementById('newUserPassword').value = '';
           document.getElementById('newUserBlocked').checked = false;
           loadAdminData();
+    fetchSystemMetrics();
         } else {
           errEl.textContent = data.detail || 'Failed to create user.';
           errEl.style.display = 'block';
@@ -1655,6 +1732,7 @@
         const data = await res.json();
         if (res.ok && data.success) {
           loadAdminData();
+    fetchSystemMetrics();
         } else {
           alert(data.detail || 'Failed to verify user.');
         }
@@ -1675,6 +1753,7 @@
         const data = await res.json();
         if (res.ok && data.success) {
           loadAdminData();
+    fetchSystemMetrics();
         } else {
           alert(data.detail || `Failed to ${action} user.`);
         }
@@ -1693,6 +1772,7 @@
         const data = await res.json();
         if (res.ok && data.success) {
           loadAdminData();
+    fetchSystemMetrics();
         } else {
           alert(data.detail || 'Failed to delete user.');
         }
@@ -1776,6 +1856,7 @@
         const data = await res.json();
         if (res.ok && data.success) {
           loadAdminData();
+    fetchSystemMetrics();
         } else {
           alert(data.detail || 'Failed to update contact inquiry status.');
         }
@@ -1857,7 +1938,9 @@
 
     // Auto-check session on load
     loadAdminData();
+    fetchSystemMetrics();
     setInterval(loadAdminData, 15000);
+    setInterval(fetchSystemMetrics, 15000);
   </script>
   <!-- Universal Telemetry Tracker -->
   <script src="telemetry.js"></script>
