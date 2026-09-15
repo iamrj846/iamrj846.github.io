@@ -111,7 +111,7 @@ class MetricsService:
         
     def get_metrics(self, hours: int = 1):
         key = "cg:metrics:system_1m"
-        raw = self.redis.lrange(key, 0, hours * 60)
+        raw = self.redis.lrange(key, 0, int(hours) * 60)
         return [json.loads(x) for x in raw]
 
 _metrics_svc = None
