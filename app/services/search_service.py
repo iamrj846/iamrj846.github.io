@@ -526,7 +526,7 @@ class SearchService:
         employment_type: Optional[str] = None,
         workplace_type: Optional[str] = None,
         experience_level: Optional[str] = None,
-        time_filter: Optional[str] = "1h", # "1h", "12h", "24h", "2d", "7d", "all"
+        time_filter: Optional[str] = "24h", # "1h", "12h", "24h", "2d", "7d", "all"
         page: int = 1,
         page_size: int = 10
     ) -> Dict[str, Any]:
@@ -537,7 +537,7 @@ class SearchService:
         client = get_redis_client()
         query_term = (custom_input if custom_input else search_term or "").strip()
         query_lower = query_term.lower()
-        active_time_filter = (time_filter or "1h").strip()
+        active_time_filter = (time_filter or "24h").strip()
 
         # Step 1: Scan Redis hashes matching company or role
 
