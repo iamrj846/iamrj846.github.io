@@ -1193,6 +1193,19 @@
       padding: 60px 20px;
       display: none;
     }
+
+    .btn-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
     .spinner {
       width: 44px;
       height: 44px;
@@ -1888,9 +1901,9 @@
           <div class="filter-item">
             <label for="filterTime">Posting Recency</label>
             <select id="filterTime" onchange="onFilterSelectionChange()">
-              <option value="1h" selected>Last 1 Hour</option>
+              <option value="1h">Last 1 Hour</option>
               <option value="12h">Last 12 Hours</option>
-              <option value="24h">Last 24 Hours</option>
+              <option value="24h" selected>Last 24 Hours</option>
               <option value="2d">Last 2 Days</option>
               <option value="7d">Last 7 Days</option>
               <option value="all">All Time</option>
@@ -2319,7 +2332,7 @@
       employment_type: 'all',
       workplace_type: 'all',
       experience_level: 'all',
-      time_filter: '1h'
+      time_filter: '24h'
     };
 
     function onFilterSelectionChange() {
@@ -2348,7 +2361,7 @@
       document.getElementById('filterEmp').value = 'all';
       document.getElementById('filterWorkplace').value = 'all';
       document.getElementById('filterExp').value = 'all';
-      document.getElementById('filterTime').value = '1h';
+      document.getElementById('filterTime').value = '24h';
 
       appliedFilters = {
         location: 'all',
@@ -2356,7 +2369,7 @@
         employment_type: 'all',
         workplace_type: 'all',
         experience_level: 'all',
-        time_filter: '1h'
+        time_filter: '24h'
       };
 
       const btn = document.getElementById('btnApplyFilters');
@@ -2453,7 +2466,7 @@
                                   (appliedFilters.employment_type && appliedFilters.employment_type !== 'all') ||
                                   (appliedFilters.workplace_type && appliedFilters.workplace_type !== 'all') ||
                                   (appliedFilters.experience_level && appliedFilters.experience_level !== 'all') ||
-                                  (appliedFilters.time_filter && appliedFilters.time_filter !== '1h');
+                                  (appliedFilters.time_filter && appliedFilters.time_filter !== '24h');
       if (query || hasNonDefaultFilter || page > 1) {
         window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
       } else {
@@ -2572,7 +2585,7 @@
       let locStr = '';
       if (loc && loc !== 'all') locStr = loc;
 
-      const tf = (time_filter || appliedFilters.time_filter || '1h').toLowerCase();
+      const tf = (time_filter || appliedFilters.time_filter || '24h').toLowerCase();
       let timeDesc = 'in the last 1 hour';
       let badgeTime = 'Live Feed • Last 1 Hour';
       if (tf === '1h') { timeDesc = 'in the last 1 hour'; badgeTime = 'Live Feed • Last 1 Hour'; }
@@ -2997,6 +3010,12 @@
       const pass = document.getElementById('suPass').value;
       pendingEmail = email;
 
+      const btn = document.querySelector('#signupForm .auth-submit-btn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="btn-spinner"></span> Sending OTP...';
+      btn.disabled = true;
+      btn.style.opacity = '0.8';
+
       try {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
@@ -3013,6 +3032,14 @@
         } else {
           showAuthError(data.detail || data.message);
         }
+      } catch (err) {
+        showAuthError('Connection error.');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    }
       } catch (err) {
         showAuthError('Connection error.');
       }
@@ -3065,13 +3092,19 @@
 
     async function handleVerifyOtp(e) {
       e.preventDefault();
-      const otp = document.getElementById('otpCode').value;
+      const code = document.getElementById('otpCode').value;
+
+      const btn = document.querySelector('#otpForm .auth-submit-btn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="btn-spinner"></span> Verifying...';
+      btn.disabled = true;
+      btn.style.opacity = '0.8';
 
       try {
-        const res = await fetch('/api/auth/verify-otp', {
+        const res = await fetch('/api/auth/verify_otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: pendingEmail, otp })
+          body: JSON.stringify({ email: pendingEmail, otp: code })
         });
         const data = await res.json();
         if (res.ok && data.success) {
@@ -3083,6 +3116,14 @@
         }
       } catch (err) {
         showAuthError('Verification error.');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    }
+      } catch (err) {
+        showAuthError('Verification error.');
       }
     }
 
@@ -3090,6 +3131,12 @@
       e.preventDefault();
       const email = document.getElementById('liEmail').value;
       const pass = document.getElementById('liPass').value;
+
+      const btn = document.querySelector('#loginForm .auth-submit-btn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<span class="btn-spinner"></span> Logging In...';
+      btn.disabled = true;
+      btn.style.opacity = '0.8';
 
       try {
         const res = await fetch('/api/auth/login', {
@@ -3105,6 +3152,14 @@
         } else {
           showAuthError(data.detail || data.message);
         }
+      } catch (err) {
+        showAuthError('Login error.');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    }
       } catch (err) {
         showAuthError('Login error.');
       }
@@ -3178,8 +3233,8 @@
           document.getElementById('filterTime').value = params.get('time_filter');
           appliedFilters.time_filter = params.get('time_filter');
         } else {
-          document.getElementById('filterTime').value = '1h';
-          appliedFilters.time_filter = '1h';
+          document.getElementById('filterTime').value = '24h';
+          appliedFilters.time_filter = '24h';
         }
         executeSearch(parseInt(params.get('page') || '1'), false, false);
       } else {
