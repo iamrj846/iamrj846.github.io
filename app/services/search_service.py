@@ -367,13 +367,73 @@ class SearchService:
         self.config = get_config()
         self.ats_service = get_ats_service()
 
+    def _get_active_companies_and_roles(self) -> tuple:
+        """
+        Returns (active_companies_set, active_roles_set) of lowercase names
+        from Redis keys + DB rows posted in the last 7 days.
+        Uses a 30-second in-process cache to avoid repeated full Redis scans.
+        """
+        import time as _time
+        import datetime
+        cache = getattr(self, "_active_cache", None)
+        if cache and (_time.time() - cache["ts"]) < 30:
+            return cache["companies"], cache["roles"]
+
+        active_companies: set = set()
+        active_roles: set = set()
+
+        # --- Redis (primary / fastest source) ---
+        try:
+            client = get_redis_client()
+            keys = client.keys("*|*")
+            for k in keys:
+                k_str = k.decode("utf-8") if isinstance(k, bytes) else k
+                c, r = parse_hash_name(k_str)
+                if c:
+                    active_companies.add(c.lower())
+                if r:
+                    active_roles.add(r.lower())
+        except Exception:
+            pass
+
+        # --- DB fallback: last 7 days ---
+        try:
+            from app.database import get_db_connection
+            conn = get_db_connection()
+            cur = conn.cursor()
+            seven_days_ago = (datetime.datetime.utcnow() - datetime.timedelta(days=7)).isoformat()
+            cur.execute(
+                "SELECT DISTINCT company FROM jobs WHERE is_active=1 AND posted_at >= ?",
+                (seven_days_ago,)
+            )
+            for (co,) in cur.fetchall():
+                if co:
+                    active_companies.add(co.lower())
+            cur.execute(
+                "SELECT DISTINCT role_category FROM jobs WHERE is_active=1 AND posted_at >= ?",
+                (seven_days_ago,)
+            )
+            for (rc,) in cur.fetchall():
+                if rc:
+                    active_roles.add(rc.lower())
+            conn.close()
+        except Exception as e:
+            logger.debug(f"DB active-suggestions query skipped: {e}")
+
+        self._active_cache = {"ts": _time.time(), "companies": active_companies, "roles": active_roles}
+        return active_companies, active_roles
+
     def get_suggestions(self, mode: str, query: str, limit: int = 25) -> List[Dict[str, str]]:
         """
         Provides autocomplete suggestions based on verified company names or industry roles.
-        Returns prominent valid options when query is empty, and filters semantically as user types.
+        Only includes entries that have at least one active job posted in the last 7 days
+        (checked against Redis + DB) to minimise zero-result searches.
+        Falls back to full list if the data store is empty (cold start / warm-up).
         """
         q = (query or "").strip().lower()
         results = []
+
+        active_companies, active_roles = self._get_active_companies_and_roles()
 
         if mode == "company":
             all_comps = self.ats_service.get_all_companies()
@@ -381,7 +441,8 @@ class SearchService:
             try:
                 keys = client.keys("*|*")
                 for k in keys:
-                    c, _ = parse_hash_name(k)
+                    k_str = k.decode("utf-8") if isinstance(k, bytes) else k
+                    c, _ = parse_hash_name(k_str)
                     if c and c not in all_comps:
                         all_comps.append(c)
             except Exception:
@@ -394,13 +455,20 @@ class SearchService:
                 "Databricks", "Oracle", "Intuit", "ServiceNow"
             ]
             all_comps = sorted(list(set(all_comps + prominent)))
+
+            # Filter to companies that have live jobs; fall back to full list on cold start
+            if active_companies:
+                valid_comps = [c for c in all_comps if c.lower() in active_companies]
+            else:
+                valid_comps = all_comps
+
             if not q:
-                matched = list(prominent)
-                for ac in all_comps:
+                matched = [c for c in prominent if c.lower() in active_companies] if active_companies else list(prominent)
+                for ac in valid_comps:
                     if ac not in matched and len(matched) < max(limit, 120):
                         matched.append(ac)
             else:
-                matched = [c for c in all_comps if q in c.lower()]
+                matched = [c for c in valid_comps if q in c.lower()]
 
             for c in matched[:max(limit, 120)]:
                 results.append({"type": "company", "value": c, "label": c})
@@ -410,12 +478,22 @@ class SearchService:
             for item in FIXED_ROLES:
                 r_name = item["role"]
                 syns = item["synonyms"]
+
+                # Filter roles to those with active jobs; skip filter on cold start
+                if active_roles:
+                    all_syns_lower = [r_name.lower()] + [s.lower() for s in syns]
+                    has_active = any(
+                        any(syn in ar or ar in syn for syn in all_syns_lower)
+                        for ar in active_roles
+                    )
+                    if not has_active:
+                        continue
+
                 if not q:
                     matched.append((r_name, ", ".join(syns[:2])))
                 elif q in r_name.lower() or any(q in s.lower() for s in syns):
                     matched.append((r_name, ", ".join(syns[:2])))
 
-            # Return all matched roles (ensures all 15 valid roles are visible on click)
             for r, sub in matched:
                 results.append({"type": "role", "value": r, "label": r, "subtitle": sub})
 
