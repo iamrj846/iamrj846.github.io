@@ -545,8 +545,16 @@ class SearchService:
             all_s = [r_lower] + [s.lower() for s in item["synonyms"]]
             if target == r_lower or target in all_s:
                 syns_found.update(all_s)
-            elif len(target) >= 2 and any(s == target or (len(s) >= 3 and s in target) or (len(target) >= 3 and target in s) for s in all_s):
-                syns_found.update(all_s)
+                continue
+                
+            for s in all_s:
+                if len(s) < 2:
+                    continue
+                # Use word boundaries to avoid 'sde' matching 'sdet'
+                pattern = rf"\b{re.escape(s)}\b"
+                if re.search(pattern, target) or re.search(rf"\b{re.escape(target)}\b", s):
+                    syns_found.update(all_s)
+                    break
 
         if syns_found:
             return list(syns_found)
