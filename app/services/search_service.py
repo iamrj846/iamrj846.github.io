@@ -385,6 +385,10 @@ class SearchService:
         # --- Redis (primary / fastest source) ---
         try:
             client = get_redis_client()
+            try:
+                get_metrics_service().inc_redis()
+            except:
+                pass
             keys = client.keys("*|*")
             tz = pytz.timezone("Asia/Kolkata")
             now_ist = datetime.datetime.now(tz)
@@ -470,6 +474,10 @@ class SearchService:
             all_comps = self.ats_service.get_all_companies()
             client = get_redis_client()
             try:
+                try:
+                    get_metrics_service().inc_redis()
+                except:
+                    pass
                 keys = client.keys("*|*")
                 for k in keys:
                     k_str = k.decode("utf-8") if isinstance(k, bytes) else k
@@ -514,8 +522,7 @@ class SearchService:
                 if active_roles:
                     all_syns_lower = [r_name.lower()] + [s.lower() for s in syns]
                     has_active = any(
-                        any(syn in ar or ar in syn for syn in all_syns_lower)
-                        for ar in active_roles
+                        role_matches(all_syns_lower, ar) for ar in active_roles
                     )
                     if not has_active:
                         continue
@@ -578,12 +585,20 @@ class SearchService:
 
         redis_start = time.time()
         matching_hashes = set()
+        try:
+            get_metrics_service().inc_redis()
+        except:
+            pass
         all_keys = client.keys("*|*")
         metrics_svc.record_redis_latency((time.time() - redis_start) * 1000)
 
         if not all_keys:
             from app.services.ingestion_service import get_ingestion_manager
             get_ingestion_manager().seed_initial_jobs()
+            try:
+                get_metrics_service().inc_redis()
+            except:
+                pass
             all_keys = client.keys("*|*")
 
         if not query_term:
@@ -618,6 +633,10 @@ class SearchService:
                                     save_jobs_to_db(live_jobs)
                                     for lj in live_jobs:
                                         store_job_in_redis(lj)
+                                    try:
+                                        get_metrics_service().inc_redis()
+                                    except:
+                                        pass
                                     all_keys = client.keys("*|*")
                                     for k in all_keys:
                                         c, r = parse_hash_name(k)
@@ -642,7 +661,7 @@ class SearchService:
                 c, r = parse_hash_name(k)
                 if role_matches(all_syns, r):
                     matching_hashes.add(k)
-                elif HAS_RAPIDFUZZ and fuzz.token_set_ratio(query_lower, r.lower()) >= 75:
+                elif HAS_RAPIDFUZZ and fuzz.token_sort_ratio(query_lower, r.lower()) >= 85:
                     matching_hashes.add(k)
             # Smart fallback: if no role matched, check if query matches company name
             if not matching_hashes:
@@ -660,7 +679,7 @@ class SearchService:
                 combined = f"{c} {r}".lower()
                 if role_matches(all_syns, combined) or (tokens and all(t in combined for t in tokens)):
                     matching_hashes.add(k)
-                elif HAS_RAPIDFUZZ and (fuzz.token_set_ratio(query_lower, r.lower()) >= 70 or fuzz.token_set_ratio(query_lower, combined) >= 75):
+                elif HAS_RAPIDFUZZ and (fuzz.token_sort_ratio(query_lower, r.lower()) >= 85 or fuzz.token_sort_ratio(query_lower, combined) >= 85):
                     matching_hashes.add(k)
         else:
             matching_hashes = set(all_keys)
@@ -668,6 +687,10 @@ class SearchService:
         # Step 2: Fetch all jobs from matching Redis hashes
         raw_jobs = []
         for h_key in matching_hashes:
+            try:
+                get_metrics_service().inc_redis()
+            except:
+                pass
             hdata = client.hgetall(h_key)
             for ts_key, val_str in hdata.items():
                 try:

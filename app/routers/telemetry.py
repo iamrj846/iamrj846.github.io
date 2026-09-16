@@ -4,6 +4,7 @@ from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel
 
 from app.database import record_site_visit, record_site_click, record_site_search
+from app.services.metrics_service import get_metrics_service
 
 logger = logging.getLogger("telemetry")
 
@@ -45,6 +46,12 @@ async def track_visit(request: Request, payload: VisitPayload):
     session_token = extract_session(request, payload.session_id)
     page_path = payload.path or "/"
     record_site_visit(session_token=session_token, ip_address=ip, page_path=page_path)
+    
+    ms = get_metrics_service()
+    if page_path in ("/", "/index.html"): ms.inc_home()
+    elif page_path == "/jobs.html": ms.inc_jobs_page()
+    elif page_path == "/portfolio.html": ms.inc_portfolio()
+    
     return {"success": True}
 
 @router.post("/click")
@@ -55,6 +62,13 @@ async def track_click(request: Request, payload: ClickPayload):
     el_label = payload.element_label or ""
     page_path = payload.path or "/"
     record_site_click(session_token=session_token, ip_address=ip, target_element=el_type, target_label=el_label, page_path=page_path)
+    
+    ms = get_metrics_service()
+    el_lower = el_label.lower()
+    if "search" in el_lower or el_type == "search_button": ms.inc_search_btn()
+    elif "filter" in el_lower or el_type == "filter": ms.inc_filter_btn()
+    elif "apply" in el_lower or el_type == "apply": ms.inc_apply_btn()
+    
     return {"success": True}
 
 @router.post("/search")

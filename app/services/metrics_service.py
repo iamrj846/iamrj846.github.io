@@ -17,8 +17,15 @@ class MetricsService:
         self.redis_latencies = deque(maxlen=10000)
         self.db_latencies = deque(maxlen=10000)
         
-        self.search_requests = 0
-        self.click_requests = 0
+        # Specific TPS counters
+        self.count_home = 0
+        self.count_jobs_page = 0
+        self.count_portfolio = 0
+        self.count_search_btn = 0
+        self.count_filter_btn = 0
+        self.count_apply_btn = 0
+        self.count_redis = 0
+        self.count_db = 0
         
         self.lock = asyncio.Lock()
         
@@ -57,12 +64,24 @@ class MetricsService:
             self.redis_latencies.clear()
             self.db_latencies.clear()
             
-            # TPS
-            s_count = self.search_requests
-            c_count = self.click_requests
+            # Specific TPS
+            c_home = self.count_home
+            c_jobs = self.count_jobs_page
+            c_port = self.count_portfolio
+            c_sbtn = self.count_search_btn
+            c_fbtn = self.count_filter_btn
+            c_abtn = self.count_apply_btn
+            c_red = self.count_redis
+            c_db = self.count_db
             
-            self.search_requests = 0
-            self.click_requests = 0
+            self.count_home = 0
+            self.count_jobs_page = 0
+            self.count_portfolio = 0
+            self.count_search_btn = 0
+            self.count_filter_btn = 0
+            self.count_apply_btn = 0
+            self.count_redis = 0
+            self.count_db = 0
             
         def agg(lats):
             if not lats:
@@ -82,8 +101,14 @@ class MetricsService:
             "ts": now_min,
             "cpu": cpu,
             "mem": mem,
-            "tps_search": round(s_count / 60.0, 2),
-            "tps_click": round(c_count / 60.0, 2),
+            "tps_home": round(c_home / 60.0, 2),
+            "tps_jobs_page": round(c_jobs / 60.0, 2),
+            "tps_portfolio": round(c_port / 60.0, 2),
+            "tps_search_btn": round(c_sbtn / 60.0, 2),
+            "tps_filter_btn": round(c_fbtn / 60.0, 2),
+            "tps_apply_btn": round(c_abtn / 60.0, 2),
+            "tps_redis": round(c_red / 60.0, 2),
+            "tps_db": round(c_db / 60.0, 2),
             "lat_search": agg(s_lats),
             "lat_redis": agg(r_lats),
             "lat_db": agg(d_lats)
@@ -103,11 +128,14 @@ class MetricsService:
     def record_db_latency(self, duration_ms: float):
         self.db_latencies.append(duration_ms)
         
-    def increment_search(self):
-        self.search_requests += 1
-        
-    def increment_click(self):
-        self.click_requests += 1
+    def inc_home(self): self.count_home += 1
+    def inc_jobs_page(self): self.count_jobs_page += 1
+    def inc_portfolio(self): self.count_portfolio += 1
+    def inc_search_btn(self): self.count_search_btn += 1
+    def inc_filter_btn(self): self.count_filter_btn += 1
+    def inc_apply_btn(self): self.count_apply_btn += 1
+    def inc_redis(self): self.count_redis += 1
+    def inc_db(self): self.count_db += 1
         
     def get_metrics(self, hours: int = 1):
         key = "cg:metrics:system_1m"

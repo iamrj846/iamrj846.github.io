@@ -1,4 +1,5 @@
 import sqlite3
+from app.services.metrics_service import get_metrics_service
 import datetime
 import pytz
 import logging
@@ -19,6 +20,10 @@ def get_ist_now_str() -> str:
     return get_ist_now().strftime("%Y-%m-%d %H:%M:%S IST")
 
 def get_db_connection() -> sqlite3.Connection:
+    try:
+        get_metrics_service().inc_db()
+    except:
+        pass
     config = get_config()
     db_path = config.db_path
     db_path.parent.mkdir(parents=True, exist_ok=True)
