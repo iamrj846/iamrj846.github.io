@@ -436,10 +436,8 @@ class SearchService:
             from app.database import get_db_connection
             conn = get_db_connection()
             cur = conn.cursor()
-            seven_days_ago = (datetime.datetime.utcnow() - datetime.timedelta(days=7)).isoformat()
             cur.execute(
-                "SELECT DISTINCT company FROM jobs WHERE is_active=1 AND posted_at >= ?",
-                (seven_days_ago,)
+                "SELECT DISTINCT company FROM jobs WHERE is_active=1 AND datetime(substr(posted_at, 1, 19)) >= datetime('now', '+5 hours', '+30 minutes', '-7 days')"
             )
             for (co,) in cur.fetchall():
                 if co:

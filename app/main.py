@@ -82,12 +82,12 @@ async def metrics_middleware(request: Request, call_next):
         response = await call_next(request)
         duration_ms = (time.time() - start_time) * 1000
         metrics = get_metrics_service()
-        metrics.increment_search()
+        # metrics.increment_search()
         metrics.record_search_latency(duration_ms)
         return response
     elif request.url.path == "/api/jobs/click":
         metrics = get_metrics_service()
-        metrics.increment_click()
+        # metrics.increment_click()
         return await call_next(request)
     else:
         return await call_next(request)
