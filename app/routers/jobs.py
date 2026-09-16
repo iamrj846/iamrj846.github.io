@@ -28,6 +28,17 @@ async def get_suggestions(
 ):
     service = get_search_service()
     suggestions = service.get_suggestions(mode, q, limit=limit)
+    
+    # Inject "All Roles" / "All Companies"
+    top_val = "All Roles" if mode == "role" else "All Companies"
+    if not q or q.lower() in top_val.lower():
+        suggestions.insert(0, {
+            "type": mode,
+            "value": "",
+            "label": top_val,
+            "subtitle": "View all available positions"
+        })
+        
     return {"suggestions": suggestions}
 
 @router.get("/search")

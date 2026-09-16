@@ -667,7 +667,7 @@ class SearchService:
                 c, r = parse_hash_name(k)
                 if role_matches(all_syns, r):
                     matching_hashes.add(k)
-                elif HAS_RAPIDFUZZ and fuzz.token_sort_ratio(query_lower, r.lower()) >= 85:
+                elif HAS_RAPIDFUZZ and fuzz.token_sort_ratio(query_lower, r.lower()) >= 65:
                     matching_hashes.add(k)
             # Smart fallback: if no role matched, check if query matches company name
             if not matching_hashes:
@@ -685,7 +685,7 @@ class SearchService:
                 combined = f"{c} {r}".lower()
                 if role_matches(all_syns, combined) or (tokens and all(t in combined for t in tokens)):
                     matching_hashes.add(k)
-                elif HAS_RAPIDFUZZ and (fuzz.token_sort_ratio(query_lower, r.lower()) >= 85 or fuzz.token_sort_ratio(query_lower, combined) >= 85):
+                elif HAS_RAPIDFUZZ and (fuzz.token_sort_ratio(query_lower, r.lower()) >= 65 or fuzz.token_sort_ratio(query_lower, combined) >= 85):
                     matching_hashes.add(k)
         else:
             matching_hashes = set(all_keys)
@@ -737,7 +737,7 @@ class SearchService:
                 matches_role = role_matches(all_syns, r_name) or role_matches(all_syns, title) or any(s in r_name.lower() or s in title.lower() for s in all_syns)
                 if not matches_role:
                     rel_score = calculate_semantic_relevance(query_term, title, r_name, job.get("tags"), all_syns)
-                    if rel_score >= 60.0:
+                    if rel_score >= 40.0:
                         matches_role = True
                 if not matches_role and query_lower not in c_name.lower():
                     continue
@@ -854,8 +854,9 @@ class SearchService:
             if query_term:
                 syns = self.get_role_synonyms(query_term)
                 score = calculate_semantic_relevance(query_term, j.get("title", ""), j.get("role_name", ""), j.get("tags"), syns)
-                if score >= 75.0:
-                    rel_boost = score * 100000.0
+                # Any score applies a boost, effectively making relevance the primary sort key
+                # A score difference of 1.0 = 1,000,000 seconds = ~11.5 days of boost
+                rel_boost = score * 1000000.0
 
             raw_epoch = j.get("posted_epoch")
             if raw_epoch is not None:

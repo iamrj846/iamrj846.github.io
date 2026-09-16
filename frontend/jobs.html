@@ -1909,10 +1909,10 @@
             <select id="filterTime" onchange="onFilterSelectionChange()">
               <option value="1h">Last 1 Hour</option>
               <option value="12h">Last 12 Hours</option>
-              <option value="24h" selected>Last 24 Hours</option>
+              <option value="24h">Last 24 Hours</option>
               <option value="2d">Last 2 Days</option>
-              <option value="7d">Last 7 Days</option>
-              <option value="all">All Time</option>
+              <option value="7d" selected>Last 7 Days</option>
+              
             </select>
           </div>
         </div>
@@ -2256,17 +2256,27 @@
       }
     }
 
+    const suggestCache = {};
     async function fetchSuggestions(mode, query = "") {
+      const cacheKey = mode + ":" + query.toLowerCase();
+      if (suggestCache[cacheKey]) return suggestCache[cacheKey];
       try {
         const limitParam = mode === 'role' ? 50 : 120;
         const res = await fetch(`/api/jobs/suggest?mode=${mode}&q=${encodeURIComponent(query)}&limit=${limitParam}`);
         const data = await res.json();
-        return data.suggestions || [];
+        suggestCache[cacheKey] = data.suggestions || [];
+        return suggestCache[cacheKey];
       } catch (err) {
         console.error('Suggest error:', err);
         return [];
       }
     }
+    
+    // Preload empty queries for instant dropdown
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchSuggestions('role', '');
+      fetchSuggestions('company', '');
+    });
 
     async function showAllValidSuggestions() {
       const input = document.getElementById('searchInput');
@@ -2369,7 +2379,7 @@
       document.getElementById('filterEmp').value = 'all';
       document.getElementById('filterWorkplace').value = 'all';
       document.getElementById('filterExp').value = 'all';
-      document.getElementById('filterTime').value = '24h';
+      document.getElementById('filterTime').value = '7d';
 
       appliedFilters = {
         location: 'all',
@@ -2474,7 +2484,7 @@
                                   (appliedFilters.employment_type && appliedFilters.employment_type !== 'all') ||
                                   (appliedFilters.workplace_type && appliedFilters.workplace_type !== 'all') ||
                                   (appliedFilters.experience_level && appliedFilters.experience_level !== 'all') ||
-                                  (appliedFilters.time_filter && appliedFilters.time_filter !== '24h');
+                                  (appliedFilters.time_filter && appliedFilters.time_filter !== '7d');
       if (query || hasNonDefaultFilter || page > 1) {
         window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
       } else {
@@ -2593,7 +2603,7 @@
       let locStr = '';
       if (loc && loc !== 'all') locStr = loc;
 
-      const tf = (time_filter || appliedFilters.time_filter || '24h').toLowerCase();
+      const tf = (time_filter || appliedFilters.time_filter || '7d').toLowerCase();
       let timeDesc = 'in the last 24 hours';
       let badgeTime = 'Live Feed • Last 24 Hours';
       if (tf === '24h') { timeDesc = 'in the last 24 hours'; badgeTime = 'Live Feed • Last 24 Hours'; }
@@ -3291,8 +3301,8 @@
           document.getElementById('filterTime').value = params.get('time_filter');
           appliedFilters.time_filter = params.get('time_filter');
         } else {
-          document.getElementById('filterTime').value = '24h';
-          appliedFilters.time_filter = '24h';
+          document.getElementById('filterTime').value = '7d';
+          appliedFilters.time_filter = '7d';
         }
         executeSearch(parseInt(params.get('page') || '1'), false, false);
       } else {
