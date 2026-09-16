@@ -1914,17 +1914,26 @@
       }
     }
 
+    const suggestCache = {};
     async function fetchSuggestions(mode, query = "") {
+      const cacheKey = mode + ":" + query.toLowerCase();
+      if (suggestCache[cacheKey]) return suggestCache[cacheKey];
       try {
         const limitParam = mode === 'role' ? 50 : 120;
         const res = await fetch(`/api/jobs/suggest?mode=${mode}&q=${encodeURIComponent(query)}&limit=${limitParam}`);
         const data = await res.json();
-        return data.suggestions || [];
+        suggestCache[cacheKey] = data.suggestions || [];
+        return suggestCache[cacheKey];
       } catch (err) {
         console.error('Suggest error:', err);
         return [];
       }
     }
+    
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchSuggestions('role', '');
+      fetchSuggestions('company', '');
+    });
 
     async function showAllValidSuggestions() {
       const input = document.getElementById('searchInput');
@@ -1998,7 +2007,7 @@
       employment_type: 'all',
       workplace_type: 'all',
       experience_level: 'all',
-      time_filter: '24h'
+      time_filter: '7d'
     };
 
     function onFilterSelectionChange() {
@@ -2027,7 +2036,7 @@
       document.getElementById('filterEmp').value = 'all';
       document.getElementById('filterWorkplace').value = 'all';
       document.getElementById('filterExp').value = 'all';
-      document.getElementById('filterTime').value = '24h';
+      document.getElementById('filterTime').value = '7d';
 
       appliedFilters = {
         location: 'all',
@@ -2035,7 +2044,7 @@
         employment_type: 'all',
         workplace_type: 'all',
         experience_level: 'all',
-        time_filter: '24h'
+        time_filter: '7d'
       };
 
       const btn = document.getElementById('btnApplyFilters');
@@ -2106,7 +2115,7 @@
 
       const inputEl = document.getElementById('searchInput');
       const inputVal = inputEl ? (inputEl.value || '').trim() : '';
-      const query = inputVal;
+      const query = (inputVal === 'All Roles' || inputVal === 'All Companies') ? '' : inputVal;
       selectedTerm = inputVal;
 
       const params = new URLSearchParams();
@@ -2132,7 +2141,7 @@
                                   (appliedFilters.employment_type && appliedFilters.employment_type !== 'all') ||
                                   (appliedFilters.workplace_type && appliedFilters.workplace_type !== 'all') ||
                                   (appliedFilters.experience_level && appliedFilters.experience_level !== 'all') ||
-                                  (appliedFilters.time_filter && appliedFilters.time_filter !== '24h');
+                                  (appliedFilters.time_filter && appliedFilters.time_filter !== '7d');
       if (query || hasNonDefaultFilter || page > 1) {
         window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
       } else {
@@ -2251,7 +2260,7 @@
       let locStr = '';
       if (loc && loc !== 'all') locStr = loc;
 
-      const tf = (time_filter || appliedFilters.time_filter || '24h').toLowerCase();
+      const tf = (time_filter || appliedFilters.time_filter || '7d').toLowerCase();
       let timeDesc = 'in the last 1 hour';
       let badgeTime = 'Live Feed • Last 24 Hours';
       if (tf === '1h') { timeDesc = 'in the last 1 hour'; badgeTime = 'Live Feed • Last 24 Hours'; }
@@ -2918,8 +2927,8 @@
           document.getElementById('filterTime').value = params.get('time_filter');
           appliedFilters.time_filter = params.get('time_filter');
         } else {
-          document.getElementById('filterTime').value = '24h';
-          appliedFilters.time_filter = '24h';
+          document.getElementById('filterTime').value = '7d';
+          appliedFilters.time_filter = '7d';
         }
         executeSearch(parseInt(params.get('page') || '1'), false, false);
       } else {
@@ -2943,7 +2952,25 @@
   <script src="/telemetry.js"></script>
 
   <!-- Auth Modal -->
-  <div class="auth-overlay" id="authModal" onclick="if(event.target===this) closeAuthModal()">
+  
+  <style>
+    .btn-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: auth-spin 0.85s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes auth-spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+  <div class="auth-overlay" id="authModal"
+ style="display: none;" style="display: none;" onclick="if(event.target===this) closeAuthModal()">
     <div class="auth-card">
       <button class="close-modal" onclick="closeAuthModal()">✕</button>
       <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 6px;" id="authModalTitle">Create Free Account</h2>

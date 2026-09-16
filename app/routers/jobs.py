@@ -34,7 +34,7 @@ async def get_suggestions(
     if not q or q.lower() in top_val.lower():
         suggestions.insert(0, {
             "type": mode,
-            "value": "",
+            "value": top_val,
             "label": top_val,
             "subtitle": "View all available positions"
         })

@@ -1863,17 +1863,26 @@
       }
     }
 
+    const suggestCache = {};
     async function fetchSuggestions(mode, query = "") {
+      const cacheKey = mode + ":" + query.toLowerCase();
+      if (suggestCache[cacheKey]) return suggestCache[cacheKey];
       try {
         const limitParam = mode === 'role' ? 50 : 120;
         const res = await fetch(`/api/jobs/suggest?mode=${mode}&q=${encodeURIComponent(query)}&limit=${limitParam}`);
         const data = await res.json();
-        return data.suggestions || [];
+        suggestCache[cacheKey] = data.suggestions || [];
+        return suggestCache[cacheKey];
       } catch (err) {
         console.error('Suggest error:', err);
         return [];
       }
     }
+    
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchSuggestions('role', '');
+      fetchSuggestions('company', '');
+    });
 
     async function showAllValidSuggestions() {
       const input = document.getElementById('searchInput');
@@ -2055,7 +2064,7 @@
 
       const inputEl = document.getElementById('searchInput');
       const inputVal = inputEl ? (inputEl.value || '').trim() : '';
-      const query = inputVal;
+      const query = (inputVal === 'All Roles' || inputVal === 'All Companies') ? '' : inputVal;
       selectedTerm = inputVal;
 
       const params = new URLSearchParams();
@@ -2856,7 +2865,25 @@
   <script src="/telemetry.js"></script>
 
   <!-- Auth Modal -->
-  <div class="auth-overlay" id="authModal" onclick="if(event.target===this) closeAuthModal()">
+  
+  <style>
+    .btn-spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: auth-spin 0.85s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes auth-spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+  <div class="auth-overlay" id="authModal"
+ style="display: none;" onclick="if(event.target===this) closeAuthModal()">
     <div class="auth-card">
       <button class="close-modal" onclick="closeAuthModal()">✕</button>
       <h2 style="font-size: 22px; font-weight: 800; margin-bottom: 6px;" id="authModalTitle">Create Free Account</h2>

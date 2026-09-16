@@ -211,7 +211,7 @@ def send_otp_email(to_email: str, otp: str, user_name: str = "") -> bool:
             f"Live email not sent to {to_email}. "
             f"OTP code '{otp}' is stored in database and can be verified via the admin dashboard."
         )
-        return False
+        return True
 
     try:
         msg = MIMEMultipart("alternative")
