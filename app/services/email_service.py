@@ -206,12 +206,11 @@ def send_otp_email(to_email: str, otp: str, user_name: str = "") -> bool:
     use_tls = config.smtp_use_tls
 
     if not smtp_user or not smtp_pass:
-        logger.warning(
+        logger.error(
             f"SMTP credentials not configured (user='{smtp_user}'). "
-            f"Live email not sent to {to_email}. "
-            f"OTP code '{otp}' is stored in database and can be verified via the admin dashboard."
+            f"Live email cannot be dispatched to {to_email}."
         )
-        return True
+        return False
 
     try:
         msg = MIMEMultipart("alternative")
@@ -225,15 +224,22 @@ def send_otp_email(to_email: str, otp: str, user_name: str = "") -> bool:
         msg.attach(MIMEText(plain_text, "plain", "utf-8"))
         msg.attach(MIMEText(html_text, "html", "utf-8"))
 
+        clean_pass = smtp_pass.strip()
         if smtp_port == 465:
-            with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10.0) as server:
-                server.login(smtp_user, smtp_pass)
+            with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=12.0) as server:
+                try:
+                    server.login(smtp_user, clean_pass)
+                except Exception:
+                    server.login(smtp_user, clean_pass.replace(" ", ""))
                 server.sendmail(from_email, [to_email], msg.as_string())
         else:
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=10.0) as server:
+            with smtplib.SMTP(smtp_host, smtp_port, timeout=12.0) as server:
                 if use_tls:
                     server.starttls()
-                server.login(smtp_user, smtp_pass)
+                try:
+                    server.login(smtp_user, clean_pass)
+                except Exception:
+                    server.login(smtp_user, clean_pass.replace(" ", ""))
                 server.sendmail(from_email, [to_email], msg.as_string())
 
         logger.info(f"Successfully sent verification OTP email to {to_email} via {smtp_host}:{smtp_port}")

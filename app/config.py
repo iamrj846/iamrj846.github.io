@@ -29,7 +29,7 @@ def load_dotenv_file():
                             k, v = line.split("=", 1)
                             k = k.strip()
                             v = v.strip().strip("'\"")
-                            if k and k not in os.environ and k not in loaded_keys:
+                            if k and (k not in os.environ or not str(os.environ[k]).strip()) and k not in loaded_keys:
                                 os.environ[k] = v
                                 loaded_keys.add(k)
             except Exception:

@@ -268,6 +268,14 @@ FIXED_ROLES = [
             "founder's office", "chief of staff", "executive assistant", "business manager", 
             "general management associate", "special projects lead"
         ]
+    },
+    {
+        "role": "Intern / Trainee",
+        "synonyms": [
+            "intern", "internship", "trainee", "graduate trainee", "summer intern", 
+            "engineering intern", "software intern", "sde intern", "product intern", 
+            "research intern", "apprentice", "apprenticeship"
+        ]
     }
 ]
 
@@ -332,10 +340,13 @@ def calculate_semantic_relevance(query: str, title: str, role_cat: str = "", tag
         return 100.0
     if re.search(rf"\b{re.escape(q)}\b", title.lower()):
         return 95.0
-    if q in title.lower():
+
+    # Multi-word phrase: ensure each word appears with word boundaries
+    q_words = [w for w in re.split(r"\s+", q) if len(w) > 1]
+    if len(q_words) > 1 and all(re.search(rf"\b{re.escape(w)}\b", title.lower()) for w in q_words):
         return 90.0
 
-    # Synonym check
+    # Synonym check with word boundaries
     if synonyms:
         for syn in synonyms:
             s_clean = syn.strip().lower()
@@ -343,22 +354,25 @@ def calculate_semantic_relevance(query: str, title: str, role_cat: str = "", tag
                 continue
             if re.search(rf"\b{re.escape(s_clean)}\b", title.lower()):
                 return 88.0
-            if " " in s_clean and s_clean in title.lower():
+            syn_words = [w for w in re.split(r"\s+", s_clean) if len(w) > 1]
+            if len(syn_words) > 1 and all(re.search(rf"\b{re.escape(w)}\b", title.lower()) for w in syn_words):
                 return 85.0
             if re.search(rf"\b{re.escape(s_clean)}\b", combined_target):
                 return 75.0
 
-    # Rapidfuzz token set and partial ratio matching
+    # Rapidfuzz token set matching with word boundary verification
     if HAS_RAPIDFUZZ:
         token_score = fuzz.token_set_ratio(q, title.lower())
-        if token_score >= 70:
-            return float(token_score * 0.8)
-        partial_score = fuzz.partial_ratio(q, title.lower())
-        if partial_score >= 80:
-            return float(partial_score * 0.75)
+        if token_score >= 80:
+            # Verify that at least one query token matches as a distinct word in title
+            q_tokens = [t for t in re.split(r"\s+", q) if len(t) > 2]
+            if not q_tokens or any(re.search(rf"\b{re.escape(t)}\b", title.lower()) for t in q_tokens):
+                return float(token_score * 0.8)
         combined_token = fuzz.token_set_ratio(q, combined_target)
-        if combined_token >= 75:
-            return float(combined_token * 0.65)
+        if combined_token >= 85:
+            q_tokens = [t for t in re.split(r"\s+", q) if len(t) > 2]
+            if not q_tokens or any(re.search(rf"\b{re.escape(t)}\b", combined_target) for t in q_tokens):
+                return float(combined_token * 0.65)
 
     return 0.0
 
@@ -539,20 +553,24 @@ class SearchService:
         target = role_name.strip().lower()
         if not target:
             return []
-        syns_found = set()
+
+        # 1. Exact match with a role category or its exact synonym
         for item in FIXED_ROLES:
             r_lower = item["role"].lower()
             all_s = [r_lower] + [s.lower() for s in item["synonyms"]]
             if target == r_lower or target in all_s:
-                syns_found.update(all_s)
-                continue
-                
+                return all_s
+
+        # 2. Phrase matching: check if any multi-word or distinct synonym appears in target
+        syns_found = set()
+        for item in FIXED_ROLES:
+            r_lower = item["role"].lower()
+            all_s = [r_lower] + [s.lower() for s in item["synonyms"]]
             for s in all_s:
                 if len(s) < 2:
                     continue
-                # Use word boundaries to avoid 'sde' matching 'sdet'
                 pattern = rf"\b{re.escape(s)}\b"
-                if re.search(pattern, target) or re.search(rf"\b{re.escape(target)}\b", s):
+                if re.search(pattern, target):
                     syns_found.update(all_s)
                     break
 
@@ -734,7 +752,7 @@ class SearchService:
             if search_type == "role" and query_term:
                 synonyms = self.get_role_synonyms(query_term)
                 all_syns = list(set(synonyms + [query_lower]))
-                matches_role = role_matches(all_syns, r_name) or role_matches(all_syns, title) or any(s in r_name.lower() or s in title.lower() for s in all_syns)
+                matches_role = role_matches(all_syns, r_name) or role_matches(all_syns, title)
                 if not matches_role:
                     rel_score = calculate_semantic_relevance(query_term, title, r_name, job.get("tags"), all_syns)
                     if rel_score >= 40.0:
@@ -758,7 +776,7 @@ class SearchService:
                 r_syns = self.get_role_synonyms(role_filter)
                 rf_lower = role_filter.lower()
                 all_rf_syns = list(set(r_syns + [rf_lower]))
-                if not (role_matches(all_rf_syns, r_name) or role_matches(all_rf_syns, title) or any(s in r_name.lower() or s in title.lower() for s in all_rf_syns)):
+                if not (role_matches(all_rf_syns, r_name) or role_matches(all_rf_syns, title)):
                     continue
 
             # Employment type filter
@@ -767,7 +785,13 @@ class SearchService:
                 target_emp = employment_type.lower()
                 title_lower = title.lower()
                 if "intern" in target_emp:
-                    if "intern" not in emp and "intern" not in title_lower:
+                    is_intern = (
+                        bool(re.search(r"\bintern(ship)?s?\b", emp)) or
+                        bool(re.search(r"\bintern(ship)?s?\b", title_lower)) or
+                        bool(re.search(r"\btrainee\b", title_lower)) or
+                        bool(re.search(r"\bapprentice(ship)?\b", title_lower))
+                    )
+                    if not is_intern:
                         continue
                 elif target_emp not in emp:
                     continue
@@ -789,10 +813,19 @@ class SearchService:
                 title_lower = title.lower()
                 target_exp = experience_level.lower()
                 if "entry" in target_exp:
-                    if "entry" not in exp and "intern" not in title_lower and "fresher" not in title_lower:
+                    is_entry = (
+                        "entry" in exp or
+                        bool(re.search(r"\bintern(ship)?s?\b", title_lower)) or
+                        bool(re.search(r"\b(fresher|trainee|junior|jr\.?)\b", title_lower))
+                    )
+                    if not is_entry:
                         continue
                 elif "senior" in target_exp:
-                    if "senior" not in exp and "sr" not in title_lower and "lead" not in title_lower:
+                    is_senior = (
+                        "senior" in exp or
+                        bool(re.search(r"\b(sr\.?|lead|principal|staff|architect|director)\b", title_lower))
+                    )
+                    if not is_senior:
                         continue
                 elif target_exp not in exp:
                     continue
