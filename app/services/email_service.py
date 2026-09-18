@@ -225,25 +225,40 @@ def send_otp_email(to_email: str, otp: str, user_name: str = "") -> bool:
         msg.attach(MIMEText(html_text, "html", "utf-8"))
 
         clean_pass = smtp_pass.strip()
-        if smtp_port == 465:
-            with smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=12.0) as server:
-                try:
-                    server.login(smtp_user, clean_pass)
-                except Exception:
-                    server.login(smtp_user, clean_pass.replace(" ", ""))
-                server.sendmail(from_email, [to_email], msg.as_string())
-        else:
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=12.0) as server:
-                if use_tls:
-                    server.starttls()
-                try:
-                    server.login(smtp_user, clean_pass)
-                except Exception:
-                    server.login(smtp_user, clean_pass.replace(" ", ""))
-                server.sendmail(from_email, [to_email], msg.as_string())
+        ports_to_try = [smtp_port]
+        fallback_port = 465 if smtp_port != 465 else 587
+        if fallback_port not in ports_to_try:
+            ports_to_try.append(fallback_port)
 
-        logger.info(f"Successfully sent verification OTP email to {to_email} via {smtp_host}:{smtp_port}")
-        return True
+        last_error = None
+        for port in ports_to_try:
+            try:
+                if port == 465:
+                    with smtplib.SMTP_SSL(smtp_host, port, timeout=12.0) as server:
+                        try:
+                            server.login(smtp_user, clean_pass)
+                        except Exception:
+                            server.login(smtp_user, clean_pass.replace(" ", ""))
+                        server.sendmail(from_email, [to_email], msg.as_string())
+                else:
+                    with smtplib.SMTP(smtp_host, port, timeout=12.0) as server:
+                        if use_tls:
+                            server.starttls()
+                        try:
+                            server.login(smtp_user, clean_pass)
+                        except Exception:
+                            server.login(smtp_user, clean_pass.replace(" ", ""))
+                        server.sendmail(from_email, [to_email], msg.as_string())
+
+                logger.info(f"Successfully sent verification OTP email to {to_email} via {smtp_host}:{port}")
+                return True
+            except Exception as port_err:
+                last_error = port_err
+                logger.warning(f"SMTP dispatch on {smtp_host}:{port} failed: {port_err}. Trying alternate port...")
+
+        if last_error:
+            logger.error(f"Failed to dispatch OTP email to {to_email} via SMTP after trying ports {ports_to_try}: {last_error}")
+        return False
 
     except Exception as e:
         logger.error(f"Failed to dispatch OTP email to {to_email} via SMTP: {e}")

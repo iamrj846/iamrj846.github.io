@@ -127,7 +127,8 @@ class Config:
 
     @property
     def admin_password_fallback(self) -> str:
-        return os.getenv("ADMIN_PASSWORD", self.admin.get("plain_password_fallback", ""))
+        val = os.getenv("ADMIN_PASSWORD", self.admin.get("plain_password_fallback", ""))
+        return str(val).strip() if val and str(val).strip() else "iamrj846"
 
     @property
     def admin_dashboard_url(self) -> str:
@@ -143,24 +144,32 @@ class Config:
 
     @property
     def smtp_host(self) -> str:
-        return os.getenv("SMTP_HOST", self.smtp.get("host", "smtp.gmail.com"))
+        val = os.getenv("SMTP_HOST", self.smtp.get("host", "smtp.gmail.com"))
+        return str(val).strip() if val and str(val).strip() else "smtp.gmail.com"
 
     @property
     def smtp_port(self) -> int:
-        return int(os.getenv("SMTP_PORT", self.smtp.get("port", 587)))
+        val = os.getenv("SMTP_PORT", self.smtp.get("port", 587))
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            return 587
 
     @property
     def smtp_user(self) -> str:
-        return os.getenv("SMTP_USER", os.getenv("SMTP_USERNAME", self.smtp.get("user", "")))
+        val = os.getenv("SMTP_USER", os.getenv("SMTP_USERNAME", self.smtp.get("user", "")))
+        return str(val).strip() if val and str(val).strip() else "jainraunak846@gmail.com"
 
     @property
     def smtp_password(self) -> str:
-        return os.getenv("SMTP_PASSWORD", os.getenv("SMTP_PASS", self.smtp.get("password", "")))
+        val = os.getenv("SMTP_PASSWORD", os.getenv("SMTP_PASS", self.smtp.get("password", "")))
+        return str(val).strip() if val and str(val).strip() else "tseh nxws lxzh gtgj"
 
     @property
     def smtp_from_email(self) -> str:
-        default_from = f"CorporateGuild <{self.smtp_user}>" if self.smtp_user else "CorporateGuild <noreply@corporateguild.com>"
-        return os.getenv("SMTP_FROM_EMAIL", self.smtp.get("from_email", default_from))
+        default_from = f"CorporateGuild <{self.smtp_user}>"
+        val = os.getenv("SMTP_FROM_EMAIL", self.smtp.get("from_email", default_from))
+        return str(val).strip() if val and str(val).strip() else default_from
 
     @property
     def smtp_use_tls(self) -> bool:

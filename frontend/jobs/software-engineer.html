@@ -2653,10 +2653,18 @@
 
     async function handleSignup(e) {
       e.preventDefault();
-      const name = document.getElementById('suName').value;
-      const email = document.getElementById('suEmail').value;
-      const pass = document.getElementById('suPass').value;
+      const name = (document.getElementById('suName') ? document.getElementById('suName').value : '').trim();
+      const email = (document.getElementById('suEmail') ? document.getElementById('suEmail').value : '').trim();
+      const pass = (document.getElementById('suPass') ? document.getElementById('suPass').value : '');
       pendingEmail = email;
+
+      const btn = document.querySelector('#signupForm .auth-submit-btn') || document.querySelector('#signupForm button[type="submit"]');
+      const originalHtml = btn ? btn.innerHTML : 'Create Free Account 🚀';
+      if (btn) {
+        btn.innerHTML = '<span class="btn-spinner"></span> Sending OTP...';
+        btn.disabled = true;
+        btn.style.opacity = '0.8';
+      }
 
       try {
         const res = await fetch('/api/auth/register', {
@@ -2669,13 +2677,22 @@
           document.getElementById('signupForm').style.display = 'none';
           document.getElementById('otpForm').style.display = 'block';
           document.getElementById('otpNotice').innerHTML = `A 6-digit verification code has been sent to <strong>${escapeHtml(pendingEmail)}</strong>. Please check your inbox or spam folder.`;
-          document.getElementById('otpCode').value = '';
-          document.getElementById('otpCode').focus();
+          const otpInput = document.getElementById('otpCode');
+          if (otpInput) {
+            otpInput.value = '';
+            otpInput.focus();
+          }
         } else {
-          showAuthError(data.detail || data.message);
+          showAuthError(data.detail || data.message || 'Registration failed.');
         }
       } catch (err) {
-        showAuthError('Connection error.');
+        showAuthError('Connection error. Please try again.');
+      } finally {
+        if (btn) {
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+          btn.style.opacity = '1';
+        }
       }
     }
 
@@ -2685,9 +2702,10 @@
         return;
       }
       const btn = document.getElementById('btnResendOtp');
+      const originalText = btn ? btn.textContent : 'Resend Verification Code';
       if (btn) {
         btn.disabled = true;
-        btn.textContent = 'Sending code...';
+        btn.innerHTML = '<span class="btn-spinner" style="width:12px;height:12px;border-top-color:var(--primary,#4f46e5);border-color:rgba(79,70,229,0.3)"></span> Sending code...';
       }
       try {
         const res = await fetch('/api/auth/resend-otp', {
@@ -2698,8 +2716,11 @@
         const data = await res.json();
         if (res.ok && data.success) {
           document.getElementById('otpNotice').innerHTML = `A fresh verification code has been sent to <strong>${escapeHtml(pendingEmail)}</strong>.`;
-          document.getElementById('otpCode').value = '';
-          document.getElementById('otpCode').focus();
+          const otpInput = document.getElementById('otpCode');
+          if (otpInput) {
+            otpInput.value = '';
+            otpInput.focus();
+          }
           if (btn) {
             let countdown = 30;
             btn.textContent = `Resend available in ${countdown}s`;
@@ -2715,42 +2736,66 @@
             }, 1000);
           }
         } else {
-          showAuthError(data.detail || data.message);
-          if (btn) { btn.disabled = false; btn.textContent = 'Resend Verification Code'; }
+          showAuthError(data.detail || data.message || 'Failed to resend code.');
+          if (btn) { btn.disabled = false; btn.textContent = originalText; }
         }
       } catch (e) {
         showAuthError('Network error while resending verification code.');
-        if (btn) { btn.disabled = false; btn.textContent = 'Resend Verification Code'; }
+        if (btn) { btn.disabled = false; btn.textContent = originalText; }
       }
     }
 
     async function handleVerifyOtp(e) {
       e.preventDefault();
-      const otp = document.getElementById('otpCode').value;
+      const code = (document.getElementById('otpCode') ? document.getElementById('otpCode').value : '').trim();
+
+      const btn = document.querySelector('#otpForm .auth-submit-btn') || document.querySelector('#otpForm button[type="submit"]');
+      const originalHtml = btn ? btn.innerHTML : 'Verify & Start Searching 🚀';
+      if (btn) {
+        btn.innerHTML = '<span class="btn-spinner"></span> Verifying...';
+        btn.disabled = true;
+        btn.style.opacity = '0.8';
+      }
 
       try {
         const res = await fetch('/api/auth/verify-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: pendingEmail, otp })
+          body: JSON.stringify({ email: pendingEmail, otp: code })
         });
         const data = await res.json();
         if (res.ok && data.success) {
           closeAuthModal();
           checkAuthStatus();
-          executeSearch(1);
+          if (typeof executeSearch === 'function') {
+            executeSearch(1);
+          }
         } else {
-          showAuthError(data.detail || data.message);
+          showAuthError(data.detail || data.message || 'Invalid verification code.');
         }
       } catch (err) {
-        showAuthError('Verification error.');
+        showAuthError('Verification error. Please check your connection.');
+      } finally {
+        if (btn) {
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+          btn.style.opacity = '1';
+        }
       }
     }
 
     async function handleLogin(e) {
       e.preventDefault();
-      const email = document.getElementById('liEmail').value;
-      const pass = document.getElementById('liPass').value;
+      const email = (document.getElementById('liEmail') ? document.getElementById('liEmail').value : '').trim();
+      const pass = (document.getElementById('liPass') ? document.getElementById('liPass').value : '');
+
+      const btn = document.querySelector('#loginForm .auth-submit-btn') || document.querySelector('#loginForm button[type="submit"]');
+      const originalHtml = btn ? btn.innerHTML : 'Log In 🔐';
+      if (btn) {
+        btn.innerHTML = '<span class="btn-spinner"></span> Logging In...';
+        btn.disabled = true;
+        btn.style.opacity = '0.8';
+      }
 
       try {
         const res = await fetch('/api/auth/login', {
@@ -2762,12 +2807,20 @@
         if (res.ok && data.success) {
           closeAuthModal();
           checkAuthStatus();
-          executeSearch(1);
+          if (typeof executeSearch === 'function') {
+            executeSearch(1);
+          }
         } else {
-          showAuthError(data.detail || data.message);
+          showAuthError(data.detail || data.message || 'Invalid email or password.');
         }
       } catch (err) {
-        showAuthError('Login error.');
+        showAuthError('Login error. Please check your connection.');
+      } finally {
+        if (btn) {
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+          btn.style.opacity = '1';
+        }
       }
     }
 

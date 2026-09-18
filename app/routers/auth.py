@@ -58,6 +58,7 @@ async def resend_otp(request: Request, payload: ResendOtpRequest):
     return res
 
 @router.post("/verify-otp")
+@router.post("/verify_otp")
 async def verify_otp(request: Request, response: Response, payload: VerifyOtpRequest):
     ip = get_client_ip(request)
     res = get_auth_service().verify_otp(payload.email, payload.otp, ip)
