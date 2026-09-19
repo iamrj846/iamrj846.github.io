@@ -265,6 +265,9 @@ class IngestionManager:
 
         self.scheduler = AsyncIOScheduler()
         interval = self.config.sync_interval_minutes
+        if interval <= 0:
+            logger.info("Ingestion background scheduler disabled (interval <= 0).")
+            return
 
         async def scheduled_task():
             logger.info("Triggering scheduled 30-minute ATS ingestion...")
