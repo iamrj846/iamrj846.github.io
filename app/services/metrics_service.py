@@ -60,6 +60,12 @@ class MetricsService:
             vm2_mem = None
             try:
                 raw_worker = self.redis.get("cg:metrics:worker_node")
+                if not raw_worker:
+                    worker_host = os.getenv("WORKER_REDIS_HOST", "10.0.0.12")
+                    if worker_host and worker_host != os.getenv("REDIS_HOST", "redis"):
+                        import redis as py_redis
+                        r_w = py_redis.Redis(host=worker_host, port=6379, socket_timeout=1.5, decode_responses=True)
+                        raw_worker = r_w.get("cg:metrics:worker_node")
                 if raw_worker:
                     w_data = json.loads(raw_worker)
                     # Consider worker heartbeat valid if updated within 5 minutes (300s)
