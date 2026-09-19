@@ -84,6 +84,11 @@ class IngestionManager:
                     if redis_jobs:
                         save_jobs_to_db(redis_jobs)
                         deduplicate_jobs_table()
+                
+                # If Redis is already primed with active keys, skip heavy re-hydration
+                if len(keys) > 100:
+                    logger.info(f"Redis cache is already populated with {len(keys)} active job keys. Skipping repetitive hydration.")
+                    return len(keys)
             except Exception as e:
                 logger.warning(f"Note on syncing Redis jobs to DB during startup: {e}")
 

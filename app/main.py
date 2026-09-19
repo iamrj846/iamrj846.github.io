@@ -43,9 +43,9 @@ async def lifespan(app: FastAPI):
     init_db()
     get_redis_client()
     
-    # Pre-populate initial jobs
+    # Pre-populate initial jobs in background to guarantee immediate server responsiveness
     ingestion_mgr = get_ingestion_manager()
-    ingestion_mgr.seed_initial_jobs()
+    asyncio.create_task(asyncio.to_thread(ingestion_mgr.seed_initial_jobs))
     
     # Start 30-minute recurring scheduler if enabled
     enable_scheduler = os.getenv("ENABLE_INGESTION_SCHEDULER", "true").lower() in ("1", "true", "yes")

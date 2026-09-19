@@ -27,13 +27,21 @@ def get_db_connection() -> sqlite3.Connection:
     config = get_config()
     db_path = config.db_path
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(db_path), check_same_thread=False)
+    conn = sqlite3.connect(str(db_path), check_same_thread=False, timeout=30.0)
     conn.row_factory = sqlite3.Row
     return conn
 
 def init_db():
     conn = get_db_connection()
     cur = conn.cursor()
+    
+    # Enable WAL mode for high concurrency non-blocking operations
+    try:
+        cur.execute("PRAGMA journal_mode=WAL;")
+        cur.execute("PRAGMA synchronous=NORMAL;")
+        cur.execute("PRAGMA busy_timeout=30000;")
+    except Exception:
+        pass
     
     # Users table
     cur.execute("""
@@ -84,9 +92,9 @@ def init_db():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_loc ON jobs(location);")
     try:
         deduplicate_jobs_table(conn)
-        cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_apply_url_unique ON jobs(apply_url);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_apply_url ON jobs(apply_url);")
     except Exception as e:
-        logger.warning(f"Could not create unique index on apply_url: {e}")
+        logger.warning(f"Could not index apply_url: {e}")
 
     # Ensure employment_type column exists
     cur.execute("PRAGMA table_info(jobs);")
