@@ -639,19 +639,21 @@ class ATSService:
             return
 
         try:
-            wb = openpyxl.load_workbook(str(excel_path), data_only=True)
+            wb = openpyxl.load_workbook(str(excel_path), read_only=True, data_only=True)
             sheet_name = self.config.resources.get("master_sheet", "Master ATS Directory (1000+)")
             if sheet_name not in wb.sheetnames:
                 sheet_name = wb.sheetnames[0]
             ws = wb[sheet_name]
-            rows = list(ws.iter_rows(values_only=True))
 
             # Header is typically row index 3 (4th row)
             header_idx = self.config.resources.get("header_row_index", 3)
-            data_rows = rows[header_idx + 1:] if len(rows) > header_idx else rows[1:]
 
             seen = set()
-            for r in data_rows:
+            row_idx = 0
+            for r in ws.iter_rows(values_only=True):
+                row_idx += 1
+                if row_idx <= header_idx + 1:
+                    continue
                 if not r or len(r) < 5:
                     continue
                 c_name = str(r[1]).strip() if r[1] else ""
@@ -663,6 +665,7 @@ class ATSService:
                         seen.add(key)
                         self.endpoints.append(ATSEndpoint(c_name, platform, endpoint))
 
+            wb.close()
             logger.info(f"Loaded {len(self.endpoints)} ATS endpoints from {excel_path}")
         except Exception as e:
             logger.error(f"Failed to parse ATS endpoints from Excel: {e}")
