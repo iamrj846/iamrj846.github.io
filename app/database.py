@@ -429,25 +429,30 @@ def log_activity(user_id: Optional[int], ip_address: str, action: str, details: 
 def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
     if not jobs_list:
         return 0
+    from app.services.ats_service import is_india_location
     conn = get_db_connection()
     cur = conn.cursor()
     count = 0
     now_str = get_ist_now_str()
     import hashlib
     for j in jobs_list:
+        apply_link_val = (j.get("apply_link") or j.get("apply_url") or "").strip()
+        if not apply_link_val or not apply_link_val.startswith("http"):
+            continue
+
+        loc_val = j.get("location") or "Bengaluru, Karnataka, India"
+        wp_val = j.get("workplace_type") or "In office"
+        if not is_india_location(loc_val, workplace_type=wp_val):
+            continue
+
         c_name = j.get("company_name") or j.get("company", "Tech Enterprise")
         actual_title = j.get("title") or j.get("role_name", "Software Engineer")
         role_cat = j.get("role_category") or j.get("role_name") or actual_title
         p_time = j.get("posted_timestamp_ist") or j.get("posted_at") or now_str
-        apply_link_val = (j.get("apply_link") or j.get("apply_url") or "").strip()
 
         # Deterministic unique job_id based strictly on normalized apply URL hash to guarantee deduplication
-        if apply_link_val and apply_link_val.startswith("http"):
-            url_hash = hashlib.sha256(apply_link_val.lower().rstrip("/").encode("utf-8")).hexdigest()[:24]
-            job_id = f"job_{url_hash}"
-        else:
-            raw_id = j.get("id") or f"{c_name}_{actual_title}_{p_time}"
-            job_id = "".join([c if c.isalnum() or c in ('_', '-') else '_' for c in str(raw_id)])[:120]
+        url_hash = hashlib.sha256(apply_link_val.lower().rstrip("/").encode("utf-8")).hexdigest()[:24]
+        job_id = f"job_{url_hash}"
         
         tags_val = j.get("tags", [])
         tags_json = json.dumps(tags_val) if isinstance(tags_val, (list, dict)) else str(tags_val)
@@ -480,9 +485,9 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
             job_id,
             actual_title,
             c_name,
-            j.get("location", "Bengaluru, Karnataka, India"),
+            loc_val,
             role_cat,
-            j.get("workplace_type", "In office"),
+            wp_val,
             j.get("salary_range", "Competitive Market CTC"),
             j.get("experience_level", "Senior"),
             j.get("employment_type", "Full time"),
@@ -490,7 +495,7 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
             tags_json,
             skills_json,
             j.get("description", ""),
-            apply_link_val or "https://corporateguild.com",
+            apply_link_val,
             p_time,
             now_str
         ))
@@ -498,6 +503,44 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
     conn.commit()
     conn.close()
     return count
+
+def clean_invalid_jobs_from_db(conn=None) -> int:
+    """
+    Purges invalid jobs from SQLite (non-HTTP or empty URLs, and non-India/remote locations).
+    Ensures SQLite maintains strict 1:1 synchronization with Redis hashes and search results.
+    """
+    from app.services.ats_service import is_india_location
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    cur = conn.cursor()
+    deleted = 0
+    try:
+        cur.execute("SELECT id, location, workplace_type, apply_url FROM jobs WHERE is_active = 1")
+        rows = cur.fetchall()
+        to_delete = []
+        for r in rows:
+            u = (r["apply_url"] or "").strip()
+            if not u or not u.startswith("http"):
+                to_delete.append(r["id"])
+                continue
+            loc = r["location"] or ""
+            wp = r["workplace_type"] or ""
+            if not is_india_location(loc, workplace_type=wp):
+                to_delete.append(r["id"])
+        
+        if to_delete:
+            cur.executemany("DELETE FROM jobs WHERE id = ?", [(jid,) for jid in to_delete])
+            conn.commit()
+            deleted = len(to_delete)
+            logger.info(f"Cleaned {deleted} invalid / non-India jobs from SQLite table.")
+    except Exception as e:
+        logger.error(f"Error cleaning invalid jobs from DB: {e}")
+    finally:
+        if close_conn:
+            conn.close()
+    return deleted
 
 def deduplicate_jobs_table(conn=None) -> int:
     close_conn = False
@@ -518,6 +561,8 @@ def deduplicate_jobs_table(conn=None) -> int:
         """)
         deleted = cur.rowcount
         conn.commit()
+        # Also purge any non-India or non-HTTP legacy rows
+        clean_invalid_jobs_from_db(conn)
     except Exception as e:
         logger.error(f"Error deduplicating jobs table: {e}")
     finally:
@@ -540,6 +585,7 @@ def clean_stale_jobs_from_db(max_days: int = 7) -> int:
         """, (cutoff_str, cutoff_str))
         deleted = cur.rowcount
         conn.commit()
+        clean_invalid_jobs_from_db(conn)
     except Exception as e:
         logger.error(f"Error cleaning stale jobs from DB: {e}")
     finally:

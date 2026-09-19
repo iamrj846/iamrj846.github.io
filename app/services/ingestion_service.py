@@ -58,11 +58,12 @@ class IngestionManager:
         now_dt = datetime.datetime.now(IST_TZ)
 
         try:
-            from app.database import get_db_connection, deduplicate_jobs_table, save_jobs_to_db, clean_stale_jobs_from_db
+            from app.database import get_db_connection, deduplicate_jobs_table, save_jobs_to_db, clean_stale_jobs_from_db, clean_invalid_jobs_from_db
             from app.services.ats_service import is_india_location, extract_india_location
 
-            # Deduplicate SQLite table first
+            # Deduplicate SQLite table and purge invalid entries first
             deduplicate_jobs_table()
+            clean_invalid_jobs_from_db()
 
             # Bidirectional sync: sync existing Redis jobs into DB to maintain strict alignment
             try:
