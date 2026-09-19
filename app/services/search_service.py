@@ -422,7 +422,8 @@ class SearchService:
                 get_metrics_service().inc_redis()
             except:
                 pass
-            keys = client.keys("*|*")
+            raw_keys = client.keys("*|*")
+            keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
             tz = pytz.timezone("Asia/Kolkata")
             now_ist = datetime.datetime.now(tz)
             
@@ -432,7 +433,10 @@ class SearchService:
                 if not c and not r: continue
                 
                 # Check if this hash has ANY job posted in the last 7 days (168 hours)
-                hdata = client.hgetall(k)
+                try:
+                    hdata = client.hgetall(k)
+                except Exception:
+                    continue
                 if not hdata: continue
                 
                 has_active = False
@@ -509,7 +513,8 @@ class SearchService:
                     get_metrics_service().inc_redis()
                 except:
                     pass
-                keys = client.keys("*|*")
+                raw_keys = client.keys("*|*")
+                keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
                 for k in keys:
                     k_str = k.decode("utf-8") if isinstance(k, bytes) else k
                     c, _ = parse_hash_name(k_str)
@@ -632,7 +637,8 @@ class SearchService:
             get_metrics_service().inc_redis()
         except:
             pass
-        all_keys = client.keys("*|*")
+        raw_keys = client.keys("*|*")
+        all_keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
         metrics_svc.record_redis_latency((time.time() - redis_start) * 1000)
 
         if not all_keys:
@@ -642,7 +648,8 @@ class SearchService:
                 get_metrics_service().inc_redis()
             except:
                 pass
-            all_keys = client.keys("*|*")
+            raw_keys = client.keys("*|*")
+            all_keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
 
         if not query_term:
             matching_hashes = set(all_keys)
@@ -683,7 +690,8 @@ class SearchService:
                                         get_metrics_service().inc_redis()
                                     except:
                                         pass
-                                    all_keys = client.keys("*|*")
+                                    raw_keys = client.keys("*|*")
+                                    all_keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
                                     for k in all_keys:
                                         c, r = parse_hash_name(k)
                                         if company_matches(query_lower, c):
@@ -747,21 +755,31 @@ class SearchService:
         else:
             matching_hashes = set(all_keys)
 
-        # Step 2: Fetch all jobs from matching Redis hashes
+        # Step 2: Fetch all jobs from matching Redis hashes in high-speed batch pipeline
         raw_jobs = []
-        for h_key in matching_hashes:
+        valid_keys = [k for k in matching_hashes if not k.startswith("tag_idx:") and not k.startswith("cg:")]
+        if valid_keys:
             try:
                 get_metrics_service().inc_redis()
             except:
                 pass
-            hdata = client.hgetall(h_key)
-            for ts_key, val_str in hdata.items():
-                try:
-                    jdata = json.loads(val_str)
-                    jdata["tags"] = sanitize_tags(jdata.get("tags"))
-                    raw_jobs.append(jdata)
-                except Exception:
-                    pass
+            pipe = client.pipeline(transaction=False)
+            for h_key in valid_keys:
+                pipe.hgetall(h_key)
+            try:
+                batch_results = pipe.execute()
+                for hdata in batch_results:
+                    if not hdata or not isinstance(hdata, dict):
+                        continue
+                    for ts_key, val_str in hdata.items():
+                        try:
+                            jdata = json.loads(val_str)
+                            jdata["tags"] = sanitize_tags(jdata.get("tags"))
+                            raw_jobs.append(jdata)
+                        except Exception:
+                            pass
+            except Exception as e:
+                logger.warning(f"Error in Redis batch pipeline for matching hashes: {e}")
 
         # Step 3: Apply Filters
         filtered_jobs = []

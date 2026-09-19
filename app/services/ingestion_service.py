@@ -177,7 +177,8 @@ class IngestionManager:
 
             # Update status
             client = get_redis_client()
-            keys = client.keys("*|*")
+            raw_keys = client.keys("*|*")
+            keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
             total_hashes = len(keys)
 
             _sync_status["last_sync_ist"] = start_time.strftime("%Y-%m-%d %H:%M:%S IST")

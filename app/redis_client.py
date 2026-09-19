@@ -126,18 +126,18 @@ def store_job_in_redis(job_data: Dict[str, Any], ttl_seconds: Optional[int] = No
         # Secondary index: maintain tag_idx:{tag_lower} sets for instant keyword search
         tags = job_data.get("tags") or []
         for t in tags:
-            clean_t = str(t).strip().lower()
+            clean_t = str(t).strip().lower().replace("|", " ")
             if clean_t:
                 pipe.sadd(f"tag_idx:{clean_t}", hash_key)
                 pipe.expire(f"tag_idx:{clean_t}", ttl_seconds)
 
         # Also index role and company into tag index
         if role:
-            r_lower = role.strip().lower()
+            r_lower = role.strip().lower().replace("|", " ")
             pipe.sadd(f"tag_idx:{r_lower}", hash_key)
             pipe.expire(f"tag_idx:{r_lower}", ttl_seconds)
         if company:
-            c_lower = company.strip().lower()
+            c_lower = company.strip().lower().replace("|", " ")
             pipe.sadd(f"tag_idx:{c_lower}", hash_key)
             pipe.expire(f"tag_idx:{c_lower}", ttl_seconds)
 
@@ -174,9 +174,13 @@ def clean_stale_jobs_older_than_days(max_days: int = 7) -> int:
     removed_count = 0
 
     try:
-        keys = client.keys("*|*")
+        raw_keys = client.keys("*|*")
+        keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
         for k in keys:
-            hdata = client.hgetall(k)
+            try:
+                hdata = client.hgetall(k)
+            except Exception:
+                continue
             if not hdata:
                 client.delete(k)
                 continue
@@ -196,8 +200,11 @@ def clean_stale_jobs_older_than_days(max_days: int = 7) -> int:
                 except Exception:
                     pass
             # If hash is now empty, remove key
-            if client.hlen(k) == 0:
-                client.delete(k)
+            try:
+                if client.hlen(k) == 0:
+                    client.delete(k)
+            except Exception:
+                pass
     except Exception as e:
         logger.warning(f"Error during Redis stale cleanup: {e}")
 
@@ -206,13 +213,18 @@ def clean_stale_jobs_older_than_days(max_days: int = 7) -> int:
 def get_redis_summary() -> Dict[str, Any]:
     client = get_redis_client()
     try:
-        keys = client.keys("*|*")
+        raw_keys = client.keys("*|*")
+        keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
         total_hashes = len(keys)
         total_jobs = 0
-        for k in keys[:500]: # Sample count
-            total_jobs += client.hlen(k)
-        if len(keys) > 500:
-            total_jobs = int((total_jobs / 500) * total_hashes)
+        sample = keys[:500]
+        for k in sample:
+            try:
+                total_jobs += client.hlen(k)
+            except Exception:
+                pass
+        if len(keys) > 500 and len(sample) > 0:
+            total_jobs = int((total_jobs / len(sample)) * total_hashes)
         info = {}
         try:
             info = client.info()
