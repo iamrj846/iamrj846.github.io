@@ -2113,12 +2113,12 @@
           <div class="filter-item">
             <label for="filterTime">Posted Within</label>
             <select id="filterTime" onchange="onFilterSelectionChange()">
+              <option value="all" selected>All Postings (Anytime)</option>
               <option value="1h">Last 1 Hour</option>
               <option value="12h">Last 12 Hours</option>
               <option value="24h">Last 24 Hours</option>
               <option value="2d">Last 2 Days</option>
-              <option value="7d" selected>Last 7 Days</option>
-              <option value="all">Anytime (7 Days)</option>
+              <option value="7d">Last 7 Days</option>
             </select>
           </div>
         </div>
@@ -2578,7 +2578,7 @@
       employment_type: 'all',
       workplace_type: 'all',
       experience_level: 'all',
-      time_filter: '7d'
+      time_filter: 'all'
     };
 
     function onFilterSelectionChange() {
@@ -2607,7 +2607,7 @@
       document.getElementById('filterEmp').value = 'all';
       document.getElementById('filterWorkplace').value = 'all';
       document.getElementById('filterExp').value = 'all';
-      document.getElementById('filterTime').value = '7d';
+      document.getElementById('filterTime').value = 'all';
 
       appliedFilters = {
         location: 'all',
@@ -2615,7 +2615,7 @@
         employment_type: 'all',
         workplace_type: 'all',
         experience_level: 'all',
-        time_filter: '7d'
+        time_filter: 'all'
       };
 
       const btn = document.getElementById('btnApplyFilters');
@@ -2717,7 +2717,7 @@
         if (appliedFilters.employment_type && appliedFilters.employment_type !== 'all') urlParams.set('employment_type', appliedFilters.employment_type);
         if (appliedFilters.workplace_type && appliedFilters.workplace_type !== 'all') urlParams.set('workplace_type', appliedFilters.workplace_type);
         if (appliedFilters.experience_level && appliedFilters.experience_level !== 'all') urlParams.set('experience_level', appliedFilters.experience_level);
-        if (appliedFilters.time_filter && appliedFilters.time_filter !== '7d' && appliedFilters.time_filter !== 'all') urlParams.set('time_filter', appliedFilters.time_filter);
+        if (appliedFilters.time_filter && appliedFilters.time_filter !== 'all') urlParams.set('time_filter', appliedFilters.time_filter);
 
         const qs = urlParams.toString();
         window.history.pushState({}, '', qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
@@ -2732,6 +2732,14 @@
           try { localStorage.setItem('cg_guest_id', data.guest_id); } catch (e) {}
         }
         document.getElementById('loader').style.display = 'none';
+
+        if (!res.ok || data.success === false) {
+          if (data && data.requires_auth) {
+            applyQuotaExhaustedUI(isUserAction);
+            return;
+          }
+          throw new Error((data && data.error) || 'Search request failed');
+        }
 
         if (data.requires_auth) {
           applyQuotaExhaustedUI(isUserAction);
@@ -2757,6 +2765,10 @@
         console.error('Search execution error:', err);
         document.getElementById('loader').style.display = 'none';
         document.getElementById('jobsList').innerHTML = `<div style="text-align: center; color: #f87171; padding: 40px;">Search request failed. Please check network.</div>`;
+        const meta = document.getElementById('resultsMeta');
+        if (meta) meta.style.display = 'none';
+        const bar = document.getElementById('paginationBar');
+        if (bar) bar.style.display = 'none';
       }
     }
 
@@ -3099,18 +3111,24 @@
     }
 
     function updatePagination(data) {
-      currentPage = data.page || 1;
-      totalPages = data.total_pages || 1;
+      currentPage = (data && data.page) || 1;
+      totalPages = (data && data.total_pages) || 1;
       const meta = document.getElementById('resultsMeta');
       const countEl = document.getElementById('resultsCount');
       const pageInd = document.getElementById('pageIndicator');
       const bar = document.getElementById('paginationBar');
 
       meta.style.display = 'flex';
-      countEl.textContent = `Found ${data.total_count} matching positions`;
-      pageInd.textContent = `Page ${currentPage} of ${totalPages}`;
+      const count = (data && typeof data.total_count === 'number') ? data.total_count : 0;
+      if (count <= 0) {
+        countEl.textContent = 'No matching positions found';
+        pageInd.textContent = 'Page 0 of 0';
+      } else {
+        countEl.textContent = `Found ${count.toLocaleString()} matching positions`;
+        pageInd.textContent = `Page ${currentPage} of ${totalPages}`;
+      }
 
-      if (totalPages > 1) {
+      if (totalPages > 1 && count > 0) {
         bar.style.display = 'flex';
         document.getElementById('prevPageBtn').disabled = (currentPage <= 1);
         document.getElementById('nextPageBtn').disabled = (currentPage >= totalPages);
@@ -3549,8 +3567,8 @@
           document.getElementById('filterTime').value = params.get('time_filter');
           appliedFilters.time_filter = params.get('time_filter');
         } else {
-          document.getElementById('filterTime').value = '7d';
-          appliedFilters.time_filter = '7d';
+          document.getElementById('filterTime').value = 'all';
+          appliedFilters.time_filter = 'all';
         }
         executeSearch(parseInt(params.get('page') || '1'), false, false);
       } else {

@@ -2900,6 +2900,14 @@
         }
         document.getElementById('loader').style.display = 'none';
 
+        if (!res.ok || data.success === false) {
+          if (data && data.requires_auth) {
+            applyQuotaExhaustedUI(isUserAction);
+            return;
+          }
+          throw new Error((data && data.error) || 'Search request failed');
+        }
+
         if (data.requires_auth) {
           applyQuotaExhaustedUI(isUserAction);
           return;
@@ -2924,6 +2932,10 @@
         console.error('Search execution error:', err);
         document.getElementById('loader').style.display = 'none';
         document.getElementById('jobsList').innerHTML = `<div style="text-align: center; color: #f87171; padding: 40px;">Search request failed. Please check network.</div>`;
+        const meta = document.getElementById('resultsMeta');
+        if (meta) meta.style.display = 'none';
+        const bar = document.getElementById('paginationBar');
+        if (bar) bar.style.display = 'none';
       }
     }
 
@@ -3266,18 +3278,24 @@
     }
 
     function updatePagination(data) {
-      currentPage = data.page || 1;
-      totalPages = data.total_pages || 1;
+      currentPage = (data && data.page) || 1;
+      totalPages = (data && data.total_pages) || 1;
       const meta = document.getElementById('resultsMeta');
       const countEl = document.getElementById('resultsCount');
       const pageInd = document.getElementById('pageIndicator');
       const bar = document.getElementById('paginationBar');
 
       meta.style.display = 'flex';
-      countEl.textContent = `Found ${data.total_count} matching positions`;
-      pageInd.textContent = `Page ${currentPage} of ${totalPages}`;
+      const count = (data && typeof data.total_count === 'number') ? data.total_count : 0;
+      if (count <= 0) {
+        countEl.textContent = 'No matching positions found';
+        pageInd.textContent = 'Page 0 of 0';
+      } else {
+        countEl.textContent = `Found ${count.toLocaleString()} matching positions`;
+        pageInd.textContent = `Page ${currentPage} of ${totalPages}`;
+      }
 
-      if (totalPages > 1) {
+      if (totalPages > 1 && count > 0) {
         bar.style.display = 'flex';
         document.getElementById('prevPageBtn').disabled = (currentPage <= 1);
         document.getElementById('nextPageBtn').disabled = (currentPage >= totalPages);
