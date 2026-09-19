@@ -52,7 +52,7 @@ async def search_jobs(
     employment_type: Optional[str] = Query(None),
     workplace_type: Optional[str] = Query(None),
     experience_level: Optional[str] = Query(None),
-    time_filter: Optional[str] = Query("7d"),
+    time_filter: Optional[str] = Query("all"),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=50),
     is_search_action: bool = Query(False)
@@ -62,7 +62,7 @@ async def search_jobs(
     guest_id = request.cookies.get("cg_guest_id") or request.headers.get("x-guest-id")
     auth_service = get_auth_service()
 
-    active_time_filter = (time_filter or "7d").strip()
+    active_time_filter = (time_filter or "all").strip()
     if search_term and search_term.strip().lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any"):
         search_term = ""
     if custom_input and custom_input.strip().lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any"):

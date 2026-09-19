@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from app.config import get_config
-from app.database import save_jobs_to_db
+from app.database import save_jobs_to_db, deduplicate_jobs_table, clean_stale_jobs_from_db
 from app.redis_client import store_job_in_redis, clean_stale_jobs_older_than_days, get_redis_client
 from app.services.ats_service import get_ats_service, parse_date_to_ist, extract_tags
 
@@ -84,11 +84,6 @@ class IngestionManager:
                     if redis_jobs:
                         save_jobs_to_db(redis_jobs)
                         deduplicate_jobs_table()
-                
-                # If Redis is already primed with active keys, skip heavy re-hydration
-                if len(keys) > 100:
-                    logger.info(f"Redis cache is already populated with {len(keys)} active job keys. Skipping repetitive hydration.")
-                    return len(keys)
             except Exception as e:
                 logger.warning(f"Note on syncing Redis jobs to DB during startup: {e}")
 
@@ -142,7 +137,30 @@ class IngestionManager:
                         continue
                     valid_rows.append(r)
 
+            # Collect existing Redis URLs to avoid redundant writes
+            redis_existing_urls = set()
+            try:
+                client = get_redis_client()
+                raw_keys = client.keys("*|*")
+                keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
+                if keys:
+                    pipe = client.pipeline(transaction=False)
+                    for k in keys:
+                        pipe.hkeys(k)
+                    f_results = pipe.execute()
+                    for f_list in f_results:
+                        for f in f_list:
+                            if f.startswith("http"):
+                                redis_existing_urls.add(f.lower().rstrip("/"))
+            except Exception:
+                pass
+
             for row in valid_rows:
+                apply_norm = (row["apply_url"] or "").strip().lower().rstrip("/")
+                if apply_norm in redis_existing_urls:
+                    count += 1
+                    continue
+
                 ist_str, raw_iso, rel_time = parse_date_to_ist(row["posted_at"])
                 clean_loc = extract_india_location(row["location"])
                 emp_type = row["employment_type"] if "employment_type" in row.keys() and row["employment_type"] else "Full time"
@@ -156,6 +174,7 @@ class IngestionManager:
                     "workplace_type": row["workplace_type"] or "In office",
                     "experience_level": row["experience_level"] or "Entry level",
                     "apply_link": row["apply_url"],
+                    "apply_url": row["apply_url"],
                     "posted_timestamp_ist": ist_str,
                     "posted_timestamp_raw": raw_iso,
                     "relative_time_ist": rel_time,
@@ -168,7 +187,7 @@ class IngestionManager:
         except Exception as e:
             logger.error(f"Error hydrating SQLite jobs to Redis: {e}")
 
-        logger.info(f"Hydrated {count} verified authentic India tech jobs into Redis.")
+        logger.info(f"Hydrated/verified {count} authentic India tech jobs in Redis.")
         return count
 
     async def run_ingestion_cycle(self, full_sync: bool = False) -> Dict[str, Any]:

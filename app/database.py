@@ -530,9 +530,8 @@ def clean_stale_jobs_from_db(max_days: int = 7) -> int:
     cur = conn.cursor()
     deleted = 0
     try:
-        from app.utils.date_parser import IST_TZ
-        import datetime
-        cutoff = datetime.datetime.now(IST_TZ) - datetime.timedelta(days=max_days)
+        tz = pytz.timezone("Asia/Kolkata")
+        cutoff = datetime.datetime.now(tz) - datetime.timedelta(days=max_days)
         cutoff_str = cutoff.strftime("%Y-%m-%d %H:%M:%S")
         cur.execute("""
         DELETE FROM jobs 

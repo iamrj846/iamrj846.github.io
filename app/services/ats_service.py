@@ -634,41 +634,87 @@ class ATSService:
 
     def _load_endpoints_from_excel(self):
         excel_path = self.config.excel_path
-        if not excel_path.exists():
+        seen = set()
+
+        if excel_path.exists():
+            try:
+                wb = openpyxl.load_workbook(str(excel_path), read_only=True, data_only=True)
+                sheet_name = self.config.resources.get("master_sheet", "Master ATS Directory (1000+)")
+                if sheet_name not in wb.sheetnames:
+                    sheet_name = wb.sheetnames[0]
+                ws = wb[sheet_name]
+
+                # Header is typically row index 3 (4th row)
+                header_idx = self.config.resources.get("header_row_index", 3)
+
+                row_idx = 0
+                for r in ws.iter_rows(values_only=True):
+                    row_idx += 1
+                    if row_idx <= header_idx + 1 or not r:
+                        continue
+                    c_name = ""
+                    platform = ""
+                    endpoint = ""
+                    # Format A (with Index column at r[0]): r[1]=Company, r[2]=Platform, r[4]=Endpoint
+                    if len(r) >= 5 and r[4] and str(r[4]).strip().startswith("http"):
+                        c_name = str(r[1]).strip() if r[1] else ""
+                        platform = str(r[2]).strip() if r[2] else ""
+                        endpoint = str(r[4]).strip()
+                    # Format B (no Index column, starts at r[0]): r[0]=Company, r[1]=Platform, r[2]=Endpoint
+                    elif len(r) >= 3 and r[2] and str(r[2]).strip().startswith("http"):
+                        c_name = str(r[0]).strip() if r[0] else ""
+                        platform = str(r[1]).strip() if r[1] else ""
+                        endpoint = str(r[2]).strip()
+
+                    if c_name and endpoint and endpoint.startswith("http"):
+                        key = (c_name.lower(), endpoint)
+                        if key not in seen:
+                            seen.add(key)
+                            self.endpoints.append(ATSEndpoint(c_name, platform, endpoint))
+
+                wb.close()
+                logger.info(f"Loaded {len(self.endpoints)} ATS endpoints from {excel_path}")
+            except Exception as e:
+                logger.error(f"Failed to parse ATS endpoints from Excel: {e}")
+        else:
             logger.warning(f"Excel file not found at: {excel_path}")
-            return
 
-        try:
-            wb = openpyxl.load_workbook(str(excel_path), read_only=True, data_only=True)
-            sheet_name = self.config.resources.get("master_sheet", "Master ATS Directory (1000+)")
-            if sheet_name not in wb.sheetnames:
-                sheet_name = wb.sheetnames[0]
-            ws = wb[sheet_name]
-
-            # Header is typically row index 3 (4th row)
-            header_idx = self.config.resources.get("header_row_index", 3)
-
-            seen = set()
-            row_idx = 0
-            for r in ws.iter_rows(values_only=True):
-                row_idx += 1
-                if row_idx <= header_idx + 1:
-                    continue
-                if not r or len(r) < 5:
-                    continue
-                c_name = str(r[1]).strip() if r[1] else ""
-                platform = str(r[2]).strip() if r[2] else ""
-                endpoint = str(r[4]).strip() if r[4] else ""
-                if c_name and endpoint and endpoint.startswith("http"):
-                    key = (c_name.lower(), endpoint)
-                    if key not in seen:
-                        seen.add(key)
-                        self.endpoints.append(ATSEndpoint(c_name, platform, endpoint))
-
-            wb.close()
-            logger.info(f"Loaded {len(self.endpoints)} ATS endpoints from {excel_path}")
-        except Exception as e:
-            logger.error(f"Failed to parse ATS endpoints from Excel: {e}")
+        # Curated top-tier and modern ATS endpoints (Recruitee, Breezy HR, SmartRecruiters)
+        curated = [
+            # High-yield SmartRecruiters tech endpoints (India & Global Remote)
+            ("Swiggy", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/swiggy/postings?limit=100"),
+            ("Freshworks", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/freshworks/postings?limit=100"),
+            ("Mindtickle", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/mindtickle/postings?limit=100"),
+            ("Netskope", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/netskope/postings?limit=100"),
+            ("HackerRank", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/hackerrank/postings?limit=100"),
+            ("Innovaccer", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/innovaccer/postings?limit=100"),
+            ("BrowserStack", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/browserstack/postings?limit=100"),
+            ("Visa", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/visa/postings?limit=100"),
+            ("Bosch", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/bosch/postings?limit=100"),
+            ("Publicis Sapient", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/publicissapient/postings?limit=100"),
+            ("EPAM Systems", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/epam/postings?limit=100"),
+            ("Ubisoft", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/ubisoft/postings?limit=100"),
+            ("Avery Dennison", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/averydennison/postings?limit=100"),
+            # Recruitee public JSON endpoints
+            ("Bunq", "Recruitee", "https://bunq.recruitee.com/api/offers"),
+            ("Transifex", "Recruitee", "https://transifex.recruitee.com/api/offers"),
+            ("Tactile Games", "Recruitee", "https://tactilegames.recruitee.com/api/offers"),
+            ("Framer", "Recruitee", "https://framer.recruitee.com/api/offers"),
+            ("Uscreen", "Recruitee", "https://uscreen.recruitee.com/api/offers"),
+            ("Sendcloud", "Recruitee", "https://sendcloud.recruitee.com/api/offers"),
+            ("Hotjar", "Recruitee", "https://hotjar.recruitee.com/api/offers"),
+            # Breezy HR public JSON endpoints
+            ("Buffer", "Breezy HR", "https://buffer.breezy.hr/json"),
+            ("Doist", "Breezy HR", "https://doist.breezy.hr/json"),
+            ("Toggl", "Breezy HR", "https://toggl.breezy.hr/json"),
+            ("Scopely", "Breezy HR", "https://scopely.breezy.hr/json"),
+            ("Automattic", "Breezy HR", "https://automattic.breezy.hr/json")
+        ]
+        for c_name, plat, ep_url in curated:
+            k = (c_name.lower(), ep_url.split("?")[0].lower())
+            if k not in seen:
+                seen.add(k)
+                self.endpoints.append(ATSEndpoint(c_name, plat, ep_url))
 
     def get_all_companies(self) -> List[str]:
         companies = sorted(list({ep.company_name for ep in self.endpoints if ep.company_name}))
@@ -686,13 +732,18 @@ class ATSService:
         retries = self.config.scheduler.get("max_retries", 3)
         backoff = self.config.scheduler.get("backoff_factor", 1.5)
 
+        # SmartRecruiters query enhancement: auto-append limit=100
+        req_url = ep.endpoint_url
+        if "api.smartrecruiters.com" in req_url and "limit=" not in req_url:
+            req_url += ("&limit=100" if "?" in req_url else "?limit=100")
+
         for attempt in range(retries):
             try:
-                if "myworkdayjobs.com/wday/cxs" in ep.endpoint_url:
+                if "myworkdayjobs.com/wday/cxs" in req_url:
                     payload = {"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": "India"}
-                    resp = await client.post(ep.endpoint_url, headers=headers, json=payload, timeout=self.config.scheduler.get("request_timeout_seconds", 10))
+                    resp = await client.post(req_url, headers=headers, json=payload, timeout=self.config.scheduler.get("request_timeout_seconds", 10))
                 else:
-                    resp = await client.get(ep.endpoint_url, headers=headers, timeout=self.config.scheduler.get("request_timeout_seconds", 10))
+                    resp = await client.get(req_url, headers=headers, timeout=self.config.scheduler.get("request_timeout_seconds", 10))
                 if resp.status_code == 200:
                     data = resp.json()
                     return self._parse_ats_data(ep, data)
@@ -702,7 +753,7 @@ class ATSService:
                     break
             except Exception as e:
                 if attempt == retries - 1:
-                    logger.debug(f"Failed fetching {ep.company_name} ({ep.endpoint_url}): {e}")
+                    logger.debug(f"Failed fetching {ep.company_name} ({req_url}): {e}")
                 await asyncio.sleep(0.5 * (attempt + 1))
         return []
 
@@ -718,6 +769,10 @@ class ATSService:
             return self._parse_lever(ep, data)
         elif "bamboohr" in platform:
             return self._parse_bamboohr(ep, data)
+        elif "recruitee" in platform:
+            return self._parse_recruitee(ep, data)
+        elif "breezy" in platform:
+            return self._parse_breezy(ep, data)
         elif "oracle" in platform:
             return self._parse_oracle(ep, data)
         elif "workday" in platform:
@@ -733,6 +788,8 @@ class ATSService:
                     return self._parse_smartrecruiters(ep, data)
                 elif "result" in data and isinstance(data["result"], list):
                     return self._parse_bamboohr(ep, data)
+                elif "offers" in data and isinstance(data["offers"], list):
+                    return self._parse_recruitee(ep, data)
                 elif "items" in data and data["items"] and isinstance(data["items"], list) and "requisitionList" in data["items"][0]:
                     return self._parse_oracle(ep, data)
         return []
@@ -845,10 +902,15 @@ class ATSService:
             city = loc_obj.get("city", "")
             region = loc_obj.get("region", "")
             country = loc_obj.get("country", "")
-            loc_str = f"{city}, {region}, {country}".strip(", ")
+            full_loc = loc_obj.get("fullLocation", "")
+            is_rem = bool(loc_obj.get("remote", False))
+            is_hyb = bool(loc_obj.get("hybrid", False))
 
-            if not is_india_location(loc_str, country_code=country):
-                if not loc_str.strip() and is_india_location(title):
+            loc_str = full_loc or f"{city}, {region}, {country}".strip(", ")
+            wp_hint = "Remote" if is_rem else ("Hybrid" if is_hyb else "")
+
+            if not is_india_location(loc_str, country_code=country, workplace_type=wp_hint):
+                if not loc_str.strip() and is_india_location(title, workplace_type=wp_hint):
                     clean_loc = "India"
                 else:
                     continue
@@ -876,24 +938,28 @@ class ATSService:
             exp_label = exp_obj.get("label", "") if isinstance(exp_obj, dict) else str(exp_obj)
 
             emp_type = normalize_employment_type(type_label, title)
-            workplace = normalize_workplace(loc_str)
+            workplace = "Remote" if is_rem else ("Hybrid" if is_hyb else normalize_workplace(loc_str))
             exp_level = normalize_experience_level(title, exp_label)
-            tags = generate_job_tags(title=title, company=comp_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=j.get("function", {}).get("label", ""))
+            dept_label = j.get("function", {}).get("label", "") if isinstance(j.get("function"), dict) else str(j.get("function") or "")
+            tags = generate_job_tags(title=title, company=comp_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept_label)
 
+            now_str = datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
             results.append({
                 "company_name": comp_name,
                 "role_name": title,
+                "title": title,
                 "location": clean_loc or "India",
                 "employment_type": emp_type,
                 "workplace_type": workplace,
                 "experience_level": exp_level,
                 "apply_link": apply_link,
+                "apply_url": apply_link,
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
                 "tags": tags,
                 "ats_platform": "SmartRecruiters",
-                "ingested_at": datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+                "ingested_at": now_str
             })
         return results
 
@@ -959,15 +1025,24 @@ class ATSService:
             if not isinstance(j, dict):
                 continue
             title = j.get("jobOpeningName", "").strip()
-            loc_obj = j.get("location") or {}
-            city = loc_obj.get("city", "") if isinstance(loc_obj, dict) else ""
-            state = loc_obj.get("state", "") if isinstance(loc_obj, dict) else ""
-            loc_str = f"{city}, {state}".strip(", ")
-            is_rem = bool(j.get("isRemote"))
             
+            # Check both location and atsLocation objects
+            loc_obj = j.get("location") or {}
+            ats_loc = j.get("atsLocation") or {}
+
+            city = (ats_loc.get("city") or loc_obj.get("city") or "").strip()
+            state = (ats_loc.get("state") or ats_loc.get("province") or loc_obj.get("state") or "").strip()
+            country = (ats_loc.get("country") or "").strip()
+            
+            loc_parts = [p for p in [city, state, country] if p]
+            loc_str = ", ".join(loc_parts)
+
+            is_rem = bool(j.get("isRemote")) or str(j.get("locationType", "")).strip() == "1"
+            wp_hint = "Remote" if is_rem else ""
+
             # India location verification
-            if not is_india_location(loc_str, workplace_type="Remote" if is_rem else ""):
-                if not loc_str.strip() and is_india_location(title):
+            if not is_india_location(loc_str, country_code=country, workplace_type=wp_hint):
+                if not loc_str.strip() and is_india_location(title, workplace_type=wp_hint):
                     clean_loc = "India"
                 else:
                     continue
@@ -975,38 +1050,151 @@ class ATSService:
                 clean_loc = extract_india_location(loc_str)
 
             job_id = str(j.get("id", "")).strip()
-            # Derive apply link: https://{company}.bamboohr.com/careers/{job_id}
-            base_careers = ep.endpoint_url.replace("/careers/list", f"/careers/{job_id}")
-            apply_link = base_careers if job_id else ep.endpoint_url
+            base_careers = ep.endpoint_url.split("/careers/list")[0]
+            apply_link = f"{base_careers}/careers/{job_id}" if job_id else ep.endpoint_url
             
             now_ist = datetime.datetime.now(IST_TZ)
             ist_str = now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
             raw_iso = now_ist.isoformat()
             rel_time = "Recently"
 
-            dept = j.get("departmentLabel", "")
+            dept = j.get("departmentLabel", "") or ""
             emp_type = normalize_employment_type(j.get("employmentStatusLabel", ""), title)
-            workplace = normalize_workplace(loc_str, is_remote=bool(j.get("isRemote")))
+            workplace = "Remote" if is_rem else normalize_workplace(loc_str)
             exp_level = normalize_experience_level(title)
             tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept)
 
             results.append({
                 "company_name": ep.company_name,
                 "role_name": title,
+                "title": title,
                 "location": clean_loc or "India",
                 "employment_type": emp_type,
                 "workplace_type": workplace,
                 "experience_level": exp_level,
                 "apply_link": apply_link,
+                "apply_url": apply_link,
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
                 "tags": tags,
                 "ats_platform": "BambooHR",
-                "ingested_at": now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
+                "ingested_at": ist_str
             })
         return results
 
+    def _parse_recruitee(self, ep: ATSEndpoint, data: Any) -> List[Dict[str, Any]]:
+        results = []
+        offers = data.get("offers", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+        for j in offers:
+            if not isinstance(j, dict):
+                continue
+            title = j.get("title", "").strip()
+            city = j.get("city", "") or ""
+            state = j.get("state_name", "") or j.get("state_code", "") or ""
+            country = j.get("country", "") or ""
+            country_code = j.get("country_code", "") or ""
+            is_rem = bool(j.get("remote", False))
+            is_hyb = bool(j.get("hybrid", False))
+
+            loc_parts = [p for p in [city, state, country] if p]
+            loc_str = ", ".join(loc_parts)
+            wp_hint = "Remote" if is_rem else ("Hybrid" if is_hyb else "")
+
+            if not is_india_location(loc_str, country_code=country_code, workplace_type=wp_hint):
+                if not loc_str.strip() and is_india_location(title, workplace_type=wp_hint):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(loc_str)
+
+            apply_link = j.get("careers_apply_url") or j.get("careers_url") or ep.endpoint_url
+            created_at = j.get("published_at") or j.get("created_at")
+            ist_str, raw_iso, rel_time = parse_date_to_ist(created_at)
+
+            dept = j.get("department", "") or ""
+            emp_type = normalize_employment_type(j.get("employment_type_code", "") or "", title)
+            workplace = "Remote" if is_rem else ("Hybrid" if is_hyb else normalize_workplace(loc_str))
+            exp_level = normalize_experience_level(title, j.get("experience_code", "") or "")
+            tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept)
+
+            now_str = datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+            results.append({
+                "company_name": ep.company_name,
+                "role_name": title,
+                "title": title,
+                "location": clean_loc or "India",
+                "employment_type": emp_type,
+                "workplace_type": workplace,
+                "experience_level": exp_level,
+                "apply_link": apply_link,
+                "apply_url": apply_link,
+                "posted_timestamp_ist": ist_str,
+                "posted_timestamp_raw": raw_iso,
+                "relative_time_ist": rel_time,
+                "tags": tags,
+                "ats_platform": "Recruitee",
+                "ingested_at": now_str
+            })
+        return results
+
+    def _parse_breezy(self, ep: ATSEndpoint, data: Any) -> List[Dict[str, Any]]:
+        results = []
+        jobs = data if isinstance(data, list) else (data.get("positions", []) if isinstance(data, dict) else [])
+        for j in jobs:
+            if not isinstance(j, dict):
+                continue
+            title = j.get("name", "").strip()
+            loc_obj = j.get("location") or {}
+            city = loc_obj.get("city", "") if isinstance(loc_obj, dict) else str(loc_obj)
+            country_obj = loc_obj.get("country", {}) if isinstance(loc_obj, dict) else {}
+            country_name = country_obj.get("name", "") if isinstance(country_obj, dict) else str(country_obj)
+            is_rem = bool(loc_obj.get("is_remote", False)) if isinstance(loc_obj, dict) else False
+
+            loc_parts = [p for p in [city, country_name] if p]
+            loc_str = ", ".join(loc_parts)
+            wp_hint = "Remote" if is_rem else ""
+
+            if not is_india_location(loc_str, workplace_type=wp_hint):
+                if not loc_str.strip() and is_india_location(title, workplace_type=wp_hint):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(loc_str)
+
+            apply_link = j.get("url") or ep.endpoint_url
+            published_at = j.get("published_date") or j.get("created_at")
+            ist_str, raw_iso, rel_time = parse_date_to_ist(published_at)
+
+            dept = j.get("department", "") or ""
+            type_obj = j.get("type", {})
+            type_name = type_obj.get("name", "") if isinstance(type_obj, dict) else str(type_obj)
+            emp_type = normalize_employment_type(type_name, title)
+            workplace = "Remote" if is_rem else normalize_workplace(loc_str)
+            exp_level = normalize_experience_level(title)
+            tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept)
+
+            now_str = datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+            results.append({
+                "company_name": ep.company_name,
+                "role_name": title,
+                "title": title,
+                "location": clean_loc or "India",
+                "employment_type": emp_type,
+                "workplace_type": workplace,
+                "experience_level": exp_level,
+                "apply_link": apply_link,
+                "apply_url": apply_link,
+                "posted_timestamp_ist": ist_str,
+                "posted_timestamp_raw": raw_iso,
+                "relative_time_ist": rel_time,
+                "tags": tags,
+                "ats_platform": "Breezy HR",
+                "ingested_at": now_str
+            })
+        return results
 
     def _parse_oracle(self, ep: ATSEndpoint, data: Dict[str, Any]) -> List[Dict[str, Any]]:
         results = []
@@ -1016,9 +1204,7 @@ class ATSService:
         
         req_list = items[0].get("requisitionList", [])
         
-        # Extract site number from endpoint_url or default to CX_1
         site_number = "CX_1"
-        import re
         m = re.search(r'siteNumber=([A-Za-z0-9_]+)', ep.endpoint_url)
         if m:
             site_number = m.group(1)
@@ -1055,24 +1241,26 @@ class ATSService:
             exp_level = normalize_experience_level(title)
             tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept_str)
             
+            now_str = datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
             results.append({
-                "job_title": title,
                 "company_name": ep.company_name,
-                "location": clean_loc,
+                "role_name": title,
+                "title": title,
+                "location": clean_loc or "India",
+                "apply_link": apply_link,
                 "apply_url": apply_link,
-                "job_updated_at": ist_str,
-                "raw_timestamp": raw_iso,
-                "relative_time": rel_time,
+                "posted_timestamp_ist": ist_str,
+                "posted_timestamp_raw": raw_iso,
+                "relative_time_ist": rel_time,
                 "tags": tags,
                 "employment_type": emp_type,
                 "workplace_type": workplace,
                 "experience_level": exp_level,
                 "ats_platform": "Oracle",
-                "ingested_at": datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+                "ingested_at": now_str
             })
             
         return results
-
 
     def _parse_workday(self, ep: ATSEndpoint, data: Dict[str, Any]) -> List[Dict[str, Any]]:
         results = []
@@ -1080,7 +1268,6 @@ class ATSService:
         if not jobs:
             return results
             
-        import re
         m = re.search(r'https://([^.]+)\.([^.]+)\.myworkdayjobs\.com/wday/cxs/([^/]+)/([^/]+)/jobs', ep.endpoint_url)
         if not m:
             return results
@@ -1107,7 +1294,6 @@ class ATSService:
                 
             apply_link = f"{base_url}{external_path}"
             posted_date = j.get("postedOn", "")
-            # postedOn is usually "Posted 2 Days Ago" or "Posted Today"
             ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
             
             bullets = " ".join(j.get("bulletFields", []))
@@ -1116,30 +1302,70 @@ class ATSService:
             exp_level = normalize_experience_level(title)
             tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=bullets)
             
+            now_str = datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
             results.append({
-                "job_title": title,
                 "company_name": ep.company_name,
-                "location": clean_loc,
+                "role_name": title,
+                "title": title,
+                "location": clean_loc or "India",
+                "apply_link": apply_link,
                 "apply_url": apply_link,
-                "job_updated_at": ist_str,
-                "raw_timestamp": raw_iso,
-                "relative_time": rel_time or posted_date,
+                "posted_timestamp_ist": ist_str,
+                "posted_timestamp_raw": raw_iso,
+                "relative_time_ist": rel_time or posted_date,
                 "tags": tags,
                 "employment_type": emp_type,
                 "workplace_type": workplace,
                 "experience_level": exp_level,
                 "ats_platform": "Workday",
-                "ingested_at": datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+                "ingested_at": now_str
             })
             
         return results
 
-    async def fetch_all_endpoints(self, max_concurrent: int = 15, sample_limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    async def fetch_all_endpoints(self, max_concurrent: int = 25, sample_limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
-        Fetches all configured endpoints asynchronously with rate limiting.
+        Fetches configured endpoints asynchronously with rate limiting.
+        Applies stratified sampling across all ATS platforms to ensure equitable
+        distribution of Ashby, Greenhouse, Lever, BambooHR, SmartRecruiters, Workday, Recruitee, Breezy HR.
         """
         all_jobs: List[Dict[str, Any]] = []
-        endpoints_to_query = self.endpoints[:sample_limit] if sample_limit else self.endpoints
+
+        if sample_limit and sample_limit < len(self.endpoints):
+            # Group endpoints by platform
+            from collections import defaultdict
+            by_platform = defaultdict(list)
+            for ep in self.endpoints:
+                plat_key = ep.ats_platform.lower()
+                by_platform[plat_key].append(ep)
+
+            selected_endpoints: List[ATSEndpoint] = []
+            
+            # Always include 100% of smaller / high-yield platforms
+            always_full = ["smartrecruiters", "recruitee", "breezy hr", "breezy", "oracle"]
+            remaining_quota = sample_limit
+            for plat in always_full:
+                if plat in by_platform:
+                    selected_endpoints.extend(by_platform[plat])
+                    remaining_quota -= len(by_platform[plat])
+
+            # For larger platforms (ashby, greenhouse, lever, bamboohr, workday)
+            large_platforms = [p for p in by_platform.keys() if p not in always_full]
+            if large_platforms and remaining_quota > 0:
+                quota_per_platform = remaining_quota // len(large_platforms)
+                extra = remaining_quota % len(large_platforms)
+                for idx, p in enumerate(large_platforms):
+                    take = quota_per_platform + (1 if idx < extra else 0)
+                    eps = by_platform[p]
+                    sampled = random.sample(eps, min(take, len(eps)))
+                    selected_endpoints.extend(sampled)
+            
+            random.shuffle(selected_endpoints)
+            endpoints_to_query = selected_endpoints
+        else:
+            endpoints_to_query = list(self.endpoints)
+            random.shuffle(endpoints_to_query)
+
         semaphore = asyncio.Semaphore(max_concurrent)
 
         async with httpx.AsyncClient(timeout=12.0, follow_redirects=True) as client:

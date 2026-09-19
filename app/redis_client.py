@@ -113,7 +113,7 @@ def store_job_in_redis(job_data: Dict[str, Any], ttl_seconds: Optional[int] = No
         return False
 
     apply_link = (job_data.get("apply_link") or job_data.get("apply_url") or "").strip()
-    field_key = apply_link if apply_link else str(posted_ts)
+    field_key = apply_link.rstrip("/").lower() if apply_link else str(posted_ts)
     hash_key = make_hash_name(company, role)
     val_str = json.dumps(job_data)
 
@@ -166,7 +166,8 @@ def get_hashes_by_tag(tag_term: str) -> Set[str]:
 
 def clean_stale_jobs_older_than_days(max_days: int = 7) -> int:
     """
-    Keeps clearing hashes and fields for which posted/ingested timestamp is older than 7 days.
+    Clears hashes and fields for which posted/ingested timestamp is older than max_days.
+    Also purges legacy non-URL duplicate fields to ensure strict 1-to-1 parity with DB.
     """
     client = get_redis_client()
     tz = pytz.timezone("Asia/Kolkata")
@@ -186,6 +187,12 @@ def clean_stale_jobs_older_than_days(max_days: int = 7) -> int:
                 continue
             for ts_key, val_str in hdata.items():
                 try:
+                    # If field key is a legacy timestamp and the hash already contains http fields, purge legacy duplicate
+                    if not ts_key.startswith("http") and any(f.startswith("http") for f in hdata.keys()):
+                        client.hdel(k, ts_key)
+                        removed_count += 1
+                        continue
+
                     jdata = json.loads(val_str)
                     raw_ts = jdata.get("posted_timestamp_raw")
                     dt = None
@@ -216,13 +223,19 @@ def get_redis_summary() -> Dict[str, Any]:
         raw_keys = client.keys("*|*")
         keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
         total_hashes = len(keys)
-        total_jobs = 0
+        distinct_jobs = set()
         if keys:
-            pipe = client.pipeline()
+            pipe = client.pipeline(transaction=False)
             for k in keys:
-                pipe.hlen(k)
-            counts = pipe.execute()
-            total_jobs = sum(counts)
+                pipe.hkeys(k)
+            all_fields = pipe.execute()
+            for f_list in all_fields:
+                for f in f_list:
+                    if f.startswith("http"):
+                        distinct_jobs.add(f.lower().rstrip("/"))
+                    else:
+                        distinct_jobs.add(f)
+        total_jobs = len(distinct_jobs)
         info = {}
         try:
             info = client.info()

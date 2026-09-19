@@ -612,7 +612,7 @@ class SearchService:
         employment_type: Optional[str] = None,
         workplace_type: Optional[str] = None,
         experience_level: Optional[str] = None,
-        time_filter: Optional[str] = "7d", # "1h", "12h", "24h", "2d", "7d", "all"
+        time_filter: Optional[str] = "all", # "1h", "12h", "24h", "2d", "7d", "all"
         page: int = 1,
         page_size: int = 10
     ) -> Dict[str, Any]:
@@ -625,7 +625,7 @@ class SearchService:
         if query_term.lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any", "all category", "all categories"):
             query_term = ""
         query_lower = query_term.lower()
-        active_time_filter = (time_filter or "7d").strip()
+        active_time_filter = (time_filter or "all").strip()
 
         # Step 1: Scan Redis hashes matching company, role, or secondary tag index
 
@@ -944,25 +944,26 @@ class SearchService:
 
             filtered_jobs.append(job)
 
-        # Step 4: Strict Deduplication by normalized apply_link and (company, title, location)
+        # Step 4: Strict Deduplication by normalized apply_link (fallback to company+title+location if no URL)
         seen_urls = set()
         seen_tuples = set()
         deduped_jobs = []
         for job in filtered_jobs:
-            link = (job.get("apply_link") or "").strip().rstrip("/").lower()
+            link = (job.get("apply_link") or job.get("apply_url") or "").strip().rstrip("/").lower()
             comp = (job.get("company_name") or "").strip().lower()
             t_name = (job.get("role_name") or job.get("title") or "").strip().lower()
             l_name = (job.get("location") or "").strip().lower()
 
-            if link and link in seen_urls:
-                continue
-            tup_key = (comp, t_name, l_name)
-            if tup_key in seen_tuples:
-                continue
-
             if link:
+                if link in seen_urls:
+                    continue
                 seen_urls.add(link)
-            seen_tuples.add(tup_key)
+            else:
+                tup_key = (comp, t_name, l_name)
+                if tup_key in seen_tuples:
+                    continue
+                seen_tuples.add(tup_key)
+
             deduped_jobs.append(job)
 
         filtered_jobs = deduped_jobs
