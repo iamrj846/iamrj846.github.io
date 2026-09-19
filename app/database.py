@@ -82,6 +82,11 @@ def init_db():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_company ON jobs(company);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_role ON jobs(role_category);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_loc ON jobs(location);")
+    try:
+        deduplicate_jobs_table(conn)
+        cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_jobs_apply_url_unique ON jobs(apply_url);")
+    except Exception as e:
+        logger.warning(f"Could not create unique index on apply_url: {e}")
 
     # Ensure employment_type column exists
     cur.execute("PRAGMA table_info(jobs);")
@@ -428,13 +433,13 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
         p_time = j.get("posted_timestamp_ist") or j.get("posted_at") or now_str
         apply_link_val = (j.get("apply_link") or j.get("apply_url") or "").strip()
 
-        # Deterministic unique job_id based on normalized apply URL hash to prevent duplicates
+        # Deterministic unique job_id based strictly on normalized apply URL hash to guarantee deduplication
         if apply_link_val and apply_link_val.startswith("http"):
-            url_hash = hashlib.sha256(apply_link_val.lower().rstrip("/").encode("utf-8")).hexdigest()[:16]
-            raw_id = f"{c_name[:25]}_{actual_title[:35]}_{url_hash}"
+            url_hash = hashlib.sha256(apply_link_val.lower().rstrip("/").encode("utf-8")).hexdigest()[:24]
+            job_id = f"job_{url_hash}"
         else:
             raw_id = j.get("id") or f"{c_name}_{actual_title}_{p_time}"
-        job_id = "".join([c if c.isalnum() or c in ('_', '-') else '_' for c in str(raw_id)])[:120]
+            job_id = "".join([c if c.isalnum() or c in ('_', '-') else '_' for c in str(raw_id)])[:120]
         
         tags_val = j.get("tags", [])
         tags_json = json.dumps(tags_val) if isinstance(tags_val, (list, dict)) else str(tags_val)
@@ -485,6 +490,55 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
     conn.commit()
     conn.close()
     return count
+
+def deduplicate_jobs_table(conn=None) -> int:
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    cur = conn.cursor()
+    deleted = 0
+    try:
+        cur.execute("""
+        DELETE FROM jobs
+        WHERE rowid NOT IN (
+            SELECT MAX(rowid)
+            FROM jobs
+            WHERE apply_url IS NOT NULL AND apply_url != ''
+            GROUP BY LOWER(RTRIM(apply_url, '/'))
+        ) AND apply_url IS NOT NULL AND apply_url != '';
+        """)
+        deleted = cur.rowcount
+        conn.commit()
+    except Exception as e:
+        logger.error(f"Error deduplicating jobs table: {e}")
+    finally:
+        if close_conn:
+            conn.close()
+    return deleted
+
+def clean_stale_jobs_from_db(max_days: int = 7) -> int:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    deleted = 0
+    try:
+        from app.utils.date_parser import IST_TZ
+        import datetime
+        cutoff = datetime.datetime.now(IST_TZ) - datetime.timedelta(days=max_days)
+        cutoff_str = cutoff.strftime("%Y-%m-%d %H:%M:%S")
+        cur.execute("""
+        DELETE FROM jobs 
+        WHERE (posted_at < ? OR posted_at IS NULL) 
+          AND (updated_at < ? OR updated_at IS NULL)
+        """, (cutoff_str, cutoff_str))
+        deleted = cur.rowcount
+        conn.commit()
+    except Exception as e:
+        logger.error(f"Error cleaning stale jobs from DB: {e}")
+    finally:
+        conn.close()
+    return deleted
+
 
 def get_total_jobs_in_db() -> int:
     conn = get_db_connection()
@@ -905,6 +959,15 @@ def update_contact_status(contact_id: int, status: str) -> bool:
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("UPDATE contact_messages SET status = ? WHERE id = ?", (status.strip().lower(), contact_id))
+    success = cur.rowcount > 0
+    conn.commit()
+    conn.close()
+    return success
+
+def delete_contact_message(contact_id: int) -> bool:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM contact_messages WHERE id = ?", (contact_id,))
     success = cur.rowcount > 0
     conn.commit()
     conn.close()

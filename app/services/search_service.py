@@ -622,6 +622,8 @@ class SearchService:
         """
         client = get_redis_client()
         query_term = (custom_input if custom_input else search_term or "").strip()
+        if query_term.lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any", "all category", "all categories"):
+            query_term = ""
         query_lower = query_term.lower()
         active_time_filter = (time_filter or "7d").strip()
 
@@ -831,7 +833,7 @@ class SearchService:
                         continue
 
             # Location filter
-            if location_filter and location_filter.lower() != "all":
+            if location_filter and location_filter.strip().lower() not in ("all", "all locations", "all location", ""):
                 loc = job.get("location", "").lower()
                 wp = job.get("workplace_type", "").lower()
                 lf = location_filter.strip().lower()
@@ -844,7 +846,7 @@ class SearchService:
                     continue
 
             # Role filter
-            if role_filter and role_filter.lower() != "all":
+            if role_filter and role_filter.strip().lower() not in ("all", "all roles", "all role", "all categories", "all category", ""):
                 r_syns = self.get_role_synonyms(role_filter)
                 rf_lower = role_filter.lower()
                 all_rf_syns = list(set(r_syns + [rf_lower]))
@@ -908,9 +910,16 @@ class SearchService:
                     continue
 
             # Time filter ("1h", "12h", "24h", "2d", "7d", "all")
-            if active_time_filter and active_time_filter.lower() not in ("all", "anytime", "anytime (7 days)"):
-                hours_map = {"1h": 1, "12h": 12, "24h": 24, "2d": 48, "7d": 168}
-                max_hours = hours_map.get(active_time_filter.lower(), 1)
+            if active_time_filter and active_time_filter.lower() not in ("all", "anytime", "anytime (7 days)", "all time", "none", ""):
+                hours_map = {
+                    "1h": 1, "1 hour": 1,
+                    "12h": 12, "12 hours": 12,
+                    "24h": 24, "24 hours": 24, "1d": 24, "1 day": 24,
+                    "2d": 48, "2 days": 48, "48h": 48,
+                    "7d": 168, "7 days": 168, "1w": 168, "1 week": 168,
+                    "30d": 720, "30 days": 720, "1m": 720, "1 month": 720
+                }
+                max_hours = hours_map.get(active_time_filter.lower(), 168)
                 posted_iso = job.get("posted_timestamp_raw") or job.get("posted_timestamp_ist") or job.get("posted_at")
                 if posted_iso:
                     try:

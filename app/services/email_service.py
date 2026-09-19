@@ -110,7 +110,7 @@ def build_otp_html(otp: str, user_name: str = "") -> str:
           <tr>
             <td align="center" style="padding:32px 24px 20px; text-align:center;">
               <div style="display:inline-block; margin-bottom:12px;">
-                <span style="display:inline-block; width:44px; height:44px; border-radius:12px; background:#4f46e5; line-height:44px; text-align:center; font-size:22px; color:#ffffff; font-weight:900; box-shadow:0 4px 12px rgba(79,70,229,0.3);">⚡</span>
+                <img src="https://corporateguild.com/static/logo.png" alt="CorporateGuild Logo" width="52" height="52" style="display:inline-block; width:52px; height:52px; border-radius:14px; vertical-align:middle; box-shadow:0 4px 12px rgba(79,70,229,0.25); object-fit:contain;" />
               </div>
               <div class="brand-title" style="font-size:24px; font-weight:850; letter-spacing:-0.5px; color:#0f172a; line-height:1.2;">
                 <span class="brand-accent" style="color:#4f46e5; font-weight:900;">Corporate</span>Guild
@@ -128,7 +128,7 @@ def build_otp_html(otp: str, user_name: str = "") -> str:
                 {name_salutation}
               </h1>
               <p class="email-body-text" style="font-size:14.5px; color:#334155; line-height:1.6; margin:0 0 24px;">
-                Thank you for signing up for CorporateGuild. Please use the 6-digit verification code below to activate your account and unlock unlimited job search access:
+                Thank you for signing up for free unlimited access to all jobs. Please use the 6-digit verification code below to activate your account and unlock unlimited job search access:
               </p>
 
               <!-- High Contrast OTP Section -->
@@ -180,7 +180,7 @@ def build_otp_plain(otp: str, user_name: str = "") -> str:
     salutation = f"Hi {user_name}," if user_name else "Hello,"
     return f"""{salutation}
 
-Your CorporateGuild account verification code is:
+Thank you for signing up for free unlimited access to all jobs. Please use the 6-digit verification code below to activate your account and unlock unlimited job search access:
 
 {otp}
 

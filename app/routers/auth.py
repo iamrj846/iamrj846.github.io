@@ -138,7 +138,7 @@ async def get_current_user(request: Request, response: Response):
                     "id": user["id"], "name": user["name"], "username": user["name"],
                     "email": user["email"], "is_admin": bool(user.get("is_admin", 0)),
                     "is_verified": True, "is_otp_verified": True,
-                    "verification_badge": "OTP Verified User",
+                    "verification_badge": "Verified User",
                     "last_login": user.get("last_login") or get_ist_now_str(),
                     "plan": "Unlimited Free Access", "plan_status": "Active Member",
                     "total_searches": user.get("total_searches", 0),

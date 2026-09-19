@@ -63,16 +63,20 @@ async def search_jobs(
     auth_service = get_auth_service()
 
     active_time_filter = (time_filter or "7d").strip()
+    if search_term and search_term.strip().lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any"):
+        search_term = ""
+    if custom_input and custom_input.strip().lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any"):
+        custom_input = ""
 
     # Only decrement guest search quota if user explicitly clicked Search Jobs or Apply Filters
     has_active_query = bool((search_term and search_term.strip()) or (custom_input and custom_input.strip()))
     has_active_filter = bool(
-        (location and location.strip().lower() not in ("all", "")) or
-        (role and role.strip().lower() not in ("all", "")) or
+        (location and location.strip().lower() not in ("all", "all locations", "")) or
+        (role and role.strip().lower() not in ("all", "all roles", "")) or
         (employment_type and employment_type.strip().lower() not in ("all", "")) or
         (workplace_type and workplace_type.strip().lower() not in ("all", "")) or
         (experience_level and experience_level.strip().lower() not in ("all", "")) or
-        (time_filter and time_filter.strip().lower() not in ("all", "anytime", "anytime (7 days)", "1h", ""))
+        (time_filter and time_filter.strip().lower() not in ("all", "anytime", "anytime (7 days)", "all time", ""))
     )
     should_increment = bool(is_search_action and (has_active_query or has_active_filter))
 

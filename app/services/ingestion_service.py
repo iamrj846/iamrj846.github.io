@@ -58,8 +58,35 @@ class IngestionManager:
         now_dt = datetime.datetime.now(IST_TZ)
 
         try:
-            from app.database import get_db_connection
+            from app.database import get_db_connection, deduplicate_jobs_table, save_jobs_to_db, clean_stale_jobs_from_db
             from app.services.ats_service import is_india_location, extract_india_location
+
+            # Deduplicate SQLite table first
+            deduplicate_jobs_table()
+
+            # Bidirectional sync: sync existing Redis jobs into DB to maintain strict alignment
+            try:
+                client = get_redis_client()
+                raw_keys = client.keys("*|*")
+                keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
+                if keys:
+                    pipe = client.pipeline()
+                    for k in keys:
+                        pipe.hgetall(k)
+                    results = pipe.execute()
+                    redis_jobs = []
+                    for hash_dict in results:
+                        for _, val_str in hash_dict.items():
+                            try:
+                                redis_jobs.append(json.loads(val_str))
+                            except Exception:
+                                pass
+                    if redis_jobs:
+                        save_jobs_to_db(redis_jobs)
+                        deduplicate_jobs_table()
+            except Exception as e:
+                logger.warning(f"Note on syncing Redis jobs to DB during startup: {e}")
+
             conn = get_db_connection()
             cur = conn.cursor()
             cur.execute("SELECT * FROM jobs WHERE is_active = 1")
@@ -171,9 +198,11 @@ class IngestionManager:
                     ingested_count += 1
             if jobs:
                 save_jobs_to_db(jobs)
+                deduplicate_jobs_table()
 
-            # 4. Clean stale jobs older than 7 days
+            # 4. Clean stale jobs older than 7 days from both Redis and SQLite
             removed_stale = clean_stale_jobs_older_than_days(max_days=7)
+            clean_stale_jobs_from_db(max_days=7)
 
             # Update status
             client = get_redis_client()

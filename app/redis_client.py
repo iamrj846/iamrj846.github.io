@@ -217,14 +217,12 @@ def get_redis_summary() -> Dict[str, Any]:
         keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
         total_hashes = len(keys)
         total_jobs = 0
-        sample = keys[:500]
-        for k in sample:
-            try:
-                total_jobs += client.hlen(k)
-            except Exception:
-                pass
-        if len(keys) > 500 and len(sample) > 0:
-            total_jobs = int((total_jobs / len(sample)) * total_hashes)
+        if keys:
+            pipe = client.pipeline()
+            for k in keys:
+                pipe.hlen(k)
+            counts = pipe.execute()
+            total_jobs = sum(counts)
         info = {}
         try:
             info = client.info()
