@@ -570,7 +570,7 @@ def deduplicate_jobs_table(conn=None) -> int:
             conn.close()
     return deleted
 
-def clean_stale_jobs_from_db(max_days: int = 7) -> int:
+def clean_stale_jobs_from_db(max_days: int = 30) -> int:
     conn = get_db_connection()
     cur = conn.cursor()
     deleted = 0

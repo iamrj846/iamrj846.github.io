@@ -164,17 +164,25 @@ def get_hashes_by_tag(tag_term: str) -> Set[str]:
         logger.debug(f"Error reading tag index [{term}]: {e}")
         return set()
 
-def clean_stale_jobs_older_than_days(max_days: int = 7) -> int:
+def clean_stale_jobs_older_than_days(max_days: int = 30) -> int:
     """
-    Clears hashes and fields for which posted/ingested timestamp is older than max_days.
-    Also purges legacy non-URL duplicate fields to ensure strict 1-to-1 parity with DB.
+    Cleans stale and orphaned jobs from Redis to maintain strict 1:1 parity with SQLite.
+    Prunes:
+      1) Non-HTTP legacy fields.
+      2) Fields whose apply URL is no longer in SQLite jobs table (or is inactive).
+      3) Empty Redis hashes.
     """
+    from app.database import get_db_connection
     client = get_redis_client()
-    tz = pytz.timezone("Asia/Kolkata")
-    cutoff = datetime.datetime.now(tz) - datetime.timedelta(days=max_days)
     removed_count = 0
 
     try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT LOWER(RTRIM(apply_url, '/')) FROM jobs WHERE is_active = 1")
+        active_db_urls = {r[0] for r in cur.fetchall() if r[0]}
+        conn.close()
+
         raw_keys = client.keys("*|*")
         keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
         for k in keys:
@@ -185,27 +193,12 @@ def clean_stale_jobs_older_than_days(max_days: int = 7) -> int:
             if not hdata:
                 client.delete(k)
                 continue
-            for ts_key, val_str in hdata.items():
-                try:
-                    # If field key is a legacy timestamp and the hash already contains http fields, purge legacy duplicate
-                    if not ts_key.startswith("http") and any(f.startswith("http") for f in hdata.keys()):
-                        client.hdel(k, ts_key)
-                        removed_count += 1
-                        continue
+            for ts_key, val_str in list(hdata.items()):
+                norm_key = ts_key.lower().rstrip("/")
+                if not norm_key.startswith("http") or norm_key not in active_db_urls:
+                    client.hdel(k, ts_key)
+                    removed_count += 1
 
-                    jdata = json.loads(val_str)
-                    raw_ts = jdata.get("posted_timestamp_raw")
-                    dt = None
-                    if raw_ts:
-                        try:
-                            dt = datetime.datetime.fromisoformat(raw_ts.replace("Z", "+00:00"))
-                        except Exception:
-                            pass
-                    if dt and dt.astimezone(tz) < cutoff:
-                        client.hdel(k, ts_key)
-                        removed_count += 1
-                except Exception:
-                    pass
             # If hash is now empty, remove key
             try:
                 if client.hlen(k) == 0:

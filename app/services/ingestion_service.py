@@ -225,9 +225,12 @@ class IngestionManager:
                 save_jobs_to_db(jobs)
                 deduplicate_jobs_table()
 
-            # 4. Clean stale jobs older than 7 days from both Redis and SQLite
-            removed_stale = clean_stale_jobs_older_than_days(max_days=7)
-            clean_stale_jobs_from_db(max_days=7)
+            # 4. Clean stale jobs from SQLite and prune orphaned/deleted keys from Redis
+            clean_stale_jobs_from_db(max_days=30)
+            removed_stale = clean_stale_jobs_older_than_days(max_days=30)
+
+            # 5. Guarantee complete 1:1 sync: hydrate all active SQLite jobs into Redis
+            self.seed_initial_jobs()
 
             # Update status
             client = get_redis_client()
