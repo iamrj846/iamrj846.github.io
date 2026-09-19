@@ -103,21 +103,16 @@ jobs:
       - name: Check VM 2 Configuration
         id: check_vm2
         env:
-          VM2_HOST: ${{ secrets.OCI_VM2_HOST }}
+          VM2_HOST: ${{ secrets.OCI_VM2_HOST || secrets.VM2_HOST || secrets.OCI_VM_HOST_2 || secrets.WORKER_HOST || '129.225.92.91' }}
         run: |
-          if [ -n "$VM2_HOST" ]; then
-            echo "configured=true" >> $GITHUB_OUTPUT
-            echo "✅ OCI_VM2_HOST is configured. Proceeding with VM 2 deployment."
-          else
-            echo "configured=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ OCI_VM2_HOST secret not configured. Skipping direct VM 2 deployment."
-          fi
+          echo "configured=true" >> $GITHUB_OUTPUT
+          echo "host=$VM2_HOST" >> $GITHUB_OUTPUT
+          echo "✅ VM 2 Target Host: $VM2_HOST"
 
       - name: Execute Remote SSH Deployment on Oracle VM 2 (Worker)
-        if: steps.check_vm2.outputs.configured == 'true'
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.OCI_VM2_HOST }}
+          host: ${{ steps.check_vm2.outputs.host }}
           username: ${{ secrets.OCI_VM2_USER || secrets.OCI_VM_USER || 'ubuntu' }}
           key: ${{ secrets.OCI_SSH_KEY }}
           port: ${{ secrets.OCI_SSH_PORT || 22 }}
