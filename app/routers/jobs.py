@@ -63,10 +63,30 @@ async def search_jobs(
     auth_service = get_auth_service()
 
     active_time_filter = (time_filter or "all").strip()
-    if search_term and search_term.strip().lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any"):
+    
+    is_all_query = (
+        not search_term or
+        search_term.strip().lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any", "all category", "all categories") or
+        bool(re.match(r"^all\s*(roles?|companies|jobs?|positions?)?$", search_term.strip().lower()))
+    )
+    is_all_role = (
+        not role or
+        role.strip().lower() in ("all", "all roles", "all role", "any", "")
+    )
+
+    if is_all_query:
         search_term = ""
-    if custom_input and custom_input.strip().lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any"):
+    if custom_input and (
+        custom_input.strip().lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any", "all category", "all categories") or
+        bool(re.match(r"^all\s*(roles?|companies|jobs?|positions?)?$", custom_input.strip().lower()))
+    ):
         custom_input = ""
+
+    # When searching for All Roles or All Companies, if the client sends legacy "7d" time filter or no explicit filter,
+    # default to "all" to guarantee 100% strict parity with the total active jobs in DB and Redis!
+    if is_all_query and is_all_role:
+        if active_time_filter in ("7d", "7 days", "anytime (7 days)", ""):
+            active_time_filter = "all"
 
     # Only decrement guest search quota if user explicitly clicked Search Jobs or Apply Filters
     has_active_query = bool((search_term and search_term.strip()) or (custom_input and custom_input.strip()))

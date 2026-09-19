@@ -622,10 +622,19 @@ class SearchService:
         """
         client = get_redis_client()
         query_term = (custom_input if custom_input else search_term or "").strip()
-        if query_term.lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any", "all category", "all categories"):
+        if (
+            query_term.lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any", "all category", "all categories") or
+            bool(re.match(r"^all\s*(roles?|companies|jobs?|positions?)?$", query_term.lower()))
+        ):
             query_term = ""
         query_lower = query_term.lower()
         active_time_filter = (time_filter or "all").strip()
+
+        # If searching without specific query and role_filter is all/unspecified,
+        # ensure legacy 7d filter is upgraded to 'all' so Redis and DB full directory counts match 1:1
+        is_all_role_filter = not role_filter or role_filter.strip().lower() in ("all", "all roles", "all role", "all categories", "all category", "")
+        if not query_term and is_all_role_filter and active_time_filter in ("7d", "7 days", "anytime (7 days)"):
+            active_time_filter = "all"
 
         # Step 1: Scan Redis hashes matching company, role, or secondary tag index
 

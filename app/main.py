@@ -117,13 +117,23 @@ app.include_router(contact.router)
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+# No-Cache headers for dynamic application HTML files
+NO_CACHE_HEADERS = {
+    "Cache-Control": "no-cache, no-store, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0"
+}
+
+def serve_html(path_obj):
+    return FileResponse(str(path_obj), headers=NO_CACHE_HEADERS)
+
 # Clean Page Routes (Served from frontend/)
 @app.get("/")
 @app.get("/home")
 @app.get("/index.html")
 async def serve_home():
     # Primary landing is the Job Search Portal
-    return FileResponse(str(FRONTEND_DIR / "index.html"))
+    return serve_html(FRONTEND_DIR / "index.html")
 
 @app.get("/favicon.ico")
 async def serve_favicon():
@@ -134,45 +144,45 @@ async def serve_favicon():
 @app.get("/jobs")
 @app.get("/jobs.html")
 async def serve_jobs():
-    return FileResponse(str(FRONTEND_DIR / "jobs.html"))
+    return serve_html(FRONTEND_DIR / "jobs.html")
 
 @app.get("/jobs/{slug}")
 async def serve_article(slug: str):
     path = FRONTEND_DIR / "jobs" / slug
     if path.exists() and path.is_file():
-        return FileResponse(str(path))
+        return serve_html(path)
     raise HTTPException(status_code=404, detail="Not Found")
 
 
 @app.get("/portfolio")
 @app.get("/portfolio.html")
 async def serve_portfolio():
-    return FileResponse(str(FRONTEND_DIR / "portfolio.html"))
+    return serve_html(FRONTEND_DIR / "portfolio.html")
 
 @app.get("/contact")
 @app.get("/articles.html", response_class=FileResponse)
 async def articles_page():
-    return FileResponse(str(FRONTEND_DIR / "articles.html"))
+    return serve_html(FRONTEND_DIR / "articles.html")
 
 @app.get("/contact.html")
 async def serve_contact():
-    return FileResponse(str(FRONTEND_DIR / "contact.html"))
+    return serve_html(FRONTEND_DIR / "contact.html")
 
 @app.get("/privacy")
 @app.get("/privacy.html")
 async def serve_privacy():
-    return FileResponse(str(FRONTEND_DIR / "privacy.html"))
+    return serve_html(FRONTEND_DIR / "privacy.html")
 
 @app.get("/disclaimer")
 @app.get("/disclaimer.html")
 async def serve_disclaimer():
-    return FileResponse(str(FRONTEND_DIR / "disclaimer.html"))
+    return serve_html(FRONTEND_DIR / "disclaimer.html")
 
 @app.get("/admin")
 @app.get("/admin.html")
 @app.get(config.admin_dashboard_url)
 async def serve_admin():
-    return FileResponse(str(FRONTEND_DIR / "admin.html"))
+    return serve_html(FRONTEND_DIR / "admin.html")
 
 # Static & SEO files transparent root fallbacks (Served from frontend/static/)
 @app.get("/logo.png")

@@ -1943,10 +1943,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           Live Career Insights
         </span>
-        <span class="seo-ist-tag" id="seoIntroTimestamp">Live Feed • Last 7 Days</span>
+        <span class="seo-ist-tag" id="seoIntroTimestamp">Live Feed • All Postings</span>
       </div>
       <p class="seo-intro-text" id="seoIntroText">
-        Browse active verified opportunities posted in the last 24 hours across leading organizations. Direct application links and live roles are synchronized in real-time.
+        Browse verified active opportunities across leading organizations. Direct application links and live roles are synchronized in real-time.
       </p>
       <div id="seoArticleLink" style="margin-top: 10px; display: none;"></div>
     </section>
@@ -2259,6 +2259,9 @@
         appliedFilters.role = 'all';
         const roleSelect = document.getElementById('filterRole');
         if (roleSelect) roleSelect.value = 'all';
+        appliedFilters.time_filter = 'all';
+        const timeSelect = document.getElementById('filterTime');
+        if (timeSelect) timeSelect.value = 'all';
         // Refresh listings cleanly for new mode without consuming search quota
         executeSearch(1, false, false);
       }
@@ -2349,6 +2352,20 @@
 
     function selectSuggestion(val) {
       const input = document.getElementById('searchInput');
+      const isAll = !val || /^(all\s*(roles?|companies|jobs?|positions?)?|any)$/i.test(String(val).trim());
+      if (isAll) {
+        input.value = '';
+        selectedTerm = '';
+        hideDropdown();
+        appliedFilters.role = 'all';
+        const roleSel = document.getElementById('filterRole');
+        if (roleSel) roleSel.value = 'all';
+        appliedFilters.time_filter = 'all';
+        const timeSel = document.getElementById('filterTime');
+        if (timeSel) timeSel.value = 'all';
+        executeSearch(1, false, true);
+        return;
+      }
       input.value = val;
       selectedTerm = val;
       hideDropdown();
@@ -2477,8 +2494,20 @@
 
       const inputEl = document.getElementById('searchInput');
       const inputVal = inputEl ? (inputEl.value || '').trim() : '';
-      const query = (inputVal === 'All Roles' || inputVal === 'All Companies') ? '' : inputVal;
-      selectedTerm = inputVal;
+      const isAll = !inputVal || /^(all\s*(roles?|companies|jobs?|positions?)?|any)$/i.test(inputVal);
+      const query = isAll ? '' : inputVal;
+      selectedTerm = isAll ? '' : inputVal;
+
+      if (isAll) {
+        appliedFilters.role = 'all';
+        const roleSel = document.getElementById('filterRole');
+        if (roleSel) roleSel.value = 'all';
+        if (!appliedFilters.time_filter || appliedFilters.time_filter === '7d' || appliedFilters.time_filter === 'all') {
+          appliedFilters.time_filter = 'all';
+          const timeSel = document.getElementById('filterTime');
+          if (timeSel) timeSel.value = 'all';
+        }
+      }
 
       const params = new URLSearchParams();
       params.set('page', page);
@@ -2508,7 +2537,7 @@
         if (appliedFilters.employment_type && appliedFilters.employment_type !== 'all') urlParams.set('employment_type', appliedFilters.employment_type);
         if (appliedFilters.workplace_type && appliedFilters.workplace_type !== 'all') urlParams.set('workplace_type', appliedFilters.workplace_type);
         if (appliedFilters.experience_level && appliedFilters.experience_level !== 'all') urlParams.set('experience_level', appliedFilters.experience_level);
-        if (appliedFilters.time_filter && appliedFilters.time_filter !== '7d' && appliedFilters.time_filter !== 'all') urlParams.set('time_filter', appliedFilters.time_filter);
+        if (appliedFilters.time_filter && appliedFilters.time_filter !== 'all') urlParams.set('time_filter', appliedFilters.time_filter);
 
         const qs = urlParams.toString();
         window.history.pushState({}, '', qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
@@ -2626,16 +2655,16 @@
       let locStr = '';
       if (loc && loc !== 'all') locStr = loc;
 
-      const tf = (time_filter || appliedFilters.time_filter || '7d').toLowerCase();
-      let timeDesc = 'in the last 24 hours';
-      let badgeTime = 'Live Feed • Last 24 Hours';
+      const tf = (time_filter || appliedFilters.time_filter || 'all').toLowerCase();
+      let timeDesc = 'across all verified active postings';
+      let badgeTime = 'Live Feed • All Postings';
       if (tf === '7d') { timeDesc = 'in the last 7 days'; badgeTime = 'Live Feed • Last 7 Days'; }
       else if (tf === '24h') { timeDesc = 'in the last 24 hours'; badgeTime = 'Live Feed • Last 24 Hours'; }
       else if (tf === '12h') { timeDesc = 'in the last 12 hours'; badgeTime = 'Live Feed • Last 12h'; }
-      else if (tf === '1h') { timeDesc = 'in the last 1 hour'; badgeTime = 'Live Feed • Last 7 Days'; }
+      else if (tf === '1h') { timeDesc = 'in the last 1 hour'; badgeTime = 'Live Feed • Last 1h'; }
       else if (tf === '2d') { timeDesc = 'in the last 2 days'; badgeTime = 'Live Feed • Last 2 Days'; }
-      else if (tf === '7d') { timeDesc = 'in the last 7 days'; badgeTime = 'Live Feed • Last 7 Days'; }
-      else if (tf === 'all') { timeDesc = 'across the past 7 days'; badgeTime = 'Live Feed • Past 7 Days'; }
+      else if (tf === '30d') { timeDesc = 'in the last 30 days'; badgeTime = 'Live Feed • Last 30 Days'; }
+      else if (tf === 'all' || !tf) { timeDesc = 'across all verified active postings'; badgeTime = 'Live Feed • All Postings'; }
 
       let expStr = '';
       if (exp_level && exp_level !== 'all') {
@@ -3349,13 +3378,20 @@
 
       // 1. Role or Search query (aliases: role, q, search_term, title, keyword)
       const queryParam = params.get('role') || params.get('q') || params.get('search_term') || params.get('title') || params.get('keyword') || companyParam || '';
-      if (queryParam) {
+      const isAllQ = !queryParam || /^(all\s*(roles?|companies|jobs?|positions?)?|any)$/i.test(queryParam.trim());
+      if (queryParam && !isAllQ) {
         document.getElementById('searchInput').value = queryParam;
         selectedTerm = queryParam;
         if (mode === 'role') {
           selectMatchingOption(document.getElementById('filterRole'), queryParam);
           appliedFilters.role = document.getElementById('filterRole').value;
         }
+      } else {
+        document.getElementById('searchInput').value = '';
+        selectedTerm = '';
+        appliedFilters.role = 'all';
+        const roleSel = document.getElementById('filterRole');
+        if (roleSel) roleSel.value = 'all';
       }
 
       // 2. Workplace filter (aliases: workplace, workplace_type, mode, work_mode)
@@ -3380,8 +3416,8 @@
         else if (expl.includes('senior') || expl.includes('sr')) normExp = 'Senior';
         else if (expl.includes('manager') || expl.includes('lead')) normExp = 'Manager';
         else if (expl.includes('director')) normExp = 'Director';
-        else if (expl.includes('executive') || expl.includes('cxo') || expl.includes('vp')) normExp = 'Executive';
-        
+        else if (expl.includes('exec')) normExp = 'Executive';
+
         selectMatchingOption(document.getElementById('filterExp'), normExp);
         appliedFilters.experience_level = document.getElementById('filterExp').value;
       }
@@ -3391,13 +3427,9 @@
       if (locParam) {
         let normLoc = 'all';
         const locl = locParam.toLowerCase();
-        if (locl === 'india' || locl.includes('pan india')) {
-          normLoc = 'all';
-        } else if (locl.includes('bangalore') || locl.includes('bengaluru')) {
-          normLoc = 'Bengaluru';
-        } else if (locl.includes('gurgaon') || locl.includes('gurugram') || locl.includes('ncr') || locl.includes('delhi')) {
-          normLoc = 'Gurugram';
-        } else if (locl.includes('pune')) normLoc = 'Pune';
+        if (locl.includes('bengaluru') || locl.includes('bangalore')) normLoc = 'Bengaluru';
+        else if (locl.includes('guru') || locl.includes('delhi') || locl.includes('ncr') || locl.includes('noida')) normLoc = 'Gurugram';
+        else if (locl.includes('pune')) normLoc = 'Pune';
         else if (locl.includes('mumbai')) normLoc = 'Mumbai';
         else if (locl.includes('hyderabad')) normLoc = 'Hyderabad';
         else if (locl.includes('chennai')) normLoc = 'Chennai';
@@ -3424,8 +3456,9 @@
         appliedFilters.employment_type = document.getElementById('filterEmp').value;
       }
 
-      // 6. Time filter (Default to all)
-      const timeParam = params.get('time_filter') || params.get('recency') || params.get('time') || 'all';
+      // 6. Time filter (Default to all; upgrade legacy 7d if query is all)
+      const rawTime = params.get('time_filter') || params.get('recency') || params.get('time') || 'all';
+      const timeParam = (isAllQ && rawTime.toLowerCase() === '7d') ? 'all' : rawTime;
       selectMatchingOption(document.getElementById('filterTime'), timeParam);
       appliedFilters.time_filter = document.getElementById('filterTime').value || 'all';
 
