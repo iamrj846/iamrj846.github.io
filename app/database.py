@@ -83,6 +83,15 @@ def init_db():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_role ON jobs(role_category);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_loc ON jobs(location);")
 
+    # Ensure employment_type column exists
+    cur.execute("PRAGMA table_info(jobs);")
+    existing_job_cols = [col["name"] for col in cur.fetchall()]
+    if "employment_type" not in existing_job_cols:
+        try:
+            cur.execute("ALTER TABLE jobs ADD COLUMN employment_type TEXT DEFAULT 'Full time';")
+        except Exception:
+            pass
+
     # Site telemetry table (capturing visits, clicks on links/buttons, searches)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS site_telemetry (
@@ -435,9 +444,9 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
         cur.execute("""
         INSERT INTO jobs (
             id, title, company, location, role_category, workplace_type, 
-            salary_range, experience_level, source, tags, skills, 
+            salary_range, experience_level, employment_type, source, tags, skills, 
             description, apply_url, is_active, posted_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             title = excluded.title,
             company = excluded.company,
@@ -446,6 +455,7 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
             workplace_type = excluded.workplace_type,
             salary_range = excluded.salary_range,
             experience_level = excluded.experience_level,
+            employment_type = excluded.employment_type,
             source = excluded.source,
             tags = excluded.tags,
             skills = excluded.skills,
@@ -462,6 +472,7 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
             j.get("workplace_type", "In office"),
             j.get("salary_range", "Competitive Market CTC"),
             j.get("experience_level", "Senior"),
+            j.get("employment_type", "Full time"),
             j.get("ats_platform") or j.get("source", "Direct"),
             tags_json,
             skills_json,

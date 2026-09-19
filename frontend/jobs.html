@@ -2866,12 +2866,6 @@
             ${j.experience_level ? `<div class="job-pill">⭐ ${escapeHtml(j.experience_level)}</div>` : ''}
           </div>
 
-          ${j.tags && j.tags.length ? `
-            <div class="job-tags">
-              ${j.tags.map(cleanTag).filter(Boolean).map(t => `<span class="tag">#${escapeHtml(t)}</span>`).join('')}
-            </div>
-          ` : ''}
-
           <div class="job-footer">
             <div style="font-size: 12px; color: var(--txt-dim); display: flex; align-items: center; gap: 5px;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -3311,52 +3305,130 @@
       document.getElementById('cookieBanner').style.display = 'none';
     }
 
-    /* ══ URL PARAM PARSER ══ */
+    /* ══ URL PARAM PARSER & SELECT HELPER ══ */
+    function selectMatchingOption(selectEl, targetVal) {
+      if (!selectEl || !targetVal) return false;
+      const cleanTarget = String(targetVal).trim().toLowerCase();
+      for (let i = 0; i < selectEl.options.length; i++) {
+        const opt = selectEl.options[i];
+        if (opt.value.toLowerCase() === cleanTarget || opt.text.toLowerCase() === cleanTarget) {
+          selectEl.selectedIndex = i;
+          return true;
+        }
+      }
+      for (let i = 0; i < selectEl.options.length; i++) {
+        const opt = selectEl.options[i];
+        if (opt.value.toLowerCase().includes(cleanTarget) || cleanTarget.includes(opt.value.toLowerCase())) {
+          selectEl.selectedIndex = i;
+          return true;
+        }
+      }
+      return false;
+    }
+
     function parseUrlParamsAndSearch() {
       const params = new URLSearchParams(window.location.search);
-      const mode = params.get('search_type') || 'role';
-      // Set mode without wiping inputs or showing dropdown on load
-      setSearchMode(mode, false);
+      const hasAnyParams = Array.from(params.keys()).length > 0;
 
-      if (params.has('q') || params.has('search_term') || params.has('company') || params.has('location') || params.has('role') || params.has('employment_type') || params.has('workplace_type') || params.has('experience_level') || params.has('time_filter')) {
-        const q = params.get('q') || params.get('search_term') || params.get('company') || '';
-        document.getElementById('searchInput').value = q;
-        selectedTerm = q;
-
-        if (params.get('location')) {
-          document.getElementById('filterLoc').value = params.get('location');
-          appliedFilters.location = params.get('location');
-        }
-        if (params.get('role')) {
-          document.getElementById('filterRole').value = params.get('role');
-          appliedFilters.role = params.get('role');
-        }
-        if (params.get('employment_type')) {
-          document.getElementById('filterEmp').value = params.get('employment_type');
-          appliedFilters.employment_type = params.get('employment_type');
-        }
-        if (params.get('workplace_type')) {
-          document.getElementById('filterWorkplace').value = params.get('workplace_type');
-          appliedFilters.workplace_type = params.get('workplace_type');
-        }
-        if (params.get('experience_level')) {
-          document.getElementById('filterExp').value = params.get('experience_level');
-          appliedFilters.experience_level = params.get('experience_level');
-        }
-        if (params.get('time_filter')) {
-          document.getElementById('filterTime').value = params.get('time_filter');
-          appliedFilters.time_filter = params.get('time_filter');
-        } else {
-          document.getElementById('filterTime').value = '7d';
-          appliedFilters.time_filter = '7d';
-        }
-        executeSearch(parseInt(params.get('page') || '1'), false, false);
-      } else {
-        // Initial search on clean load: displays all verified postings without consuming any search quota
+      if (!hasAnyParams) {
         document.getElementById('searchInput').value = '';
         selectedTerm = '';
+        setSearchMode('role', false);
         executeSearch(1, false, false);
+        return;
       }
+
+      // Check search mode
+      let mode = (params.get('search_type') || '').trim();
+      const companyParam = params.get('company') || '';
+      if (!mode) {
+        mode = companyParam ? 'company' : 'role';
+      }
+      setSearchMode(mode, false);
+
+      // 1. Role or Search query (aliases: role, q, search_term, title, keyword)
+      const queryParam = params.get('role') || params.get('q') || params.get('search_term') || params.get('title') || params.get('keyword') || companyParam || '';
+      if (queryParam) {
+        document.getElementById('searchInput').value = queryParam;
+        selectedTerm = queryParam;
+        if (mode === 'role') {
+          selectMatchingOption(document.getElementById('filterRole'), queryParam);
+          appliedFilters.role = document.getElementById('filterRole').value;
+        }
+      }
+
+      // 2. Workplace filter (aliases: workplace, workplace_type, mode, work_mode)
+      const wpParam = params.get('workplace') || params.get('workplace_type') || params.get('mode') || params.get('work_mode') || '';
+      if (wpParam) {
+        let normWp = 'all';
+        const wpl = wpParam.toLowerCase();
+        if (wpl === 'remote' || wpl.includes('remote') || wpl.includes('wfh')) normWp = 'Remote';
+        else if (wpl === 'hybrid') normWp = 'Hybrid';
+        else if (wpl.includes('office') || wpl.includes('onsite')) normWp = 'In office';
+        
+        selectMatchingOption(document.getElementById('filterWorkplace'), normWp);
+        appliedFilters.workplace_type = document.getElementById('filterWorkplace').value;
+      }
+
+      // 3. Experience filter (aliases: experience, experience_level, exp, level)
+      const expParam = params.get('experience') || params.get('experience_level') || params.get('exp') || params.get('level') || '';
+      if (expParam) {
+        let normExp = 'all';
+        const expl = expParam.toLowerCase();
+        if (expl.includes('entry') || expl.includes('fresher') || expl.includes('junior') || expl.includes('grad')) normExp = 'Entry level';
+        else if (expl.includes('senior') || expl.includes('sr')) normExp = 'Senior';
+        else if (expl.includes('manager') || expl.includes('lead')) normExp = 'Manager';
+        else if (expl.includes('director')) normExp = 'Director';
+        else if (expl.includes('executive') || expl.includes('cxo') || expl.includes('vp')) normExp = 'Executive';
+        
+        selectMatchingOption(document.getElementById('filterExp'), normExp);
+        appliedFilters.experience_level = document.getElementById('filterExp').value;
+      }
+
+      // 4. Location filter (aliases: location, loc, city)
+      const locParam = params.get('location') || params.get('loc') || params.get('city') || '';
+      if (locParam) {
+        let normLoc = 'all';
+        const locl = locParam.toLowerCase();
+        if (locl === 'india' || locl.includes('pan india')) {
+          normLoc = 'all';
+        } else if (locl.includes('bangalore') || locl.includes('bengaluru')) {
+          normLoc = 'Bengaluru';
+        } else if (locl.includes('gurgaon') || locl.includes('gurugram') || locl.includes('ncr') || locl.includes('delhi')) {
+          normLoc = 'Gurugram';
+        } else if (locl.includes('pune')) normLoc = 'Pune';
+        else if (locl.includes('mumbai')) normLoc = 'Mumbai';
+        else if (locl.includes('hyderabad')) normLoc = 'Hyderabad';
+        else if (locl.includes('chennai')) normLoc = 'Chennai';
+        else if (locl.includes('kolkata')) normLoc = 'Kolkata';
+        else if (locl.includes('ahmedabad')) normLoc = 'Ahmedabad';
+        else if (locl.includes('remote')) normLoc = 'Remote';
+
+        selectMatchingOption(document.getElementById('filterLoc'), normLoc);
+        appliedFilters.location = document.getElementById('filterLoc').value;
+      }
+
+      // 5. Employment type filter (aliases: employment_type, emp, type)
+      const empParam = params.get('employment_type') || params.get('emp') || params.get('type') || '';
+      if (empParam) {
+        let normEmp = 'all';
+        const empl = empParam.toLowerCase();
+        if (empl.includes('intern')) normEmp = 'Internship';
+        else if (empl.includes('full')) normEmp = 'Full time';
+        else if (empl.includes('contract')) normEmp = 'Contract';
+        else if (empl.includes('part')) normEmp = 'Part time';
+        else if (empl.includes('freelance')) normEmp = 'Freelance';
+
+        selectMatchingOption(document.getElementById('filterEmp'), normEmp);
+        appliedFilters.employment_type = document.getElementById('filterEmp').value;
+      }
+
+      // 6. Time filter (Default to 7d)
+      const timeParam = params.get('time_filter') || params.get('recency') || params.get('time') || '7d';
+      selectMatchingOption(document.getElementById('filterTime'), timeParam);
+      appliedFilters.time_filter = document.getElementById('filterTime').value || '7d';
+
+      executeSearch(parseInt(params.get('page') || '1'), true, false);
     }
 
     function escapeHtml(str) {

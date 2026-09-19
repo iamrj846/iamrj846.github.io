@@ -274,20 +274,314 @@ def extract_india_location(location_str: str) -> str:
 
     return s
 
-def extract_tags(title: str, dept: str = "", raw_text: str = "") -> List[str]:
-    combined = f"{title} {dept} {raw_text}".lower()
-    tags = []
-    for t in COMMON_TECH_TAGS:
-        pattern = r"\b" + re.escape(t.lower()) + r"\b"
-        if re.search(pattern, combined):
-            tags.append(t)
-        if len(tags) >= 5:
+ROLE_TAXONOMY_MAP = {
+    "Software Engineer": {
+        "synonyms": ["Software Engineer", "Software Development Engineer", "SDE", "SWE", "Software Developer", "Programmer", "Application Developer", "Software Architecture"],
+        "skills": ["Data Structures", "Algorithms", "System Design", "Object Oriented Programming", "REST APIs", "Git", "Code Review", "Unit Testing", "Debugging", "Clean Code", "Design Patterns", "Problem Solving", "Scalability", "High Availability"]
+    },
+    "Backend Engineer": {
+        "synonyms": ["Backend Engineer", "Backend Developer", "Server Side Developer", "API Developer", "Distributed Systems Engineer", "Backend Software Engineer"],
+        "skills": ["REST APIs", "Microservices", "System Design", "Database Design", "SQL", "High Availability", "API Gateway", "Caching", "Message Queues", "Scalability", "Backend Architecture", "Concurrency", "Unit Testing", "Server Architecture"]
+    },
+    "Frontend Engineer": {
+        "synonyms": ["Frontend Engineer", "Frontend Developer", "UI Developer", "Web Developer", "Client Side Engineer", "Frontend Architect"],
+        "skills": ["JavaScript", "TypeScript", "HTML5", "CSS3", "Responsive Web Design", "DOM Manipulation", "State Management", "Single Page Applications", "Web Performance", "Component Architecture", "Cross-Browser Compatibility", "REST APIs", "Git", "Front End Engineering"]
+    },
+    "Full Stack Engineer": {
+        "synonyms": ["Full Stack Engineer", "Full Stack Developer", "Fullstack Developer", "Web Application Developer", "End to End Developer", "Full Stack Software Engineer"],
+        "skills": ["Frontend Development", "Backend Development", "REST APIs", "Database Design", "SQL", "JavaScript", "HTML5", "CSS3", "System Architecture", "Version Control", "Web Applications", "API Integration", "Full Lifecycle Development", "Microservices"]
+    },
+    "Mobile Engineer": {
+        "synonyms": ["Mobile Engineer", "Mobile Developer", "iOS Developer", "Android Developer", "Mobile Application Developer", "App Developer"],
+        "skills": ["Mobile Application Development", "iOS Development", "Android Development", "Swift", "Kotlin", "Flutter", "React Native", "Mobile UI", "App Store Deployment", "Mobile Architecture", "REST APIs", "Offline Storage", "Push Notifications"]
+    },
+    "AI / Machine Learning Engineer": {
+        "synonyms": ["AI Engineer", "Machine Learning Engineer", "ML Engineer", "Artificial Intelligence Engineer", "Deep Learning Engineer", "GenAI Developer"],
+        "skills": ["Machine Learning", "Artificial Intelligence", "Deep Learning", "Neural Networks", "Model Training", "Feature Engineering", "Data Preprocessing", "Model Evaluation", "NLP", "Computer Vision", "MLOps", "Model Deployment", "Python", "Large Language Models"]
+    },
+    "Data Scientist": {
+        "synonyms": ["Data Scientist", "Data Science Specialist", "Applied Scientist", "Quantitative Analyst", "Statistical Modeler", "Data Science"],
+        "skills": ["Data Science", "Machine Learning", "Statistical Analysis", "Python", "SQL", "Data Modeling", "Hypothesis Testing", "Predictive Modeling", "Data Visualization", "Exploratory Data Analysis", "Pandas", "NumPy", "Quantitative Research", "Business Insights"]
+    },
+    "Data Engineer": {
+        "synonyms": ["Data Engineer", "Big Data Engineer", "Data Platform Engineer", "ETL Developer", "Data Pipeline Engineer", "Data Infrastructure Engineer"],
+        "skills": ["ETL Pipelines", "Data Warehousing", "Data Modeling", "SQL", "Big Data", "Distributed Computing", "Batch Processing", "Streaming Data", "Database Architecture", "Data Quality", "Data Governance", "Python", "Data Infrastructure", "Data Lakes"]
+    },
+    "Data Analyst / BI": {
+        "synonyms": ["Data Analyst", "Business Intelligence Analyst", "BI Developer", "Reporting Analyst", "Analytics Consultant", "Product Analyst"],
+        "skills": ["Data Analysis", "Business Intelligence", "SQL Querying", "Data Visualization", "Dashboard Development", "Tableau", "Power BI", "KPI Reporting", "Metrics Analysis", "Spreadsheets", "Descriptive Analytics", "Trend Analysis", "Data Storytelling"]
+    },
+    "DevOps / Cloud Engineer": {
+        "synonyms": ["DevOps Engineer", "Cloud Engineer", "Cloud Architect", "Infrastructure Engineer", "Platform Engineer", "Cloud Operations Engineer"],
+        "skills": ["Cloud Infrastructure", "CI/CD Pipelines", "Docker", "Kubernetes", "Infrastructure as Code", "Terraform", "Linux Administration", "Cloud Monitoring", "Automation Scripting", "Cloud Architecture", "Configuration Management", "GitOps", "Site Reliability"]
+    },
+    "Site Reliability Engineer (SRE)": {
+        "synonyms": ["Site Reliability Engineer", "SRE", "Reliability Engineer", "Production Engineer", "Systems Engineer", "Infrastructure Reliability"],
+        "skills": ["High Availability", "Incident Management", "System Observability", "Prometheus", "Grafana", "SLO / SLA Monitoring", "Disaster Recovery", "Capacity Planning", "Linux Systems", "Kubernetes", "Root Cause Analysis", "Performance Tuning", "Automation"]
+    },
+    "Cybersecurity Engineer": {
+        "synonyms": ["Cybersecurity Engineer", "Information Security Specialist", "Security Analyst", "Penetration Tester", "AppSec Engineer", "Cloud Security Engineer"],
+        "skills": ["Cybersecurity", "Network Security", "Application Security", "Threat Modeling", "Vulnerability Assessment", "Penetration Testing", "Security Compliance", "Identity & Access Management", "Incident Response", "Cryptography", "Security Architecture", "Risk Mitigation"]
+    },
+    "QA / SDET": {
+        "synonyms": ["QA Engineer", "SDET", "Software Development Engineer in Test", "Quality Assurance Engineer", "Test Automation Engineer", "Software Tester", "Quality Assurance"],
+        "skills": ["Test Automation", "Quality Assurance", "Selenium", "API Testing", "Automation Frameworks", "Regression Testing", "Bug Tracking", "Test Case Design", "Continuous Testing", "Integration Testing", "Defect Management", "Performance Testing", "Quality Engineering"]
+    },
+    "Product Manager": {
+        "synonyms": ["Product Manager", "Associate Product Manager", "Technical Product Manager", "Product Owner", "Product Lead", "Product Management"],
+        "skills": ["Product Management", "Product Strategy", "Roadmap Planning", "Feature Prioritization", "Agile / Scrum", "User Stories", "Stakeholder Management", "A/B Testing", "Data Driven Decision Making", "Product Discovery", "User Experience", "Market Research", "Customer Empathy"]
+    },
+    "Engineering Manager / Lead": {
+        "synonyms": ["Engineering Manager", "Tech Lead", "Director of Engineering", "Software Engineering Manager", "Lead Software Engineer", "Engineering Leadership"],
+        "skills": ["Engineering Management", "Technical Leadership", "People Management", "Sprint Planning", "Team Mentorship", "Architecture Review", "Agile Delivery", "Project Management", "Hiring & Talent", "Code Quality", "Resource Allocation", "System Scalability"]
+    },
+    "Solutions Architect": {
+        "synonyms": ["Solutions Architect", "Enterprise Architect", "Cloud Solutions Architect", "Technical Architect", "Solution Engineer"],
+        "skills": ["System Architecture", "Cloud Solutions", "Enterprise Architecture", "Technical Consulting", "Integration Architecture", "Scalable Systems", "Client Engagement", "Proof of Concept", "Technology Selection", "Architecture Blueprint", "Design Reviews"]
+    },
+    "Technical Program Manager": {
+        "synonyms": ["Technical Program Manager", "TPM", "Program Manager", "Scrum Master", "Agile Coach", "Project Manager"],
+        "skills": ["Program Management", "Agile Methodologies", "Scrum Framework", "Cross-Functional Collaboration", "Risk Management", "Release Management", "Sprint Execution", "Timeline Tracking", "Stakeholder Alignment", "Dependency Management", "Jira"]
+    },
+    "UI/UX Designer": {
+        "synonyms": ["UI/UX Designer", "Product Designer", "User Experience Designer", "User Interface Designer", "UX Researcher", "Interaction Designer"],
+        "skills": ["User Interface Design", "User Experience", "Wireframing", "Prototyping", "Design Systems", "Figma", "User Research", "Usability Testing", "Information Architecture", "Visual Design", "Design Thinking", "Interaction Design", "Mockups"]
+    },
+    "Graphic / Brand Designer": {
+        "synonyms": ["Graphic Designer", "Brand Designer", "Visual Designer", "Creative Designer", "Brand Strategist"],
+        "skills": ["Graphic Design", "Brand Identity", "Visual Communication", "Adobe Creative Suite", "Typography", "Color Theory", "Vector Illustration", "Marketing Collateral", "Digital Media", "Creative Direction", "Asset Creation"]
+    },
+    "Human Resources / Recruiter": {
+        "synonyms": ["HR Specialist", "Talent Acquisition Specialist", "Technical Recruiter", "HR Generalist", "People Operations Manager", "HR Business Partner"],
+        "skills": ["Talent Acquisition", "Technical Recruiting", "Candidate Sourcing", "Interviewing", "Employee Relations", "HR Policies", "Onboarding", "Performance Management", "Compensation & Benefits", "HR Operations", "Talent Management"]
+    },
+    "Sales / Business Development": {
+        "synonyms": ["Business Development Executive", "Account Executive", "Sales Manager", "B2B Sales Representative", "Sales Development Representative", "Sales Executive"],
+        "skills": ["B2B Sales", "Business Development", "Lead Generation", "Pipeline Management", "Client Prospecting", "Negotiation", "Sales Strategy", "CRM Software", "Revenue Growth", "Customer Acquisition", "Relationship Management", "Solution Selling"]
+    },
+    "Customer Success / Account Manager": {
+        "synonyms": ["Customer Success Manager", "Account Manager", "Client Relationship Manager", "Customer Support Specialist", "Customer Experience Manager"],
+        "skills": ["Customer Success", "Client Relationship Management", "Customer Retention", "Onboarding & Training", "Account Growth", "Customer Satisfaction", "Issue Resolution", "Support Operations", "Churn Prevention", "Client Communication"]
+    },
+    "Marketing / Growth Specialist": {
+        "synonyms": ["Marketing Specialist", "Growth Marketer", "Digital Marketing Manager", "Performance Marketer", "Marketing Manager", "Demand Generation"],
+        "skills": ["Digital Marketing", "Growth Marketing", "Campaign Management", "Performance Marketing", "Social Media Marketing", "Email Marketing", "Content Strategy", "Analytics & Conversion", "Customer Acquisition", "Brand Awareness", "Funnel Optimization"]
+    },
+    "Content Writer / Copywriter": {
+        "synonyms": ["Content Writer", "Copywriter", "Technical Writer", "Content Strategist", "Creative Writer", "Blog Specialist"],
+        "skills": ["Content Creation", "Copywriting", "Technical Writing", "Content Strategy", "SEO Copywriting", "Editing & Proofreading", "Creative Writing", "Storytelling", "Research & Synthesis", "Documentation", "Blog Writing"]
+    },
+    "SEO / SEM Specialist": {
+        "synonyms": ["SEO Specialist", "SEM Manager", "Search Engine Optimization", "Organic Growth Specialist", "Search Marketer"],
+        "skills": ["Search Engine Optimization", "On-Page SEO", "Technical SEO", "Keyword Research", "Link Building", "Google Analytics", "Search Console", "Organic Traffic", "SEM / Paid Search", "SERP Ranking", "Content Optimization"]
+    },
+    "Finance / Accounting": {
+        "synonyms": ["Finance Specialist", "Financial Analyst", "Accountant", "Finance Manager", "Corporate Finance", "Taxation Specialist"],
+        "skills": ["Financial Analysis", "Accounting Principles", "Budgeting & Forecasting", "Financial Modeling", "Auditing", "General Ledger", "Taxation", "Financial Reporting", "Variance Analysis", "ERP Systems", "Cost Control"]
+    },
+    "Operations / Supply Chain": {
+        "synonyms": ["Operations Specialist", "Operations Manager", "Supply Chain Analyst", "Logistics Coordinator", "Process Improvement Specialist"],
+        "skills": ["Business Operations", "Process Optimization", "Supply Chain Management", "Logistics Coordination", "Vendor Management", "Workflow Automation", "Operational Efficiency", "Inventory Management", "Quality Control", "Standard Operating Procedures"]
+    },
+    "Legal / Compliance Specialist": {
+        "synonyms": ["Legal Counsel", "Compliance Specialist", "Legal Advisor", "Regulatory Affairs", "Corporate Counsel"],
+        "skills": ["Corporate Law", "Regulatory Compliance", "Contract Negotiation", "Legal Drafting", "Risk Assessment", "Intellectual Property", "Policy Development", "Corporate Governance", "Statutory Compliance", "Legal Advisory"]
+    },
+    "Technical Support / IT": {
+        "synonyms": ["IT Support Engineer", "Technical Support Specialist", "Desktop Support", "System Administrator", "IT Helpdesk"],
+        "skills": ["Technical Support", "IT Infrastructure", "Troubleshooting", "Hardware Diagnostics", "Network Configuration", "Operating Systems", "User Provisioning", "Helpdesk Support", "IT Service Management", "Remote Assistance"]
+    },
+    "Hardware / Embedded Engineer": {
+        "synonyms": ["Hardware Engineer", "Embedded Systems Engineer", "Firmware Engineer", "IoT Engineer", "Electronics Engineer"],
+        "skills": ["Embedded Systems", "Firmware Development", "C / C++", "Microcontrollers", "PCB Design", "Hardware Testing", "IoT Protocols", "Device Drivers", "Circuit Design", "Signal Processing"]
+    },
+    "Business Analyst / Strategy": {
+        "synonyms": ["Business Analyst", "Strategy Consultant", "Corporate Strategy Analyst", "Business Operations Analyst", "Functional Consultant"],
+        "skills": ["Business Analysis", "Requirements Gathering", "Process Modeling", "Strategic Planning", "Stakeholder Communication", "Cost-Benefit Analysis", "Gap Analysis", "Market Analysis", "Business Process Mapping", "Data Driven Strategy"]
+    },
+    "Chief of Staff / Founder's Office": {
+        "synonyms": ["Chief of Staff", "Founder's Office Associate", "Executive Assistant", "Strategic Initiatives Lead", "Special Projects Manager"],
+        "skills": ["Strategic Initiatives", "Executive Support", "Cross-Functional Coordination", "Business Operations", "High-Impact Projects", "Organizational Strategy", "Executive Communication", "Program Management", "Problem Solving"]
+    },
+    "Intern / Trainee": {
+        "synonyms": ["Software Intern", "Engineering Intern", "Graduate Trainee", "Summer Intern", "College Intern", "Apprentice"],
+        "skills": ["Learning Agility", "Software Engineering Fundamentals", "Problem Solving", "Academic Projects", "Team Collaboration", "Version Control", "Technical Curiosity", "Fast Learner", "Continuous Learning", "Hands-on Development"]
+    }
+}
+
+POPULAR_TECH_KEYWORDS = [
+    "Python", "Java", "JavaScript", "TypeScript", "Go", "Golang", "Rust", "C++", "C#", ".NET",
+    "React", "Angular", "Vue", "Next.js", "Node.js", "Express", "FastAPI", "Django", "Flask", "Spring Boot",
+    "PostgreSQL", "MySQL", "MongoDB", "Redis", "Elasticsearch", "Cassandra", "SQL Server", "DynamoDB",
+    "AWS", "Amazon Web Services", "Azure", "GCP", "Google Cloud", "Docker", "Kubernetes", "Terraform",
+    "Linux", "Git", "GitHub", "GitLab", "CI/CD", "Jenkins", "Ansible", "GraphQL", "REST", "gRPC",
+    "Kafka", "RabbitMQ", "Apache Spark", "Hadoop", "Airflow", "Snowflake", "Databricks", "Tableau",
+    "Power BI", "PyTorch", "TensorFlow", "Pandas", "NumPy", "Scikit-Learn", "Hugging Face", "LLM",
+    "LangChain", "Selenium", "Cypress", "Playwright", "Postman", "Jira", "Figma", "Swift", "Kotlin", "Flutter"
+]
+
+def classify_job_canonical_role(title: str, role_cat: str = "") -> str:
+    combined = f"{title} {role_cat}".lower()
+
+    # Specific precedence overrides for titles that contain generic terms
+    if any(re.search(p, combined) for p in [r"\baccount(s|ing)?\b", r"\breceivable\b", r"\bpayable\b", r"\bfinance\b", r"\btax\b", r"\baudit\b", r"\bbilling\b"]) and "engineer" not in combined:
+        return "Finance / Accounting"
+    if any(re.search(p, combined) for p in [r"\bart\s+director\b", r"\bgraphic\b", r"\bvisual\s+design\b", r"\bcreative\s+director\b"]):
+        return "Graphic / Brand Designer"
+    if any(re.search(p, combined) for p in [r"\banalytics\b", r"\bdata\s+analyst\b", r"\bbi\s+developer\b"]) and "engineer" not in combined:
+        return "Data Analyst / BI"
+    if any(re.search(p, combined) for p in [r"\baccount\s+manager\b", r"\bcustomer\s+success\b", r"\baircover\b", r"\bclient\s+success\b"]) and "engineer" not in combined:
+        return "Customer Success / Account Manager"
+    if any(re.search(p, combined) for p in [r"\bmarket\s+manager\b", r"\bmarketing\b", r"\bgrowth\b", r"\bbrand\b"]) and "engineer" not in combined:
+        return "Marketing / Growth Specialist"
+
+    for role_name, data in ROLE_TAXONOMY_MAP.items():
+        syns = [role_name.lower()] + [s.lower() for s in data["synonyms"]]
+        for s in syns:
+            if re.search(rf"\b{re.escape(s)}\b", combined):
+                return role_name
+            if " " in s and s in combined:
+                return role_name
+
+    # Fallback to Software Engineer if contains engineering/coding tokens
+    if any(k in combined for k in ["engineer", "developer", "software", "tech", "programmer", "architect", "sde", "swe"]):
+        return "Software Engineer"
+    return "Business Analyst / Strategy"
+
+def generate_job_tags(
+    title: str,
+    company: str = "",
+    location: str = "",
+    role_category: str = "",
+    workplace_type: str = "",
+    experience_level: str = "",
+    employment_type: str = "",
+    dept: str = "",
+    raw_text: str = ""
+) -> List[str]:
+    canonical_role = classify_job_canonical_role(title, role_category)
+    role_info = ROLE_TAXONOMY_MAP.get(canonical_role, ROLE_TAXONOMY_MAP["Software Engineer"])
+
+    tags: List[str] = []
+    seen_lower = set()
+
+    def add_tag(t: str):
+        if not t:
+            return
+        clean_t = re.sub(r"[\[\]'\"#]", "", str(t)).strip()
+        if len(clean_t) < 2 or len(clean_t) > 45:
+            return
+        tl = clean_t.lower()
+        if tl not in seen_lower:
+            seen_lower.add(tl)
+            tags.append(clean_t)
+
+    # 1. Canonical Role & Synonyms (5-7 tags)
+    add_tag(canonical_role)
+    for syn in role_info["synonyms"][:6]:
+        add_tag(syn)
+
+    # 2. Domain Core Competencies & Skills (10-12 tags)
+    for skill in role_info["skills"][:12]:
+        add_tag(skill)
+
+    # 3. Dynamic extracted technology keywords from title, dept, text (3-8 tags)
+    search_corpus = f"{title} {role_category} {dept} {raw_text}".lower()
+    for tech in POPULAR_TECH_KEYWORDS:
+        pattern = rf"\b{re.escape(tech.lower())}\b"
+        if re.search(pattern, search_corpus):
+            add_tag(tech)
+        if len(tags) >= 24:
             break
-    if not tags:
-        # Generic role tags based on title words
-        words = [w.capitalize() for w in re.findall(r"[a-zA-Z]{3,}", title) if w.lower() not in ("and", "the", "for", "with", "all", "job")]
-        tags = words[:4]
-    return tags[:5]
+
+    # 4. Seniority / Experience Level (2-3 tags)
+    exp_lower = f"{experience_level} {title}".lower()
+    if "intern" in exp_lower or "trainee" in exp_lower:
+        add_tag("Internship Opportunity")
+        add_tag("College Trainee")
+    elif "director" in exp_lower or "vp" in exp_lower or "vice president" in exp_lower:
+        add_tag("Director Level")
+        add_tag("Executive Leadership")
+    elif "manager" in exp_lower or "lead" in exp_lower or "principal" in exp_lower:
+        add_tag("Technical Leadership")
+        add_tag("Engineering Management")
+    elif "senior" in exp_lower or "sr." in exp_lower or "staff" in exp_lower:
+        add_tag("Senior Level")
+        add_tag("Senior Professional")
+    else:
+        add_tag("Entry Level")
+        add_tag("Junior Professional")
+
+    # 5. Workplace Mode (2-3 tags)
+    wp_lower = f"{workplace_type} {location}".lower()
+    if "remote" in wp_lower or "wfh" in wp_lower or "work from home" in wp_lower:
+        add_tag("Remote")
+        add_tag("Work From Home")
+        add_tag("Remote India")
+    elif "hybrid" in wp_lower:
+        add_tag("Hybrid")
+        add_tag("Flexible Workplace")
+        add_tag("Hybrid Model")
+    else:
+        add_tag("In-Office")
+        add_tag("On-Site Opportunity")
+
+    # 6. Location & Geography (2-4 tags)
+    loc_lower = (location or "").lower()
+    add_tag("India")
+    add_tag("India Tech Industry")
+    if "bangalore" in loc_lower or "bengaluru" in loc_lower:
+        add_tag("Bengaluru")
+        add_tag("Bangalore Tech Hub")
+        add_tag("Karnataka")
+    elif "gurgaon" in loc_lower or "gurugram" in loc_lower or "delhi" in loc_lower or "noida" in loc_lower:
+        add_tag("Gurugram")
+        add_tag("Delhi NCR")
+    elif "pune" in loc_lower:
+        add_tag("Pune")
+        add_tag("Maharashtra")
+    elif "mumbai" in loc_lower:
+        add_tag("Mumbai")
+        add_tag("Maharashtra")
+    elif "hyderabad" in loc_lower:
+        add_tag("Hyderabad")
+        add_tag("Telangana")
+    elif "chennai" in loc_lower:
+        add_tag("Chennai")
+        add_tag("Tamil Nadu")
+
+    # 7. Employment Type (2 tags)
+    emp_lower = f"{employment_type} {title}".lower()
+    if "intern" in emp_lower:
+        add_tag("Paid Internship")
+        add_tag("Internship Role")
+    elif "contract" in emp_lower:
+        add_tag("Contract Position")
+        add_tag("Contract Opportunity")
+    else:
+        add_tag("Full Time")
+        add_tag("Permanent Role")
+
+    # 8. Company Tag (1-2 tags)
+    if company and company.lower() not in ("direct", "ats"):
+        add_tag(f"{company} Careers")
+        add_tag(company)
+
+    # Fallback padding if less than 25
+    if len(tags) < 25:
+        fallbacks = ["Tech Careers", "Software Industry", "Professional Growth", "Engineering Excellence", "Agile Workflow", "Continuous Learning", "Team Collaboration"]
+        for fb in fallbacks:
+            add_tag(fb)
+            if len(tags) >= 25:
+                break
+
+    # Cap at 32 tags
+    return tags[:32]
+
+def extract_tags(title: str, dept: str = "", raw_text: str = "") -> List[str]:
+    """Generates 25-35 rich, genuine tags for the role."""
+    return generate_job_tags(title=title, dept=dept, raw_text=raw_text)
+
 
 def normalize_employment_type(emp_str: str, title: str) -> str:
     s = f"{emp_str} {title}".lower()
@@ -470,10 +764,10 @@ class ATSService:
             
             dept_names = [d.get("name", "") for d in j.get("departments", []) if isinstance(d, dict)]
             dept_str = " ".join(dept_names)
-            tags = extract_tags(title, dept_str)
             emp_type = normalize_employment_type(j.get("employment_type", ""), title)
             workplace = normalize_workplace(loc_name, is_remote=("remote" in loc_name.lower()))
             exp_level = normalize_experience_level(title)
+            tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept_str)
 
             results.append({
                 "company_name": ep.company_name,
@@ -517,10 +811,10 @@ class ATSService:
             ist_str, raw_iso, rel_time = parse_date_to_ist(published_at)
 
             dept = j.get("department", "")
-            tags = extract_tags(title, dept)
             emp_type = normalize_employment_type(j.get("employmentType", ""), title)
             workplace = normalize_workplace(loc_name, workplace_type_raw, is_remote)
             exp_level = normalize_experience_level(title)
+            tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept)
 
             results.append({
                 "company_name": ep.company_name,
@@ -578,10 +872,10 @@ class ATSService:
             exp_obj = j.get("experienceLevel") or {}
             exp_label = exp_obj.get("label", "") if isinstance(exp_obj, dict) else str(exp_obj)
 
-            tags = extract_tags(title, j.get("function", {}).get("label", ""))
             emp_type = normalize_employment_type(type_label, title)
             workplace = normalize_workplace(loc_str)
             exp_level = normalize_experience_level(title, exp_label)
+            tags = generate_job_tags(title=title, company=comp_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=j.get("function", {}).get("label", ""))
 
             results.append({
                 "company_name": comp_name,
@@ -628,10 +922,10 @@ class ATSService:
             ist_str, raw_iso, rel_time = parse_date_to_ist(created_at)
 
             dept = cats.get("department", "") or cats.get("team", "")
-            tags = extract_tags(title, dept)
             emp_type = normalize_employment_type(cats.get("commitment", ""), title)
             workplace = normalize_workplace(loc_str, workplace_type_raw, is_remote=("remote" in loc_str.lower()))
             exp_level = normalize_experience_level(title)
+            tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept)
 
             results.append({
                 "company_name": ep.company_name,
@@ -688,10 +982,10 @@ class ATSService:
             rel_time = "Recently"
 
             dept = j.get("departmentLabel", "")
-            tags = extract_tags(title, dept)
             emp_type = normalize_employment_type(j.get("employmentStatusLabel", ""), title)
             workplace = normalize_workplace(loc_str, is_remote=bool(j.get("isRemote")))
             exp_level = normalize_experience_level(title)
+            tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept)
 
             results.append({
                 "company_name": ep.company_name,
@@ -751,15 +1045,12 @@ class ATSService:
             ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
             
             dept_str = j.get("JobFunction", "") or j.get("JobFamily", "") or ""
-            tags = extract_tags(title, dept_str)
-            
             worker_type = j.get("WorkerType", "") or j.get("JobType", "") or ""
             emp_type = normalize_employment_type(worker_type, title)
-            
             wp_code = j.get("WorkplaceType", "") or j.get("WorkplaceTypeCode", "") or ""
             workplace = normalize_workplace(loc_name, is_remote=("remote" in loc_name.lower() or "remote" in wp_code.lower()))
-            
             exp_level = normalize_experience_level(title)
+            tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept_str)
             
             results.append({
                 "job_title": title,
@@ -817,11 +1108,10 @@ class ATSService:
             ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
             
             bullets = " ".join(j.get("bulletFields", []))
-            tags = extract_tags(title, bullets)
-            
             emp_type = normalize_employment_type(bullets, title)
             workplace = normalize_workplace(loc_name, is_remote=("remote" in loc_name.lower() or "remote" in bullets.lower()))
             exp_level = normalize_experience_level(title)
+            tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=bullets)
             
             results.append({
                 "job_title": title,

@@ -6,7 +6,7 @@ import pytz
 from typing import Dict, Any, List, Optional, Set, Tuple
 
 from app.config import get_config
-from app.redis_client import get_redis_client, parse_hash_name
+from app.redis_client import get_redis_client, parse_hash_name, get_hashes_by_tag
 from app.services.ats_service import get_ats_service, parse_date_to_ist, is_india_location, extract_india_location
 
 logger = logging.getLogger("search_service")
@@ -326,6 +326,16 @@ def role_matches(synonyms: List[str], text: Optional[str]) -> bool:
             return True
     return False
 
+def company_matches(query: str, company_name: Optional[str]) -> bool:
+    if not query or not company_name:
+        return False
+    q = query.strip().lower()
+    c = company_name.strip().lower()
+    if q == c:
+        return True
+    pattern = rf"\b{re.escape(q)}\b"
+    return bool(re.search(pattern, c))
+
 def calculate_semantic_relevance(query: str, title: str, role_cat: str = "", tags: List[str] = None, synonyms: List[str] = None) -> float:
     """
     Computes a semantic relevance score from 0.0 to 100.0.
@@ -359,6 +369,15 @@ def calculate_semantic_relevance(query: str, title: str, role_cat: str = "", tag
                 return 85.0
             if re.search(rf"\b{re.escape(s_clean)}\b", combined_target):
                 return 75.0
+
+    # Direct tag match check (gives high boost for matching skills/keywords)
+    if tags:
+        for t in tags:
+            t_lower = t.strip().lower()
+            if q == t_lower:
+                return 82.0
+            if re.search(rf"\b{re.escape(q)}\b", t_lower):
+                return 80.0
 
     # Rapidfuzz token set matching with word boundary verification
     if HAS_RAPIDFUZZ:
@@ -588,20 +607,20 @@ class SearchService:
         employment_type: Optional[str] = None,
         workplace_type: Optional[str] = None,
         experience_level: Optional[str] = None,
-        time_filter: Optional[str] = "24h", # "1h", "12h", "24h", "2d", "7d", "all"
+        time_filter: Optional[str] = "7d", # "1h", "12h", "24h", "2d", "7d", "all"
         page: int = 1,
         page_size: int = 10
     ) -> Dict[str, Any]:
         """
-        Executes search strictly based on Redis hashes {company_name}|{role_name}.
+        Executes search strictly based on Redis hashes {company_name}|{role_name} and tag secondary index.
         Applies filter options, descending timestamp sort, and page 10 pagination.
         """
         client = get_redis_client()
         query_term = (custom_input if custom_input else search_term or "").strip()
         query_lower = query_term.lower()
-        active_time_filter = (time_filter or "24h").strip()
+        active_time_filter = (time_filter or "7d").strip()
 
-        # Step 1: Scan Redis hashes matching company or role
+        # Step 1: Scan Redis hashes matching company, role, or secondary tag index
 
         import time
         from app.services.metrics_service import get_metrics_service
@@ -628,16 +647,19 @@ class SearchService:
         if not query_term:
             matching_hashes = set(all_keys)
         elif search_type == "company":
+            # Direct tag/company index lookup
+            matching_hashes.update(get_hashes_by_tag(query_lower))
+
             for k in all_keys:
                 c, r = parse_hash_name(k)
-                if query_lower in c.lower() or c.lower() == query_lower:
+                if company_matches(query_lower, c):
                     matching_hashes.add(k)
 
             # If no cached jobs in Redis, check if company is in our master ATS directory and fetch live
             if not matching_hashes:
                 matching_eps = [
                     ep for ep in self.ats_service.endpoints
-                    if query_lower == ep.company_name.lower() or query_lower in ep.company_name.lower()
+                    if company_matches(query_lower, ep.company_name)
                 ]
                 if matching_eps:
                     target_ep = matching_eps[0]
@@ -664,7 +686,7 @@ class SearchService:
                                     all_keys = client.keys("*|*")
                                     for k in all_keys:
                                         c, r = parse_hash_name(k)
-                                        if query_lower in c.lower() or c.lower() == query_lower:
+                                        if company_matches(query_lower, c):
                                             matching_hashes.add(k)
                     except Exception as e:
                         logger.debug(f"On-demand fetch failed for {target_ep.company_name}: {e}")
@@ -673,6 +695,8 @@ class SearchService:
             if not matching_hashes and len(query_term) > 3:
                 synonyms = self.get_role_synonyms(query_term)
                 all_syns = list(set(synonyms + [query_lower]))
+                for s in all_syns:
+                    matching_hashes.update(get_hashes_by_tag(s))
                 for k in all_keys:
                     c, r = parse_hash_name(k)
                     if role_matches(all_syns, r):
@@ -681,6 +705,12 @@ class SearchService:
         elif search_type == "role":
             synonyms = self.get_role_synonyms(query_term)
             all_syns = list(set(synonyms + [query_lower]))
+
+            # 1. Fast secondary tag index lookup for query and all synonyms
+            for s in all_syns:
+                matching_hashes.update(get_hashes_by_tag(s))
+
+            # 2. Hash name matching
             for k in all_keys:
                 c, r = parse_hash_name(k)
                 if role_matches(all_syns, r):
@@ -691,20 +721,29 @@ class SearchService:
             if not matching_hashes:
                 for k in all_keys:
                     c, r = parse_hash_name(k)
-                    if query_lower in c.lower() or c.lower() == query_lower:
+                    if company_matches(query_lower, c):
                         matching_hashes.add(k)
 
         elif search_type in ("other_company", "other_role", "other", "custom"):
             tokens = [t for t in re.split(r"\s+", query_lower) if len(t) > 1]
             synonyms = self.get_role_synonyms(query_term)
             all_syns = list(set(synonyms + [query_lower]))
+
+            # 1. Secondary tag index lookup for query, synonyms, and individual tokens
+            for s in all_syns:
+                matching_hashes.update(get_hashes_by_tag(s))
+            for tok in tokens:
+                matching_hashes.update(get_hashes_by_tag(tok))
+
+            # 2. Hash name matching with word boundary verification
             for k in all_keys:
                 c, r = parse_hash_name(k)
                 combined = f"{c} {r}".lower()
-                if role_matches(all_syns, combined) or (tokens and all(t in combined for t in tokens)):
+                if role_matches(all_syns, combined) or (tokens and all(role_matches([t], combined) for t in tokens)):
                     matching_hashes.add(k)
                 elif HAS_RAPIDFUZZ and (fuzz.token_sort_ratio(query_lower, r.lower()) >= 65 or fuzz.token_sort_ratio(query_lower, combined) >= 85):
-                    matching_hashes.add(k)
+                    if any(role_matches([t], combined) for t in tokens):
+                        matching_hashes.add(k)
         else:
             matching_hashes = set(all_keys)
 
@@ -748,24 +787,39 @@ class SearchService:
             title = job.get("title", "")
             c_name = job.get("company_name", "")
 
-            # If search_type was role and query was provided, verify individual job satisfies role or fallback company
-            if search_type == "role" and query_term:
+            # If query was provided, verify individual job satisfies query semantics or company match
+            if query_term:
+                c_matches = company_matches(query_term, c_name)
+                job_tags = job.get("tags") or []
                 synonyms = self.get_role_synonyms(query_term)
                 all_syns = list(set(synonyms + [query_lower]))
-                matches_role = role_matches(all_syns, r_name) or role_matches(all_syns, title)
-                if not matches_role:
-                    rel_score = calculate_semantic_relevance(query_term, title, r_name, job.get("tags"), all_syns)
-                    if rel_score >= 40.0:
-                        matches_role = True
-                if not matches_role and query_lower not in c_name.lower():
-                    continue
+
+                if search_type == "company":
+                    if not c_matches:
+                        rel_score = calculate_semantic_relevance(query_term, title, r_name, job_tags, all_syns)
+                        if rel_score < 40.0:
+                            continue
+                else:
+                    # search_type in ("role", "other_role", "other_company", "other", "custom")
+                    matches_role = role_matches(all_syns, r_name) or role_matches(all_syns, title)
+                    if not matches_role:
+                        if any(query_lower == str(t).strip().lower() or re.search(rf"\b{re.escape(query_lower)}\b", str(t).lower()) for t in job_tags):
+                            matches_role = True
+                        else:
+                            rel_score = calculate_semantic_relevance(query_term, title, r_name, job_tags, all_syns)
+                            if rel_score >= 40.0:
+                                matches_role = True
+                    if not matches_role and not c_matches:
+                        continue
 
             # Location filter
             if location_filter and location_filter.lower() != "all":
                 loc = job.get("location", "").lower()
                 wp = job.get("workplace_type", "").lower()
-                lf = location_filter.lower()
-                if lf == "remote":
+                lf = location_filter.strip().lower()
+                if lf in ("india", "pan india", "anywhere in india"):
+                    pass
+                elif lf == "remote":
                     if "remote" not in loc and "remote" not in wp:
                         continue
                 elif lf not in loc:
@@ -796,16 +850,21 @@ class SearchService:
                 elif target_emp not in emp:
                     continue
 
-            # Workplace filter
+            # Workplace filter (Strict: Remote jobs must strictly be Remote, never in-office)
             if workplace_type and workplace_type.lower() != "all":
-                wp = job.get("workplace_type", "").lower()
-                loc = job.get("location", "").lower()
-                target_wp = workplace_type.lower()
+                wp = job.get("workplace_type", "").strip().lower()
+                loc = job.get("location", "").strip().lower()
+                target_wp = workplace_type.strip().lower()
                 if target_wp == "remote":
-                    if "remote" not in wp and "remote" not in loc:
+                    is_remote = (wp == "remote") or ("remote" in loc)
+                    if not is_remote:
                         continue
-                elif target_wp not in wp:
-                    continue
+                elif target_wp in ("in office", "in-office", "office"):
+                    if wp not in ("in office", "office") and "remote" in wp:
+                        continue
+                elif target_wp == "hybrid":
+                    if "hybrid" not in wp:
+                        continue
 
             # Experience level filter
             if experience_level and experience_level.lower() != "all":
@@ -923,6 +982,13 @@ class SearchService:
         end_idx = start_idx + page_size
         paginated_results = filtered_jobs[start_idx:end_idx]
 
+        # Conceal tags from the serialized job objects to strictly prevent exposing keywords to the frontend / client devtools
+        clean_results = []
+        for j in paginated_results:
+            job_copy = dict(j)
+            job_copy["tags"] = []  # Strictly conceal internal search tags
+            clean_results.append(job_copy)
+
         return {
             "total_count": total_count,
             "page": page,
@@ -940,7 +1006,7 @@ class SearchService:
                 "experience_level": experience_level,
                 "time_filter": active_time_filter
             },
-            "results": paginated_results
+            "results": clean_results
         }
 
 _search_service: Optional[SearchService] = None

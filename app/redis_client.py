@@ -3,7 +3,7 @@ import logging
 import datetime
 import threading
 import pytz
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List, Tuple, Set
 import redis
 
 from app.config import get_config
@@ -32,8 +32,11 @@ def start_embedded_redis_server_if_needed(port: int = 6379):
         try:
             from fakeredis import TcpFakeServer
             def run_server():
-                server = TcpFakeServer(("127.0.0.1", port))
-                server.serve_forever()
+                try:
+                    server = TcpFakeServer(("127.0.0.1", port))
+                    server.serve_forever()
+                except Exception as ex:
+                    logger.debug(f"TcpFakeServer thread exited: {ex}")
             t = threading.Thread(target=run_server, daemon=True)
             t.start()
             _embedded_server_started = True
@@ -58,7 +61,7 @@ def get_redis_client() -> redis.Redis:
 
     # Try connecting to external / native redis
     try:
-        client = redis.Redis(host=host, port=port, db=db, password=password, decode_responses=True, socket_timeout=2)
+        client = redis.Redis(host=host, port=port, db=db, password=password, decode_responses=True, socket_timeout=10)
         client.ping()
         _redis_client = client
         logger.info(f"Connected to Redis server at {host}:{port}/{db}")
@@ -68,7 +71,7 @@ def get_redis_client() -> redis.Redis:
         # Start embedded fake server
         start_embedded_redis_server_if_needed(port)
         try:
-            client = redis.Redis(host=host, port=port, db=db, password=password, decode_responses=True, socket_timeout=2)
+            client = redis.Redis(host=host, port=port, db=db, password=password, decode_responses=True, socket_timeout=10)
             client.ping()
             _redis_client = client
             return _redis_client
@@ -119,11 +122,47 @@ def store_job_in_redis(job_data: Dict[str, Any], ttl_seconds: Optional[int] = No
         pipe = client.pipeline()
         pipe.hset(hash_key, field_key, val_str)
         pipe.expire(hash_key, ttl_seconds)
+
+        # Secondary index: maintain tag_idx:{tag_lower} sets for instant keyword search
+        tags = job_data.get("tags") or []
+        for t in tags:
+            clean_t = str(t).strip().lower()
+            if clean_t:
+                pipe.sadd(f"tag_idx:{clean_t}", hash_key)
+                pipe.expire(f"tag_idx:{clean_t}", ttl_seconds)
+
+        # Also index role and company into tag index
+        if role:
+            r_lower = role.strip().lower()
+            pipe.sadd(f"tag_idx:{r_lower}", hash_key)
+            pipe.expire(f"tag_idx:{r_lower}", ttl_seconds)
+        if company:
+            c_lower = company.strip().lower()
+            pipe.sadd(f"tag_idx:{c_lower}", hash_key)
+            pipe.expire(f"tag_idx:{c_lower}", ttl_seconds)
+
         pipe.execute()
         return True
     except Exception as e:
         logger.error(f"Error saving job to Redis [{hash_key}]: {e}")
         return False
+
+def get_hashes_by_tag(tag_term: str) -> Set[str]:
+    """
+    Returns the set of Redis hash keys matching a given tag/keyword.
+    """
+    if not tag_term:
+        return set()
+    client = get_redis_client()
+    term = tag_term.strip().lower()
+    try:
+        members = client.smembers(f"tag_idx:{term}")
+        if members:
+            return {m if isinstance(m, str) else m.decode("utf-8") for m in members}
+        return set()
+    except Exception as e:
+        logger.debug(f"Error reading tag index [{term}]: {e}")
+        return set()
 
 def clean_stale_jobs_older_than_days(max_days: int = 7) -> int:
     """
