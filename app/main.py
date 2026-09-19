@@ -151,19 +151,23 @@ async def serve_article(slug: str):
     path = FRONTEND_DIR / "jobs" / slug
     if path.exists() and path.is_file():
         return serve_html(path)
+    if not slug.endswith(".html"):
+        path_html = FRONTEND_DIR / "jobs" / f"{slug}.html"
+        if path_html.exists() and path_html.is_file():
+            return serve_html(path_html)
     raise HTTPException(status_code=404, detail="Not Found")
-
 
 @app.get("/portfolio")
 @app.get("/portfolio.html")
 async def serve_portfolio():
     return serve_html(FRONTEND_DIR / "portfolio.html")
 
-@app.get("/contact")
-@app.get("/articles.html", response_class=FileResponse)
-async def articles_page():
+@app.get("/articles")
+@app.get("/articles.html")
+async def serve_articles():
     return serve_html(FRONTEND_DIR / "articles.html")
 
+@app.get("/contact")
 @app.get("/contact.html")
 async def serve_contact():
     return serve_html(FRONTEND_DIR / "contact.html")

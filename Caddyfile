@@ -3,12 +3,13 @@
 # ==============================================================================
 # Caddy automatically provisions and renews SSL/TLS certificates via Let's Encrypt
 # for the specified domains with zero manual certbot intervention.
+# Uses active-active upstream load balancing with active health checks
+# between VM 1 (Gateway, web:8000) and VM 2 (Worker, 10.0.0.12:8000).
 # ==============================================================================
 
 # Global Configuration
 {
     email admin@corporateguild.com
-    # Keep access logs clean
     log {
         output stdout
         format console
@@ -23,30 +24,30 @@ www.corporateguild.com {
 
 # Primary Production Domain
 corporateguild.com {
-    # Automatic HTTP to HTTPS redirection is enabled by default in Caddy
-
-    # High-performance Gzip and Zstandard compression
     encode zstd gzip
 
     # Production Security Headers
     header {
-        # Enforce HTTPS across all subdomains for 1 year
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-        # Mitigate MIME-sniffing
         X-Content-Type-Options "nosniff"
-        # Mitigate Clickjacking
         X-Frame-Options "SAMEORIGIN"
-        # Referrer Policy
         Referrer-Policy "strict-origin-when-cross-origin"
-        # Remove server identity header
         -Server
     }
 
-    # Reverse proxy to FastAPI application container
-    reverse_proxy web:8000 {
-        # Health checks & timeouts
+    # Active-Active Load Balanced Reverse Proxy across VM 1 and VM 2
+    reverse_proxy web:8000 10.0.0.12:8000 {
+        lb_policy round_robin
+        lb_try_duration 2s
+        lb_try_interval 250ms
+
+        health_uri /api/auth/me
+        health_interval 5s
+        health_timeout 2s
+        health_status 200
+
         transport http {
-            dial_timeout 5s
+            dial_timeout 3s
             response_header_timeout 60s
         }
     }
@@ -54,7 +55,14 @@ corporateguild.com {
 
 # Direct IP fallback / Health Check
 :80 {
-    # If accessed directly via Oracle Public IP before DNS propagates,
-    # forward to the web container
-    reverse_proxy web:8000
+    reverse_proxy web:8000 10.0.0.12:8000 {
+        lb_policy round_robin
+        lb_try_duration 2s
+        lb_try_interval 250ms
+
+        health_uri /api/auth/me
+        health_interval 5s
+        health_timeout 2s
+        health_status 200
+    }
 }

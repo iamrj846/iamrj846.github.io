@@ -2,18 +2,55 @@
 # CorporateGuild - Worker Node (VM 2) Docker Compose Configuration
 # ==============================================================================
 # Services on VM 2 (Worker Node):
-#   1. redis: Redis 7 In-Memory Cache with AOF/RDB Persistence
-#             Exposed on port 6379 for internal VCN access by VM 1 (Gateway).
+#   1. web: FastAPI + Uvicorn Application Container (Port 8000)
+#   2. redis: Redis 7 In-Memory Cache (Continuous Replica of VM 1 Gateway Redis)
 # ==============================================================================
 
 services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: corporateguild_web_worker
+    restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - DATABASE_PATH=/app/data/jobs_portal.db
+      - TZ=Asia/Kolkata
+      - SYNC_INTERVAL_MINUTES=0
+      - NODE_ROLE=worker
+    env_file:
+      - .env.prod
+    volumes:
+      - ./app:/app/app
+      - ./frontend:/app/frontend
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./resources:/app/resources
+      - ./.env.prod:/app/.env.prod:ro
+      - ./.env:/app/.env:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/auth/me"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
   redis:
     image: redis:7-alpine
     container_name: corporateguild_redis_worker
     restart: unless-stopped
     ports:
       - "6379:6379"
-    command: ["redis-server", "--appendonly", "yes", "--save", "900", "1", "--save", "300", "10", "--protected-mode", "no"]
+    command: ["redis-server", "--appendonly", "yes", "--save", "900", "1", "--save", "300", "10", "--protected-mode", "no", "--replicaof", "10.0.0.136", "6379", "--replica-read-only", "no"]
     volumes:
       - redis_worker_data:/data
     healthcheck:

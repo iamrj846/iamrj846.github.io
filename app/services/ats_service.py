@@ -674,35 +674,44 @@ class ATSService:
                     if not row or not any(row):
                         continue
 
-                    # Handle row layout variations in job_urls.xlsx
-                    # Format A (rows 1 to ~9405): [Index, Company, Platform, URL]
-                    # Format B (rows ~9406 to 22291): [Company, Platform, URL] (no leading index)
-                    c_name = ""
-                    plat = ""
-                    ep_url = ""
+                    # Robust dynamic URL & platform extraction across all row formats in job_urls.xlsx
+                    http_col = None
+                    for idx, cell in enumerate(row):
+                        if cell and str(cell).strip().startswith(('http://', 'https://')):
+                            http_col = idx
+                            break
 
-                    if len(row) >= 4 and str(row[2]).strip().lower() in ("ashby", "greenhouse", "lever", "bamboohr", "smartrecruiters", "oracle", "workday", "recruitee", "breezy"):
-                        c_name = str(row[1] or "").strip()
-                        plat = str(row[2] or "").strip()
-                        ep_url = str(row[3] or "").strip()
-                    elif len(row) >= 3 and str(row[1]).strip().lower() in ("ashby", "greenhouse", "lever", "bamboohr", "smartrecruiters", "oracle", "workday", "recruitee", "breezy"):
-                        c_name = str(row[0] or "").strip()
-                        plat = str(row[1] or "").strip()
-                        ep_url = str(row[2] or "").strip()
-                    elif len(row) >= 4:
-                        c_name = str(row[1] or "").strip()
-                        plat = str(row[2] or "Direct").strip()
-                        ep_url = str(row[3] or "").strip()
-                    elif len(row) >= 3:
-                        c_name = str(row[0] or "").strip()
-                        plat = str(row[1] or "Direct").strip()
-                        ep_url = str(row[2] or "").strip()
+                    if http_col is not None:
+                        ep_url = str(row[http_col]).strip()
+                        plat = ""
+                        c_name = ""
 
-                    if c_name and ep_url and ep_url.startswith("http"):
-                        k = (c_name.lower(), ep_url.split("?")[0].lower())
-                        if k not in seen:
-                            seen.add(k)
-                            self.endpoints.append(ATSEndpoint(c_name, plat, ep_url))
+                        # Search preceding columns for recognized ATS platform keywords
+                        for idx in range(http_col):
+                            val = str(row[idx] or '').strip()
+                            if val.lower() in ("ashby", "greenhouse", "lever", "bamboohr", "smartrecruiters", "oracle", "workday", "recruitee", "breezy", "workable", "rippling"):
+                                plat = val
+                                # Company name is the nearest preceding non-numeric column
+                                for c_idx in range(idx - 1, -1, -1):
+                                    c_val = str(row[c_idx] or '').strip()
+                                    if c_val and not c_val.isdigit():
+                                        c_name = c_val
+                                        break
+                                break
+
+                        if not plat:
+                            if http_col >= 2:
+                                plat = str(row[http_col - 1] or 'Direct').strip()
+                                c_name = str(row[http_col - 2] or '').strip()
+                            elif http_col >= 1:
+                                plat = "Direct"
+                                c_name = str(row[0] or '').strip()
+
+                        if c_name and ep_url and ep_url.startswith("http"):
+                            k = (c_name.lower(), ep_url.split("?")[0].lower())
+                            if k not in seen:
+                                seen.add(k)
+                                self.endpoints.append(ATSEndpoint(c_name, plat, ep_url))
 
                 logger.info(f"Loaded {len(self.endpoints)} ATS endpoints from Excel directory.")
             except Exception as e:
@@ -710,7 +719,7 @@ class ATSService:
         else:
             logger.warning(f"Excel file not found at: {excel_path}")
 
-        # Curated top-tier and modern ATS endpoints (Workable, Recruitee, Breezy HR, SmartRecruiters)
+        # Curated top-tier and modern ATS endpoints (Rippling, Workable, Recruitee, Breezy HR, SmartRecruiters)
         curated = [
             # High-yield SmartRecruiters tech endpoints (India & Global Remote)
             ("PhonePe", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/PhonePeLimited/postings?limit=100"),
@@ -730,6 +739,14 @@ class ATSService:
             ("H&M Group", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/HMGroup/postings?limit=100"),
             ("SGS", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/SGS/postings?limit=100"),
             ("Avery Dennison", "SmartRecruiters", "https://api.smartrecruiters.com/v1/companies/averydennison/postings?limit=100"),
+            # Rippling ATS public JSON endpoints (India & Global Tech)
+            ("Rippling", "Rippling", "https://api.rippling.com/platform/api/ats/v1/board/rippling/jobs"),
+            ("Heads Up Technologies", "Rippling", "https://api.rippling.com/platform/api/ats/v1/board/heads-up-technologies/jobs"),
+            ("Cerby", "Rippling", "https://api.rippling.com/platform/api/ats/v1/board/cerby/jobs"),
+            ("Quotapath", "Rippling", "https://api.rippling.com/platform/api/ats/v1/board/quotapath/jobs"),
+            ("Framework", "Rippling", "https://api.rippling.com/platform/api/ats/v1/board/framework/jobs"),
+            ("Dockwa", "Rippling", "https://api.rippling.com/platform/api/ats/v1/board/dockwa/jobs"),
+            ("Inn-Flow", "Rippling", "https://api.rippling.com/platform/api/ats/v1/board/inn-flow/jobs"),
             # Top Workable public JSON endpoints (India & Global Remote)
             ("Apna", "Workable", "https://apply.workable.com/api/v1/widget/accounts/apna"),
             ("Mercari India", "Workable", "https://apply.workable.com/api/v1/widget/accounts/mercari-india"),
@@ -817,6 +834,8 @@ class ATSService:
             return self._parse_breezy(ep, data)
         elif "workable" in platform:
             return self._parse_workable(ep, data)
+        elif "rippling" in platform:
+            return self._parse_rippling(ep, data)
         elif "oracle" in platform:
             return self._parse_oracle(ep, data)
         elif "workday" in platform:
@@ -824,6 +843,8 @@ class ATSService:
         else:
             # Try generic detection
             if isinstance(data, list):
+                if data and isinstance(data[0], dict) and ("workLocation" in data[0] or "uuid" in data[0]):
+                    return self._parse_rippling(ep, data)
                 return self._parse_lever(ep, data)
             elif isinstance(data, dict):
                 if "jobs" in data and isinstance(data["jobs"], list):
@@ -1327,6 +1348,73 @@ class ATSService:
 
         return results
 
+    def _parse_rippling(self, ep: ATSEndpoint, data: Any) -> List[Dict[str, Any]]:
+        results = []
+        if not isinstance(data, list):
+            return results
+
+        company_display = ep.company_name.strip()
+        now_str = datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+
+        for j in data:
+            if not isinstance(j, dict):
+                continue
+            title = j.get("name", "").strip()
+            if not title:
+                continue
+
+            work_loc = j.get("workLocation") or {}
+            loc_name = work_loc.get("label", "") if isinstance(work_loc, dict) else str(work_loc)
+
+            # Strict India filtering & validation
+            if not is_india_location(loc_name):
+                if not loc_name.strip() and is_india_location(title):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(loc_name)
+
+            job_uuid = j.get("uuid") or ""
+            apply_link = j.get("url")
+            if not apply_link or "api.rippling" in apply_link:
+                slug = ep.endpoint_url.split("/board/")[1].split("/")[0] if "/board/" in ep.endpoint_url else company_display.lower()
+                apply_link = f"https://ats.rippling.com/{slug}/jobs/{job_uuid}"
+
+            ist_str, raw_iso, rel_time = parse_date_to_ist(None)
+
+            dept_obj = j.get("department") or {}
+            dept_name = dept_obj.get("label", "") if isinstance(dept_obj, dict) else ""
+            emp_type = normalize_employment_type("", title)
+            workplace = normalize_workplace(loc_name, is_remote=("remote" in loc_name.lower() or "remote" in title.lower()))
+            exp_level = normalize_experience_level(title)
+            tags = generate_job_tags(title=title, company=company_display, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept_name)
+
+            results.append({
+                "company_name": company_display,
+                "role_name": title,
+                "title": title,
+                "location": clean_loc or "India",
+                "employment_type": emp_type,
+                "workplace_type": workplace,
+                "experience_level": exp_level,
+                "apply_link": apply_link,
+                "apply_url": apply_link,
+                "posted_timestamp_ist": ist_str,
+                "posted_timestamp_raw": raw_iso,
+                "relative_time_ist": rel_time,
+                "tags": tags,
+                "salary_range": "Competitive Market CTC",
+                "role_category": title,
+                "skills": tags[:5],
+                "description": f"Verified open position at {company_display} for {title}.",
+                "ats_platform": "Rippling",
+                "ingested_at": now_str,
+                "source_url": ep.endpoint_url
+            })
+
+        return results
+
     def _parse_oracle(self, ep: ATSEndpoint, data: Dict[str, Any]) -> List[Dict[str, Any]]:
         results = []
         items = data.get("items", [])
@@ -1473,7 +1561,7 @@ class ATSService:
             selected_endpoints: List[ATSEndpoint] = []
             
             # Always include 100% of smaller / high-yield platforms
-            always_full = ["smartrecruiters", "recruitee", "breezy hr", "breezy", "workable", "oracle"]
+            always_full = ["smartrecruiters", "recruitee", "breezy hr", "breezy", "workable", "rippling", "oracle"]
             remaining_quota = sample_limit
             for plat in always_full:
                 if plat in by_platform:
