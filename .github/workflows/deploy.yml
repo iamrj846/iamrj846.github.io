@@ -1,11 +1,12 @@
-name: Deploy CorporateGuild to Oracle Cloud Always Free VM
+name: Deploy CorporateGuild Multi-Instance Cluster to Oracle Cloud Always Free
 
 # ==============================================================================
-# CorporateGuild - Automated Production Deployment CI/CD Workflow
+# CorporateGuild - Automated Production Deployment CI/CD Workflow (2-VM Cluster)
 # ==============================================================================
 # Triggered automatically on push to 'master' branch or manual workflow dispatch.
-# Connects securely via SSH to the Oracle Cloud Always Free VM, updates the
-# repository, builds and restarts the Docker Compose stack with zero downtime.
+# Automatically updates and synchronizes both nodes in the 2-VM topology:
+#   - VM 1: Web Gateway (Caddy SSL Reverse Proxy + FastAPI Backend + Telemetry)
+#   - VM 2: Worker Node (Redis 7 In-Memory Cache + ATS Ingestion + Heartbeat)
 # ==============================================================================
 
 on:
@@ -19,8 +20,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    name: Production Deployment to OCI VM
+  deploy-gateway:
+    name: Production Deployment to Gateway Node (VM 1)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -28,7 +29,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Execute Remote SSH Deployment on Oracle VM
+      - name: Execute Remote SSH Deployment on Oracle VM 1 (Gateway)
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.OCI_VM_HOST }}
@@ -39,7 +40,7 @@ jobs:
           envs: GITHUB_SHA
           script: |
             echo "======================================================================"
-            echo "🚀 Starting CorporateGuild Automated Deployment: ${GITHUB_SHA::7}"
+            echo "🚀 Starting CorporateGuild Gateway Deployment on VM 1: ${GITHUB_SHA::7}"
             echo "======================================================================"
 
             # 1. Target Directory Detection
@@ -50,12 +51,11 @@ jobs:
 
             if [ ! -d "$APP_DIR" ]; then
               echo "❌ Error: Application directory not found at $APP_DIR"
-              echo "Please clone the repository first on your VM as described in DEPLOYMENT_GUIDE.md"
               exit 1
             fi
 
             cd "$APP_DIR"
-            echo "📂 Working directory: $(pwd)"
+            echo "📂 Working directory on VM 1: $(pwd)"
 
             # 2. Pull Latest Changes from master
             echo "📥 Pulling latest commits from GitHub master branch..."
@@ -63,10 +63,10 @@ jobs:
             git reset --hard origin/master
 
             # 3. Ensure permissions on scripts
-            chmod +x scripts/*.sh
+            chmod +x scripts/*.sh scripts/*.py 2>/dev/null || true
 
             # 4. Build and Launch Containers via Docker Compose
-            echo "🐳 Building and spinning up production containers..."
+            echo "🐳 Building and spinning up production containers on VM 1..."
             docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 
             # 5. Prune dangling/untagged Docker images to preserve disk space
@@ -84,9 +84,90 @@ jobs:
             if [ "$HEALTH" -ne 200 ] && [ "$HEALTH" -ne 401 ]; then
               echo "⚠️ Warning: Web service returned unexpected status $HEALTH during health check"
             else
-              echo "✅ Web service is healthy and responding!"
+              echo "✅ Gateway web service is healthy and responding!"
             fi
 
             echo "======================================================================"
-            echo "🎉 Deployment completed successfully!"
+            echo "🎉 VM 1 (Gateway Node) Deployment completed successfully!"
+            echo "======================================================================"
+
+  deploy-worker:
+    name: Production Deployment to Worker Node (VM 2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check VM 2 Configuration
+        id: check_vm2
+        env:
+          VM2_HOST: ${{ secrets.OCI_VM2_HOST }}
+        run: |
+          if [ -n "$VM2_HOST" ]; then
+            echo "configured=true" >> $GITHUB_OUTPUT
+            echo "✅ OCI_VM2_HOST is configured. Proceeding with VM 2 deployment."
+          else
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ OCI_VM2_HOST secret not configured. Skipping direct VM 2 deployment."
+          fi
+
+      - name: Execute Remote SSH Deployment on Oracle VM 2 (Worker)
+        if: steps.check_vm2.outputs.configured == 'true'
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.OCI_VM2_HOST }}
+          username: ${{ secrets.OCI_VM2_USER || secrets.OCI_VM_USER || 'ubuntu' }}
+          key: ${{ secrets.OCI_SSH_KEY }}
+          port: ${{ secrets.OCI_SSH_PORT || 22 }}
+          script_stop: true
+          envs: GITHUB_SHA
+          script: |
+            echo "======================================================================"
+            echo "🚀 Starting CorporateGuild Worker Deployment on VM 2: ${GITHUB_SHA::7}"
+            echo "======================================================================"
+
+            # 1. Target Directory Detection
+            APP_DIR="/home/$(whoami)/iamrj846.github.io"
+            if [ ! -d "$APP_DIR" ]; then
+              APP_DIR="/opt/corporateguild"
+            fi
+
+            if [ ! -d "$APP_DIR" ]; then
+              echo "❌ Error: Application directory not found at $APP_DIR on VM 2"
+              exit 1
+            fi
+
+            cd "$APP_DIR"
+            echo "📂 Working directory on VM 2: $(pwd)"
+
+            # 2. Pull Latest Changes from master
+            echo "📥 Pulling latest commits from GitHub master branch..."
+            git fetch origin master
+            git reset --hard origin/master
+
+            # 3. Ensure permissions on scripts
+            chmod +x scripts/*.sh scripts/*.py 2>/dev/null || true
+
+            # 4. Spin up or update Worker containers
+            if [ -f "docker-compose.worker.yml" ]; then
+              echo "🐳 Updating Worker Docker stack..."
+              docker compose -f docker-compose.worker.yml up -d --remove-orphans
+            elif [ -f "docker-compose.prod.yml" ]; then
+              echo "🐳 Updating Redis container..."
+              docker compose -f docker-compose.prod.yml up -d --remove-orphans redis
+            fi
+
+            # 5. Clean Docker cache
+            docker image prune -f
+
+            # 6. Restart Heartbeat telemetry daemon if active
+            if systemctl is-active --quiet corporateguild-heartbeat; then
+              echo "💓 Restarting worker telemetry heartbeat..."
+              sudo systemctl restart corporateguild-heartbeat
+            fi
+
+            echo "======================================================================"
+            echo "🎉 VM 2 (Worker Node) Deployment completed successfully!"
             echo "======================================================================"

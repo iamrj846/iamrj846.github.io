@@ -51,9 +51,23 @@ class MetricsService:
                 
     async def _flush_metrics(self):
         async with self.lock:
-            # CPU / Mem
+            # CPU / Mem for VM 1 (Gateway Node)
             cpu = psutil.cpu_percent()
             mem = psutil.virtual_memory().percent
+            
+            # Check for Worker Node (VM 2) metrics reported in Redis
+            vm2_cpu = None
+            vm2_mem = None
+            try:
+                raw_worker = self.redis.get("cg:metrics:worker_node")
+                if raw_worker:
+                    w_data = json.loads(raw_worker)
+                    # Consider worker heartbeat valid if updated within 5 minutes (300s)
+                    if time.time() - w_data.get("updated_at", 0) < 300:
+                        vm2_cpu = w_data.get("cpu")
+                        vm2_mem = w_data.get("mem")
+            except Exception:
+                pass
             
             # Latency aggregations
             s_lats = sorted(list(self.search_latencies))
@@ -101,6 +115,10 @@ class MetricsService:
             "ts": now_min,
             "cpu": cpu,
             "mem": mem,
+            "vm1_cpu": cpu,
+            "vm1_mem": mem,
+            "vm2_cpu": vm2_cpu,
+            "vm2_mem": vm2_mem,
             "tps_home": round(c_home / 60.0, 2),
             "tps_jobs_page": round(c_jobs / 60.0, 2),
             "tps_portfolio": round(c_port / 60.0, 2),

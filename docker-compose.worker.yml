@@ -1,0 +1,28 @@
+# ==============================================================================
+# CorporateGuild - Worker Node (VM 2) Docker Compose Configuration
+# ==============================================================================
+# Services on VM 2 (Worker Node):
+#   1. redis: Redis 7 In-Memory Cache with AOF/RDB Persistence
+#             Exposed on port 6379 for internal VCN access by VM 1 (Gateway).
+# ==============================================================================
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: corporateguild_redis_worker
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes", "--save", "900", "1", "--save", "300", "10", "--protected-mode", "no"]
+    volumes:
+      - redis_worker_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  redis_worker_data:
+    driver: local

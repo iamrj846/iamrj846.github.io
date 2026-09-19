@@ -47,8 +47,12 @@ async def lifespan(app: FastAPI):
     ingestion_mgr = get_ingestion_manager()
     ingestion_mgr.seed_initial_jobs()
     
-    # Start 30-minute recurring scheduler
-    ingestion_mgr.start_scheduler()
+    # Start 30-minute recurring scheduler if enabled
+    enable_scheduler = os.getenv("ENABLE_INGESTION_SCHEDULER", "true").lower() in ("1", "true", "yes")
+    if enable_scheduler:
+        ingestion_mgr.start_scheduler()
+    else:
+        logger.info("Background ingestion scheduler disabled on this node (ENABLE_INGESTION_SCHEDULER=false)")
     
     from app.services.metrics_service import get_metrics_service
     get_metrics_service().start_flusher()
@@ -57,8 +61,9 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown tasks
-    logger.info("Shutting down background scheduler...")
-    ingestion_mgr.stop_scheduler()
+    if enable_scheduler:
+        logger.info("Shutting down background scheduler...")
+        ingestion_mgr.stop_scheduler()
     get_metrics_service().stop_flusher()
 
 config = get_config()
