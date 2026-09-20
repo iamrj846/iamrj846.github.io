@@ -73,7 +73,7 @@ def run_reindex():
     # Stream rows without loading full table into RAM
     cur.execute("""
         SELECT id, title, company, location, role_category, workplace_type, 
-               experience_level, employment_type, dept, apply_url, posted_at, source
+               experience_level, employment_type, apply_url, posted_at, source
         FROM jobs WHERE is_active = 1
     """)
 
@@ -102,7 +102,7 @@ def run_reindex():
                 workplace_type=wp_type,
                 experience_level=exp_level,
                 employment_type=emp_type,
-                dept=row["dept"] or ""
+                dept=""
             )
 
             tags_json = json.dumps(tags)
