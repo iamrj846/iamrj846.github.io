@@ -187,9 +187,27 @@ async def get_redis_kill_switch_status(admin_user: Dict[str, Any] = Depends(veri
     }
 
 @router.post("/redis-kill-switch")
-async def toggle_redis_kill_switch(payload: RedisKillSwitchRequest, admin_user: Dict[str, Any] = Depends(verify_admin_session)):
+async def toggle_redis_kill_switch(request: Request, payload: RedisKillSwitchRequest, admin_user: Dict[str, Any] = Depends(verify_admin_session)):
+    import os, logging
+    logger = logging.getLogger("admin_router")
     from app.database import set_redis_kill_switch
     enabled = set_redis_kill_switch(payload.enabled)
+
+    # Broadcast switch state to worker node (VM 2) across private network
+    worker_ip = os.getenv("CLUSTER_WORKER_IP", "10.0.0.12")
+    if worker_ip and worker_ip not in ("127.0.0.1", "localhost"):
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                headers = {"Content-Type": "application/json"}
+                await client.post(
+                    f"http://{worker_ip}:80/api/admin/redis-kill-switch-worker",
+                    json={"enabled": payload.enabled},
+                    headers=headers
+                )
+        except Exception as e:
+            logger.debug(f"Failed to propagate kill switch to worker {worker_ip}: {e}")
+
     mode_str = "Direct Database Mode (All requests bypass Redis)" if enabled else "Redis In-Memory Cache Mode"
     return {
         "success": True,
@@ -197,6 +215,12 @@ async def toggle_redis_kill_switch(payload: RedisKillSwitchRequest, admin_user: 
         "mode": "direct_db" if enabled else "redis_cache",
         "message": f"Redis Kill Switch {'activated' if enabled else 'deactivated'}. System is now operating in {mode_str}."
     }
+
+@router.post("/redis-kill-switch-worker")
+async def set_worker_redis_kill_switch(payload: RedisKillSwitchRequest):
+    from app.database import set_redis_kill_switch
+    enabled = set_redis_kill_switch(payload.enabled)
+    return {"success": True, "enabled": enabled}
 
 @router.get("/analytics")
 async def admin_analytics(admin_user: Dict[str, Any] = Depends(verify_admin_session)):
