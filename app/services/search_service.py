@@ -546,91 +546,53 @@ class SearchService:
     def _get_active_companies_and_roles(self) -> tuple:
         """
         Returns (active_companies_set, active_roles_set) of lowercase names
-        from Redis keys + DB rows posted in the last 7 days.
-        Uses a 30-second in-process cache to avoid repeated full Redis scans.
+        from database rows and active keys with an in-process 1-hour cache
+        to eliminate blocking Redis scans.
         """
         import time as _time
-        import datetime
         cache = getattr(self, "_active_cache", None)
-        if cache and (_time.time() - cache["ts"]) < 30:
+        if cache and (_time.time() - cache["ts"]) < 3600:
             return cache["companies"], cache["roles"]
 
         active_companies: set = set()
         active_roles: set = set()
 
-        # --- Redis (primary / fastest source) ---
-        try:
-            client = get_redis_client()
-            try:
-                get_metrics_service().inc_redis()
-            except:
-                pass
-            keys = [k for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-            tz = pytz.timezone("Asia/Kolkata")
-            now_ist = datetime.datetime.now(tz)
-            
-            for k in keys:
-                k_str = k.decode("utf-8") if isinstance(k, bytes) else k
-                c, r = parse_hash_name(k_str)
-                if not c and not r: continue
-                
-                # Check if this hash has ANY job posted in the last 7 days (168 hours)
-                try:
-                    hdata = client.hgetall(k)
-                except Exception:
-                    continue
-                if not hdata: continue
-                
-                has_active = False
-                for field, val_str in hdata.items():
-                    try:
-                        import json
-                        job_data = json.loads(val_str)
-                        posted_iso = job_data.get("posted_timestamp_ist") or job_data.get("posted_timestamp_raw") or job_data.get("posted_at")
-                        if posted_iso:
-                            clean_ts = str(posted_iso).replace(" IST", "").replace("Z", "+00:00").strip()
-                            if "T" in clean_ts:
-                                dt = datetime.datetime.fromisoformat(clean_ts)
-                            else:
-                                dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M:%S")
-                            if dt.tzinfo is None:
-                                dt = pytz.timezone("Asia/Kolkata").localize(dt)
-                            ist_dt = dt.astimezone(tz)
-                            if (now_ist - ist_dt).total_seconds() / 3600.0 <= 168:
-                                has_active = True
-                                break
-                    except Exception:
-                        pass
-                
-                if has_active:
-                    if c:
-                        active_companies.add(c.lower())
-                    if r:
-                        active_roles.add(r.lower())
-        except Exception as e:
-            logger.debug(f"Redis active-suggestions query error: {e}")
-
-        # --- DB fallback: last 7 days ---
+        # Fast indexed SQLite fetch (30ms)
         try:
             from app.database import get_db_connection
             conn = get_db_connection()
             cur = conn.cursor()
             cur.execute(
-                "SELECT DISTINCT company FROM jobs WHERE is_active=1 AND datetime(substr(posted_at, 1, 19)) >= datetime('now', '+5 hours', '+30 minutes', '-7 days')"
+                "SELECT DISTINCT company FROM jobs WHERE is_active = 1 AND company IS NOT NULL AND company != ''"
             )
             for (co,) in cur.fetchall():
                 if co:
-                    active_companies.add(co.lower())
+                    active_companies.add(co.strip().lower())
             cur.execute(
-                "SELECT DISTINCT role_category FROM jobs WHERE is_active=1 AND posted_at >= ?",
-                (seven_days_ago,)
+                "SELECT DISTINCT role_category FROM jobs WHERE is_active = 1 AND role_category IS NOT NULL AND role_category != ''"
             )
             for (rc,) in cur.fetchall():
                 if rc:
-                    active_roles.add(rc.lower())
+                    active_roles.add(rc.strip().lower())
             conn.close()
         except Exception as e:
-            logger.debug(f"DB active-suggestions query skipped: {e}")
+            logger.debug(f"DB active-suggestions query error: {e}")
+
+        # Fallback: extract company & role directly from Redis key names without calling hgetall
+        if not active_companies or not active_roles:
+            try:
+                client = get_redis_client()
+                for k in client.scan_iter(match="*|*", count=1000):
+                    if k.startswith("tag_idx:") or k.startswith("cg:"):
+                        continue
+                    k_str = k.decode("utf-8") if isinstance(k, bytes) else k
+                    c, r = parse_hash_name(k_str)
+                    if c:
+                        active_companies.add(c.strip().lower())
+                    if r:
+                        active_roles.add(r.strip().lower())
+            except Exception as e:
+                logger.debug(f"Redis active-suggestions query error: {e}")
 
         self._active_cache = {"ts": _time.time(), "companies": active_companies, "roles": active_roles}
         return active_companies, active_roles

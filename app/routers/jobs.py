@@ -29,7 +29,7 @@ async def get_suggestions(
     limit: int = Query(100, ge=1, le=200)
 ):
     service = get_search_service()
-    suggestions = service.get_suggestions(mode, q, limit=limit)
+    suggestions = await asyncio.to_thread(service.get_suggestions, mode, q, limit=limit)
     
     # Inject "All Roles" / "All Companies"
     top_val = "All Roles" if mode == "role" else "All Companies"

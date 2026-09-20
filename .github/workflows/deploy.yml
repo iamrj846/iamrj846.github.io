@@ -60,6 +60,8 @@ jobs:
             # 2. Pull Latest Changes from master
             echo "📥 Pulling latest commits from GitHub master branch..."
             git fetch origin master
+            git checkout . 2>/dev/null || true
+            git clean -fd 2>/dev/null || true
             git reset --hard origin/master
 
             # 3. Ensure permissions on scripts
@@ -75,13 +77,13 @@ jobs:
 
             # 6. Verify Container Health
             echo "🩺 Running post-deployment health check..."
-            sleep 8
+            sleep 10
             docker compose -f docker-compose.prod.yml ps
 
             # Verify endpoint returns valid JSON
-            HEALTH=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://127.0.0.1:8000/api/auth/me || echo "000")
+            HEALTH=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 http://127.0.0.1:8000/api/health || echo "000")
             echo "Healthcheck status: HTTP $HEALTH"
-            if [ "$HEALTH" -ne 200 ] && [ "$HEALTH" -ne 401 ]; then
+            if [ "$HEALTH" -ne 200 ]; then
               echo "⚠️ Warning: Web service returned unexpected status $HEALTH during health check"
             else
               echo "✅ Gateway web service is healthy and responding!"
@@ -140,6 +142,8 @@ jobs:
             # 2. Pull Latest Changes from master
             echo "📥 Pulling latest commits from GitHub master branch..."
             git fetch origin master
+            git checkout . 2>/dev/null || true
+            git clean -fd 2>/dev/null || true
             git reset --hard origin/master
 
             # 3. Ensure permissions on scripts
@@ -149,6 +153,7 @@ jobs:
             if [ -f "docker-compose.worker.yml" ]; then
               echo "🐳 Updating Worker Docker stack..."
               docker compose -f docker-compose.worker.yml up -d --remove-orphans
+              docker restart corporateguild_web_worker 2>/dev/null || true
             elif [ -f "docker-compose.prod.yml" ]; then
               echo "🐳 Updating Redis container..."
               docker compose -f docker-compose.prod.yml up -d --remove-orphans redis
