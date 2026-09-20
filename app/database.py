@@ -357,20 +357,44 @@ def increment_user_metric(user_id: int, metric: str):
     conn.commit()
     conn.close()
 
+def is_guest_window_expired(created_at_str: Optional[str]) -> bool:
+    if not created_at_str:
+        return True
+    try:
+        clean_ts = str(created_at_str).replace(" IST", "").strip()
+        if "T" in clean_ts:
+            dt = datetime.datetime.fromisoformat(clean_ts)
+        else:
+            dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M:%S")
+        if dt.tzinfo is None:
+            dt = pytz.timezone("Asia/Kolkata").localize(dt)
+        now = get_ist_now()
+        return (now - dt).total_seconds() >= 86400
+    except Exception:
+        return True
+
 def get_guest_search_count(ip_address: str, guest_id: Optional[str] = None) -> int:
     conn = get_db_connection()
     cur = conn.cursor()
     # Check by persistent guest_id cookie first
     if guest_id:
-        cur.execute("SELECT search_count FROM guest_quotas WHERE guest_id = ?", (guest_id,))
+        cur.execute("SELECT search_count, created_at, last_search_at FROM guest_quotas WHERE guest_id = ?", (guest_id,))
         row = cur.fetchone()
         conn.close()
-        return int(row["search_count"]) if row else 0
+        if not row:
+            return 0
+        if is_guest_window_expired(row["created_at"] or row["last_search_at"]):
+            return 0
+        return int(row["search_count"])
     # Fallback to IP address if guest_id is absent
-    cur.execute("SELECT search_count FROM guest_quotas WHERE ip_address = ?", (ip_address,))
+    cur.execute("SELECT search_count, created_at, last_search_at FROM guest_quotas WHERE ip_address = ?", (ip_address,))
     row = cur.fetchone()
     conn.close()
-    return int(row["search_count"]) if row else 0
+    if not row:
+        return 0
+    if is_guest_window_expired(row["created_at"] or row["last_search_at"]):
+        return 0
+    return int(row["search_count"])
 
 def increment_guest_search(ip_address: str, guest_id: Optional[str] = None) -> int:
     conn = get_db_connection()
@@ -378,24 +402,38 @@ def increment_guest_search(ip_address: str, guest_id: Optional[str] = None) -> i
     now_str = get_ist_now_str()
     row = None
     if guest_id:
-        cur.execute("SELECT search_count, ip_address FROM guest_quotas WHERE guest_id = ?", (guest_id,))
+        cur.execute("SELECT search_count, created_at, last_search_at, ip_address FROM guest_quotas WHERE guest_id = ?", (guest_id,))
         row = cur.fetchone()
     else:
-        cur.execute("SELECT search_count, guest_id FROM guest_quotas WHERE ip_address = ?", (ip_address,))
+        cur.execute("SELECT search_count, created_at, last_search_at, guest_id FROM guest_quotas WHERE ip_address = ?", (ip_address,))
         row = cur.fetchone()
 
     if row:
-        new_count = row["search_count"] + 1
-        if guest_id:
-            cur.execute(
-                "UPDATE guest_quotas SET search_count = ?, last_search_at = ?, ip_address = ? WHERE guest_id = ?",
-                (new_count, now_str, ip_address, guest_id)
-            )
+        # Check if 24 hours have passed since the first search of the cycle
+        if is_guest_window_expired(row["created_at"] or row["last_search_at"]):
+            new_count = 1
+            if guest_id:
+                cur.execute(
+                    "UPDATE guest_quotas SET search_count = 1, created_at = ?, last_search_at = ?, ip_address = ? WHERE guest_id = ?",
+                    (now_str, now_str, ip_address, guest_id)
+                )
+            else:
+                cur.execute(
+                    "UPDATE guest_quotas SET search_count = 1, created_at = ?, last_search_at = ? WHERE ip_address = ?",
+                    (now_str, now_str, ip_address)
+                )
         else:
-            cur.execute(
-                "UPDATE guest_quotas SET search_count = ?, last_search_at = ? WHERE ip_address = ?",
-                (new_count, now_str, ip_address)
-            )
+            new_count = row["search_count"] + 1
+            if guest_id:
+                cur.execute(
+                    "UPDATE guest_quotas SET search_count = ?, last_search_at = ?, ip_address = ? WHERE guest_id = ?",
+                    (new_count, now_str, ip_address, guest_id)
+                )
+            else:
+                cur.execute(
+                    "UPDATE guest_quotas SET search_count = ?, last_search_at = ? WHERE ip_address = ?",
+                    (new_count, now_str, ip_address)
+                )
     else:
         new_count = 1
         cur.execute(
@@ -1185,6 +1223,14 @@ def search_jobs_direct_db(
             for s in syns:
                 p = f"%{s.strip().lower()}%"
                 params.extend([p, p])
+
+        # Boundary safeguards for specific queries in direct DB search
+        target_check = f"{q} {rf}".lower()
+        emp_check = (employment_type or "").strip().lower()
+        if any(k in target_check for k in ["ui/ux", "product designer", "ux designer", "ui designer"]):
+            conditions.append("LOWER(title) NOT LIKE '%uipath%' AND LOWER(title) NOT LIKE '%ui path%'")
+        if "intern" in target_check or ("intern" in emp_check):
+            conditions.append("LOWER(title) NOT LIKE '%internal%' AND LOWER(title) NOT LIKE '%internet%' AND LOWER(title) NOT LIKE '%international%'")
 
         lf = (location_filter or "").strip().lower()
         if lf and lf not in ("all", "all locations", "all location", "india", "pan india", "anywhere in india", ""):

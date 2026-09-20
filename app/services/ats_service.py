@@ -277,32 +277,64 @@ def extract_india_location(location_str: str) -> str:
     return s
 
 ROLE_TAXONOMY_MAP = {
-    "Software Engineer": {
-        "synonyms": ["Software Engineer", "Software Development Engineer", "SDE", "SWE", "Software Developer", "Programmer", "Application Developer", "Software Architecture"],
-        "skills": ["Data Structures", "Algorithms", "System Design", "Object Oriented Programming", "REST APIs", "Git", "Code Review", "Unit Testing", "Debugging", "Clean Code", "Design Patterns", "Problem Solving", "Scalability", "High Availability"]
+    "UI/UX Designer": {
+        "synonyms": [
+            "UI/UX Designer", "Product Designer", "User Experience Designer", "User Interface Designer",
+            "UX Designer", "UI Designer", "UX Researcher", "Interaction Designer", "Visual Designer",
+            "Design System Designer", "Web Designer", "Experience Designer", "Lead Product Designer",
+            "Senior Product Designer", "Staff Product Designer", "Principal Product Designer",
+            "UI / UX Designer", "UI-UX Designer", "UI UX Designer", "Figma Designer"
+        ],
+        "skills": ["User Interface Design", "User Experience", "Wireframing", "Prototyping", "Design Systems", "Figma", "User Research", "Usability Testing", "Information Architecture", "Visual Design", "Design Thinking", "Interaction Design", "Mockups"]
     },
-    "Backend Engineer": {
-        "synonyms": ["Backend Engineer", "Backend Developer", "Server Side Developer", "API Developer", "Distributed Systems Engineer", "Backend Software Engineer"],
-        "skills": ["REST APIs", "Microservices", "System Design", "Database Design", "SQL", "High Availability", "API Gateway", "Caching", "Message Queues", "Scalability", "Backend Architecture", "Concurrency", "Unit Testing", "Server Architecture"]
+    "Graphic / Brand Designer": {
+        "synonyms": ["Graphic Designer", "Brand Designer", "Visual Designer", "Creative Designer", "Brand Strategist", "Motion Designer", "Illustrator"],
+        "skills": ["Graphic Design", "Brand Identity", "Visual Communication", "Adobe Creative Suite", "Typography", "Color Theory", "Vector Illustration", "Marketing Collateral", "Digital Media", "Creative Direction", "Asset Creation"]
     },
     "Frontend Engineer": {
-        "synonyms": ["Frontend Engineer", "Frontend Developer", "UI Developer", "Web Developer", "Client Side Engineer", "Frontend Architect"],
+        "synonyms": [
+            "Frontend Engineer", "Frontend Developer", "Front End Engineer", "Front End Developer",
+            "Front-End Engineer", "Front-End Developer", "UI Developer", "UI Engineer",
+            "Web Developer", "Frontend Web Developer", "Client Side Engineer", "Client Engineer",
+            "React Developer", "React Engineer", "Angular Developer", "Vue Developer",
+            "Next.js Developer", "Frontend Architect", "Lead Frontend Engineer", "Senior Frontend Engineer"
+        ],
         "skills": ["JavaScript", "TypeScript", "HTML5", "CSS3", "Responsive Web Design", "DOM Manipulation", "State Management", "Single Page Applications", "Web Performance", "Component Architecture", "Cross-Browser Compatibility", "REST APIs", "Git", "Front End Engineering"]
     },
+    "Backend Engineer": {
+        "synonyms": [
+            "Backend Engineer", "Backend Developer", "Server Side Developer", "API Developer",
+            "Distributed Systems Engineer", "Backend Software Engineer", "Microservices Developer",
+            "Python Developer", "Java Developer", "Golang Developer", "Go Developer", "Node.js Developer",
+            "C++ Developer", "Spring Boot Developer"
+        ],
+        "skills": ["REST APIs", "Microservices", "System Design", "Database Design", "SQL", "High Availability", "API Gateway", "Caching", "Message Queues", "Scalability", "Backend Architecture", "Concurrency", "Unit Testing", "Server Architecture"]
+    },
     "Full Stack Engineer": {
-        "synonyms": ["Full Stack Engineer", "Full Stack Developer", "Fullstack Developer", "Web Application Developer", "End to End Developer", "Full Stack Software Engineer"],
+        "synonyms": [
+            "Full Stack Engineer", "Full Stack Developer", "Fullstack Developer", "Fullstack Engineer",
+            "Full-Stack Engineer", "Full-Stack Developer", "Web Application Developer", "End to End Developer",
+            "Full Stack Software Engineer", "MERN Developer", "MEAN Developer"
+        ],
         "skills": ["Frontend Development", "Backend Development", "REST APIs", "Database Design", "SQL", "JavaScript", "HTML5", "CSS3", "System Architecture", "Version Control", "Web Applications", "API Integration", "Full Lifecycle Development", "Microservices"]
     },
     "Mobile Engineer": {
-        "synonyms": ["Mobile Engineer", "Mobile Developer", "iOS Developer", "Android Developer", "Mobile Application Developer", "App Developer"],
+        "synonyms": [
+            "Mobile Engineer", "Mobile Developer", "iOS Developer", "Android Developer",
+            "Mobile Application Developer", "App Developer", "Flutter Developer", "React Native Developer",
+            "Swift Developer", "Kotlin Developer"
+        ],
         "skills": ["Mobile Application Development", "iOS Development", "Android Development", "Swift", "Kotlin", "Flutter", "React Native", "Mobile UI", "App Store Deployment", "Mobile Architecture", "REST APIs", "Offline Storage", "Push Notifications"]
     },
     "AI / Machine Learning Engineer": {
-        "synonyms": ["AI Engineer", "Machine Learning Engineer", "ML Engineer", "Artificial Intelligence Engineer", "Deep Learning Engineer", "GenAI Developer"],
+        "synonyms": [
+            "AI Engineer", "Machine Learning Engineer", "ML Engineer", "Artificial Intelligence Engineer",
+            "Deep Learning Engineer", "GenAI Developer", "NLP Engineer", "Computer Vision Engineer", "LLM Engineer"
+        ],
         "skills": ["Machine Learning", "Artificial Intelligence", "Deep Learning", "Neural Networks", "Model Training", "Feature Engineering", "Data Preprocessing", "Model Evaluation", "NLP", "Computer Vision", "MLOps", "Model Deployment", "Python", "Large Language Models"]
     },
     "Data Scientist": {
-        "synonyms": ["Data Scientist", "Data Science Specialist", "Applied Scientist", "Quantitative Analyst", "Statistical Modeler", "Data Science"],
+        "synonyms": ["Data Scientist", "Data Science Specialist", "Applied Scientist", "Quantitative Analyst", "Statistical Modeler", "Data Science", "Research Scientist"],
         "skills": ["Data Science", "Machine Learning", "Statistical Analysis", "Python", "SQL", "Data Modeling", "Hypothesis Testing", "Predictive Modeling", "Data Visualization", "Exploratory Data Analysis", "Pandas", "NumPy", "Quantitative Research", "Business Insights"]
     },
     "Data Engineer": {
@@ -310,11 +342,11 @@ ROLE_TAXONOMY_MAP = {
         "skills": ["ETL Pipelines", "Data Warehousing", "Data Modeling", "SQL", "Big Data", "Distributed Computing", "Batch Processing", "Streaming Data", "Database Architecture", "Data Quality", "Data Governance", "Python", "Data Infrastructure", "Data Lakes"]
     },
     "Data Analyst / BI": {
-        "synonyms": ["Data Analyst", "Business Intelligence Analyst", "BI Developer", "Reporting Analyst", "Analytics Consultant", "Product Analyst"],
+        "synonyms": ["Data Analyst", "Business Intelligence Analyst", "BI Developer", "Reporting Analyst", "Analytics Consultant", "Product Analyst", "Tableau Developer", "Power BI Developer"],
         "skills": ["Data Analysis", "Business Intelligence", "SQL Querying", "Data Visualization", "Dashboard Development", "Tableau", "Power BI", "KPI Reporting", "Metrics Analysis", "Spreadsheets", "Descriptive Analytics", "Trend Analysis", "Data Storytelling"]
     },
     "DevOps / Cloud Engineer": {
-        "synonyms": ["DevOps Engineer", "Cloud Engineer", "Cloud Architect", "Infrastructure Engineer", "Platform Engineer", "Cloud Operations Engineer"],
+        "synonyms": ["DevOps Engineer", "Cloud Engineer", "Cloud Architect", "Infrastructure Engineer", "Platform Engineer", "Cloud Operations Engineer", "AWS Engineer", "Azure Engineer", "GCP Engineer"],
         "skills": ["Cloud Infrastructure", "CI/CD Pipelines", "Docker", "Kubernetes", "Infrastructure as Code", "Terraform", "Linux Administration", "Cloud Monitoring", "Automation Scripting", "Cloud Architecture", "Configuration Management", "GitOps", "Site Reliability"]
     },
     "Site Reliability Engineer (SRE)": {
@@ -322,51 +354,55 @@ ROLE_TAXONOMY_MAP = {
         "skills": ["High Availability", "Incident Management", "System Observability", "Prometheus", "Grafana", "SLO / SLA Monitoring", "Disaster Recovery", "Capacity Planning", "Linux Systems", "Kubernetes", "Root Cause Analysis", "Performance Tuning", "Automation"]
     },
     "Cybersecurity Engineer": {
-        "synonyms": ["Cybersecurity Engineer", "Information Security Specialist", "Security Analyst", "Penetration Tester", "AppSec Engineer", "Cloud Security Engineer"],
+        "synonyms": ["Cybersecurity Engineer", "Information Security Specialist", "Security Analyst", "Penetration Tester", "AppSec Engineer", "Cloud Security Engineer", "SOC Analyst"],
         "skills": ["Cybersecurity", "Network Security", "Application Security", "Threat Modeling", "Vulnerability Assessment", "Penetration Testing", "Security Compliance", "Identity & Access Management", "Incident Response", "Cryptography", "Security Architecture", "Risk Mitigation"]
     },
     "QA / SDET": {
-        "synonyms": ["QA Engineer", "SDET", "Software Development Engineer in Test", "Quality Assurance Engineer", "Test Automation Engineer", "Software Tester", "Quality Assurance"],
+        "synonyms": ["QA Engineer", "SDET", "Software Development Engineer in Test", "Quality Assurance Engineer", "Test Automation Engineer", "Software Tester", "Quality Assurance", "Quality Engineer", "Automation Tester"],
         "skills": ["Test Automation", "Quality Assurance", "Selenium", "API Testing", "Automation Frameworks", "Regression Testing", "Bug Tracking", "Test Case Design", "Continuous Testing", "Integration Testing", "Defect Management", "Performance Testing", "Quality Engineering"]
     },
-    "Product Manager": {
-        "synonyms": ["Product Manager", "Associate Product Manager", "Technical Product Manager", "Product Owner", "Product Lead", "Product Management"],
-        "skills": ["Product Management", "Product Strategy", "Roadmap Planning", "Feature Prioritization", "Agile / Scrum", "User Stories", "Stakeholder Management", "A/B Testing", "Data Driven Decision Making", "Product Discovery", "User Experience", "Market Research", "Customer Empathy"]
-    },
-    "Engineering Manager / Lead": {
-        "synonyms": ["Engineering Manager", "Tech Lead", "Director of Engineering", "Software Engineering Manager", "Lead Software Engineer", "Engineering Leadership"],
-        "skills": ["Engineering Management", "Technical Leadership", "People Management", "Sprint Planning", "Team Mentorship", "Architecture Review", "Agile Delivery", "Project Management", "Hiring & Talent", "Code Quality", "Resource Allocation", "System Scalability"]
+    "Hardware / Embedded Engineer": {
+        "synonyms": ["Hardware Engineer", "Embedded Systems Engineer", "Firmware Engineer", "IoT Engineer", "Electronics Engineer", "Embedded Engineer"],
+        "skills": ["Embedded Systems", "Firmware Development", "C / C++", "Microcontrollers", "PCB Design", "Hardware Testing", "IoT Protocols", "Device Drivers", "Circuit Design", "Signal Processing"]
     },
     "Solutions Architect": {
         "synonyms": ["Solutions Architect", "Enterprise Architect", "Cloud Solutions Architect", "Technical Architect", "Solution Engineer"],
         "skills": ["System Architecture", "Cloud Solutions", "Enterprise Architecture", "Technical Consulting", "Integration Architecture", "Scalable Systems", "Client Engagement", "Proof of Concept", "Technology Selection", "Architecture Blueprint", "Design Reviews"]
     },
+    "Engineering Manager / Lead": {
+        "synonyms": ["Engineering Manager", "Tech Lead", "Director of Engineering", "Software Engineering Manager", "Lead Software Engineer", "Engineering Leadership", "VP Engineering"],
+        "skills": ["Engineering Management", "Technical Leadership", "People Management", "Sprint Planning", "Team Mentorship", "Architecture Review", "Agile Delivery", "Project Management", "Hiring & Talent", "Code Quality", "Resource Allocation", "System Scalability"]
+    },
     "Technical Program Manager": {
         "synonyms": ["Technical Program Manager", "TPM", "Program Manager", "Scrum Master", "Agile Coach", "Project Manager"],
         "skills": ["Program Management", "Agile Methodologies", "Scrum Framework", "Cross-Functional Collaboration", "Risk Management", "Release Management", "Sprint Execution", "Timeline Tracking", "Stakeholder Alignment", "Dependency Management", "Jira"]
     },
-    "UI/UX Designer": {
-        "synonyms": ["UI/UX Designer", "Product Designer", "User Experience Designer", "User Interface Designer", "UX Researcher", "Interaction Designer"],
-        "skills": ["User Interface Design", "User Experience", "Wireframing", "Prototyping", "Design Systems", "Figma", "User Research", "Usability Testing", "Information Architecture", "Visual Design", "Design Thinking", "Interaction Design", "Mockups"]
-    },
-    "Graphic / Brand Designer": {
-        "synonyms": ["Graphic Designer", "Brand Designer", "Visual Designer", "Creative Designer", "Brand Strategist"],
-        "skills": ["Graphic Design", "Brand Identity", "Visual Communication", "Adobe Creative Suite", "Typography", "Color Theory", "Vector Illustration", "Marketing Collateral", "Digital Media", "Creative Direction", "Asset Creation"]
+    "Product Manager": {
+        "synonyms": ["Product Manager", "Associate Product Manager", "Technical Product Manager", "Product Owner", "Product Lead", "Product Management", "Head of Product"],
+        "skills": ["Product Management", "Product Strategy", "Roadmap Planning", "Feature Prioritization", "Agile / Scrum", "User Stories", "Stakeholder Management", "A/B Testing", "Data Driven Decision Making", "Product Discovery", "User Experience", "Market Research", "Customer Empathy"]
     },
     "Human Resources / Recruiter": {
-        "synonyms": ["HR Specialist", "Talent Acquisition Specialist", "Technical Recruiter", "HR Generalist", "People Operations Manager", "HR Business Partner"],
+        "synonyms": [
+            "HR Specialist", "Talent Acquisition Specialist", "Talent Acquisition", "Technical Recruiter",
+            "Recruiter", "Senior Recruiter", "HR Generalist", "People Operations Manager", "People Operations",
+            "People Partner", "HR Business Partner", "HRBP", "Talent Partner"
+        ],
         "skills": ["Talent Acquisition", "Technical Recruiting", "Candidate Sourcing", "Interviewing", "Employee Relations", "HR Policies", "Onboarding", "Performance Management", "Compensation & Benefits", "HR Operations", "Talent Management"]
     },
     "Sales / Business Development": {
-        "synonyms": ["Business Development Executive", "Account Executive", "Sales Manager", "B2B Sales Representative", "Sales Development Representative", "Sales Executive"],
+        "synonyms": [
+            "Business Development Executive", "Business Development Representative", "BDR", "SDR",
+            "Account Executive", "Sales Manager", "B2B Sales Representative", "Sales Development Representative",
+            "Sales Executive", "Enterprise Sales", "Inside Sales", "Outbound Sales"
+        ],
         "skills": ["B2B Sales", "Business Development", "Lead Generation", "Pipeline Management", "Client Prospecting", "Negotiation", "Sales Strategy", "CRM Software", "Revenue Growth", "Customer Acquisition", "Relationship Management", "Solution Selling"]
     },
     "Customer Success / Account Manager": {
-        "synonyms": ["Customer Success Manager", "Account Manager", "Client Relationship Manager", "Customer Support Specialist", "Customer Experience Manager"],
+        "synonyms": ["Customer Success Manager", "Account Manager", "Client Relationship Manager", "Customer Support Specialist", "Customer Experience Manager", "Client Partner"],
         "skills": ["Customer Success", "Client Relationship Management", "Customer Retention", "Onboarding & Training", "Account Growth", "Customer Satisfaction", "Issue Resolution", "Support Operations", "Churn Prevention", "Client Communication"]
     },
     "Marketing / Growth Specialist": {
-        "synonyms": ["Marketing Specialist", "Growth Marketer", "Digital Marketing Manager", "Performance Marketer", "Marketing Manager", "Demand Generation"],
+        "synonyms": ["Marketing Specialist", "Growth Marketer", "Digital Marketing Manager", "Performance Marketer", "Marketing Manager", "Demand Generation", "Brand Manager"],
         "skills": ["Digital Marketing", "Growth Marketing", "Campaign Management", "Performance Marketing", "Social Media Marketing", "Email Marketing", "Content Strategy", "Analytics & Conversion", "Customer Acquisition", "Brand Awareness", "Funnel Optimization"]
     },
     "Content Writer / Copywriter": {
@@ -374,40 +410,40 @@ ROLE_TAXONOMY_MAP = {
         "skills": ["Content Creation", "Copywriting", "Technical Writing", "Content Strategy", "SEO Copywriting", "Editing & Proofreading", "Creative Writing", "Storytelling", "Research & Synthesis", "Documentation", "Blog Writing"]
     },
     "SEO / SEM Specialist": {
-        "synonyms": ["SEO Specialist", "SEM Manager", "Search Engine Optimization", "Organic Growth Specialist", "Search Marketer"],
+        "synonyms": ["SEO Specialist", "SEM Manager", "Search Engine Optimization", "Organic Growth Specialist", "Search Marketer", "PPC Specialist"],
         "skills": ["Search Engine Optimization", "On-Page SEO", "Technical SEO", "Keyword Research", "Link Building", "Google Analytics", "Search Console", "Organic Traffic", "SEM / Paid Search", "SERP Ranking", "Content Optimization"]
     },
     "Finance / Accounting": {
-        "synonyms": ["Finance Specialist", "Financial Analyst", "Accountant", "Finance Manager", "Corporate Finance", "Taxation Specialist"],
+        "synonyms": ["Finance Specialist", "Financial Analyst", "Accountant", "Finance Manager", "Corporate Finance", "Taxation Specialist", "Chartered Accountant", "Auditor"],
         "skills": ["Financial Analysis", "Accounting Principles", "Budgeting & Forecasting", "Financial Modeling", "Auditing", "General Ledger", "Taxation", "Financial Reporting", "Variance Analysis", "ERP Systems", "Cost Control"]
     },
     "Operations / Supply Chain": {
-        "synonyms": ["Operations Specialist", "Operations Manager", "Supply Chain Analyst", "Logistics Coordinator", "Process Improvement Specialist"],
+        "synonyms": ["Operations Specialist", "Operations Manager", "Operations Associate", "Supply Chain Analyst", "Logistics Coordinator", "Process Improvement Specialist", "Warehouse Lead"],
         "skills": ["Business Operations", "Process Optimization", "Supply Chain Management", "Logistics Coordination", "Vendor Management", "Workflow Automation", "Operational Efficiency", "Inventory Management", "Quality Control", "Standard Operating Procedures"]
     },
     "Legal / Compliance Specialist": {
-        "synonyms": ["Legal Counsel", "Compliance Specialist", "Legal Advisor", "Regulatory Affairs", "Corporate Counsel"],
+        "synonyms": ["Legal Counsel", "Compliance Specialist", "Legal Advisor", "Regulatory Affairs", "Corporate Counsel", "Paralegal", "Compliance Analyst"],
         "skills": ["Corporate Law", "Regulatory Compliance", "Contract Negotiation", "Legal Drafting", "Risk Assessment", "Intellectual Property", "Policy Development", "Corporate Governance", "Statutory Compliance", "Legal Advisory"]
     },
     "Technical Support / IT": {
         "synonyms": ["IT Support Engineer", "Technical Support Specialist", "Desktop Support", "System Administrator", "IT Helpdesk"],
         "skills": ["Technical Support", "IT Infrastructure", "Troubleshooting", "Hardware Diagnostics", "Network Configuration", "Operating Systems", "User Provisioning", "Helpdesk Support", "IT Service Management", "Remote Assistance"]
     },
-    "Hardware / Embedded Engineer": {
-        "synonyms": ["Hardware Engineer", "Embedded Systems Engineer", "Firmware Engineer", "IoT Engineer", "Electronics Engineer"],
-        "skills": ["Embedded Systems", "Firmware Development", "C / C++", "Microcontrollers", "PCB Design", "Hardware Testing", "IoT Protocols", "Device Drivers", "Circuit Design", "Signal Processing"]
-    },
-    "Business Analyst / Strategy": {
-        "synonyms": ["Business Analyst", "Strategy Consultant", "Corporate Strategy Analyst", "Business Operations Analyst", "Functional Consultant"],
-        "skills": ["Business Analysis", "Requirements Gathering", "Process Modeling", "Strategic Planning", "Stakeholder Communication", "Cost-Benefit Analysis", "Gap Analysis", "Market Analysis", "Business Process Mapping", "Data Driven Strategy"]
+    "Intern / Trainee": {
+        "synonyms": ["Software Intern", "Engineering Intern", "Graduate Trainee", "Summer Intern", "College Intern", "Apprentice"],
+        "skills": ["Learning Agility", "Software Engineering Fundamentals", "Problem Solving", "Academic Projects", "Team Collaboration", "Version Control", "Technical Curiosity", "Fast Learner", "Continuous Learning", "Hands-on Development"]
     },
     "Chief of Staff / Founder's Office": {
         "synonyms": ["Chief of Staff", "Founder's Office Associate", "Executive Assistant", "Strategic Initiatives Lead", "Special Projects Manager"],
         "skills": ["Strategic Initiatives", "Executive Support", "Cross-Functional Coordination", "Business Operations", "High-Impact Projects", "Organizational Strategy", "Executive Communication", "Program Management", "Problem Solving"]
     },
-    "Intern / Trainee": {
-        "synonyms": ["Software Intern", "Engineering Intern", "Graduate Trainee", "Summer Intern", "College Intern", "Apprentice"],
-        "skills": ["Learning Agility", "Software Engineering Fundamentals", "Problem Solving", "Academic Projects", "Team Collaboration", "Version Control", "Technical Curiosity", "Fast Learner", "Continuous Learning", "Hands-on Development"]
+    "Business Analyst / Strategy": {
+        "synonyms": ["Business Analyst", "Strategy Consultant", "Corporate Strategy Analyst", "Business Operations Analyst", "Functional Consultant"],
+        "skills": ["Business Analysis", "Requirements Gathering", "Process Modeling", "Strategic Planning", "Stakeholder Communication", "Cost-Benefit Analysis", "Gap Analysis", "Market Analysis", "Business Process Mapping", "Data Driven Strategy"]
+    },
+    "Software Engineer": {
+        "synonyms": ["Software Engineer", "Software Development Engineer", "SDE", "SWE", "Software Developer", "Programmer", "Application Developer", "Software Architecture"],
+        "skills": ["Data Structures", "Algorithms", "System Design", "Object Oriented Programming", "REST APIs", "Git", "Code Review", "Unit Testing", "Debugging", "Clean Code", "Design Patterns", "Problem Solving", "Scalability", "High Availability"]
     }
 }
 
@@ -424,19 +460,67 @@ POPULAR_TECH_KEYWORDS = [
 
 def classify_job_canonical_role(title: str, role_cat: str = "") -> str:
     combined = f"{title} {role_cat}".lower()
+    title_lower = title.lower()
 
-    # Specific precedence overrides for titles that contain generic terms
+    # 1. UI/UX Design protection: if title clearly indicates UI/UX, product design, or interaction design,
+    # prevent it from being hijacked by 'growth', 'marketing', or generic engineering
+    if any(re.search(p, title_lower) for p in [
+        r"\bui\s*/\s*ux\b", r"\bproduct\s+designer\b", r"\bux\s+designer\b", r"\bui\s+designer\b",
+        r"\binteraction\s+designer\b", r"\buser\s+experience\b", r"\buser\s+interface\s+design(er)?\b",
+        r"\bux\s+researcher\b", r"\bvisual\s+designer\b", r"\bdesign\s+system\b", r"\bexperience\s+designer\b"
+    ]):
+        return "UI/UX Designer"
+
+    # 2. Engineering Management overrides
+    if any(re.search(p, title_lower) for p in [
+        r"\bengineering\s+manager\b", r"\bdirector\s+of\s+engineering\b", 
+        r"\bvp\s+(of\s+)?engineering\b", r"\bsoftware\s+engineering\s+manager\b", r"\bhead\s+of\s+engineering\b"
+    ]):
+        return "Engineering Manager / Lead"
+
+    # 3. Engineering specializations overrides (handles 'Software Engineer - Frontend', 'SDE 2 - Backend', etc.)
+    if any(re.search(p, title_lower) for p in [r"\bfull[\s\-_]*stack\b", r"\bmern\b", r"\bmean\b"]):
+        return "Full Stack Engineer"
+    if any(re.search(p, title_lower) for p in [r"\bfront[\s\-_]*end\b", r"\bui\s+developer\b", r"\bui\s+engineer\b", r"\bweb\s+developer\b", r"\breact\b", r"\bangular\b", r"\bvue\b"]):
+        return "Frontend Engineer"
+    if any(re.search(p, title_lower) for p in [r"\bback[\s\-_]*end\b", r"\bserver\s+side\b", r"\bmicroservices\b"]):
+        return "Backend Engineer"
+    if any(re.search(p, title_lower) for p in [r"\bmobile\b", r"\bios\b", r"\bandroid\b", r"\bflutter\b", r"\breact[\s\-_]*native\b", r"\bswift\b", r"\bkotlin\b"]) and "cloud" not in title_lower:
+        return "Mobile Engineer"
+    if any(re.search(p, title_lower) for p in [r"\bmachine\s+learning\b", r"\bml\s+engineer\b", r"\bdeep\s+learning\b", r"\bnlp\b", r"\bllm\b", r"\bcomputer\s+vision\b", r"\bgenai\b", r"\bgenerative\s+ai\b"]):
+        return "AI / Machine Learning Engineer"
+    if any(re.search(p, title_lower) for p in [r"\bdata\s+scientist\b", r"\bapplied\s+scientist\b", r"\bquantitative\s+analyst\b", r"\bresearch\s+scientist\b"]):
+        return "Data Scientist"
+    if any(re.search(p, title_lower) for p in [r"\bdata\s+engineer\b", r"\bbig\s+data\b", r"\betl\b", r"\bdata\s+platform\b", r"\bdata\s+pipeline\b"]):
+        return "Data Engineer"
+    if any(re.search(p, title_lower) for p in [r"\bdevops\b", r"\bcloud\s+engineer\b", r"\bcloud\s+architect\b", r"\binfrastructure\s+engineer\b", r"\bplatform\s+engineer\b"]):
+        return "DevOps / Cloud Engineer"
+    if any(re.search(p, title_lower) for p in [r"\bsre\b", r"\bsite\s+reliability\b"]) and "director" not in title_lower:
+        return "Site Reliability Engineer (SRE)"
+    if any(re.search(p, title_lower) for p in [r"\bsdet\b", r"\bqa\b", r"\bquality\s+assurance\b", r"\btest\s+automation\b", r"\bsoftware\s+tester\b", r"\btest\s+engineer\b", r"\bquality\s+engineer\b"]):
+        return "QA / SDET"
+
+    # 4. Specific non-engineering precedence overrides
     if any(re.search(p, combined) for p in [r"\baccount(s|ing)?\b", r"\breceivable\b", r"\bpayable\b", r"\bfinance\b", r"\btax\b", r"\baudit\b", r"\bbilling\b"]) and "engineer" not in combined:
         return "Finance / Accounting"
-    if any(re.search(p, combined) for p in [r"\bart\s+director\b", r"\bgraphic\b", r"\bvisual\s+design\b", r"\bcreative\s+director\b"]):
+    if any(re.search(p, combined) for p in [r"\bart\s+director\b", r"\bgraphic\b", r"\bcreative\s+director\b", r"\billustrator\b", r"\bmotion\s+designer\b"]):
         return "Graphic / Brand Designer"
     if any(re.search(p, combined) for p in [r"\banalytics\b", r"\bdata\s+analyst\b", r"\bbi\s+developer\b"]) and "engineer" not in combined:
         return "Data Analyst / BI"
     if any(re.search(p, combined) for p in [r"\baccount\s+manager\b", r"\bcustomer\s+success\b", r"\baircover\b", r"\bclient\s+success\b"]) and "engineer" not in combined:
         return "Customer Success / Account Manager"
-    if any(re.search(p, combined) for p in [r"\bmarket\s+manager\b", r"\bmarketing\b", r"\bgrowth\b", r"\bbrand\b"]) and "engineer" not in combined:
+    if any(re.search(p, combined) for p in [r"\btalent\s+acquisition\b", r"\brecruiter\b", r"\bpeople\s+partner\b", r"\bpeople\s+operations\b"]):
+        return "Human Resources / Recruiter"
+    if any(re.search(p, combined) for p in [r"\bbdr\b", r"\bsdr\b", r"\bbusiness\s+development\s+rep", r"\baccount\s+executive\b", r"\boutbound\s+sales\b"]):
+        return "Sales / Business Development"
+    if any(re.search(p, combined) for p in [r"\bmarket\s+manager\b", r"\bmarketing\b", r"\bgrowth\b", r"\bbrand\b"]) and "engineer" not in combined and "designer" not in combined:
         return "Marketing / Growth Specialist"
+    if any(re.search(p, combined) for p in [r"\boperations\s+associate\b", r"\boperations\s+manager\b", r"\blogistics\b", r"\bwarehouse\b"]):
+        return "Operations / Supply Chain"
+    if any(re.search(p, combined) for p in [r"\blegal\s+counsel\b", r"\bparalegal\b", r"\bcompliance\s+analyst\b", r"\bcompliance\s+officer\b"]):
+        return "Legal / Compliance Specialist"
 
+    # 5. Iterate through ordered taxonomy map (specific specializations are evaluated first)
     for role_name, data in ROLE_TAXONOMY_MAP.items():
         syns = [role_name.lower()] + [s.lower() for s in data["synonyms"]]
         for s in syns:
@@ -445,9 +529,20 @@ def classify_job_canonical_role(title: str, role_cat: str = "") -> str:
             if " " in s and s in combined:
                 return role_name
 
-    # Fallback to Software Engineer if contains engineering/coding tokens
+    # 6. Intelligent fallback based on title keywords
     if any(k in combined for k in ["engineer", "developer", "software", "tech", "programmer", "architect", "sde", "swe"]):
         return "Software Engineer"
+    if any(k in combined for k in ["designer", "design", "creative"]):
+        return "UI/UX Designer"
+    if any(k in combined for k in ["sales", "bdr", "sdr", "account executive"]):
+        return "Sales / Business Development"
+    if any(k in combined for k in ["recruit", "talent", "hr", "people"]):
+        return "Human Resources / Recruiter"
+    if any(k in combined for k in ["operations", "logistics", "warehouse"]):
+        return "Operations / Supply Chain"
+    if any(k in combined for k in ["analyst", "strategy", "consultant", "business ops"]):
+        return "Business Analyst / Strategy"
+
     return "Business Analyst / Strategy"
 
 def generate_job_tags(

@@ -35,9 +35,11 @@ FIXED_ROLES = [
     {
         "role": "Frontend Engineer",
         "synonyms": [
-            "frontend", "frontend developer", "ui developer", "react developer", 
-            "web developer", "angular developer", "vue developer", "next.js developer", 
-            "javascript developer", "typescript developer", "html", "css", "frontend engineer"
+            "frontend", "frontend engineer", "frontend developer", "front end engineer", 
+            "front end developer", "front-end engineer", "front-end developer",
+            "ui developer", "ui engineer", "react developer", "angular developer", 
+            "vue developer", "next.js developer", "javascript developer", 
+            "typescript developer", "web developer", "frontend web developer", "web designer"
         ]
     },
     {
@@ -155,9 +157,10 @@ FIXED_ROLES = [
     {
         "role": "UI/UX Designer",
         "synonyms": [
-            "ui", "ux", "ui/ux", "ui ux", "product designer", "user experience designer", 
-            "visual designer", "interaction designer", "ux researcher", "ui designer", 
-            "figma designer", "design lead"
+            "ui/ux", "ui ux", "ui-ux", "ui/ux designer", "product designer", 
+            "user experience designer", "visual designer", "interaction designer", 
+            "ux researcher", "ui designer", "ux designer", "figma designer", 
+            "design lead", "user interface designer", "experience designer", "web designer"
         ]
     },
     {
@@ -479,13 +482,76 @@ def company_matches(query: str, company_name: Optional[str]) -> bool:
     pattern = rf"\b{re.escape(q)}\b"
     return bool(re.search(pattern, c))
 
+def normalize_search_term(term: str) -> str:
+    if not term:
+        return ""
+    t = term.lower().strip()
+    t = re.sub(r"\bfull[\s\-_]+stack\b", "fullstack", t)
+    t = re.sub(r"\bfront[\s\-_]+end\b", "frontend", t)
+    t = re.sub(r"\bback[\s\-_]+end\b", "backend", t)
+    t = re.sub(r"\bdev[\s\-_]+ops\b", "devops", t)
+    t = re.sub(r"\bui[\s\-_]*/[\s\-_]*ux\b", "ui/ux", t)
+    t = re.sub(r"\bui[\s\-_]+ux\b", "ui/ux", t)
+    t = re.sub(r"\bnode[\s\-_]*\.?js\b", "nodejs", t)
+    t = re.sub(r"\bnext[\s\-_]*\.?js\b", "nextjs", t)
+    t = re.sub(r"\breact[\s\-_]*\.?js\b", "reactjs", t)
+    return t
+
+def is_incompatible_role_match(query: str, title: str, role_cat: str = "") -> bool:
+    if not query or not title:
+        return False
+    q_norm = normalize_search_term(query)
+    t_lower = title.lower()
+
+    # 1. UI/UX Designer queries
+    if any(k in q_norm for k in ["ui/ux", "product designer", "ux designer", "ui designer", "user experience", "user interface designer"]):
+        if "uipath" in t_lower or "ui path" in t_lower or "rpa" in t_lower:
+            return True
+        has_eng = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in [
+            "software engineer", "developer", "backend", "full stack", "fullstack", "systems engineer", 
+            "architect", "engineering manager", "sde", "swe", "qa", "devops", "cloud", "firmware", "sales"
+        ])
+        has_design = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in [
+            "designer", "design", "ui/ux", "ui / ux", "ui-ux", "figma", "visual designer", "creative director", "user experience"
+        ])
+        if has_eng and not has_design:
+            return True
+
+    # 2. Frontend Engineer queries
+    if any(k in q_norm for k in ["frontend", "front-end", "front end", "ui developer", "ui engineer"]):
+        has_backend_or_infra = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in [
+            "backend", "server side", "devops", "cloud engineer", "infrastructure", "sre", 
+            "data engineer", "data scientist", "machine learning", "embedded", "firmware", 
+            "security engineer", "cybersecurity", "database administrator", "dba"
+        ])
+        has_frontend = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in [
+            "frontend", "front-end", "front end", "ui developer", "ui engineer", "react", "angular", "vue", "web developer", "web designer"
+        ])
+        if has_backend_or_infra and not has_frontend:
+            return True
+        if not has_frontend and any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in ["software engineer", "software development engineer", "sde", "developer"]):
+            return True
+
+    # 3. Backend Engineer queries
+    if any(k in q_norm for k in ["backend", "back-end", "back end", "server side"]):
+        has_pure_frontend = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in ["frontend", "front-end", "ui developer", "ui engineer", "web designer"])
+        has_backend = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in ["backend", "back-end", "server", "api", "microservices", "python", "java", "golang", "go", "c++"])
+        if has_pure_frontend and not has_backend:
+            return True
+
+    return False
+
 def calculate_semantic_relevance(query: str, title: str, role_cat: str = "", tags: List[str] = None, synonyms: List[str] = None) -> float:
     """
     Computes a semantic relevance score from 0.0 to 100.0.
     Considers exact phrase, word boundary regex, taxonomy synonyms, and RapidFuzz token matching.
+    Strictly disqualifies incompatible cross-domain matches.
     """
     if not query:
         return 1.0
+    if is_incompatible_role_match(query, title, role_cat):
+        return 0.0
+
     q = query.strip().lower()
     combined_target = f"{title} {role_cat} {' '.join(tags or [])}".strip().lower()
 
@@ -494,7 +560,7 @@ def calculate_semantic_relevance(query: str, title: str, role_cat: str = "", tag
     if re.search(rf"\b{re.escape(q)}\b", title.lower()):
         return 95.0
 
-    # Multi-word phrase: ensure each word appears with word boundaries
+    # Multi-word phrase: ensure each word appears with word boundaries in title
     q_words = [w for w in re.split(r"\s+", q) if len(w) > 1]
     if len(q_words) > 1 and all(re.search(rf"\b{re.escape(w)}\b", title.lower()) for w in q_words):
         return 90.0
@@ -503,23 +569,23 @@ def calculate_semantic_relevance(query: str, title: str, role_cat: str = "", tag
     if synonyms:
         for syn in synonyms:
             s_clean = syn.strip().lower()
-            if not s_clean:
+            if not s_clean or len(s_clean) < 3:
                 continue
             if re.search(rf"\b{re.escape(s_clean)}\b", title.lower()):
                 return 88.0
             syn_words = [w for w in re.split(r"\s+", s_clean) if len(w) > 1]
             if len(syn_words) > 1 and all(re.search(rf"\b{re.escape(w)}\b", title.lower()) for w in syn_words):
                 return 85.0
-            if re.search(rf"\b{re.escape(s_clean)}\b", combined_target):
+            if " " in s_clean and re.search(rf"\b{re.escape(s_clean)}\b", combined_target):
                 return 75.0
 
-    # Direct tag match check (gives high boost for matching skills/keywords)
+    # Direct tag match check (exact keyword in tags gives strong boost)
     if tags:
         for t in tags:
             t_lower = t.strip().lower()
             if q == t_lower:
                 return 82.0
-            if re.search(rf"\b{re.escape(q)}\b", t_lower):
+            if len(q) > 3 and re.search(rf"\b{re.escape(q)}\b", t_lower):
                 return 80.0
 
     # Rapidfuzz token set matching with word boundary verification
@@ -976,6 +1042,8 @@ class SearchService:
                             continue
                 else:
                     # search_type in ("role", "other_role", "other_company", "other", "custom")
+                    if is_incompatible_role_match(query_term, title, r_name):
+                        continue
                     matches_role = role_matches(all_syns, r_name) or role_matches(all_syns, title)
                     if not matches_role:
                         if any(query_lower == str(t).strip().lower() or re.search(rf"\b{re.escape(query_lower)}\b", str(t).lower()) for t in job_tags):
@@ -1002,6 +1070,8 @@ class SearchService:
 
             # Role filter
             if role_filter and role_filter.strip().lower() not in ("all", "all roles", "all role", "all categories", "all category", ""):
+                if is_incompatible_role_match(role_filter, title, r_name):
+                    continue
                 r_syns = self.get_role_synonyms(role_filter)
                 rf_lower = role_filter.lower()
                 all_rf_syns = list(set(r_syns + [rf_lower]))

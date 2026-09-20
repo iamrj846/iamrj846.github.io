@@ -53,7 +53,7 @@ class AuthService:
                 "is_authenticated": False,
                 "current_count": current_searches,
                 "limit": limit,
-                "message": f"You have reached your {limit} free searches. Please sign up or log in to unlock unlimited searches."
+                "message": f"You have reached your {limit} free searches for today. Your {limit} free searches reset every 24 hours, or log in / sign up to unlock unlimited searches immediately."
             }
 
         if not increment:
