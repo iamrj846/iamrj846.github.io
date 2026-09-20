@@ -640,7 +640,9 @@ class ATSService:
         seen = set()
 
         # Load verified India-hiring BambooHR endpoints if available
-        bamboo_json_path = Path(__file__).resolve().parent.parent / "resources" / "bamboohr_verified.json"
+        bamboo_json_path = excel_path.parent / "bamboohr_verified.json"
+        if not bamboo_json_path.exists():
+            bamboo_json_path = Path(__file__).resolve().parent.parent / "resources" / "bamboohr_verified.json"
         if bamboo_json_path.exists():
             try:
                 with open(bamboo_json_path, "r") as f:
@@ -792,7 +794,9 @@ class ATSService:
                 self.endpoints.append(ATSEndpoint(c_name, plat, ep_url))
 
         # Load directories from resources/
-        resources_dir = Path(__file__).resolve().parent.parent / "resources"
+        resources_dir = excel_path.parent if excel_path.parent.exists() else (Path(__file__).resolve().parent.parent.parent / "resources")
+        if not resources_dir.exists():
+            resources_dir = Path(__file__).resolve().parent.parent / "resources"
 
         # 1. SmartRecruiters
         sr_file = resources_dir / "smartrecruiters_companies.json"
