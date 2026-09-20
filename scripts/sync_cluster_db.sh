@@ -51,11 +51,13 @@ TOTAL_JOBS=$(sqlite3 "$DB_TEMP" "SELECT COUNT(*) FROM jobs WHERE is_active = 1;"
 log "✔ Snapshot verified healthy (Active Jobs: $TOTAL_JOBS)"
 
 # 3. Synchronize to VM 2 over private Oracle VCN
+ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 "ubuntu@$VM2_HOST" "rm -f ${VM2_TARGET_PATH}-wal ${VM2_TARGET_PATH}-shm" 2>/dev/null || true
 if command -v rsync &>/dev/null; then
     rsync -az --inplace -e "ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5" "$DB_TEMP" "ubuntu@$VM2_HOST:$VM2_TARGET_PATH"
 else
     scp -o StrictHostKeyChecking=no -o ConnectTimeout=5 -q "$DB_TEMP" "ubuntu@$VM2_HOST:$VM2_TARGET_PATH"
 fi
+ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 "ubuntu@$VM2_HOST" "rm -f ${VM2_TARGET_PATH}-wal ${VM2_TARGET_PATH}-shm" 2>/dev/null || true
 
 rm -f "$DB_TEMP"
 log "✔ Cluster DB synchronized successfully to $VM2_HOST:$VM2_TARGET_PATH"
