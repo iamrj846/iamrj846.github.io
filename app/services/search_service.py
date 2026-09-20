@@ -1124,15 +1124,14 @@ class SearchService:
         filtered_jobs = deduped_jobs
 
         # Step 5: Sort by Decreasing Timestamp Order (newest first in IST) with Semantic Relevance
-        def sort_key(j: Dict[str, Any]) -> float:
-            rel_boost = 0.0
-            if query_term:
-                syns = self.get_role_synonyms(query_term)
-                score = calculate_semantic_relevance(query_term, j.get("title", ""), j.get("role_name", ""), j.get("tags"), syns)
-                # Any score applies a boost, effectively making relevance the primary sort key
-                # A score difference of 1.0 = 1,000,000 seconds = ~11.5 days of boost
-                rel_boost = score * 1000000.0
+        if query_term:
+            precomputed_syns = self.get_role_synonyms(query_term)
+            for j in filtered_jobs:
+                score = calculate_semantic_relevance(query_term, j.get("title", ""), j.get("role_name", ""), j.get("tags"), precomputed_syns)
+                j["_rel_boost"] = score * 1000000.0
 
+        def sort_key(j: Dict[str, Any]) -> float:
+            rel_boost = j.get("_rel_boost", 0.0)
             raw_epoch = j.get("posted_epoch")
             if raw_epoch is not None:
                 try:
