@@ -2448,6 +2448,34 @@
       }
     }
 
+    let hasExecutedSearch = false;
+
+    async function resilientFetch(url, options = {}, maxRetries = 3, baseDelayMs = 500) {
+      if (window.fetchWithRetry) return window.fetchWithRetry(url, options, maxRetries, baseDelayMs);
+      let attempt = 0;
+      while (true) {
+        attempt++;
+        try {
+          const res = await fetch(url, options);
+          if (!res.ok && (res.status === 502 || res.status === 503 || res.status === 504) && attempt <= maxRetries) {
+            const delay = baseDelayMs * Math.pow(1.5, attempt - 1);
+            console.warn(`[resilientFetch] HTTP ${res.status} on attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`);
+            await new Promise(r => setTimeout(r, delay));
+            continue;
+          }
+          return res;
+        } catch (err) {
+          if (attempt <= maxRetries) {
+            const delay = baseDelayMs * Math.pow(1.5, attempt - 1);
+            console.warn(`[resilientFetch] Network error on attempt ${attempt}/${maxRetries}: ${err.message || err}. Retrying in ${delay}ms...`);
+            await new Promise(r => setTimeout(r, delay));
+            continue;
+          }
+          throw err;
+        }
+      }
+    }
+
     // Initialize on DOM load
     document.addEventListener('DOMContentLoaded', () => {
       checkAuthStatus();
@@ -2469,8 +2497,10 @@
         appliedFilters.role = 'all';
         const roleSelect = document.getElementById('filterRole');
         if (roleSelect) roleSelect.value = 'all';
-        // Refresh listings cleanly for new mode without consuming search quota
-        executeSearch(1, false, false);
+        // Only refresh listings if search has already been initiated
+        if (hasExecutedSearch) {
+          executeSearch(1, false, false);
+        }
       }
 
       if (mode === 'role') {
@@ -2621,7 +2651,11 @@
       const btn = document.getElementById('btnApplyFilters');
       if (btn) btn.classList.remove('dirty');
 
-      executeSearch(1, false, false);
+      if (hasExecutedSearch) {
+        executeSearch(1, false, false);
+      } else {
+        renderSearchPromptPlaceholder();
+      }
     }
 
     let isQuotaExhausted = false;
@@ -2673,6 +2707,8 @@
     }
 
     async function executeSearch(page = 1, isFilterApplied = false, isUserAction = false) {
+      hasExecutedSearch = true;
+
       if (isQuotaExhausted && isUserAction) {
         applyQuotaExhaustedUI(true);
         return;
@@ -2724,9 +2760,10 @@
       }
 
       try {
-        const res = await fetch(`/api/jobs/search?${params.toString()}`, {
+        const fetchFn = window.fetchWithRetry || resilientFetch;
+        const res = await fetchFn(`/api/jobs/search?${params.toString()}`, {
           headers: { 'X-Guest-ID': getOrCreateGuestId() }
-        });
+        }, 3, 500);
         const data = await res.json();
         if (data.guest_id) {
           try { localStorage.setItem('cg_guest_id', data.guest_id); } catch (e) {}
@@ -2764,7 +2801,7 @@
       } catch (err) {
         console.error('Search execution error:', err);
         document.getElementById('loader').style.display = 'none';
-        document.getElementById('jobsList').innerHTML = `<div style="text-align: center; color: #f87171; padding: 40px;">Search request failed. Please check network.</div>`;
+        document.getElementById('jobsList').innerHTML = `<div style="text-align: center; color: #DC2626; padding: 40px; background: #FEF2F2; border-radius: 12px; margin: 20px 0;"><p style="font-weight: 700; font-size: 15px;">Search request failed. Please check network.</p><p style="font-size: 12.5px; color: #991B1B; margin-top: 6px;">Connection to search service timed out. Please verify your connection or click retry below.</p><button type="button" onclick="executeSearch(${page}, false, true)" style="margin-top: 14px; background: #4F46E5; color: white; border: none; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">🔄 Retry Search</button></div>`;
         const meta = document.getElementById('resultsMeta');
         if (meta) meta.style.display = 'none';
         const bar = document.getElementById('paginationBar');
@@ -3342,11 +3379,12 @@
       }
 
       try {
-        const res = await fetch('/api/auth/register', {
+        const fetchFn = window.fetchWithRetry || resilientFetch;
+        const res = await fetchFn('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, email, password: pass })
-        });
+        }, 3, 500);
         const data = await res.json();
         if (res.ok && data.success) {
           document.getElementById('signupForm').style.display = 'none';
@@ -3383,11 +3421,12 @@
         btn.innerHTML = '<span class="btn-spinner" style="width:12px;height:12px;border-top-color:var(--primary,#4f46e5);border-color:rgba(79,70,229,0.3)"></span> Sending code...';
       }
       try {
-        const res = await fetch('/api/auth/resend-otp', {
+        const fetchFn = window.fetchWithRetry || resilientFetch;
+        const res = await fetchFn('/api/auth/resend-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: pendingEmail })
-        });
+        }, 3, 500);
         const data = await res.json();
         if (res.ok && data.success) {
           document.getElementById('otpNotice').innerHTML = `A fresh verification code has been sent to <strong>${escapeHtml(pendingEmail)}</strong>.`;
@@ -3433,11 +3472,12 @@
       }
 
       try {
-        const res = await fetch('/api/auth/verify-otp', {
+        const fetchFn = window.fetchWithRetry || resilientFetch;
+        const res = await fetchFn('/api/auth/verify-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: pendingEmail, otp: code })
-        });
+        }, 3, 500);
         const data = await res.json();
         if (res.ok && data.success) {
           closeAuthModal();
@@ -3473,11 +3513,12 @@
       }
 
       try {
-        const res = await fetch('/api/auth/login', {
+        const fetchFn = window.fetchWithRetry || resilientFetch;
+        const res = await fetchFn('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password: pass })
-        });
+        }, 3, 500);
         const data = await res.json();
         if (res.ok && data.success) {
           closeAuthModal();
@@ -3572,11 +3613,59 @@
         }
         executeSearch(parseInt(params.get('page') || '1'), false, false);
       } else {
-        // Initial search on clean load: displays all verified postings without consuming any search quota
         document.getElementById('searchInput').value = '';
         selectedTerm = '';
-        executeSearch(1, false, false);
+        renderSearchPromptPlaceholder();
       }
+    }
+
+    function renderSearchPromptPlaceholder() {
+      const loader = document.getElementById('loader');
+      if (loader) loader.style.display = 'none';
+      const meta = document.getElementById('resultsMeta');
+      if (meta) meta.style.display = 'none';
+      const pBar = document.getElementById('paginationBar');
+      if (pBar) pBar.style.display = 'none';
+
+      const list = document.getElementById('jobsList');
+      if (list) {
+        list.innerHTML = `
+          <div style="text-align: center; padding: 48px 24px; background: #FFFFFF; border: 1.5px dashed var(--bdr); border-radius: 16px; margin: 12px 0 24px;">
+            <div style="font-size: 38px; margin-bottom: 12px;">💼</div>
+            <h2 style="font-size: 20px; font-weight: 800; color: #1E293B; margin-bottom: 8px;">Explore Verified Tech Opportunities Across India</h2>
+            <p style="font-size: 14px; color: #64748B; max-width: 540px; margin: 0 auto 20px; line-height: 1.5;">
+              Search over 9,300+ live positions directly from 1,000+ top engineering employers. Click Search, apply a filter, or choose a popular role below to begin.
+            </p>
+            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+              <button type="button" onclick="quickSearch('Software Engineer')" style="background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">💻 Software Engineer</button>
+              <button type="button" onclick="quickSearch('Backend Developer')" style="background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">⚙️ Backend Developer</button>
+              <button type="button" onclick="quickSearch('Frontend Developer')" style="background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">🎨 Frontend Developer</button>
+              <button type="button" onclick="quickSearch('Product Manager')" style="background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">💼 Product Manager</button>
+              <button type="button" onclick="quickSearch('Data Scientist')" style="background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">📊 Data Scientist</button>
+              <button type="button" onclick="quickSearch('All Roles')" style="background: #F1F5F9; color: #334155; border: 1px solid #CBD5E1; padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">🌐 Browse All Jobs</button>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function quickSearch(roleName) {
+      const input = document.getElementById('searchInput');
+      if (input) input.value = (roleName === 'All Roles' ? '' : roleName);
+      selectedTerm = (roleName === 'All Roles' ? '' : roleName);
+      setSearchMode('role', false);
+      if (roleName !== 'All Roles') {
+        const roleSel = document.getElementById('filterRole');
+        if (roleSel) {
+          for (let i = 0; i < roleSel.options.length; i++) {
+            if (roleSel.options[i].value.toLowerCase() === roleName.toLowerCase()) {
+              roleSel.selectedIndex = i;
+              break;
+            }
+          }
+        }
+      }
+      executeSearch(1, false, true);
     }
 
     function escapeHtml(str) {

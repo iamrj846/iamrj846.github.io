@@ -71,3 +71,32 @@
     });
   }, true);
 })();
+
+/**
+ * Universal Resilient Fetch with Exponential Backoff Retries
+ * Handles intermittent network drops and transient proxy/gateway errors (502, 503, 504)
+ */
+window.fetchWithRetry = async function (url, options = {}, maxRetries = 3, baseDelayMs = 500) {
+  let attempt = 0;
+  while (true) {
+    attempt++;
+    try {
+      const res = await fetch(url, options);
+      if (!res.ok && (res.status === 502 || res.status === 503 || res.status === 504) && attempt <= maxRetries) {
+        const delay = baseDelayMs * Math.pow(1.5, attempt - 1);
+        console.warn(`[fetchWithRetry] HTTP ${res.status} on attempt ${attempt}/${maxRetries} for ${url}. Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      return res;
+    } catch (err) {
+      if (attempt <= maxRetries) {
+        const delay = baseDelayMs * Math.pow(1.5, attempt - 1);
+        console.warn(`[fetchWithRetry] Network failure on attempt ${attempt}/${maxRetries} for ${url}: ${err.message || err}. Retrying in ${delay}ms...`);
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+};

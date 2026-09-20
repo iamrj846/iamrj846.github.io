@@ -422,8 +422,7 @@ class SearchService:
                 get_metrics_service().inc_redis()
             except:
                 pass
-            raw_keys = client.keys("*|*")
-            keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
+            keys = [k for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:")]
             tz = pytz.timezone("Asia/Kolkata")
             now_ist = datetime.datetime.now(tz)
             
@@ -503,6 +502,10 @@ class SearchService:
         q = (query or "").strip().lower()
         results = []
 
+        from app.database import is_redis_kill_switch_active, get_db_suggestions
+        if is_redis_kill_switch_active():
+            return get_db_suggestions(mode, query, limit=limit)
+
         active_companies, active_roles = self._get_active_companies_and_roles()
 
         if mode == "company":
@@ -513,8 +516,7 @@ class SearchService:
                     get_metrics_service().inc_redis()
                 except:
                     pass
-                raw_keys = client.keys("*|*")
-                keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
+                keys = [k for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:")]
                 for k in keys:
                     k_str = k.decode("utf-8") if isinstance(k, bytes) else k
                     c, _ = parse_hash_name(k_str)
@@ -620,7 +622,6 @@ class SearchService:
         Executes search strictly based on Redis hashes {company_name}|{role_name} and tag secondary index.
         Applies filter options, descending timestamp sort, and page 10 pagination.
         """
-        client = get_redis_client()
         query_term = (custom_input if custom_input else search_term or "").strip()
         if (
             query_term.lower() in ("all roles", "all companies", "all", "all positions", "all jobs", "any", "all category", "all categories") or
@@ -636,161 +637,163 @@ class SearchService:
         if not query_term and is_all_role_filter and active_time_filter in ("7d", "7 days", "anytime (7 days)"):
             active_time_filter = "all"
 
-        # Step 1: Scan Redis hashes matching company, role, or secondary tag index
-
         import time
         from app.services.metrics_service import get_metrics_service
+        from app.database import is_redis_kill_switch_active, get_db_candidates_for_search
         metrics_svc = get_metrics_service()
-
-        redis_start = time.time()
-        matching_hashes = set()
-        try:
-            get_metrics_service().inc_redis()
-        except:
-            pass
-        raw_keys = client.keys("*|*")
-        all_keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-        metrics_svc.record_redis_latency((time.time() - redis_start) * 1000)
-
-        if not all_keys:
-            from app.services.ingestion_service import get_ingestion_manager
-            get_ingestion_manager().seed_initial_jobs()
-            try:
-                get_metrics_service().inc_redis()
-            except:
-                pass
-            raw_keys = client.keys("*|*")
-            all_keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-
-        if not query_term:
-            matching_hashes = set(all_keys)
-        elif search_type == "company":
-            # Direct tag/company index lookup
-            matching_hashes.update(get_hashes_by_tag(query_lower))
-
-            for k in all_keys:
-                c, r = parse_hash_name(k)
-                if company_matches(query_lower, c):
-                    matching_hashes.add(k)
-
-            # If no cached jobs in Redis, check if company is in our master ATS directory and fetch live
-            if not matching_hashes:
-                matching_eps = [
-                    ep for ep in self.ats_service.endpoints
-                    if company_matches(query_lower, ep.company_name)
-                ]
-                if matching_eps:
-                    target_ep = matching_eps[0]
-                    try:
-                        import httpx
-                        with httpx.Client(timeout=6.0, follow_redirects=True) as sync_client:
-                            headers = {
-                                "User-Agent": "CorporateGuildJobSearch/1.0 (+https://corporateguild.com)",
-                                "Accept": "application/json"
-                            }
-                            resp = sync_client.get(target_ep.endpoint_url, headers=headers)
-                            if resp.status_code == 200:
-                                live_jobs = self.ats_service._parse_ats_data(target_ep, resp.json())
-                                if live_jobs:
-                                    from app.database import save_jobs_to_db
-                                    from app.redis_client import store_job_in_redis
-                                    save_jobs_to_db(live_jobs)
-                                    for lj in live_jobs:
-                                        store_job_in_redis(lj)
-                                    try:
-                                        get_metrics_service().inc_redis()
-                                    except:
-                                        pass
-                                    raw_keys = client.keys("*|*")
-                                    all_keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-                                    for k in all_keys:
-                                        c, r = parse_hash_name(k)
-                                        if company_matches(query_lower, c):
-                                            matching_hashes.add(k)
-                    except Exception as e:
-                        logger.debug(f"On-demand fetch failed for {target_ep.company_name}: {e}")
-
-            # Smart fallback: only if query is generic and neither Redis nor ATS had this company
-            if not matching_hashes and len(query_term) > 3:
-                synonyms = self.get_role_synonyms(query_term)
-                all_syns = list(set(synonyms + [query_lower]))
-                for s in all_syns:
-                    matching_hashes.update(get_hashes_by_tag(s))
-                for k in all_keys:
-                    c, r = parse_hash_name(k)
-                    if role_matches(all_syns, r):
-                        matching_hashes.add(k)
-
-        elif search_type == "role":
-            synonyms = self.get_role_synonyms(query_term)
-            all_syns = list(set(synonyms + [query_lower]))
-
-            # 1. Fast secondary tag index lookup for query and all synonyms
-            for s in all_syns:
-                matching_hashes.update(get_hashes_by_tag(s))
-
-            # 2. Hash name matching
-            for k in all_keys:
-                c, r = parse_hash_name(k)
-                if role_matches(all_syns, r):
-                    matching_hashes.add(k)
-                elif HAS_RAPIDFUZZ and fuzz.token_sort_ratio(query_lower, r.lower()) >= 65:
-                    matching_hashes.add(k)
-            # Smart fallback: if no role matched, check if query matches company name
-            if not matching_hashes:
-                for k in all_keys:
-                    c, r = parse_hash_name(k)
-                    if company_matches(query_lower, c):
-                        matching_hashes.add(k)
-
-        elif search_type in ("other_company", "other_role", "other", "custom"):
-            tokens = [t for t in re.split(r"\s+", query_lower) if len(t) > 1]
-            synonyms = self.get_role_synonyms(query_term)
-            all_syns = list(set(synonyms + [query_lower]))
-
-            # 1. Secondary tag index lookup for query, synonyms, and individual tokens
-            for s in all_syns:
-                matching_hashes.update(get_hashes_by_tag(s))
-            for tok in tokens:
-                matching_hashes.update(get_hashes_by_tag(tok))
-
-            # 2. Hash name matching with word boundary verification
-            for k in all_keys:
-                c, r = parse_hash_name(k)
-                combined = f"{c} {r}".lower()
-                if role_matches(all_syns, combined) or (tokens and all(role_matches([t], combined) for t in tokens)):
-                    matching_hashes.add(k)
-                elif HAS_RAPIDFUZZ and (fuzz.token_sort_ratio(query_lower, r.lower()) >= 65 or fuzz.token_sort_ratio(query_lower, combined) >= 85):
-                    if any(role_matches([t], combined) for t in tokens):
-                        matching_hashes.add(k)
-        else:
-            matching_hashes = set(all_keys)
-
-        # Step 2: Fetch all jobs from matching Redis hashes in high-speed batch pipeline
         raw_jobs = []
-        valid_keys = [k for k in matching_hashes if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-        if valid_keys:
+
+        use_direct_db = is_redis_kill_switch_active()
+
+        if use_direct_db:
+            db_start = time.time()
+            raw_jobs = get_db_candidates_for_search(query_term=query_term, search_type=search_type, role_filter=role_filter)
+            metrics_svc.record_db_latency((time.time() - db_start) * 1000)
+        else:
             try:
-                get_metrics_service().inc_redis()
-            except:
-                pass
-            pipe = client.pipeline(transaction=False)
-            for h_key in valid_keys:
-                pipe.hgetall(h_key)
-            try:
-                batch_results = pipe.execute()
-                for hdata in batch_results:
-                    if not hdata or not isinstance(hdata, dict):
-                        continue
-                    for ts_key, val_str in hdata.items():
-                        try:
-                            jdata = json.loads(val_str)
-                            jdata["tags"] = sanitize_tags(jdata.get("tags"))
-                            raw_jobs.append(jdata)
-                        except Exception:
-                            pass
-            except Exception as e:
-                logger.warning(f"Error in Redis batch pipeline for matching hashes: {e}")
+                client = get_redis_client()
+                redis_start = time.time()
+                matching_hashes = set()
+                try:
+                    metrics_svc.inc_redis()
+                except:
+                    pass
+
+                now_ts = time.time()
+                cached_keys = getattr(self, "_cached_all_keys", None)
+                cached_ts = getattr(self, "_cached_keys_ts", 0)
+                if not cached_keys or (now_ts - cached_ts > 30):
+                    all_keys = [k for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:")]
+                    self._cached_all_keys = all_keys
+                    self._cached_keys_ts = now_ts
+                else:
+                    all_keys = cached_keys
+
+                metrics_svc.record_redis_latency((time.time() - redis_start) * 1000)
+
+                if not all_keys:
+                    from app.services.ingestion_service import get_ingestion_manager
+                    get_ingestion_manager().seed_initial_jobs()
+                    try:
+                        metrics_svc.inc_redis()
+                    except:
+                        pass
+                    all_keys = [k for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:")]
+                    self._cached_all_keys = all_keys
+                    self._cached_keys_ts = time.time()
+
+                if not query_term:
+                    matching_hashes = set(all_keys)
+                elif search_type == "company":
+                    matching_hashes.update(get_hashes_by_tag(query_lower))
+                    for k in all_keys:
+                        c, r = parse_hash_name(k)
+                        if company_matches(query_lower, c):
+                            matching_hashes.add(k)
+
+                    # If no cached jobs in Redis, check if company is in our master ATS directory and fetch live
+                    if not matching_hashes:
+                        matching_eps = [
+                            ep for ep in self.ats_service.endpoints
+                            if company_matches(query_lower, ep.company_name)
+                        ]
+                        if matching_eps:
+                            target_ep = matching_eps[0]
+                            try:
+                                import httpx
+                                with httpx.Client(timeout=6.0, follow_redirects=True) as sync_client:
+                                    headers = {
+                                        "User-Agent": "CorporateGuildJobSearch/1.0 (+https://corporateguild.com)",
+                                        "Accept": "application/json"
+                                    }
+                                    resp = sync_client.get(target_ep.endpoint_url, headers=headers)
+                                    if resp.status_code == 200:
+                                        live_jobs = self.ats_service._parse_ats_data(target_ep, resp.json())
+                                        if live_jobs:
+                                            from app.database import save_jobs_to_db
+                                            from app.redis_client import store_job_in_redis
+                                            save_jobs_to_db(live_jobs)
+                                            for lj in live_jobs:
+                                                store_job_in_redis(lj)
+                                            try:
+                                                metrics_svc.inc_redis()
+                                            except:
+                                                pass
+                                            all_keys = [k for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:")]
+                                            self._cached_all_keys = all_keys
+                                            self._cached_keys_ts = time.time()
+                                            for k in all_keys:
+                                                c, r = parse_hash_name(k)
+                                                if company_matches(query_lower, c):
+                                                    matching_hashes.add(k)
+                            except Exception as e:
+                                logger.debug(f"On-demand fetch failed for {target_ep.company_name}: {e}")
+
+                    # Smart fallback: only if query is generic and neither Redis nor ATS had this company
+                    if not matching_hashes and len(query_term) > 3:
+                        synonyms = self.get_role_synonyms(query_term)
+                        all_syns = list(set(synonyms + [query_lower]))
+                        for s in all_syns:
+                            matching_hashes.update(get_hashes_by_tag(s))
+                        for k in all_keys:
+                            c, r = parse_hash_name(k)
+                            if role_matches(all_syns, r):
+                                matching_hashes.add(k)
+
+                elif search_type == "role":
+                    synonyms = self.get_role_synonyms(query_term)
+                    all_syns = list(set(synonyms + [query_lower]))
+
+                    # 1. Fast secondary tag index lookup for query and all synonyms
+                    for s in all_syns:
+                        matching_hashes.update(get_hashes_by_tag(s))
+
+                    # 2. Extract significant tokens from query
+                    tokens = [t for t in query_lower.split() if t not in ("jobs", "job", "careers", "career", "hiring", "openings", "positions", "in", "at", "for") and len(t) > 2]
+                    for t in tokens:
+                        matching_hashes.update(get_hashes_by_tag(t))
+
+                    # 3. Hash name matching with word boundary verification
+                    for k in all_keys:
+                        c, r = parse_hash_name(k)
+                        combined = f"{c} {r}".lower()
+                        if role_matches(all_syns, combined) or (tokens and all(role_matches([t], combined) for t in tokens)):
+                            matching_hashes.add(k)
+                        elif HAS_RAPIDFUZZ and (fuzz.token_sort_ratio(query_lower, r.lower()) >= 65 or fuzz.token_sort_ratio(query_lower, combined) >= 85):
+                            if any(role_matches([t], combined) for t in tokens):
+                                matching_hashes.add(k)
+                else:
+                    matching_hashes = set(all_keys)
+
+                # Fetch all jobs from matching Redis hashes in high-speed batch pipeline
+                valid_keys = [k for k in matching_hashes if not k.startswith("tag_idx:") and not k.startswith("cg:")]
+                if valid_keys:
+                    try:
+                        metrics_svc.inc_redis()
+                    except:
+                        pass
+                    pipe = client.pipeline(transaction=False)
+                    for h_key in valid_keys:
+                        pipe.hgetall(h_key)
+                    try:
+                        batch_results = pipe.execute()
+                        for hdata in batch_results:
+                            if not hdata or not isinstance(hdata, dict):
+                                continue
+                            for ts_key, val_str in hdata.items():
+                                try:
+                                    jdata = json.loads(val_str)
+                                    jdata["tags"] = sanitize_tags(jdata.get("tags"))
+                                    raw_jobs.append(jdata)
+                                except Exception:
+                                    pass
+                    except Exception as e:
+                        logger.warning(f"Error in Redis batch pipeline for matching hashes: {e}")
+            except Exception as redis_err:
+                logger.warning(f"Redis search encountered error: {redis_err}. Seamlessly falling back to direct SQLite DB query.")
+                db_start = time.time()
+                raw_jobs = get_db_candidates_for_search(query_term=query_term, search_type=search_type, role_filter=role_filter)
+                metrics_svc.record_db_latency((time.time() - db_start) * 1000)
 
         # Step 3: Apply Filters
         filtered_jobs = []

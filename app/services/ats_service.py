@@ -1542,7 +1542,7 @@ class ATSService:
             
         return results
 
-    async def fetch_all_endpoints(self, max_concurrent: int = 25, sample_limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    async def fetch_all_endpoints(self, max_concurrent: int = 12, sample_limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         Fetches configured endpoints asynchronously with rate limiting.
         Applies stratified sampling across all ATS platforms to ensure equitable
@@ -1607,11 +1607,17 @@ class ATSService:
                         logger.debug(f"Error fetching {ep.company_name}: {e}")
                         return []
 
-            tasks = [worker(ep) for ep in endpoints_to_query]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            for res in results:
-                if isinstance(res, list):
-                    all_jobs.extend(res)
+            # Throttled execution in chunks of 25 with 50ms pauses to yield event loop and prevent CPU spikes
+            chunk_size = 25
+            for i in range(0, len(endpoints_to_query), chunk_size):
+                chunk = endpoints_to_query[i:i + chunk_size]
+                tasks = [worker(ep) for ep in chunk]
+                results = await asyncio.gather(*tasks, return_exceptions=True)
+                for res in results:
+                    if isinstance(res, list):
+                        all_jobs.extend(res)
+                if i + chunk_size < len(endpoints_to_query):
+                    await asyncio.sleep(0.05)
 
         logger.info(f"Fetched {len(all_jobs)} India-specific jobs across {len(endpoints_to_query)} ATS endpoints.")
         return all_jobs

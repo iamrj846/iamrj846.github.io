@@ -90,11 +90,23 @@ def init_db():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_company ON jobs(company);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_role ON jobs(role_category);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_loc ON jobs(location);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_active_posted ON jobs(is_active, posted_at DESC);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_active_role ON jobs(is_active, role_category);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_active_company ON jobs(is_active, company);")
     try:
         deduplicate_jobs_table(conn)
         cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_apply_url ON jobs(apply_url);")
     except Exception as e:
         logger.warning(f"Could not index apply_url: {e}")
+
+    # System settings table for platform operational toggles (e.g. Redis kill switch)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS system_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    """)
 
     # Ensure employment_type column exists
     cur.execute("PRAGMA table_info(jobs);")
@@ -1025,4 +1037,194 @@ def delete_contact_message(contact_id: int) -> bool:
     conn.commit()
     conn.close()
     return success
+
+# ==============================================================================
+# System Settings & Operational Controls (Redis Kill Switch)
+# ==============================================================================
+_redis_kill_switch_cache: Optional[bool] = None
+
+def get_system_setting(key: str, default: str = "") -> str:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT value FROM system_settings WHERE key = ?", (key,))
+        row = cur.fetchone()
+        return row["value"] if row else default
+    except Exception:
+        return default
+    finally:
+        conn.close()
+
+def set_system_setting(key: str, value: str) -> None:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    now_str = get_ist_now_str()
+    try:
+        cur.execute("""
+            INSERT INTO system_settings (key, value, updated_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+        """, (key, str(value), now_str))
+        conn.commit()
+    finally:
+        conn.close()
+
+def is_redis_kill_switch_active() -> bool:
+    global _redis_kill_switch_cache
+    if _redis_kill_switch_cache is not None:
+        return _redis_kill_switch_cache
+    val = get_system_setting("redis_kill_switch", "0")
+    _redis_kill_switch_cache = (val.strip() == "1")
+    return _redis_kill_switch_cache
+
+def set_redis_kill_switch(enabled: bool) -> bool:
+    global _redis_kill_switch_cache
+    _redis_kill_switch_cache = bool(enabled)
+    set_system_setting("redis_kill_switch", "1" if enabled else "0")
+    return bool(enabled)
+
+def get_db_candidates_for_search(query_term: str = "", search_type: str = "company", role_filter: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    Fetches raw candidate jobs directly from SQLite table.
+    Uses SQL indexing for active jobs and fast substring/pattern filters when query is specified.
+    """
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        q_term = (query_term or "").strip().lower()
+        rf = (role_filter or "").strip().lower()
+        if rf in ("all", "all roles", "all role", ""):
+            rf = ""
+
+        if not q_term and not rf:
+            cur.execute("SELECT * FROM jobs WHERE is_active = 1 ORDER BY posted_at DESC")
+        else:
+            conditions = ["is_active = 1"]
+            params = []
+            
+            if q_term:
+                param = f"%{q_term}%"
+                if search_type == "company":
+                    conditions.append("(LOWER(company) LIKE ? OR LOWER(title) LIKE ? OR LOWER(tags) LIKE ?)")
+                    params.extend([param, param, param])
+                else:
+                    conditions.append("(LOWER(role_category) LIKE ? OR LOWER(title) LIKE ? OR LOWER(tags) LIKE ? OR LOWER(company) LIKE ?)")
+                    params.extend([param, param, param, param])
+            
+            if rf:
+                rf_param = f"%{rf}%"
+                conditions.append("(LOWER(role_category) LIKE ? OR LOWER(title) LIKE ?)")
+                params.extend([rf_param, rf_param])
+                
+            sql = f"SELECT * FROM jobs WHERE {' AND '.join(conditions)} ORDER BY posted_at DESC"
+            cur.execute(sql, tuple(params))
+            
+        rows = cur.fetchall()
+        from app.services.ats_service import parse_date_to_ist, extract_india_location
+        import json
+
+        results = []
+        for r in rows:
+            ist_str, raw_iso, rel_time = parse_date_to_ist(r["posted_at"])
+            clean_loc = extract_india_location(r["location"]) if r["location"] else "India"
+            raw_t = r["tags"]
+            cleaned_tags = []
+            if raw_t:
+                try:
+                    if isinstance(raw_t, str) and (raw_t.startswith("[") or "," in raw_t):
+                        items = json.loads(raw_t) if raw_t.startswith("[") else raw_t.split(",")
+                        cleaned_tags = [str(it).strip("[]'\" ") for it in items if it]
+                    else:
+                        cleaned_tags = [str(raw_t).strip()]
+                except Exception:
+                    cleaned_tags = [str(raw_t)]
+
+            job = {
+                "id": r["id"],
+                "company_name": r["company"],
+                "role_name": r["role_category"] or r["title"],
+                "title": r["title"],
+                "location": clean_loc or r["location"] or "India",
+                "employment_type": r["employment_type"] or "Full time",
+                "workplace_type": r["workplace_type"] or "In office",
+                "experience_level": r["experience_level"] or "Entry level",
+                "apply_link": r["apply_url"],
+                "apply_url": r["apply_url"],
+                "posted_timestamp_ist": ist_str,
+                "posted_timestamp_raw": raw_iso,
+                "relative_time_ist": rel_time,
+                "tags": cleaned_tags,
+                "ats_platform": r["source"]
+            }
+            results.append(job)
+        return results
+    finally:
+        conn.close()
+
+def get_db_suggestions(mode: str, q: str = "", limit: int = 100) -> List[Dict[str, Any]]:
+    """Direct SQLite autocomplete suggestions when Redis is disabled."""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        q_clean = (q or "").strip().lower()
+        if mode == "company":
+            if q_clean:
+                cur.execute("""
+                    SELECT company, COUNT(*) as cnt 
+                    FROM jobs 
+                    WHERE is_active = 1 AND LOWER(company) LIKE ? 
+                    GROUP BY company 
+                    ORDER BY cnt DESC, company ASC 
+                    LIMIT ?
+                """, (f"%{q_clean}%", limit))
+            else:
+                cur.execute("""
+                    SELECT company, COUNT(*) as cnt 
+                    FROM jobs 
+                    WHERE is_active = 1 
+                    GROUP BY company 
+                    ORDER BY cnt DESC, company ASC 
+                    LIMIT ?
+                """, (limit,))
+            rows = cur.fetchall()
+            return [
+                {
+                    "type": "company",
+                    "value": r["company"],
+                    "label": r["company"],
+                    "subtitle": f"{r['cnt']} active positions"
+                }
+                for r in rows
+            ]
+        else:
+            if q_clean:
+                cur.execute("""
+                    SELECT role_category, COUNT(*) as cnt 
+                    FROM jobs 
+                    WHERE is_active = 1 AND role_category IS NOT NULL AND role_category != '' AND LOWER(role_category) LIKE ? 
+                    GROUP BY role_category 
+                    ORDER BY cnt DESC, role_category ASC 
+                    LIMIT ?
+                """, (f"%{q_clean}%", limit))
+            else:
+                cur.execute("""
+                    SELECT role_category, COUNT(*) as cnt 
+                    FROM jobs 
+                    WHERE is_active = 1 AND role_category IS NOT NULL AND role_category != '' 
+                    GROUP BY role_category 
+                    ORDER BY cnt DESC, role_category ASC 
+                    LIMIT ?
+                """, (limit,))
+            rows = cur.fetchall()
+            return [
+                {
+                    "type": "role",
+                    "value": r["role_category"],
+                    "label": r["role_category"],
+                    "subtitle": f"{r['cnt']} active positions"
+                }
+                for r in rows if r["role_category"]
+            ]
+    finally:
+        conn.close()
 

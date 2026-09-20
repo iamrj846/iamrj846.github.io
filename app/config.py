@@ -140,7 +140,7 @@ class Config:
 
     @property
     def sync_interval_minutes(self) -> int:
-        return int(os.getenv("SYNC_INTERVAL_MINUTES", self.scheduler.get("sync_interval_minutes", 10)))
+        return int(os.getenv("SYNC_INTERVAL_MINUTES", self.scheduler.get("sync_interval_minutes", 30)))
 
     @property
     def smtp_host(self) -> str:

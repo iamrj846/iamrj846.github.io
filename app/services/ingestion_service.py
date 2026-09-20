@@ -54,6 +54,11 @@ class IngestionManager:
 
     def seed_initial_jobs(self) -> int:
         """Hydrates verified active India jobs from SQLite into Redis so the portal is instantly functional with 100% authentic live opportunities."""
+        from app.database import is_redis_kill_switch_active
+        if is_redis_kill_switch_active():
+            logger.info("Redis Kill Switch is active. Skipping Redis hydration.")
+            return 0
+
         count = 0
         now_dt = datetime.datetime.now(IST_TZ)
 
@@ -64,29 +69,6 @@ class IngestionManager:
             # Deduplicate SQLite table and purge invalid entries first
             deduplicate_jobs_table()
             clean_invalid_jobs_from_db()
-
-            # Bidirectional sync: sync existing Redis jobs into DB to maintain strict alignment
-            try:
-                client = get_redis_client()
-                raw_keys = client.keys("*|*")
-                keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-                if keys:
-                    pipe = client.pipeline()
-                    for k in keys:
-                        pipe.hgetall(k)
-                    results = pipe.execute()
-                    redis_jobs = []
-                    for hash_dict in results:
-                        for _, val_str in hash_dict.items():
-                            try:
-                                redis_jobs.append(json.loads(val_str))
-                            except Exception:
-                                pass
-                    if redis_jobs:
-                        save_jobs_to_db(redis_jobs)
-                        deduplicate_jobs_table()
-            except Exception as e:
-                logger.warning(f"Note on syncing Redis jobs to DB during startup: {e}")
 
             conn = get_db_connection()
             cur = conn.cursor()
@@ -138,23 +120,34 @@ class IngestionManager:
                         continue
                     valid_rows.append(r)
 
-            # Collect existing Redis URLs to avoid redundant writes
+            # Collect existing Redis URLs safely using non-blocking SCAN
             redis_existing_urls = set()
             try:
                 client = get_redis_client()
-                raw_keys = client.keys("*|*")
-                keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-                if keys:
-                    pipe = client.pipeline(transaction=False)
-                    for k in keys:
-                        pipe.hkeys(k)
+                pipe = client.pipeline(transaction=False)
+                key_batch = []
+                for k in client.scan_iter(match="*|*", count=500):
+                    if not k.startswith("tag_idx:") and not k.startswith("cg:"):
+                        key_batch.append(k)
+                        if len(key_batch) >= 100:
+                            for kb in key_batch:
+                                pipe.hkeys(kb)
+                            f_results = pipe.execute()
+                            for f_list in f_results:
+                                for f in f_list:
+                                    if f.startswith("http"):
+                                        redis_existing_urls.add(f.lower().rstrip("/"))
+                            key_batch = []
+                if key_batch:
+                    for kb in key_batch:
+                        pipe.hkeys(kb)
                     f_results = pipe.execute()
                     for f_list in f_results:
                         for f in f_list:
                             if f.startswith("http"):
                                 redis_existing_urls.add(f.lower().rstrip("/"))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Non-blocking Redis URL collection notice: {e}")
 
             for row in valid_rows:
                 apply_norm = (row["apply_url"] or "").strip().lower().rstrip("/")
@@ -203,45 +196,54 @@ class IngestionManager:
 
         ingested_count = 0
         try:
-            # 1. First ensure core jobs are present
-            self.seed_initial_jobs()
+            from app.database import is_redis_kill_switch_active
+            redis_disabled = is_redis_kill_switch_active()
 
-            # 2. Fetch configured endpoints
-            # Limit concurrent fetches to optimize throughput
-            max_concurrency = self.config.scheduler.get("max_concurrent_requests", 40)
-            # Fetch endpoints (if full_sync, query full list, else top 1500 batch)
+            # 1. Fetch configured endpoints with controlled concurrency (12)
+            max_concurrency = self.config.scheduler.get("max_concurrent_requests", 12)
             sample_limit = None if full_sync else 1500
             jobs = await self.ats_service.fetch_all_endpoints(
                 max_concurrent=max_concurrency,
                 sample_limit=sample_limit
             )
 
-            # 3. Ingest jobs into Redis & SQLite
-            for j in jobs:
-                ok = store_job_in_redis(j, ttl_seconds=self.config.redis_ttl_seconds)
-                if ok:
-                    ingested_count += 1
+            # 2. Always persist into SQLite DB (authoritative source of truth)
             if jobs:
                 save_jobs_to_db(jobs)
                 deduplicate_jobs_table()
 
-            # 4. Clean stale jobs from SQLite and prune orphaned/deleted keys from Redis
-            clean_stale_jobs_from_db(max_days=30)
-            removed_stale = clean_stale_jobs_older_than_days(max_days=30)
-
-            # 5. Guarantee complete 1:1 sync: hydrate all active SQLite jobs into Redis
-            self.seed_initial_jobs()
+            # 3. If Redis is NOT bypassed, store into Redis
+            if not redis_disabled:
+                for j in jobs:
+                    ok = store_job_in_redis(j, ttl_seconds=self.config.redis_ttl_seconds)
+                    if ok:
+                        ingested_count += 1
+                # Clean stale jobs from SQLite and prune orphaned/deleted keys from Redis
+                clean_stale_jobs_from_db(max_days=30)
+                removed_stale = clean_stale_jobs_older_than_days(max_days=30)
+                # Ensure all jobs are present in Redis
+                self.seed_initial_jobs()
+            else:
+                ingested_count = len(jobs)
+                clean_stale_jobs_from_db(max_days=30)
+                removed_stale = 0
 
             # Update status
-            client = get_redis_client()
-            raw_keys = client.keys("*|*")
-            keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-            total_hashes = len(keys)
+            total_hashes = 0
+            if not redis_disabled:
+                try:
+                    client = get_redis_client()
+                    total_hashes = sum(1 for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:"))
+                except Exception:
+                    pass
 
             _sync_status["last_sync_ist"] = start_time.strftime("%Y-%m-%d %H:%M:%S IST")
             _sync_status["last_sync_jobs_count"] = ingested_count
             _sync_status["total_jobs_in_redis"] = total_hashes
             _sync_status["is_syncing"] = False
+
+            import gc
+            gc.collect()
 
             logger.info(f"Ingestion complete: {ingested_count} jobs ingested, {removed_stale} stale keys pruned. Total hashes: {total_hashes}")
             return {

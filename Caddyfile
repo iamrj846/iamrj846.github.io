@@ -35,19 +35,41 @@ corporateguild.com {
         -Server
     }
 
-    # Active-Active Load Balanced Reverse Proxy across VM 1 and VM 2
+    # Pin State-Mutating Auth routes directly to Primary Gateway Node (Master SQLite)
+    @auth {
+        path /api/auth/*
+    }
+    reverse_proxy @auth web:8000 {
+        transport http {
+            dial_timeout 5s
+            response_header_timeout 60s
+        }
+    }
+
+    # Pin Administrative Operations directly to Primary Gateway Node
+    @admin {
+        path /api/admin/*
+    }
+    reverse_proxy @admin web:8000 {
+        transport http {
+            dial_timeout 5s
+            response_header_timeout 60s
+        }
+    }
+
+    # Active-Active Load Balanced Reverse Proxy across VM 1 and VM 2 for Search & Listings
     reverse_proxy web:8000 10.0.0.12:80 {
         lb_policy round_robin
-        lb_try_duration 2s
+        lb_try_duration 5s
         lb_try_interval 250ms
 
         health_uri /api/auth/me
         health_interval 5s
-        health_timeout 2s
+        health_timeout 4s
         health_status 200
 
         transport http {
-            dial_timeout 3s
+            dial_timeout 5s
             response_header_timeout 60s
         }
     }
@@ -55,14 +77,41 @@ corporateguild.com {
 
 # Direct IP fallback / Health Check
 :80 {
+    # Pin State-Mutating Auth routes directly to Primary Gateway Node
+    @auth {
+        path /api/auth/*
+    }
+    reverse_proxy @auth web:8000 {
+        transport http {
+            dial_timeout 5s
+            response_header_timeout 60s
+        }
+    }
+
+    # Pin Administrative Operations directly to Primary Gateway Node
+    @admin {
+        path /api/admin/*
+    }
+    reverse_proxy @admin web:8000 {
+        transport http {
+            dial_timeout 5s
+            response_header_timeout 60s
+        }
+    }
+
     reverse_proxy web:8000 10.0.0.12:80 {
         lb_policy round_robin
-        lb_try_duration 2s
+        lb_try_duration 5s
         lb_try_interval 250ms
 
         health_uri /api/auth/me
         health_interval 5s
-        health_timeout 2s
+        health_timeout 4s
         health_status 200
+
+        transport http {
+            dial_timeout 5s
+            response_header_timeout 60s
+        }
     }
 }

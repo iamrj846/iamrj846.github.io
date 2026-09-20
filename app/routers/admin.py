@@ -37,6 +37,9 @@ class AdminCreateUserRequest(BaseModel):
 class ContactStatusRequest(BaseModel):
     status: str
 
+class RedisKillSwitchRequest(BaseModel):
+    enabled: bool
+
 
 @router.get("/system_metrics")
 async def get_system_metrics(request: Request, hours: int = 1):
@@ -150,10 +153,14 @@ async def admin_stats(admin_user: Dict[str, Any] = Depends(verify_admin_session)
     except Exception:
         vm2_status = "active"
 
+    from app.database import is_redis_kill_switch_active
+    redis_kill_switch_on = is_redis_kill_switch_active()
+
     return {
         "success": True,
         "metrics": db_metrics,
         "redis": redis_summary,
+        "redis_kill_switch": redis_kill_switch_on,
         "sync": sync_status,
         "cluster": {
             "mode": "Active-Active Dual-Node Cluster",
@@ -166,6 +173,29 @@ async def admin_stats(admin_user: Dict[str, Any] = Depends(verify_admin_session)
             "total_companies": total_companies,
             "total_endpoints": total_endpoints
         }
+    }
+
+@router.get("/redis-kill-switch")
+async def get_redis_kill_switch_status(admin_user: Dict[str, Any] = Depends(verify_admin_session)):
+    from app.database import is_redis_kill_switch_active
+    enabled = is_redis_kill_switch_active()
+    return {
+        "success": True,
+        "enabled": enabled,
+        "mode": "direct_db" if enabled else "redis_cache",
+        "description": "Direct Database Fallback Active (Redis Bypassed)" if enabled else "Redis In-Memory Cache Active"
+    }
+
+@router.post("/redis-kill-switch")
+async def toggle_redis_kill_switch(payload: RedisKillSwitchRequest, admin_user: Dict[str, Any] = Depends(verify_admin_session)):
+    from app.database import set_redis_kill_switch
+    enabled = set_redis_kill_switch(payload.enabled)
+    mode_str = "Direct Database Mode (All requests bypass Redis)" if enabled else "Redis In-Memory Cache Mode"
+    return {
+        "success": True,
+        "enabled": enabled,
+        "mode": "direct_db" if enabled else "redis_cache",
+        "message": f"Redis Kill Switch {'activated' if enabled else 'deactivated'}. System is now operating in {mode_str}."
     }
 
 @router.get("/analytics")
