@@ -279,135 +279,168 @@ def extract_india_location(location_str: str) -> str:
 ROLE_TAXONOMY_MAP = {
     "Software Engineer": {
         "synonyms": ["Software Engineer", "Software Development Engineer", "SDE", "SWE", "Software Developer", "Programmer", "Application Developer", "Software Architecture"],
-        "skills": ["Data Structures", "Algorithms", "System Design", "Object Oriented Programming", "REST APIs", "Git", "Code Review", "Unit Testing", "Debugging", "Clean Code", "Design Patterns", "Problem Solving", "Scalability", "High Availability"]
+        "skills": ["Data Structures", "Algorithms", "System Design", "Object Oriented Programming", "REST APIs", "Git", "Code Review", "Unit Testing", "Debugging", "Clean Code", "Design Patterns", "Problem Solving", "Scalability", "High Availability"],
+        "umbrella": "Software Engineering"
     },
     "Backend Engineer": {
         "synonyms": ["Backend Engineer", "Backend Developer", "Server Side Developer", "API Developer", "Distributed Systems Engineer", "Backend Software Engineer"],
-        "skills": ["REST APIs", "Microservices", "System Design", "Database Design", "SQL", "High Availability", "API Gateway", "Caching", "Message Queues", "Scalability", "Backend Architecture", "Concurrency", "Unit Testing", "Server Architecture"]
+        "skills": ["REST APIs", "Microservices", "System Design", "Database Design", "SQL", "High Availability", "API Gateway", "Caching", "Message Queues", "Scalability", "Backend Architecture", "Concurrency", "Unit Testing", "Server Architecture"],
+        "umbrella": "Full stack"
     },
     "Frontend Engineer": {
         "synonyms": ["Frontend Engineer", "Frontend Developer", "UI Developer", "Web Developer", "Client Side Engineer", "Frontend Architect"],
-        "skills": ["JavaScript", "TypeScript", "HTML5", "CSS3", "Responsive Web Design", "DOM Manipulation", "State Management", "Single Page Applications", "Web Performance", "Component Architecture", "Cross-Browser Compatibility", "REST APIs", "Git", "Front End Engineering"]
+        "skills": ["JavaScript", "TypeScript", "HTML5", "CSS3", "Responsive Web Design", "DOM Manipulation", "State Management", "Single Page Applications", "Web Performance", "Component Architecture", "Cross-Browser Compatibility", "REST APIs", "Git", "Front End Engineering"],
+        "umbrella": "Full stack"
     },
     "Full Stack Engineer": {
         "synonyms": ["Full Stack Engineer", "Full Stack Developer", "Fullstack Developer", "Web Application Developer", "End to End Developer", "Full Stack Software Engineer"],
-        "skills": ["Frontend Development", "Backend Development", "REST APIs", "Database Design", "SQL", "JavaScript", "HTML5", "CSS3", "System Architecture", "Version Control", "Web Applications", "API Integration", "Full Lifecycle Development", "Microservices"]
+        "skills": ["Frontend Development", "Backend Development", "REST APIs", "Database Design", "SQL", "JavaScript", "HTML5", "CSS3", "System Architecture", "Version Control", "Web Applications", "API Integration", "Full Lifecycle Development", "Microservices"],
+        "umbrella": "Software Engineering"
     },
     "Mobile Engineer": {
         "synonyms": ["Mobile Engineer", "Mobile Developer", "iOS Developer", "Android Developer", "Mobile Application Developer", "App Developer"],
-        "skills": ["Mobile Application Development", "iOS Development", "Android Development", "Swift", "Kotlin", "Flutter", "React Native", "Mobile UI", "App Store Deployment", "Mobile Architecture", "REST APIs", "Offline Storage", "Push Notifications"]
+        "skills": ["Mobile Application Development", "iOS Development", "Android Development", "Swift", "Kotlin", "Flutter", "React Native", "Mobile UI", "App Store Deployment", "Mobile Architecture", "REST APIs", "Offline Storage", "Push Notifications"],
+        "umbrella": "Mobile Engineering"
     },
     "AI / Machine Learning Engineer": {
         "synonyms": ["AI Engineer", "Machine Learning Engineer", "ML Engineer", "Artificial Intelligence Engineer", "Deep Learning Engineer", "GenAI Developer"],
-        "skills": ["Machine Learning", "Artificial Intelligence", "Deep Learning", "Neural Networks", "Model Training", "Feature Engineering", "Data Preprocessing", "Model Evaluation", "NLP", "Computer Vision", "MLOps", "Model Deployment", "Python", "Large Language Models"]
+        "skills": ["Machine Learning", "Artificial Intelligence", "Deep Learning", "Neural Networks", "Model Training", "Feature Engineering", "Data Preprocessing", "Model Evaluation", "NLP", "Computer Vision", "MLOps", "Model Deployment", "Python", "Large Language Models"],
+        "umbrella": "Artificial Intelligence"
     },
     "Data Scientist": {
         "synonyms": ["Data Scientist", "Data Science Specialist", "Applied Scientist", "Quantitative Analyst", "Statistical Modeler", "Data Science"],
-        "skills": ["Data Science", "Machine Learning", "Statistical Analysis", "Python", "SQL", "Data Modeling", "Hypothesis Testing", "Predictive Modeling", "Data Visualization", "Exploratory Data Analysis", "Pandas", "NumPy", "Quantitative Research", "Business Insights"]
+        "skills": ["Data Science", "Machine Learning", "Statistical Analysis", "Python", "SQL", "Data Modeling", "Hypothesis Testing", "Predictive Modeling", "Data Visualization", "Exploratory Data Analysis", "Pandas", "NumPy", "Quantitative Research", "Business Insights"],
+        "umbrella": "Data & Analytics"
     },
     "Data Engineer": {
         "synonyms": ["Data Engineer", "Big Data Engineer", "Data Platform Engineer", "ETL Developer", "Data Pipeline Engineer", "Data Infrastructure Engineer"],
-        "skills": ["ETL Pipelines", "Data Warehousing", "Data Modeling", "SQL", "Big Data", "Distributed Computing", "Batch Processing", "Streaming Data", "Database Architecture", "Data Quality", "Data Governance", "Python", "Data Infrastructure", "Data Lakes"]
+        "skills": ["ETL Pipelines", "Data Warehousing", "Data Modeling", "SQL", "Big Data", "Distributed Computing", "Batch Processing", "Streaming Data", "Database Architecture", "Data Quality", "Data Governance", "Python", "Data Infrastructure", "Data Lakes"],
+        "umbrella": "Data & Analytics"
     },
     "Data Analyst / BI": {
         "synonyms": ["Data Analyst", "Business Intelligence Analyst", "BI Developer", "Reporting Analyst", "Analytics Consultant", "Product Analyst"],
-        "skills": ["Data Analysis", "Business Intelligence", "SQL Querying", "Data Visualization", "Dashboard Development", "Tableau", "Power BI", "KPI Reporting", "Metrics Analysis", "Spreadsheets", "Descriptive Analytics", "Trend Analysis", "Data Storytelling"]
+        "skills": ["Data Analysis", "Business Intelligence", "SQL Querying", "Data Visualization", "Dashboard Development", "Tableau", "Power BI", "KPI Reporting", "Metrics Analysis", "Spreadsheets", "Descriptive Analytics", "Trend Analysis", "Data Storytelling"],
+        "umbrella": "Data & Analytics"
     },
     "DevOps / Cloud Engineer": {
         "synonyms": ["DevOps Engineer", "Cloud Engineer", "Cloud Architect", "Infrastructure Engineer", "Platform Engineer", "Cloud Operations Engineer"],
-        "skills": ["Cloud Infrastructure", "CI/CD Pipelines", "Docker", "Kubernetes", "Infrastructure as Code", "Terraform", "Linux Administration", "Cloud Monitoring", "Automation Scripting", "Cloud Architecture", "Configuration Management", "GitOps", "Site Reliability"]
+        "skills": ["Cloud Infrastructure", "CI/CD Pipelines", "Docker", "Kubernetes", "Infrastructure as Code", "Terraform", "Linux Administration", "Cloud Monitoring", "Automation Scripting", "Cloud Architecture", "Configuration Management", "GitOps", "Site Reliability"],
+        "umbrella": "Cloud Infrastructure"
     },
     "Site Reliability Engineer (SRE)": {
         "synonyms": ["Site Reliability Engineer", "SRE", "Reliability Engineer", "Production Engineer", "Systems Engineer", "Infrastructure Reliability"],
-        "skills": ["High Availability", "Incident Management", "System Observability", "Prometheus", "Grafana", "SLO / SLA Monitoring", "Disaster Recovery", "Capacity Planning", "Linux Systems", "Kubernetes", "Root Cause Analysis", "Performance Tuning", "Automation"]
+        "skills": ["High Availability", "Incident Management", "System Observability", "Prometheus", "Grafana", "SLO / SLA Monitoring", "Disaster Recovery", "Capacity Planning", "Linux Systems", "Kubernetes", "Root Cause Analysis", "Performance Tuning", "Automation"],
+        "umbrella": "Cloud Infrastructure"
     },
     "Cybersecurity Engineer": {
         "synonyms": ["Cybersecurity Engineer", "Information Security Specialist", "Security Analyst", "Penetration Tester", "AppSec Engineer", "Cloud Security Engineer"],
-        "skills": ["Cybersecurity", "Network Security", "Application Security", "Threat Modeling", "Vulnerability Assessment", "Penetration Testing", "Security Compliance", "Identity & Access Management", "Incident Response", "Cryptography", "Security Architecture", "Risk Mitigation"]
+        "skills": ["Cybersecurity", "Network Security", "Application Security", "Threat Modeling", "Vulnerability Assessment", "Penetration Testing", "Security Compliance", "Identity & Access Management", "Incident Response", "Cryptography", "Security Architecture", "Risk Mitigation"],
+        "umbrella": "Information Security"
     },
     "QA / SDET": {
         "synonyms": ["QA Engineer", "SDET", "Software Development Engineer in Test", "Quality Assurance Engineer", "Test Automation Engineer", "Software Tester", "Quality Assurance"],
-        "skills": ["Test Automation", "Quality Assurance", "Selenium", "API Testing", "Automation Frameworks", "Regression Testing", "Bug Tracking", "Test Case Design", "Continuous Testing", "Integration Testing", "Defect Management", "Performance Testing", "Quality Engineering"]
+        "skills": ["Test Automation", "Quality Assurance", "Selenium", "API Testing", "Automation Frameworks", "Regression Testing", "Bug Tracking", "Test Case Design", "Continuous Testing", "Integration Testing", "Defect Management", "Performance Testing", "Quality Engineering"],
+        "umbrella": "Software Quality Assurance"
     },
     "Product Manager": {
         "synonyms": ["Product Manager", "Associate Product Manager", "Technical Product Manager", "Product Owner", "Product Lead", "Product Management"],
-        "skills": ["Product Management", "Product Strategy", "Roadmap Planning", "Feature Prioritization", "Agile / Scrum", "User Stories", "Stakeholder Management", "A/B Testing", "Data Driven Decision Making", "Product Discovery", "User Experience", "Market Research", "Customer Empathy"]
+        "skills": ["Product Management", "Product Strategy", "Roadmap Planning", "Feature Prioritization", "Agile / Scrum", "User Stories", "Stakeholder Management", "A/B Testing", "Data Driven Decision Making", "Product Discovery", "User Experience", "Market Research", "Customer Empathy"],
+        "umbrella": "Product Strategy"
     },
     "Engineering Manager / Lead": {
         "synonyms": ["Engineering Manager", "Tech Lead", "Director of Engineering", "Software Engineering Manager", "Lead Software Engineer", "Engineering Leadership"],
-        "skills": ["Engineering Management", "Technical Leadership", "People Management", "Sprint Planning", "Team Mentorship", "Architecture Review", "Agile Delivery", "Project Management", "Hiring & Talent", "Code Quality", "Resource Allocation", "System Scalability"]
+        "skills": ["Engineering Management", "Technical Leadership", "People Management", "Sprint Planning", "Team Mentorship", "Architecture Review", "Agile Delivery", "Project Management", "Hiring & Talent", "Code Quality", "Resource Allocation", "System Scalability"],
+        "umbrella": "Engineering Leadership"
     },
     "Solutions Architect": {
         "synonyms": ["Solutions Architect", "Enterprise Architect", "Cloud Solutions Architect", "Technical Architect", "Solution Engineer"],
-        "skills": ["System Architecture", "Cloud Solutions", "Enterprise Architecture", "Technical Consulting", "Integration Architecture", "Scalable Systems", "Client Engagement", "Proof of Concept", "Technology Selection", "Architecture Blueprint", "Design Reviews"]
+        "skills": ["System Architecture", "Cloud Solutions", "Enterprise Architecture", "Technical Consulting", "Integration Architecture", "Scalable Systems", "Client Engagement", "Proof of Concept", "Technology Selection", "Architecture Blueprint", "Design Reviews"],
+        "umbrella": "Enterprise Architecture"
     },
     "Technical Program Manager": {
         "synonyms": ["Technical Program Manager", "TPM", "Program Manager", "Scrum Master", "Agile Coach", "Project Manager"],
-        "skills": ["Program Management", "Agile Methodologies", "Scrum Framework", "Cross-Functional Collaboration", "Risk Management", "Release Management", "Sprint Execution", "Timeline Tracking", "Stakeholder Alignment", "Dependency Management", "Jira"]
+        "skills": ["Program Management", "Agile Methodologies", "Scrum Framework", "Cross-Functional Collaboration", "Risk Management", "Release Management", "Sprint Execution", "Timeline Tracking", "Stakeholder Alignment", "Dependency Management", "Jira"],
+        "umbrella": "Program Management"
     },
     "UI/UX Designer": {
         "synonyms": ["UI/UX Designer", "Product Designer", "User Experience Designer", "User Interface Designer", "UX Researcher", "Interaction Designer"],
-        "skills": ["User Interface Design", "User Experience", "Wireframing", "Prototyping", "Design Systems", "Figma", "User Research", "Usability Testing", "Information Architecture", "Visual Design", "Design Thinking", "Interaction Design", "Mockups"]
+        "skills": ["User Interface Design", "User Experience", "Wireframing", "Prototyping", "Design Systems", "Figma", "User Research", "Usability Testing", "Information Architecture", "Visual Design", "Design Thinking", "Interaction Design", "Mockups"],
+        "umbrella": "Product Design"
     },
     "Graphic / Brand Designer": {
         "synonyms": ["Graphic Designer", "Brand Designer", "Visual Designer", "Creative Designer", "Brand Strategist"],
-        "skills": ["Graphic Design", "Brand Identity", "Visual Communication", "Adobe Creative Suite", "Typography", "Color Theory", "Vector Illustration", "Marketing Collateral", "Digital Media", "Creative Direction", "Asset Creation"]
+        "skills": ["Graphic Design", "Brand Identity", "Visual Communication", "Adobe Creative Suite", "Typography", "Color Theory", "Vector Illustration", "Marketing Collateral", "Digital Media", "Creative Direction", "Asset Creation"],
+        "umbrella": "Design & Creative"
     },
     "Human Resources / Recruiter": {
         "synonyms": ["HR Specialist", "Talent Acquisition Specialist", "Technical Recruiter", "HR Generalist", "People Operations Manager", "HR Business Partner"],
-        "skills": ["Talent Acquisition", "Technical Recruiting", "Candidate Sourcing", "Interviewing", "Employee Relations", "HR Policies", "Onboarding", "Performance Management", "Compensation & Benefits", "HR Operations", "Talent Management"]
+        "skills": ["Talent Acquisition", "Technical Recruiting", "Candidate Sourcing", "Interviewing", "Employee Relations", "HR Policies", "Onboarding", "Performance Management", "Compensation & Benefits", "HR Operations", "Talent Management"],
+        "umbrella": "People Operations"
     },
     "Sales / Business Development": {
         "synonyms": ["Business Development Executive", "Account Executive", "Sales Manager", "B2B Sales Representative", "Sales Development Representative", "Sales Executive"],
-        "skills": ["B2B Sales", "Business Development", "Lead Generation", "Pipeline Management", "Client Prospecting", "Negotiation", "Sales Strategy", "CRM Software", "Revenue Growth", "Customer Acquisition", "Relationship Management", "Solution Selling"]
+        "skills": ["B2B Sales", "Business Development", "Lead Generation", "Pipeline Management", "Client Prospecting", "Negotiation", "Sales Strategy", "CRM Software", "Revenue Growth", "Customer Acquisition", "Relationship Management", "Solution Selling"],
+        "umbrella": "Business Development"
     },
     "Customer Success / Account Manager": {
         "synonyms": ["Customer Success Manager", "Account Manager", "Client Relationship Manager", "Customer Support Specialist", "Customer Experience Manager"],
-        "skills": ["Customer Success", "Client Relationship Management", "Customer Retention", "Onboarding & Training", "Account Growth", "Customer Satisfaction", "Issue Resolution", "Support Operations", "Churn Prevention", "Client Communication"]
+        "skills": ["Customer Success", "Client Relationship Management", "Customer Retention", "Onboarding & Training", "Account Growth", "Customer Satisfaction", "Issue Resolution", "Support Operations", "Churn Prevention", "Client Communication"],
+        "umbrella": "Customer Experience"
     },
     "Marketing / Growth Specialist": {
         "synonyms": ["Marketing Specialist", "Growth Marketer", "Digital Marketing Manager", "Performance Marketer", "Marketing Manager", "Demand Generation"],
-        "skills": ["Digital Marketing", "Growth Marketing", "Campaign Management", "Performance Marketing", "Social Media Marketing", "Email Marketing", "Content Strategy", "Analytics & Conversion", "Customer Acquisition", "Brand Awareness", "Funnel Optimization"]
+        "skills": ["Digital Marketing", "Growth Marketing", "Campaign Management", "Performance Marketing", "Social Media Marketing", "Email Marketing", "Content Strategy", "Analytics & Conversion", "Customer Acquisition", "Brand Awareness", "Funnel Optimization"],
+        "umbrella": "Marketing Strategy"
     },
     "Content Writer / Copywriter": {
         "synonyms": ["Content Writer", "Copywriter", "Technical Writer", "Content Strategist", "Creative Writer", "Blog Specialist"],
-        "skills": ["Content Creation", "Copywriting", "Technical Writing", "Content Strategy", "SEO Copywriting", "Editing & Proofreading", "Creative Writing", "Storytelling", "Research & Synthesis", "Documentation", "Blog Writing"]
+        "skills": ["Content Creation", "Copywriting", "Technical Writing", "Content Strategy", "SEO Copywriting", "Editing & Proofreading", "Creative Writing", "Storytelling", "Research & Synthesis", "Documentation", "Blog Writing"],
+        "umbrella": "Content Strategy"
     },
     "SEO / SEM Specialist": {
         "synonyms": ["SEO Specialist", "SEM Manager", "Search Engine Optimization", "Organic Growth Specialist", "Search Marketer"],
-        "skills": ["Search Engine Optimization", "On-Page SEO", "Technical SEO", "Keyword Research", "Link Building", "Google Analytics", "Search Console", "Organic Traffic", "SEM / Paid Search", "SERP Ranking", "Content Optimization"]
+        "skills": ["Search Engine Optimization", "On-Page SEO", "Technical SEO", "Keyword Research", "Link Building", "Google Analytics", "Search Console", "Organic Traffic", "SEM / Paid Search", "SERP Ranking", "Content Optimization"],
+        "umbrella": "Search Marketing"
     },
     "Finance / Accounting": {
         "synonyms": ["Finance Specialist", "Financial Analyst", "Accountant", "Finance Manager", "Corporate Finance", "Taxation Specialist"],
-        "skills": ["Financial Analysis", "Accounting Principles", "Budgeting & Forecasting", "Financial Modeling", "Auditing", "General Ledger", "Taxation", "Financial Reporting", "Variance Analysis", "ERP Systems", "Cost Control"]
+        "skills": ["Financial Analysis", "Accounting Principles", "Budgeting & Forecasting", "Financial Modeling", "Auditing", "General Ledger", "Taxation", "Financial Reporting", "Variance Analysis", "ERP Systems", "Cost Control"],
+        "umbrella": "Corporate Finance"
     },
     "Operations / Supply Chain": {
         "synonyms": ["Operations Specialist", "Operations Manager", "Supply Chain Analyst", "Logistics Coordinator", "Process Improvement Specialist"],
-        "skills": ["Business Operations", "Process Optimization", "Supply Chain Management", "Logistics Coordination", "Vendor Management", "Workflow Automation", "Operational Efficiency", "Inventory Management", "Quality Control", "Standard Operating Procedures"]
+        "skills": ["Business Operations", "Process Optimization", "Supply Chain Management", "Logistics Coordination", "Vendor Management", "Workflow Automation", "Operational Efficiency", "Inventory Management", "Quality Control", "Standard Operating Procedures"],
+        "umbrella": "Operations Management"
     },
     "Legal / Compliance Specialist": {
         "synonyms": ["Legal Counsel", "Compliance Specialist", "Legal Advisor", "Regulatory Affairs", "Corporate Counsel"],
-        "skills": ["Corporate Law", "Regulatory Compliance", "Contract Negotiation", "Legal Drafting", "Risk Assessment", "Intellectual Property", "Policy Development", "Corporate Governance", "Statutory Compliance", "Legal Advisory"]
+        "skills": ["Corporate Law", "Regulatory Compliance", "Contract Negotiation", "Legal Drafting", "Risk Assessment", "Intellectual Property", "Policy Development", "Corporate Governance", "Statutory Compliance", "Legal Advisory"],
+        "umbrella": "Legal & Compliance"
     },
     "Technical Support / IT": {
         "synonyms": ["IT Support Engineer", "Technical Support Specialist", "Desktop Support", "System Administrator", "IT Helpdesk"],
-        "skills": ["Technical Support", "IT Infrastructure", "Troubleshooting", "Hardware Diagnostics", "Network Configuration", "Operating Systems", "User Provisioning", "Helpdesk Support", "IT Service Management", "Remote Assistance"]
+        "skills": ["Technical Support", "IT Infrastructure", "Troubleshooting", "Hardware Diagnostics", "Network Configuration", "Operating Systems", "User Provisioning", "Helpdesk Support", "IT Service Management", "Remote Assistance"],
+        "umbrella": "Information Technology"
     },
     "Hardware / Embedded Engineer": {
         "synonyms": ["Hardware Engineer", "Embedded Systems Engineer", "Firmware Engineer", "IoT Engineer", "Electronics Engineer"],
-        "skills": ["Embedded Systems", "Firmware Development", "C / C++", "Microcontrollers", "PCB Design", "Hardware Testing", "IoT Protocols", "Device Drivers", "Circuit Design", "Signal Processing"]
+        "skills": ["Embedded Systems", "Firmware Development", "C / C++", "Microcontrollers", "PCB Design", "Hardware Testing", "IoT Protocols", "Device Drivers", "Circuit Design", "Signal Processing"],
+        "umbrella": "Hardware Engineering"
     },
     "Business Analyst / Strategy": {
         "synonyms": ["Business Analyst", "Strategy Consultant", "Corporate Strategy Analyst", "Business Operations Analyst", "Functional Consultant"],
-        "skills": ["Business Analysis", "Requirements Gathering", "Process Modeling", "Strategic Planning", "Stakeholder Communication", "Cost-Benefit Analysis", "Gap Analysis", "Market Analysis", "Business Process Mapping", "Data Driven Strategy"]
+        "skills": ["Business Analysis", "Requirements Gathering", "Process Modeling", "Strategic Planning", "Stakeholder Communication", "Cost-Benefit Analysis", "Gap Analysis", "Market Analysis", "Business Process Mapping", "Data Driven Strategy"],
+        "umbrella": "Business Strategy"
     },
     "Chief of Staff / Founder's Office": {
         "synonyms": ["Chief of Staff", "Founder's Office Associate", "Executive Assistant", "Strategic Initiatives Lead", "Special Projects Manager"],
-        "skills": ["Strategic Initiatives", "Executive Support", "Cross-Functional Coordination", "Business Operations", "High-Impact Projects", "Organizational Strategy", "Executive Communication", "Program Management", "Problem Solving"]
+        "skills": ["Strategic Initiatives", "Executive Support", "Cross-Functional Coordination", "Business Operations", "High-Impact Projects", "Organizational Strategy", "Executive Communication", "Program Management", "Problem Solving"],
+        "umbrella": "Executive Operations"
     },
     "Intern / Trainee": {
         "synonyms": ["Software Intern", "Engineering Intern", "Graduate Trainee", "Summer Intern", "College Intern", "Apprentice"],
-        "skills": ["Learning Agility", "Software Engineering Fundamentals", "Problem Solving", "Academic Projects", "Team Collaboration", "Version Control", "Technical Curiosity", "Fast Learner", "Continuous Learning", "Hands-on Development"]
+        "skills": ["Learning Agility", "Software Engineering Fundamentals", "Problem Solving", "Academic Projects", "Team Collaboration", "Version Control", "Technical Curiosity", "Fast Learner", "Continuous Learning", "Hands-on Development"],
+        "umbrella": "Early Careers"
     }
 }
 
@@ -450,6 +483,11 @@ def classify_job_canonical_role(title: str, role_cat: str = "") -> str:
         return "Software Engineer"
     return "Business Analyst / Strategy"
 
+FUNCTIONAL_ROLE_TOKENS = [
+    "Engineer", "Developer", "Architect", "Lead", "Manager", "Specialist", 
+    "Analyst", "Scientist", "Designer", "Tester", "Consultant", "Director", "Administrator"
+]
+
 def generate_job_tags(
     title: str,
     company: str = "",
@@ -471,117 +509,122 @@ def generate_job_tags(
         if not t:
             return
         clean_t = re.sub(r"[\[\]'\"#]", "", str(t)).strip()
-        if len(clean_t) < 2 or len(clean_t) > 45:
+        if len(clean_t) < 2 or len(clean_t) > 40:
             return
         tl = clean_t.lower()
         if tl not in seen_lower:
             seen_lower.add(tl)
             tags.append(clean_t)
 
-    # 1. Canonical Role & Synonyms (5-7 tags)
-    add_tag(canonical_role)
-    for syn in role_info["synonyms"][:6]:
-        add_tag(syn)
+    title_lower = title.lower()
 
-    # 2. Domain Core Competencies & Skills (10-12 tags)
-    for skill in role_info["skills"][:12]:
-        add_tag(skill)
+    # Step 1: Discipline / Specialization extracted directly from title
+    discipline_keywords = [
+        ("frontend", "Frontend"), ("front-end", "Frontend"), ("front end", "Frontend"),
+        ("backend", "Backend"), ("back-end", "Backend"), ("back end", "Backend"),
+        ("fullstack", "Full Stack"), ("full-stack", "Full Stack"), ("full stack", "Full Stack"),
+        ("ui/ux", "UI/UX"), ("ui ux", "UI/UX"), (" ui ", "UI"), (" ux ", "UX"),
+        ("design", "Design"), ("qa", "QA"), ("tester", "Tester"), ("testing", "Testing"),
+        ("devops", "DevOps"), ("sre", "SRE"), ("cloud", "Cloud"),
+        ("machine learning", "Machine Learning"), ("data science", "Data Science"),
+        ("data engineer", "Data Engineering"), ("data analyst", "Data Analysis"),
+        ("mobile", "Mobile"), ("android", "Android"), ("ios", "iOS")
+    ]
+    for pattern, tag_val in discipline_keywords:
+        if re.search(rf"\b{re.escape(pattern.strip())}\b", title_lower):
+            add_tag(tag_val)
 
-    # 3. Dynamic extracted technology keywords from title, dept, text (3-8 tags)
-    search_corpus = f"{title} {role_category} {dept} {raw_text}".lower()
+    # Step 2: Tech stack extracted from title in exact title appearance order
     for tech in POPULAR_TECH_KEYWORDS:
-        pattern = rf"\b{re.escape(tech.lower())}\b"
-        if re.search(pattern, search_corpus):
+        if re.search(rf"\b{re.escape(tech.lower())}\b", title_lower):
             add_tag(tech)
-        if len(tags) >= 24:
+
+    # Step 3: Functional title token (Engineer, Developer, Manager, etc.)
+    for func in FUNCTIONAL_ROLE_TOKENS:
+        if re.search(rf"\b{re.escape(func.lower())}\b", title_lower):
+            add_tag(func)
             break
 
-    # 4. Seniority / Experience Level (2-3 tags)
-    exp_lower = f"{experience_level} {title}".lower()
-    if "intern" in exp_lower or "trainee" in exp_lower:
-        add_tag("Internship Opportunity")
-        add_tag("College Trainee")
-    elif "director" in exp_lower or "vp" in exp_lower or "vice president" in exp_lower:
+    # Step 4: Add canonical role synonyms matching words in title
+    for syn in role_info["synonyms"]:
+        if any(w in syn.lower() for w in title_lower.split() if len(w) > 3):
+            add_tag(syn)
+
+    # Step 5: Dynamic tech keywords from dept and raw_text
+    search_corpus = f"{dept} {raw_text}".lower()
+    for tech in POPULAR_TECH_KEYWORDS:
+        if len(tags) >= 12:
+            break
+        if re.search(rf"\b{re.escape(tech.lower())}\b", search_corpus):
+            add_tag(tech)
+
+    # Step 6: Core Domain Competencies from Taxonomy
+    for skill in role_info["skills"]:
+        if len(tags) >= 14:
+            break
+        add_tag(skill)
+
+    # Step 7: Experience / Seniority (Ranks ~14-15)
+    exp_combined = f"{experience_level} {title}".lower()
+    if re.search(r"\bintern(ship)?\b|\btrainee\b", exp_combined):
+        add_tag("Internship")
+    elif re.search(r"\bdirector\b|\bvp\b|\bhead of\b", exp_combined):
         add_tag("Director Level")
-        add_tag("Executive Leadership")
-    elif "manager" in exp_lower or "lead" in exp_lower or "principal" in exp_lower:
-        add_tag("Technical Leadership")
-        add_tag("Engineering Management")
-    elif "senior" in exp_lower or "sr." in exp_lower or "staff" in exp_lower:
-        add_tag("Senior Level")
-        add_tag("Senior Professional")
+    elif re.search(r"\bmanager\b|\blead\b|\bprincipal\b", exp_combined):
+        add_tag("Lead / Principal")
+    elif re.search(r"\bsenior\b|\bsr\.?\b|\bstaff\b", exp_combined):
+        add_tag("Senior")
     else:
         add_tag("Entry Level")
-        add_tag("Junior Professional")
 
-    # 5. Workplace Mode (2-3 tags)
-    wp_lower = f"{workplace_type} {location}".lower()
-    if "remote" in wp_lower or "wfh" in wp_lower or "work from home" in wp_lower:
+    # Step 8: Workplace Mode (Rank ~16)
+    wp_combined = f"{workplace_type} {location}".lower()
+    if "remote" in wp_combined or "wfh" in wp_combined:
         add_tag("Remote")
-        add_tag("Work From Home")
-        add_tag("Remote India")
-    elif "hybrid" in wp_lower:
+    elif "hybrid" in wp_combined:
         add_tag("Hybrid")
-        add_tag("Flexible Workplace")
-        add_tag("Hybrid Model")
     else:
         add_tag("In-Office")
-        add_tag("On-Site Opportunity")
 
-    # 6. Location & Geography (2-4 tags)
+    # Step 9: Location & Geography (Ranks ~17-18)
     loc_lower = (location or "").lower()
-    add_tag("India")
-    add_tag("India Tech Industry")
-    if "bangalore" in loc_lower or "bengaluru" in loc_lower:
+    if any(k in loc_lower for k in ["bengaluru", "bangalore"]):
         add_tag("Bengaluru")
-        add_tag("Bangalore Tech Hub")
-        add_tag("Karnataka")
-    elif "gurgaon" in loc_lower or "gurugram" in loc_lower or "delhi" in loc_lower or "noida" in loc_lower:
-        add_tag("Gurugram")
+    elif any(k in loc_lower for k in ["delhi", "gurugram", "gurgaon", "noida"]):
         add_tag("Delhi NCR")
-    elif "pune" in loc_lower:
-        add_tag("Pune")
-        add_tag("Maharashtra")
     elif "mumbai" in loc_lower:
         add_tag("Mumbai")
-        add_tag("Maharashtra")
+    elif "pune" in loc_lower:
+        add_tag("Pune")
     elif "hyderabad" in loc_lower:
         add_tag("Hyderabad")
-        add_tag("Telangana")
     elif "chennai" in loc_lower:
         add_tag("Chennai")
-        add_tag("Tamil Nadu")
-
-    # 7. Employment Type (2 tags)
-    emp_lower = f"{employment_type} {title}".lower()
-    if "intern" in emp_lower:
-        add_tag("Paid Internship")
-        add_tag("Internship Role")
-    elif "contract" in emp_lower:
-        add_tag("Contract Position")
-        add_tag("Contract Opportunity")
     else:
-        add_tag("Full Time")
-        add_tag("Permanent Role")
+        add_tag("India")
 
-    # 8. Company Tag (1-2 tags)
-    if company and company.lower() not in ("direct", "ats"):
-        add_tag(f"{company} Careers")
-        add_tag(company)
+    if "india" not in seen_lower:
+        add_tag("India")
 
-    # Fallback padding if less than 25
-    if len(tags) < 25:
-        fallbacks = ["Tech Careers", "Software Industry", "Professional Growth", "Engineering Excellence", "Agile Workflow", "Continuous Learning", "Team Collaboration"]
-        for fb in fallbacks:
-            add_tag(fb)
-            if len(tags) >= 25:
-                break
+    # Step 10: Fill remaining slots up to 19 with high-value role skills & synonyms
+    for skill in role_info["skills"] + role_info["synonyms"] + POPULAR_TECH_KEYWORDS:
+        if len(tags) >= 19:
+            break
+        add_tag(skill)
 
-    # Cap at 32 tags
-    return tags[:32]
+    # Ensure slot 20 is reserved for Umbrella Category!
+    tags_19 = tags[:19]
+
+    # Slot 20: Umbrella Category
+    umbrella = role_info.get("umbrella", "Software Engineering")
+    if umbrella.lower() in [t.lower() for t in tags_19]:
+        umbrella = "Technology" if "technology" not in [t.lower() for t in tags_19] else "Professional Careers"
+    tags_19.append(umbrella)
+
+    return tags_19[:20]
 
 def extract_tags(title: str, dept: str = "", raw_text: str = "") -> List[str]:
-    """Generates 25-35 rich, genuine tags for the role."""
+    """Generates exactly 20 ranked, highly relevant tags for the role."""
     return generate_job_tags(title=title, dept=dept, raw_text=raw_text)
 
 

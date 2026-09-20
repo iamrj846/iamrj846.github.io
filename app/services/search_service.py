@@ -479,64 +479,139 @@ def company_matches(query: str, company_name: Optional[str]) -> bool:
     pattern = rf"\b{re.escape(q)}\b"
     return bool(re.search(pattern, c))
 
-def calculate_semantic_relevance(query: str, title: str, role_cat: str = "", tags: List[str] = None, synonyms: List[str] = None) -> float:
+EQUIVALENCE_MAP = {
+    "fullstack": "full stack",
+    "full-stack": "full stack",
+    "front-end": "frontend",
+    "front end": "frontend",
+    "back-end": "backend",
+    "back end": "backend",
+    "dev-ops": "devops",
+    "dev ops": "devops",
+    "ui/ux": "ui ux",
+    "ui-ux": "ui ux",
+    "ui / ux": "ui ux",
+    "node.js": "nodejs",
+    "node js": "nodejs",
+    "next.js": "nextjs",
+    "next js": "nextjs",
+    "react.js": "reactjs",
+    "react js": "reactjs",
+    "vue.js": "vuejs",
+    "vue js": "vuejs",
+}
+
+STEM_SYNONYMS = {
+    "tester": ["tester", "testing", "test", "qa", "quality assurance", "sdet"],
+    "testing": ["tester", "testing", "test", "qa", "quality assurance", "sdet"],
+    "test": ["tester", "testing", "test", "qa"],
+    "developer": ["developer", "engineer", "programmer", "sde", "swe"],
+    "engineer": ["engineer", "developer", "sde", "swe"],
+}
+
+def normalize_search_token(text: str) -> str:
+    if not text:
+        return ""
+    s = text.lower().strip()
+    for k, v in EQUIVALENCE_MAP.items():
+        s = re.sub(rf"\b{re.escape(k)}\b", v, s)
+    return s
+
+def calculate_ranked_tag_score(
+    query: str,
+    tags: List[str],
+    title: str = "",
+    company: str = "",
+    role_cat: str = ""
+) -> float:
     """
-    Computes a semantic relevance score from 0.0 to 100.0.
-    Considers exact phrase, word boundary regex, taxonomy synonyms, and RapidFuzz token matching.
+    Computes a rank-weighted score based on the 20 ranked tags assigned to each job:
+    - Rank 1 provides 20 points base weight down to Rank 20 providing 1 point.
+    - Matches with exact tag, synonyms, and strict word boundary matches.
+    - Multi-token coherence bonus (+50) when all query tokens match.
+    - Title match bonus (+10 per matched token).
+    - Company match bonus (+40).
+    - Strict word boundaries guarantee 'intern' != 'internal' or 'internet'.
     """
     if not query:
         return 1.0
-    q = query.strip().lower()
-    combined_target = f"{title} {role_cat} {' '.join(tags or [])}".strip().lower()
 
-    if q == title.strip().lower():
-        return 100.0
-    if re.search(rf"\b{re.escape(q)}\b", title.lower()):
-        return 95.0
+    q_norm = normalize_search_token(query)
+    q_words = [
+        normalize_search_token(w)
+        for w in re.split(r"\s+", q_norm)
+        if len(w) > 1 and w not in ("jobs", "job", "in", "at", "for", "careers", "hiring", "role", "roles")
+    ]
+    if not q_words:
+        return 0.0
 
-    # Multi-word phrase: ensure each word appears with word boundaries
-    q_words = [w for w in re.split(r"\s+", q) if len(w) > 1]
-    if len(q_words) > 1 and all(re.search(rf"\b{re.escape(w)}\b", title.lower()) for w in q_words):
-        return 90.0
+    tags_clean = [str(t).strip() for t in (tags or [])][:20]
+    total_score = 0.0
+    matched_query_tokens = set()
 
-    # Synonym check with word boundaries
-    if synonyms:
-        for syn in synonyms:
-            s_clean = syn.strip().lower()
-            if not s_clean:
-                continue
-            if re.search(rf"\b{re.escape(s_clean)}\b", title.lower()):
-                return 88.0
-            syn_words = [w for w in re.split(r"\s+", s_clean) if len(w) > 1]
-            if len(syn_words) > 1 and all(re.search(rf"\b{re.escape(w)}\b", title.lower()) for w in syn_words):
-                return 85.0
-            if re.search(rf"\b{re.escape(s_clean)}\b", combined_target):
-                return 75.0
+    for w in q_words:
+        best_token_score = 0.0
+        w_syns = STEM_SYNONYMS.get(w, [w])
 
-    # Direct tag match check (gives high boost for matching skills/keywords)
-    if tags:
-        for t in tags:
-            t_lower = t.strip().lower()
-            if q == t_lower:
-                return 82.0
-            if re.search(rf"\b{re.escape(q)}\b", t_lower):
-                return 80.0
+        for rank_idx, tag in enumerate(tags_clean):
+            rank = rank_idx + 1  # 1 to 20
+            weight = 21 - rank   # Rank 1 = 20, Rank 20 = 1
+            t_clean = normalize_search_token(tag)
 
-    # Rapidfuzz token set matching with word boundary verification
-    if HAS_RAPIDFUZZ:
-        token_score = fuzz.token_set_ratio(q, title.lower())
-        if token_score >= 80:
-            # Verify that at least one query token matches as a distinct word in title
-            q_tokens = [t for t in re.split(r"\s+", q) if len(t) > 2]
-            if not q_tokens or any(re.search(rf"\b{re.escape(t)}\b", title.lower()) for t in q_tokens):
-                return float(token_score * 0.8)
-        combined_token = fuzz.token_set_ratio(q, combined_target)
-        if combined_token >= 85:
-            q_tokens = [t for t in re.split(r"\s+", q) if len(t) > 2]
-            if not q_tokens or any(re.search(rf"\b{re.escape(t)}\b", combined_target) for t in q_tokens):
-                return float(combined_token * 0.65)
+            # Exact match on tag
+            if w == t_clean:
+                score = weight * 1.0
+                if score > best_token_score:
+                    best_token_score = score
+                    matched_query_tokens.add(w)
+            # Synonym/stem match on tag
+            elif any(syn == t_clean for syn in w_syns):
+                score = weight * 0.95
+                if score > best_token_score:
+                    best_token_score = score
+                    matched_query_tokens.add(w)
+            # Strict word boundary containment in tag
+            elif re.search(rf"\b{re.escape(w)}\b", t_clean):
+                score = weight * 0.9
+                if score > best_token_score:
+                    best_token_score = score
+                    matched_query_tokens.add(w)
+            elif any(re.search(rf"\b{re.escape(syn)}\b", t_clean) for syn in w_syns):
+                score = weight * 0.85
+                if score > best_token_score:
+                    best_token_score = score
+                    matched_query_tokens.add(w)
 
-    return 0.0
+        total_score += best_token_score
+
+    # Multi-token coherence bonus: if all query tokens matched in the ranked tags
+    if len(q_words) > 1 and len(matched_query_tokens) == len(q_words):
+        total_score += 50.0
+
+    # Title match bonus (strict word boundary matching)
+    title_norm = normalize_search_token(title)
+    for w in q_words:
+        if re.search(rf"\b{re.escape(w)}\b", title_norm):
+            total_score += 10.0
+
+    # Company match bonus
+    if company and re.search(rf"\b{re.escape(q_norm)}\b", company.lower()):
+        total_score += 40.0
+
+    # Rapidfuzz semantic fallback for non-exact titles
+    if total_score == 0.0 and HAS_RAPIDFUZZ and len(title_norm) > 2:
+        if any(re.search(rf"\b{re.escape(w)}\b", title_norm) for w in q_words):
+            sim = fuzz.token_set_ratio(q_norm, title_norm)
+            if sim >= 80:
+                total_score += float(sim * 0.2)
+
+    return round(total_score, 2)
+
+def calculate_semantic_relevance(query: str, title: str, role_cat: str = "", tags: List[str] = None, synonyms: List[str] = None, company: str = "") -> float:
+    """
+    Wrapper maintaining backward compatibility while routing to ranked tag scoring engine.
+    """
+    return calculate_ranked_tag_score(query, tags or [], title=title, company=company, role_cat=role_cat)
 
 class SearchService:
     def __init__(self):
@@ -897,16 +972,19 @@ class SearchService:
 
             elif search_type == "role":
                 synonyms = self.get_role_synonyms(query_term)
-                all_syns = list(set(synonyms + [query_lower]))
+                q_norm = normalize_search_token(query_lower)
+                all_syns = list(set(synonyms + [query_lower, q_norm]))
 
                 # 1. Fast secondary tag index lookup for query and all synonyms
                 for s in all_syns:
                     matching_hashes.update(get_hashes_by_tag(s))
 
                 # 2. Extract significant tokens from query
-                tokens = [t for t in query_lower.split() if t not in ("jobs", "job", "careers", "career", "hiring", "openings", "positions", "in", "at", "for") and len(t) > 2]
+                tokens = [t for t in q_norm.split() if t not in ("jobs", "job", "careers", "career", "hiring", "openings", "positions", "in", "at", "for") and len(t) > 2]
                 for t in tokens:
                     matching_hashes.update(get_hashes_by_tag(t))
+                    for st_syn in STEM_SYNONYMS.get(t, []):
+                        matching_hashes.update(get_hashes_by_tag(st_syn))
 
                 # 3. Hash name matching with word boundary verification
                 for k in all_keys:
@@ -1012,26 +1090,10 @@ class SearchService:
             if query_term:
                 c_matches = company_matches(query_term, c_name)
                 job_tags = job.get("tags") or []
-                synonyms = self.get_role_synonyms(query_term)
-                all_syns = list(set(synonyms + [query_lower]))
-
-                if search_type == "company":
-                    if not c_matches:
-                        rel_score = calculate_semantic_relevance(query_term, title, r_name, job_tags, all_syns)
-                        if rel_score < 40.0:
-                            continue
-                else:
-                    # search_type in ("role", "other_role", "other_company", "other", "custom")
-                    matches_role = role_matches(all_syns, r_name) or role_matches(all_syns, title)
-                    if not matches_role:
-                        if any(query_lower == str(t).strip().lower() or re.search(rf"\b{re.escape(query_lower)}\b", str(t).lower()) for t in job_tags):
-                            matches_role = True
-                        else:
-                            rel_score = calculate_semantic_relevance(query_term, title, r_name, job_tags, all_syns)
-                            if rel_score >= 40.0:
-                                matches_role = True
-                    if not matches_role and not c_matches:
-                        continue
+                score = calculate_ranked_tag_score(query_term, job_tags, title=title, company=c_name, role_cat=r_name)
+                if score <= 0.0:
+                    continue
+                job["search_score"] = score
 
             # Location filter
             if location_filter and location_filter.strip().lower() not in ("all", "all locations", "all location", ""):
@@ -1169,36 +1231,35 @@ class SearchService:
 
         filtered_jobs = deduped_jobs
 
-        # Step 5: Sort by Decreasing Timestamp Order (newest first in IST) with Semantic Relevance
+        # Step 5: Sort by Best Score First (rank-weighted tag score primary, timestamp tie-breaker)
         def sort_key(j: Dict[str, Any]) -> float:
-            rel_boost = 0.0
-            if query_term:
-                syns = self.get_role_synonyms(query_term)
-                score = calculate_semantic_relevance(query_term, j.get("title", ""), j.get("role_name", ""), j.get("tags"), syns)
-                # Any score applies a boost, effectively making relevance the primary sort key
-                # A score difference of 1.0 = 1,000,000 seconds = ~11.5 days of boost
-                rel_boost = score * 1000000.0
-
+            score = j.get("search_score", 0.0) if query_term else 0.0
+            epoch_val = 0.0
             raw_epoch = j.get("posted_epoch")
             if raw_epoch is not None:
                 try:
-                    return float(raw_epoch) + rel_boost
+                    epoch_val = float(raw_epoch)
                 except Exception:
                     pass
-            ts = j.get("posted_timestamp_raw") or j.get("posted_timestamp_ist") or j.get("posted_at")
-            if not ts:
-                return rel_boost
-            try:
-                clean_ts = str(ts).replace(" IST", "").replace("Z", "+00:00").strip()
-                if "T" in clean_ts:
-                    dt = datetime.datetime.fromisoformat(clean_ts)
-                else:
-                    dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M:%S")
-                if dt.tzinfo is None:
-                    dt = pytz.timezone("Asia/Kolkata").localize(dt)
-                return dt.astimezone(IST_TZ).timestamp() + rel_boost
-            except Exception:
-                return rel_boost
+            if epoch_val == 0.0:
+                ts = j.get("posted_timestamp_raw") or j.get("posted_timestamp_ist") or j.get("posted_at")
+                if ts:
+                    try:
+                        clean_ts = str(ts).replace(" IST", "").replace("Z", "+00:00").strip()
+                        if "T" in clean_ts:
+                            dt = datetime.datetime.fromisoformat(clean_ts)
+                        else:
+                            dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M:%S")
+                        if dt.tzinfo is None:
+                            dt = pytz.timezone("Asia/Kolkata").localize(dt)
+                        epoch_val = dt.astimezone(IST_TZ).timestamp()
+                    except Exception:
+                        pass
+
+            if query_term:
+                # Rank-weighted score is primary (1 pt = 1,000,000,000 seconds = ~31.7 years)
+                return score * 1000000000.0 + epoch_val
+            return epoch_val
 
         filtered_jobs.sort(key=sort_key, reverse=True)
 

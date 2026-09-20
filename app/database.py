@@ -1230,19 +1230,53 @@ def search_jobs_direct_db(
 
         where = " AND ".join(conditions)
 
-        # 1. Total Count Query
-        cur.execute(f"SELECT COUNT(*) FROM jobs WHERE {where}", tuple(params))
-        total_count = cur.fetchone()[0]
-
-        total_pages = max(1, (total_count + page_size - 1) // page_size)
-        page = max(1, min(page, total_pages))
-        offset = (page - 1) * page_size
-
-        # 2. Paginated rows Query
-        cur.execute(f"SELECT * FROM jobs WHERE {where} ORDER BY posted_at DESC LIMIT ? OFFSET ?", tuple(params + [page_size, offset]))
-        rows = cur.fetchall()
-
+        from app.services.search_service import calculate_ranked_tag_score, sanitize_tags
         from app.services.ats_service import parse_date_to_ist, extract_india_location
+
+        if q:
+            # Query candidate rows matching SQL filter
+            cur.execute(f"SELECT * FROM jobs WHERE {where}", tuple(params))
+            candidate_rows = cur.fetchall()
+
+            # Score each candidate job using the rank-weighted scoring engine
+            scored_candidates = []
+            for r in candidate_rows:
+                tags = sanitize_tags(r["tags"])
+                score = calculate_ranked_tag_score(
+                    q,
+                    tags,
+                    title=r["title"] or "",
+                    company=r["company"] or "",
+                    role_cat=r["role_category"] or ""
+                )
+                if score > 0.0:
+                    scored_candidates.append((r, score))
+
+            # Sort primarily by score descending (best score first), tie-breaker newest posted_at
+            scored_candidates.sort(
+                key=lambda x: (x[1], str(x[0]["posted_at"] or "")),
+                reverse=True
+            )
+
+            total_count = len(scored_candidates)
+            total_pages = max(1, (total_count + page_size - 1) // page_size)
+            page = max(1, min(page, total_pages))
+            offset = (page - 1) * page_size
+            rows = [x[0] for x in scored_candidates[offset : offset + page_size]]
+        else:
+            # Browsing without query term: fast path directly via indexed SQL
+            cur.execute(f"SELECT COUNT(*) FROM jobs WHERE {where}", tuple(params))
+            total_count = cur.fetchone()[0]
+
+            total_pages = max(1, (total_count + page_size - 1) // page_size)
+            page = max(1, min(page, total_pages))
+            offset = (page - 1) * page_size
+
+            cur.execute(
+                f"SELECT * FROM jobs WHERE {where} ORDER BY posted_at DESC LIMIT ? OFFSET ?",
+                tuple(params + [page_size, offset])
+            )
+            rows = cur.fetchall()
 
         clean_results = []
         for r in rows:
