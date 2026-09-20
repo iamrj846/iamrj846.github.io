@@ -99,8 +99,12 @@ def verify_admin_session(request: Request) -> Dict[str, Any]:
 
     raise HTTPException(status_code=403, detail="Access denied. Admin credentials required.")
 
+@router.get("/verify")
+async def admin_verify(admin_user: Dict[str, Any] = Depends(verify_admin_session)):
+    return {"success": True, "user": admin_user}
+
 @router.post("/login")
-async def admin_login(payload: AdminLoginRequest, response: Response):
+async def admin_login(payload: AdminLoginRequest, request: Request, response: Response):
     config = get_config()
     ident = (payload.email or payload.username or "").strip().lower()
     valid_idents = [
@@ -111,13 +115,14 @@ async def admin_login(payload: AdminLoginRequest, response: Response):
     if ident in valid_idents and payload.password == config.admin_password_fallback:
         token = secrets.token_urlsafe(32)
         save_admin_session(token, ident)
+        is_https = bool(request.headers.get("x-forwarded-proto", "").lower() == "https" or request.url.scheme == "https")
         response.set_cookie(
             key="cg_admin_session",
             value=token,
             max_age=30 * 86400,
             httponly=True,
             samesite="lax",
-            secure=False,
+            secure=is_https,
             path="/"
         )
         return {"success": True, "message": "Admin authenticated successfully.", "token": token}

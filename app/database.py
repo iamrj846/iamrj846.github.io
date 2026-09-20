@@ -939,6 +939,14 @@ def save_admin_session(token: str, admin_email: str) -> None:
     conn.commit()
     conn.close()
 
+    # Instant Redis cluster caching (30-day TTL)
+    try:
+        from app.redis_client import get_redis_client
+        rc = get_redis_client()
+        rc.setex(f"cg:admin_session:{token}", 30 * 86400, admin_email)
+    except Exception as e:
+        logger.debug(f"Redis admin session cache write failed: {e}")
+
 def delete_admin_session(token: str) -> bool:
     if not token:
         return False
@@ -955,11 +963,31 @@ def delete_admin_session(token: str) -> bool:
     cur.execute("UPDATE users SET session_active = 0, session_token = NULL WHERE session_token = ? AND is_admin = 1", (token,))
     conn.commit()
     conn.close()
+
+    # Invalidate Redis cluster cache
+    try:
+        from app.redis_client import get_redis_client
+        rc = get_redis_client()
+        rc.delete(f"cg:admin_session:{token}")
+    except Exception:
+        pass
     return True
 
 def is_valid_admin_session(token: str) -> bool:
     if not token:
         return False
+
+    # 1. High-speed Redis lookup (< 0.5ms) across cluster
+    try:
+        from app.redis_client import get_redis_client
+        rc = get_redis_client()
+        val = rc.get(f"cg:admin_session:{token}")
+        if val:
+            return True
+    except Exception:
+        pass
+
+    # 2. SQLite verification with auto-backfill to Redis
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""
@@ -969,14 +997,27 @@ def is_valid_admin_session(token: str) -> bool:
         created_at TEXT
     )
     """)
-    cur.execute("SELECT token FROM admin_sessions WHERE token = ?", (token,))
-    if cur.fetchone():
-        conn.close()
-        return True
-    cur.execute("SELECT id FROM users WHERE session_token = ? AND session_active = 1 AND is_admin = 1", (token,))
+    cur.execute("SELECT admin_email FROM admin_sessions WHERE token = ?", (token,))
     row = cur.fetchone()
+    admin_email = row[0] if row else None
+    if not admin_email:
+        cur.execute("SELECT email FROM users WHERE session_token = ? AND session_active = 1 AND is_admin = 1", (token,))
+        u_row = cur.fetchone()
+        if u_row:
+            admin_email = u_row[0]
     conn.close()
-    return bool(row)
+
+    if admin_email:
+        # Backfill Redis
+        try:
+            from app.redis_client import get_redis_client
+            rc = get_redis_client()
+            rc.setex(f"cg:admin_session:{token}", 30 * 86400, admin_email)
+        except Exception:
+            pass
+        return True
+
+    return False
 
 def block_user(user_id: int, block: bool = True) -> bool:
     conn = get_db_connection()

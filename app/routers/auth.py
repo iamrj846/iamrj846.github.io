@@ -66,13 +66,14 @@ async def verify_otp(request: Request, response: Response, payload: VerifyOtpReq
         raise HTTPException(status_code=400, detail=res.get("message"))
 
     # The session must be available to every frontend route, not only /api/auth.
+    is_https = bool(request.headers.get("x-forwarded-proto", "").lower() == "https" or request.url.scheme == "https")
     response.set_cookie(
         key="cg_session",
         value=res["session_token"],
         max_age=30 * 86400,
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=is_https,
         path="/"
     )
     return res
@@ -85,16 +86,17 @@ async def login(request: Request, response: Response, payload: LoginRequest):
         raise HTTPException(status_code=401, detail=res.get("message"))
 
     session_token = res["session_token"]
+    is_https = bool(request.headers.get("x-forwarded-proto", "").lower() == "https" or request.url.scheme == "https")
     response.set_cookie(
         key="cg_session", value=session_token, max_age=30 * 86400,
-        httponly=True, samesite="lax", secure=False, path="/"
+        httponly=True, samesite="lax", secure=is_https, path="/"
     )
     if res.get("user", {}).get("is_admin"):
         from app.database import save_admin_session
         save_admin_session(session_token, payload.email)
         response.set_cookie(
             key="cg_admin_session", value=session_token, max_age=30 * 86400,
-            httponly=True, samesite="lax", secure=False, path="/"
+            httponly=True, samesite="lax", secure=is_https, path="/"
         )
     return res
 

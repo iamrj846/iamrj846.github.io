@@ -257,7 +257,7 @@
     #authOverlay {
       position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6);
       backdrop-filter: blur(8px);
-      display: flex; align-items: center; justify-content: center;
+      display: none; align-items: center; justify-content: center;
       z-index: 9999;
     }
     .login-box {
@@ -1256,11 +1256,41 @@
 
     function getAdminHeaders() {
       const headers = { 'Content-Type': 'application/json' };
-      const token = localStorage.getItem('cg_admin_token');
+      const token = localStorage.getItem('cg_admin_token') || sessionStorage.getItem('cg_admin_token');
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
       return headers;
+    }
+
+    async function initAdminAuth() {
+      const headers = getAdminHeaders();
+      try {
+        const res = await fetch('/api/admin/verify', { headers });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            isAuthed = true;
+            document.getElementById('authOverlay').style.display = 'none';
+            loadAdminData();
+            fetchSystemMetrics();
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Initial admin verify check failed:', e);
+        const token = localStorage.getItem('cg_admin_token') || sessionStorage.getItem('cg_admin_token');
+        if (token) {
+          isAuthed = true;
+          document.getElementById('authOverlay').style.display = 'none';
+          loadAdminData();
+          fetchSystemMetrics();
+          return;
+        }
+      }
+
+      isAuthed = false;
+      document.getElementById('authOverlay').style.display = 'flex';
     }
 
     async function handleAdminLogin(e) {
@@ -1288,6 +1318,7 @@
         if (res.ok && data.success) {
           if (data.token) {
             localStorage.setItem('cg_admin_token', data.token);
+            sessionStorage.setItem('cg_admin_token', data.token);
           }
           document.getElementById('authOverlay').style.display = 'none';
           isAuthed = true;
@@ -1330,6 +1361,15 @@
         ]);
 
         if (statsRes.status === 401 || (statsRes.status === 403 && !isAuthed)) {
+          if (isAuthed) {
+            try {
+              const v = await fetch('/api/admin/verify', { headers });
+              if (v.ok) return;
+            } catch (e) {
+              return;
+            }
+          }
+          isAuthed = false;
           document.getElementById('authOverlay').style.display = 'flex';
           return;
         }
@@ -1407,7 +1447,9 @@
             document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="13" style="text-align: center; color: #EF4444; padding: 24px;">Failed to parse user records.</td></tr>';
           }
         } else if (usersRes.status === 401 || usersRes.status === 403) {
-          document.getElementById('authOverlay').style.display = 'flex';
+          if (!isAuthed) {
+            document.getElementById('authOverlay').style.display = 'flex';
+          }
         } else {
           document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="13" style="text-align: center; color: #EF4444; padding: 24px;">Failed to load user records (Status ${usersRes.status || 'Connection Error'}).</td></tr>`;
         }
@@ -2179,6 +2221,7 @@
         await fetch('/api/auth/logout', { method: 'POST', headers: getAdminHeaders() });
       } catch (e) {}
       localStorage.removeItem('cg_admin_token');
+      sessionStorage.removeItem('cg_admin_token');
       localStorage.removeItem('cg_user');
       window.location.reload();
     }
@@ -2226,10 +2269,13 @@
     });
 
     // Auto-check session on load
-    loadAdminData();
-    fetchSystemMetrics();
-    setInterval(loadAdminData, 15000);
-    setInterval(fetchSystemMetrics, 15000);
+    initAdminAuth();
+    setInterval(() => {
+      if (isAuthed) {
+        loadAdminData();
+        fetchSystemMetrics();
+      }
+    }, 15000);
   </script>
   <!-- Universal Telemetry Tracker -->
   <script src="/telemetry.js"></script>

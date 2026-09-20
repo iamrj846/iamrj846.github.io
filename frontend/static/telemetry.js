@@ -82,7 +82,7 @@ window.fetchWithRetry = async function (url, options = {}, maxRetries = 3, baseD
     attempt++;
     try {
       const res = await fetch(url, options);
-      if (!res.ok && (res.status === 502 || res.status === 503 || res.status === 504) && attempt <= maxRetries) {
+      if (!res.ok && (res.status === 500 || res.status === 502 || res.status === 503 || res.status === 504) && attempt <= maxRetries) {
         const delay = baseDelayMs * Math.pow(1.5, attempt - 1);
         console.warn(`[fetchWithRetry] HTTP ${res.status} on attempt ${attempt}/${maxRetries} for ${url}. Retrying in ${delay}ms...`);
         await new Promise(r => setTimeout(r, delay));

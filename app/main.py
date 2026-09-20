@@ -218,6 +218,19 @@ async def serve_humans():
 async def serve_security():
     return FileResponse(str(STATIC_DIR / "security.txt"), media_type="text/plain; charset=utf-8")
 
+@app.get("/health")
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "service": "corporateguild", "version": "1.0.0"}
+
+@app.get("/llms.txt")
+async def serve_llms():
+    return FileResponse(str(STATIC_DIR / "llms.txt"), media_type="text/markdown; charset=utf-8")
+
+@app.get("/llms-full.txt")
+async def serve_llms_full():
+    return FileResponse(str(STATIC_DIR / "llms-full.txt"), media_type="text/markdown; charset=utf-8")
+
 @app.get("/telemetry.js")
 async def serve_telemetry():
     return FileResponse(str(STATIC_DIR / "telemetry.js"), media_type="application/javascript; charset=utf-8")

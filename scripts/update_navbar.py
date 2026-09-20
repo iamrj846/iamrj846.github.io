@@ -27,7 +27,8 @@ NAV_CSS = """
       margin-left: 2px;
     }
     .nav-item-dropdown:hover .dropdown-chevron,
-    .nav-item-dropdown.open .dropdown-chevron {
+    .nav-item-dropdown.open .dropdown-chevron,
+    .nav-item-dropdown.mobile-expanded .dropdown-chevron {
       transform: rotate(180deg);
     }
     .nav-dropdown-menu {
@@ -37,6 +38,10 @@ NAV_CSS = """
       transform: translateX(-50%) translateY(6px);
       width: 820px;
       max-width: 94vw;
+      max-height: calc(85vh - 50px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
       background: #FFFFFF;
       border: 1px solid rgba(226, 232, 240, 0.9);
       border-radius: 12px;
@@ -47,6 +52,20 @@ NAV_CSS = """
       pointer-events: none;
       transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.2s;
       z-index: 1200;
+    }
+    .nav-dropdown-menu::-webkit-scrollbar {
+      width: 6px;
+    }
+    .nav-dropdown-menu::-webkit-scrollbar-track {
+      background: #F8FAFC;
+      border-radius: 4px;
+    }
+    .nav-dropdown-menu::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 4px;
+    }
+    .nav-dropdown-menu::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
     }
     .nav-item-dropdown:hover .nav-dropdown-menu,
     .nav-item-dropdown.open .nav-dropdown-menu,
@@ -156,6 +175,19 @@ NAV_CSS = """
       padding: 0 !important;
     }
     @media (max-width: 900px) {
+      .site-nav-links {
+        max-height: calc(100dvh - 70px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
+      }
+      .site-nav-links::-webkit-scrollbar {
+        width: 4px;
+      }
+      .site-nav-links::-webkit-scrollbar-thumb {
+        background: #CBD5E1;
+        border-radius: 4px;
+      }
       .nav-item-dropdown {
         width: 100%;
         display: block;
@@ -172,6 +204,10 @@ NAV_CSS = """
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
+        max-height: 55vh;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
       }
       .nav-item-dropdown.mobile-expanded .nav-dropdown-menu {
         display: block;
