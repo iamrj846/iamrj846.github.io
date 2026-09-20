@@ -32,9 +32,8 @@ def run_reindex():
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
-    cur.execute("SELECT * FROM jobs WHERE is_active = 1")
-    rows = cur.fetchall()
-    total_jobs = len(rows)
+    cur.execute("SELECT count(*) FROM jobs WHERE is_active = 1")
+    total_jobs = cur.fetchone()[0]
     logger.info(f"Found {total_jobs} active jobs in SQLite to reindex.")
 
     # Try connecting to Redis
@@ -46,114 +45,125 @@ def run_reindex():
     except Exception as e:
         logger.warning(f"Could not connect to Redis: {e}. Will only update SQLite.")
 
-    # If Redis is available, clear old tag indexes to ensure clean secondary index
+    # If Redis is available, clear old tag indexes using memory-safe scan_iter
     if client:
         try:
-            logger.info("Flushing old Redis tag indexes...")
-            old_tag_keys = client.keys("tag_idx:*")
-            if old_tag_keys:
-                del_pipe = client.pipeline(transaction=False)
-                for k in old_tag_keys:
-                    del_pipe.delete(k)
-                del_pipe.execute()
-                logger.info(f"Deleted {len(old_tag_keys)} old tag index keys.")
+            logger.info("Flushing old Redis tag indexes via scan_iter...")
+            del_pipe = client.pipeline(transaction=False)
+            del_count = 0
+            for k in client.scan_iter(match="tag_idx:*", count=1000):
+                del_pipe.delete(k)
+                del_count += 1
+                if del_count % 500 == 0:
+                    del_pipe.execute()
+            del_pipe.execute()
+            logger.info(f"Deleted {del_count} old tag index keys safely.")
         except Exception as e:
             logger.warning(f"Failed to flush old tag keys: {e}")
 
-    logger.info("Generating exactly 20 ranked tags for all jobs...")
+    logger.info("Generating exactly 20 ranked tags for all jobs in lightweight batches...")
     ttl_seconds = config.redis_ttl_seconds
 
-    batch_size = 500
+    batch_size = 150
     updated_count = 0
     pipe = client.pipeline(transaction=False) if client else None
     tag_accum = defaultdict(set)
+    import time
 
-    for idx, row in enumerate(rows):
-        job_id = row["id"]
-        title = (row["title"] or "Software Engineer").strip()
-        company = (row["company"] or "Tech Enterprise").strip()
-        raw_loc = (row["location"] or "Bengaluru, Karnataka, India").strip()
-        clean_loc = extract_india_location(raw_loc)
-        wp_type = row["workplace_type"] or "In office"
-        exp_level = row["experience_level"] or "Entry level"
-        emp_type = row["employment_type"] if "employment_type" in row.keys() and row["employment_type"] else "Full time"
-        canonical_role = classify_job_canonical_role(title, row["role_category"] or "")
+    # Stream rows without loading full table into RAM
+    cur.execute("""
+        SELECT id, title, company, location, role_category, workplace_type, 
+               experience_level, employment_type, dept, apply_url, posted_at, source
+        FROM jobs WHERE is_active = 1
+    """)
 
-        # Generate exactly 20 ranked tags
-        tags = generate_job_tags(
-            title=title,
-            company=company,
-            location=clean_loc,
-            role_category=canonical_role,
-            workplace_type=wp_type,
-            experience_level=exp_level,
-            employment_type=emp_type,
-            raw_text=row["description"] or ""
-        )
-        if len(tags) != 20:
-            logger.warning(f"Job {job_id} generated {len(tags)} tags instead of 20. Padding/trimming.")
-            while len(tags) < 20:
-                tags.append("Software Engineering")
-            tags = tags[:20]
+    while True:
+        rows = cur.fetchmany(batch_size)
+        if not rows:
+            break
 
-        tags_json = json.dumps(tags)
+        for row in rows:
+            job_id = row["id"]
+            title = (row["title"] or "Software Engineer").strip()
+            company = (row["company"] or "Tech Enterprise").strip()
+            raw_loc = (row["location"] or "Bengaluru, Karnataka, India").strip()
+            clean_loc = extract_india_location(raw_loc)
+            wp_type = row["workplace_type"] or "In office"
+            exp_level = row["experience_level"] or "Entry level"
+            emp_type = row["employment_type"] if "employment_type" in row.keys() and row["employment_type"] else "Full time"
+            canonical_role = classify_job_canonical_role(title, row["role_category"] or "")
 
-        # Update SQLite
-        cur.execute("UPDATE jobs SET tags = ?, role_category = ? WHERE id = ?", (tags_json, canonical_role, job_id))
+            # Generate exactly 20 ranked tags
+            tags = generate_job_tags(
+                title=title,
+                company=company,
+                location=clean_loc,
+                role_category=canonical_role,
+                workplace_type=wp_type,
+                experience_level=exp_level,
+                employment_type=emp_type,
+                dept=row["dept"] or ""
+            )
 
-        # Update Redis if connected
-        if client and pipe is not None:
-            apply_link = (row["apply_url"] if "apply_url" in row.keys() else (row["apply_link"] if "apply_link" in row.keys() else "")) or ""
-            posted_at = row["posted_at"] or ""
-            ist_str, raw_iso, rel = parse_date_to_ist(posted_at)
+            tags_json = json.dumps(tags)
 
-            job_payload = {
-                "id": job_id,
-                "company_name": company,
-                "role_name": canonical_role,
-                "title": title,
-                "location": clean_loc or "India",
-                "workplace_type": wp_type,
-                "experience_level": exp_level,
-                "employment_type": emp_type,
-                "apply_link": apply_link,
-                "apply_url": apply_link,
-                "posted_timestamp_ist": ist_str,
-                "posted_timestamp_raw": raw_iso,
-                "relative_time_ist": rel,
-                "tags": tags,
-                "ats_platform": row["source"] if "source" in row.keys() else "Direct"
-            }
+            # Update SQLite
+            cur.execute("UPDATE jobs SET tags = ?, role_category = ? WHERE id = ?", (tags_json, canonical_role, job_id))
 
-            field_key = apply_link.rstrip("/").lower() if apply_link else str(job_id)
-            hash_key = make_hash_name(company, canonical_role)
-
-            pipe.hset(hash_key, field_key, json.dumps(job_payload))
-            pipe.expire(hash_key, ttl_seconds)
-
-            for t in tags:
-                clean_t = str(t).strip().lower().replace("|", " ")
-                if clean_t:
-                    tag_accum[clean_t].add(hash_key)
-
-            if canonical_role:
-                r_lower = canonical_role.strip().lower().replace("|", " ")
-                tag_accum[r_lower].add(hash_key)
-            if company:
-                c_lower = company.strip().lower().replace("|", " ")
-                tag_accum[c_lower].add(hash_key)
-
-        updated_count += 1
-        if updated_count % batch_size == 0 or updated_count == total_jobs:
-            conn.commit()
+            # Update Redis if connected
             if client and pipe is not None:
-                # Flush tag index batch
-                for tag_str, hash_set in tag_accum.items():
-                    pipe.sadd(f"tag_idx:{tag_str}", *hash_set)
-                    pipe.expire(f"tag_idx:{tag_str}", ttl_seconds)
-                tag_accum.clear()
-                pipe.execute()
-            logger.info(f"Progress: {updated_count}/{total_jobs} jobs reindexed ({updated_count/total_jobs*100:.1f}%).")
+                apply_link = (row["apply_url"] if "apply_url" in row.keys() else "") or ""
+                posted_at = row["posted_at"] or ""
+                ist_str, raw_iso, rel = parse_date_to_ist(posted_at)
+
+                job_payload = {
+                    "id": job_id,
+                    "company_name": company,
+                    "role_name": canonical_role,
+                    "title": title,
+                    "location": clean_loc or "India",
+                    "workplace_type": wp_type,
+                    "experience_level": exp_level,
+                    "employment_type": emp_type,
+                    "apply_link": apply_link,
+                    "apply_url": apply_link,
+                    "posted_timestamp_ist": ist_str,
+                    "posted_timestamp_raw": raw_iso,
+                    "relative_time_ist": rel,
+                    "tags": tags,
+                    "ats_platform": row["source"] if "source" in row.keys() else "Direct"
+                }
+
+                field_key = apply_link.rstrip("/").lower() if apply_link else str(job_id)
+                hash_key = make_hash_name(company, canonical_role)
+
+                pipe.hset(hash_key, field_key, json.dumps(job_payload))
+                pipe.expire(hash_key, ttl_seconds)
+
+                for t in tags:
+                    clean_t = str(t).strip().lower().replace("|", " ")
+                    if clean_t:
+                        tag_accum[clean_t].add(hash_key)
+
+                if canonical_role:
+                    r_lower = canonical_role.strip().lower().replace("|", " ")
+                    tag_accum[r_lower].add(hash_key)
+                if company:
+                    c_lower = company.strip().lower().replace("|", " ")
+                    tag_accum[c_lower].add(hash_key)
+
+            updated_count += 1
+
+        conn.commit()
+        if client and pipe is not None:
+            for tag_str, hash_set in tag_accum.items():
+                pipe.sadd(f"tag_idx:{tag_str}", *hash_set)
+                pipe.expire(f"tag_idx:{tag_str}", ttl_seconds)
+            tag_accum.clear()
+            pipe.execute()
+
+        logger.info(f"Progress: {updated_count}/{total_jobs} jobs reindexed ({updated_count/total_jobs*100:.1f}%).")
+        time.sleep(0.02)  # Cooperative yielding for system health and stability
 
     conn.commit()
 
