@@ -1163,13 +1163,11 @@ def search_jobs_direct_db(
                 params.extend([param, param, param])
             elif search_type == "role" and role_synonyms:
                 syns = [q] + [s.lower().strip() for s in role_synonyms if s.lower().strip() != q and len(s.strip()) > 2]
-                top_syns = syns[:6]
-                syns_clauses = " OR ".join(["LOWER(role_category) LIKE ? OR LOWER(title) LIKE ?" for _ in top_syns])
-                conditions.append(f"({syns_clauses} OR LOWER(tags) LIKE ?)")
-                for s in top_syns:
+                syns_clauses = " OR ".join(["LOWER(role_category) LIKE ? OR LOWER(title) LIKE ? OR LOWER(tags) LIKE ?" for _ in syns])
+                conditions.append(f"({syns_clauses})")
+                for s in syns:
                     p = f"%{s}%"
-                    params.extend([p, p])
-                params.append(f"%{q}%")
+                    params.extend([p, p, p])
             else:
                 param = f"%{q}%"
                 conditions.append("(LOWER(role_category) LIKE ? OR LOWER(title) LIKE ? OR LOWER(tags) LIKE ? OR LOWER(company) LIKE ?)")
@@ -1232,53 +1230,19 @@ def search_jobs_direct_db(
 
         where = " AND ".join(conditions)
 
-        from app.services.search_service import calculate_ranked_tag_score, sanitize_tags
+        # 1. Total Count Query
+        cur.execute(f"SELECT COUNT(*) FROM jobs WHERE {where}", tuple(params))
+        total_count = cur.fetchone()[0]
+
+        total_pages = max(1, (total_count + page_size - 1) // page_size)
+        page = max(1, min(page, total_pages))
+        offset = (page - 1) * page_size
+
+        # 2. Paginated rows Query
+        cur.execute(f"SELECT * FROM jobs WHERE {where} ORDER BY posted_at DESC LIMIT ? OFFSET ?", tuple(params + [page_size, offset]))
+        rows = cur.fetchall()
+
         from app.services.ats_service import parse_date_to_ist, extract_india_location
-
-        if q:
-            # Query candidate rows matching SQL filter
-            cur.execute(f"SELECT * FROM jobs WHERE {where}", tuple(params))
-            candidate_rows = cur.fetchall()
-
-            # Score each candidate job using the rank-weighted scoring engine
-            scored_candidates = []
-            for r in candidate_rows:
-                tags = sanitize_tags(r["tags"])
-                score = calculate_ranked_tag_score(
-                    q,
-                    tags,
-                    title=r["title"] or "",
-                    company=r["company"] or "",
-                    role_cat=r["role_category"] or ""
-                )
-                if score > 0.0:
-                    scored_candidates.append((r, score))
-
-            # Sort primarily by score descending (best score first), tie-breaker newest posted_at
-            scored_candidates.sort(
-                key=lambda x: (x[1], str(x[0]["posted_at"] or "")),
-                reverse=True
-            )
-
-            total_count = len(scored_candidates)
-            total_pages = max(1, (total_count + page_size - 1) // page_size)
-            page = max(1, min(page, total_pages))
-            offset = (page - 1) * page_size
-            rows = [x[0] for x in scored_candidates[offset : offset + page_size]]
-        else:
-            # Browsing without query term: fast path directly via indexed SQL
-            cur.execute(f"SELECT COUNT(*) FROM jobs WHERE {where}", tuple(params))
-            total_count = cur.fetchone()[0]
-
-            total_pages = max(1, (total_count + page_size - 1) // page_size)
-            page = max(1, min(page, total_pages))
-            offset = (page - 1) * page_size
-
-            cur.execute(
-                f"SELECT * FROM jobs WHERE {where} ORDER BY posted_at DESC LIMIT ? OFFSET ?",
-                tuple(params + [page_size, offset])
-            )
-            rows = cur.fetchall()
 
         clean_results = []
         for r in rows:
