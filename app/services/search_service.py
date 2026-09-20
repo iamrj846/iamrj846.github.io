@@ -794,16 +794,18 @@ class SearchService:
         return results
 
     def get_role_synonyms(self, role_name: str) -> List[str]:
-        target = role_name.strip().lower()
-        if not target:
+        raw_target = role_name.strip().lower()
+        if not raw_target:
             return []
+        norm_target = normalize_search_token(raw_target)
+        targets = {raw_target, norm_target}
 
         # 1. Exact match with a role category or its exact synonym
         for item in FIXED_ROLES:
             r_lower = item["role"].lower()
             all_s = [r_lower] + [s.lower() for s in item["synonyms"]]
-            if target == r_lower or target in all_s:
-                return all_s
+            if any(t == r_lower or t in all_s for t in targets):
+                return list(dict.fromkeys(all_s + [raw_target, norm_target]))
 
         # 2. Phrase matching: check if any multi-word or distinct synonym appears in target
         syns_found = set()
@@ -814,13 +816,13 @@ class SearchService:
                 if len(s) < 2:
                     continue
                 pattern = rf"\b{re.escape(s)}\b"
-                if re.search(pattern, target):
+                if any(re.search(pattern, t) for t in targets):
                     syns_found.update(all_s)
                     break
 
         if syns_found:
-            return list(syns_found)
-        return [target]
+            return list(dict.fromkeys(list(syns_found) + [raw_target, norm_target]))
+        return list(dict.fromkeys([raw_target, norm_target]))
 
     def search_jobs(
         self,

@@ -101,6 +101,14 @@ class TestRankedTagSemanticSearch(unittest.TestCase):
         self.assertEqual(s_space, s_hyphen, "full-stack must yield identical score to Full Stack")
         self.assertEqual(s_space, s_nospace, "fullstack must yield identical score to Full Stack")
 
+        from app.services.search_service import SearchService
+        svc = SearchService()
+        syns_space = set(svc.get_role_synonyms("Full Stack"))
+        syns_hyphen = set(svc.get_role_synonyms("full-stack"))
+        syns_nospace = set(svc.get_role_synonyms("fullstack"))
+        self.assertTrue("full stack" in syns_space and "full stack" in syns_hyphen and "full stack" in syns_nospace)
+        self.assertTrue("fullstack" in syns_space and "fullstack" in syns_hyphen and "fullstack" in syns_nospace)
+
     def test_strict_negative_word_boundaries(self):
         """Verify intern != internal, internet."""
         # A job with 'internal communications' tags
