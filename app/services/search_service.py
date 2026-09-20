@@ -276,6 +276,149 @@ FIXED_ROLES = [
             "engineering intern", "software intern", "sde intern", "product intern", 
             "research intern", "apprentice", "apprenticeship"
         ]
+    },
+    {
+        "role": "Blockchain / Web3 Engineer",
+        "synonyms": [
+            "blockchain engineer", "web3 engineer", "smart contract developer", "solidity developer", 
+            "rust blockchain", "ethereum developer", "web3 developer", "blockchain developer", 
+            "crypto engineer", "defi engineer", "blockchain"
+        ]
+    },
+    {
+        "role": "MLOps Engineer",
+        "synonyms": [
+            "mlops engineer", "mlops", "machine learning operations", "ml platform engineer", 
+            "ai platform engineer", "model deployment engineer", "ml infrastructure engineer"
+        ]
+    },
+    {
+        "role": "NLP / LLM Engineer",
+        "synonyms": [
+            "nlp engineer", "llm engineer", "natural language processing", "prompt engineer", 
+            "ai prompt engineer", "large language model", "llm developer", "nlp scientist", 
+            "genai engineer", "conversational ai"
+        ]
+    },
+    {
+        "role": "Computer Vision Engineer",
+        "synonyms": [
+            "computer vision engineer", "computer vision", "cv engineer", "image processing engineer", 
+            "perception engineer", "deep learning vision", "vision ai engineer"
+        ]
+    },
+    {
+        "role": "Platform / Infrastructure Engineer",
+        "synonyms": [
+            "platform engineer", "infrastructure engineer", "cloud platform engineer", 
+            "core platform developer", "systems infrastructure", "developer platform", "developer tooling"
+        ]
+    },
+    {
+        "role": "Embedded Software Engineer",
+        "synonyms": [
+            "embedded software engineer", "embedded software", "embedded systems developer", 
+            "embedded c++", "embedded c", "iot software engineer", "embedded linux engineer"
+        ]
+    },
+    {
+        "role": "Firmware Engineer",
+        "synonyms": [
+            "firmware engineer", "firmware developer", "microcontroller developer", 
+            "bsp engineer", "board support package", "rtos engineer", "device driver developer", "firmware"
+        ]
+    },
+    {
+        "role": "Hardware Engineer",
+        "synonyms": [
+            "hardware engineer", "hardware design engineer", "electronics engineer", 
+            "pcb design engineer", "fpga engineer", "vlsi design engineer", "asic engineer", "hardware"
+        ]
+    },
+    {
+        "role": "Database Administrator (DBA)",
+        "synonyms": [
+            "database administrator", "dba", "sql dba", "oracle dba", "postgres dba", 
+            "mongodb dba", "database engineer", "data architect dba", "db admin"
+        ]
+    },
+    {
+        "role": "Network Engineer",
+        "synonyms": [
+            "network engineer", "network administrator", "ccna", "ccnp", "cisco network engineer", 
+            "network security engineer", "telecom engineer", "infrastructure network", "network specialist"
+        ]
+    },
+    {
+        "role": "Business Analyst",
+        "synonyms": [
+            "business analyst", "technical business analyst", "functional analyst", 
+            "it business analyst", "senior business analyst", "lead business analyst", "business analysis"
+        ]
+    },
+    {
+        "role": "Scrum Master / Agile Coach",
+        "synonyms": [
+            "scrum master", "agile coach", "certified scrum master", "csm", 
+            "agile project manager", "kanban coach", "agile facilitator", "scrum lead"
+        ]
+    },
+    {
+        "role": "Growth Marketing Specialist",
+        "synonyms": [
+            "growth marketing specialist", "growth marketer", "growth hacker", "acquisition marketer", 
+            "lifecycle marketer", "growth marketing manager", "demand generation", "growth lead marketing"
+        ]
+    },
+    {
+        "role": "Technical Writer",
+        "synonyms": [
+            "technical writer", "tech writer", "api documenter", "documentation engineer", 
+            "technical documentation", "content developer tech", "sdk documenter"
+        ]
+    },
+    {
+        "role": "IT Support Specialist",
+        "synonyms": [
+            "it support specialist", "it support engineer", "it technician", "desktop support engineer", 
+            "help desk technician", "service desk analyst", "workstation support", "it desk engineer"
+        ]
+    },
+    {
+        "role": "Salesforce Developer",
+        "synonyms": [
+            "salesforce developer", "salesforce", "salesforce administrator", "salesforce engineer", 
+            "apex developer", "salesforce architect", "lightning developer", "sfdc developer"
+        ]
+    },
+    {
+        "role": "Game Developer",
+        "synonyms": [
+            "game developer", "unity developer", "unreal engine developer", "game programmer", 
+            "game designer", "gameplay engineer", "3d game developer", "unreal developer", "unity 3d"
+        ]
+    },
+    {
+        "role": "Release / Build Engineer",
+        "synonyms": [
+            "release engineer", "build engineer", "release manager", "ci cd engineer", 
+            "devops release", "deployment engineer", "configuration manager", "build and release"
+        ]
+    },
+    {
+        "role": "Information Security Analyst",
+        "synonyms": [
+            "information security analyst", "infosec analyst", "security analyst", "soc analyst", 
+            "cyber defense analyst", "threat intelligence analyst", "incident response analyst", "secops analyst"
+        ]
+    },
+    {
+        "role": "Fintech / Algorithmic Trading Engineer",
+        "synonyms": [
+            "fintech engineer", "algorithmic trading engineer", "quant developer", "quantitative developer", 
+            "trading systems engineer", "low latency engineer", "hft developer", "financial software engineer",
+            "fintech", "trading", "quant", "algorithmic trading", "hft"
+        ]
     }
 ]
 
@@ -647,7 +790,7 @@ class SearchService:
 
         if use_direct_db or not query_term:
             db_start = time.time()
-            syns = self.get_role_synonyms(role_filter) if role_filter else []
+            syns = self.get_role_synonyms(role_filter or query_term) if (role_filter or search_type == "role") else []
             data = search_jobs_direct_db(
                 search_type=search_type,
                 query_term=query_term,
@@ -782,7 +925,7 @@ class SearchService:
             if len(valid_keys) > 500:
                 # If too many matching hashes, use indexed DB search to prevent Redis pipeline stalls
                 db_start = time.time()
-                syns = self.get_role_synonyms(role_filter) if role_filter else []
+                syns = self.get_role_synonyms(role_filter or query_term) if (role_filter or search_type == "role") else []
                 data = search_jobs_direct_db(
                     search_type=search_type,
                     query_term=query_term,
@@ -824,7 +967,7 @@ class SearchService:
         except Exception as redis_err:
             logger.warning(f"Redis search encountered error: {redis_err}. Seamlessly falling back to direct SQLite DB query.")
             db_start = time.time()
-            syns = self.get_role_synonyms(role_filter) if role_filter else []
+            syns = self.get_role_synonyms(role_filter or query_term) if (role_filter or search_type == "role") else []
             data = search_jobs_direct_db(
                 search_type=search_type,
                 query_term=query_term,

@@ -7,6 +7,7 @@ import datetime
 import logging
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Set, Tuple
+from urllib.parse import urljoin
 import openpyxl
 import pytz
 import httpx
@@ -767,13 +768,148 @@ class ATSService:
             ("Doist", "Breezy HR", "https://doist.breezy.hr/json"),
             ("Toggl", "Breezy HR", "https://toggl.breezy.hr/json"),
             ("Scopely", "Breezy HR", "https://scopely.breezy.hr/json"),
-            ("Automattic", "Breezy HR", "https://automattic.breezy.hr/json")
+            # Top Greenhouse Tech Endpoints
+            ("Stripe", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/stripe/jobs?content=true"),
+            ("Figma", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/figma/jobs?content=true"),
+            ("Coinbase", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/coinbase/jobs?content=true"),
+            ("Cloudflare", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/cloudflare/jobs?content=true"),
+            ("Reddit", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/reddit/jobs?content=true"),
+            ("Groww", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/groww/jobs?content=true"),
+            ("Razorpay", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/razorpaysoftwareprivatelimited/jobs?content=true"),
+            # Top Lever Tech Endpoints
+            ("Spotify", "Lever", "https://api.lever.co/v0/postings/spotify?mode=json"),
+            ("Cred", "Lever", "https://api.lever.co/v0/postings/cred?mode=json"),
+            ("Palantir", "Lever", "https://api.lever.co/v0/postings/palantir?mode=json"),
+            # Top Ashby Tech Endpoints
+            ("Linear", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/linear"),
+            ("Ramp", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/ramp"),
+            ("Notion", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/notion")
         ]
         for c_name, plat, ep_url in curated:
             k = (c_name.lower(), ep_url.split("?")[0].lower())
             if k not in seen:
                 seen.add(k)
                 self.endpoints.append(ATSEndpoint(c_name, plat, ep_url))
+
+        # Load directories from resources/
+        resources_dir = Path(__file__).resolve().parent.parent / "resources"
+
+        # 1. SmartRecruiters
+        sr_file = resources_dir / "smartrecruiters_companies.json"
+        if sr_file.exists():
+            try:
+                with open(sr_file, "r") as f:
+                    for slug in json.load(f):
+                        u = f"https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=100"
+                        k = (slug.lower(), u.lower())
+                        if k not in seen:
+                            seen.add(k)
+                            self.endpoints.append(ATSEndpoint(slug, "SmartRecruiters", u))
+            except Exception as e:
+                logger.warning(f"Error loading smartrecruiters_companies.json: {e}")
+
+        # 2. Greenhouse
+        gh_file = resources_dir / "greenhouse_companies.json"
+        if gh_file.exists():
+            try:
+                with open(gh_file, "r") as f:
+                    for slug in json.load(f):
+                        u = f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true"
+                        k = (slug.lower(), u.lower())
+                        if k not in seen:
+                            seen.add(k)
+                            self.endpoints.append(ATSEndpoint(slug.title(), "Greenhouse", u))
+            except Exception as e:
+                logger.warning(f"Error loading greenhouse_companies.json: {e}")
+
+        # 3. Ashby
+        ashby_file = resources_dir / "ashby_companies.json"
+        if ashby_file.exists():
+            try:
+                with open(ashby_file, "r") as f:
+                    for slug in json.load(f):
+                        u = f"https://api.ashbyhq.com/posting-api/job-board/{slug}"
+                        k = (slug.lower(), u.lower())
+                        if k not in seen:
+                            seen.add(k)
+                            self.endpoints.append(ATSEndpoint(slug.title(), "Ashby", u))
+            except Exception as e:
+                logger.warning(f"Error loading ashby_companies.json: {e}")
+
+        # 4. Lever
+        lever_file = resources_dir / "lever_companies.json"
+        if lever_file.exists():
+            try:
+                with open(lever_file, "r") as f:
+                    for slug in json.load(f):
+                        u = f"https://api.lever.co/v0/postings/{slug}?mode=json"
+                        k = (slug.lower(), u.lower())
+                        if k not in seen:
+                            seen.add(k)
+                            self.endpoints.append(ATSEndpoint(slug.title(), "Lever", u))
+            except Exception as e:
+                logger.warning(f"Error loading lever_companies.json: {e}")
+
+        # 5. Pinpoint
+        pp_file = resources_dir / "pinpoint_companies.json"
+        if pp_file.exists():
+            try:
+                with open(pp_file, "r") as f:
+                    for slug in json.load(f):
+                        u = f"https://{slug}.pinpointhq.com/postings.json"
+                        k = (slug.lower(), u.lower())
+                        if k not in seen:
+                            seen.add(k)
+                            self.endpoints.append(ATSEndpoint(slug.title(), "Pinpoint", u))
+            except Exception as e:
+                logger.warning(f"Error loading pinpoint_companies.json: {e}")
+
+        # 6. Comeet
+        cm_file = resources_dir / "comeet_companies.json"
+        if cm_file.exists():
+            try:
+                with open(cm_file, "r") as f:
+                    for slug in json.load(f):
+                        u = f"https://www.comeet.co/careers-api/2.0/company/{slug}/positions"
+                        k = (slug.lower(), u.lower())
+                        if k not in seen:
+                            seen.add(k)
+                            self.endpoints.append(ATSEndpoint(slug.title(), "Comeet", u))
+            except Exception as e:
+                logger.warning(f"Error loading comeet_companies.json: {e}")
+
+        # 7. Jobvite
+        jv_file = resources_dir / "jobvite_companies.json"
+        if jv_file.exists():
+            try:
+                with open(jv_file, "r") as f:
+                    for slug in json.load(f):
+                        u = f"https://jobs.jobvite.com/{slug}/search?format=json"
+                        k = (slug.lower(), u.lower())
+                        if k not in seen:
+                            seen.add(k)
+                            self.endpoints.append(ATSEndpoint(slug.title(), "Jobvite", u))
+            except Exception as e:
+                logger.warning(f"Error loading jobvite_companies.json: {e}")
+
+        # 8. Workday
+        wd_file = resources_dir / "workday_companies.json"
+        if wd_file.exists():
+            try:
+                with open(wd_file, "r") as f:
+                    for line in json.load(f):
+                        parts = line.split("|")
+                        if len(parts) >= 3:
+                            tenant, host_prefix, site_name = parts[0], parts[1], parts[2]
+                            u = f"https://{tenant}.{host_prefix}.myworkdayjobs.com/wday/cxs/{tenant}/{site_name}/jobs"
+                            k = (tenant.lower(), u.lower())
+                            if k not in seen:
+                                seen.add(k)
+                                self.endpoints.append(ATSEndpoint(tenant.title(), "Workday", u))
+            except Exception as e:
+                logger.warning(f"Error loading workday_companies.json: {e}")
+
+        logger.info(f"Total unified ATS endpoints active: {len(self.endpoints)}")
 
     def get_all_companies(self) -> List[str]:
         companies = sorted(list({ep.company_name for ep in self.endpoints if ep.company_name}))
@@ -840,11 +976,24 @@ class ATSService:
             return self._parse_oracle(ep, data)
         elif "workday" in platform:
             return self._parse_workday(ep, data)
+        elif "pinpoint" in platform:
+            return self._parse_pinpoint(ep, data)
+        elif "comeet" in platform:
+            return self._parse_comeet(ep, data)
+        elif "jobvite" in platform:
+            return self._parse_jobvite(ep, data)
         else:
             # Try generic detection
             if isinstance(data, list):
-                if data and isinstance(data[0], dict) and ("workLocation" in data[0] or "uuid" in data[0]):
-                    return self._parse_rippling(ep, data)
+                if data and isinstance(data[0], dict):
+                    if "workLocation" in data[0] or "uuid" in data[0]:
+                        return self._parse_rippling(ep, data)
+                    elif "url_active_page" in data[0] or "url_apply_page" in data[0]:
+                        return self._parse_comeet(ep, data)
+                    elif "application_form_url" in data[0] or "key_responsibilities" in data[0]:
+                        return self._parse_pinpoint(ep, data)
+                    elif "detailUrl" in data[0] or "jobId" in data[0]:
+                        return self._parse_jobvite(ep, data)
                 return self._parse_lever(ep, data)
             elif isinstance(data, dict):
                 if "jobs" in data and isinstance(data["jobs"], list):
@@ -859,6 +1008,12 @@ class ATSService:
                     return self._parse_recruitee(ep, data)
                 elif "items" in data and data["items"] and isinstance(data["items"], list) and "requisitionList" in data["items"][0]:
                     return self._parse_oracle(ep, data)
+                elif "positions" in data and isinstance(data["positions"], list):
+                    return self._parse_comeet(ep, data)
+                elif "requisitions" in data and isinstance(data["requisitions"], list):
+                    return self._parse_jobvite(ep, data)
+                elif "data" in data and isinstance(data["data"], list):
+                    return self._parse_pinpoint(ep, data)
         return []
 
     def _parse_greenhouse(self, ep: ATSEndpoint, data: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -1542,6 +1697,205 @@ class ATSService:
             
         return results
 
+    def _parse_pinpoint(self, ep: ATSEndpoint, data: Any) -> List[Dict[str, Any]]:
+        results = []
+        if isinstance(data, dict):
+            postings = data.get("data") or data.get("postings") or data.get("jobs") or []
+        elif isinstance(data, list):
+            postings = data
+        else:
+            return []
+
+        for p in postings:
+            if not isinstance(p, dict):
+                continue
+            item = p.get("attributes", p) if isinstance(p.get("attributes"), dict) else p
+            title = str(item.get("title") or item.get("name") or "").strip()
+            if not title:
+                continue
+
+            loc_obj = item.get("location") or item.get("location_name") or {}
+            if isinstance(loc_obj, dict):
+                city = loc_obj.get("city") or loc_obj.get("name") or ""
+                region = loc_obj.get("region") or loc_obj.get("subdivision") or ""
+                country = loc_obj.get("country") or ""
+                loc_str = f"{city}, {region}, {country}".strip(", ")
+            else:
+                loc_str = str(loc_obj or "")
+
+            wp_raw = str(item.get("workplace_type") or item.get("workplace_type_text") or "")
+            is_rem = "remote" in wp_raw.lower() or bool(item.get("remote", False)) or "remote" in loc_str.lower()
+            is_hyb = "hybrid" in wp_raw.lower() or "hybrid" in loc_str.lower()
+            wp_hint = "Remote" if is_rem else ("Hybrid" if is_hyb else "")
+
+            if not is_india_location(loc_str, workplace_type=wp_hint):
+                if not loc_str.strip() and is_india_location(title, workplace_type=wp_hint):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(loc_str)
+
+            apply_link = item.get("application_form_url") or item.get("url") or item.get("path") or ep.endpoint_url
+            if apply_link and not str(apply_link).startswith("http"):
+                apply_link = urljoin(ep.endpoint_url, str(apply_link))
+
+            posted_date = item.get("created_at") or item.get("updated_at")
+            ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
+
+            emp_type_raw = str(item.get("employment_type_text") or item.get("employment_type") or "")
+            emp_type = normalize_employment_type(emp_type_raw, title)
+            workplace = "Remote" if is_rem else ("Hybrid" if is_hyb else normalize_workplace(loc_str))
+            exp_level = normalize_experience_level(title, str(item.get("experience_level") or ""))
+            dept = str(item.get("department") or item.get("department_name") or "")
+            tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept)
+
+            now_str = datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+            results.append({
+                "company_name": ep.company_name,
+                "role_name": title,
+                "title": title,
+                "location": clean_loc or "India",
+                "apply_link": apply_link,
+                "apply_url": apply_link,
+                "posted_timestamp_ist": ist_str,
+                "posted_timestamp_raw": raw_iso,
+                "relative_time_ist": rel_time or "",
+                "tags": tags,
+                "employment_type": emp_type,
+                "workplace_type": workplace,
+                "experience_level": exp_level,
+                "ats_platform": "Pinpoint",
+                "ingested_at": now_str
+            })
+        return results
+
+    def _parse_comeet(self, ep: ATSEndpoint, data: Any) -> List[Dict[str, Any]]:
+        results = []
+        if isinstance(data, list):
+            positions = data
+        elif isinstance(data, dict):
+            positions = data.get("positions") or data.get("jobs") or []
+        else:
+            return []
+
+        for pos in positions:
+            if not isinstance(pos, dict):
+                continue
+            title = str(pos.get("name") or pos.get("title") or "").strip()
+            if not title:
+                continue
+
+            loc_obj = pos.get("location") or {}
+            if isinstance(loc_obj, dict):
+                city = loc_obj.get("city", "")
+                country = loc_obj.get("country", "")
+                state = loc_obj.get("state", "")
+                loc_str = f"{city}, {state}, {country}".strip(", ")
+                is_rem = bool(loc_obj.get("is_remote", False))
+            else:
+                loc_str = str(loc_obj or "")
+                is_rem = "remote" in loc_str.lower()
+
+            wp_hint = "Remote" if is_rem or "remote" in loc_str.lower() else ""
+
+            if not is_india_location(loc_str, workplace_type=wp_hint):
+                if not loc_str.strip() and is_india_location(title, workplace_type=wp_hint):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(loc_str)
+
+            apply_link = pos.get("url_active_page") or pos.get("url_apply_page") or ep.endpoint_url
+            posted_date = pos.get("time_updated") or pos.get("time_created")
+            ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
+
+            emp_type = normalize_employment_type(str(pos.get("employment_type") or ""), title)
+            workplace = "Remote" if is_rem else normalize_workplace(loc_str)
+            exp_level = normalize_experience_level(title, str(pos.get("experience_level") or ""))
+            dept = str(pos.get("department") or "")
+            tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept)
+
+            now_str = datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+            results.append({
+                "company_name": ep.company_name,
+                "role_name": title,
+                "title": title,
+                "location": clean_loc or "India",
+                "apply_link": apply_link,
+                "apply_url": apply_link,
+                "posted_timestamp_ist": ist_str,
+                "posted_timestamp_raw": raw_iso,
+                "relative_time_ist": rel_time or "",
+                "tags": tags,
+                "employment_type": emp_type,
+                "workplace_type": workplace,
+                "experience_level": exp_level,
+                "ats_platform": "Comeet",
+                "ingested_at": now_str
+            })
+        return results
+
+    def _parse_jobvite(self, ep: ATSEndpoint, data: Any) -> List[Dict[str, Any]]:
+        results = []
+        if isinstance(data, list):
+            items = data
+        elif isinstance(data, dict):
+            items = data.get("requisitions") or data.get("jobs") or data.get("job") or []
+        else:
+            return []
+
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            title = str(item.get("title") or item.get("name") or "").strip()
+            if not title:
+                continue
+
+            loc_str = str(item.get("location") or item.get("city") or "")
+            job_type = str(item.get("jobType") or item.get("type") or "")
+            is_rem = "remote" in job_type.lower() or "remote" in loc_str.lower()
+            wp_hint = "Remote" if is_rem else ""
+
+            if not is_india_location(loc_str, workplace_type=wp_hint):
+                if not loc_str.strip() and is_india_location(title, workplace_type=wp_hint):
+                    clean_loc = "India"
+                else:
+                    continue
+            else:
+                clean_loc = extract_india_location(loc_str)
+
+            apply_link = item.get("detailUrl") or item.get("applyUrl") or ep.endpoint_url
+            posted_date = item.get("date") or item.get("postedDate")
+            ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
+
+            emp_type = normalize_employment_type(job_type, title)
+            workplace = "Remote" if is_rem else normalize_workplace(loc_str)
+            exp_level = normalize_experience_level(title)
+            dept = str(item.get("category") or item.get("department") or "")
+            tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept)
+
+            now_str = datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+            results.append({
+                "company_name": ep.company_name,
+                "role_name": title,
+                "title": title,
+                "location": clean_loc or "India",
+                "apply_link": apply_link,
+                "apply_url": apply_link,
+                "posted_timestamp_ist": ist_str,
+                "posted_timestamp_raw": raw_iso,
+                "relative_time_ist": rel_time or "",
+                "tags": tags,
+                "employment_type": emp_type,
+                "workplace_type": workplace,
+                "experience_level": exp_level,
+                "ats_platform": "Jobvite",
+                "ingested_at": now_str
+            })
+        return results
+
     async def fetch_all_endpoints(self, max_concurrent: int = 12, sample_limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         Fetches configured endpoints asynchronously with rate limiting.
@@ -1561,7 +1915,7 @@ class ATSService:
             selected_endpoints: List[ATSEndpoint] = []
             
             # Always include 100% of smaller / high-yield platforms
-            always_full = ["smartrecruiters", "recruitee", "breezy hr", "breezy", "workable", "rippling", "oracle"]
+            always_full = ["smartrecruiters", "recruitee", "breezy hr", "breezy", "workable", "rippling", "oracle", "pinpoint", "comeet", "jobvite"]
             remaining_quota = sample_limit
             for plat in always_full:
                 if plat in by_platform:

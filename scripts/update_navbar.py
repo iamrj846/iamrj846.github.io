@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Update all frontend HTML pages to include the Career Guides dropdown menu in the top navigation bar.
+Update all frontend HTML pages to include the enhanced Career Guides (50 Specialized Tracks)
+dropdown menu in the top navigation bar.
 """
 import re
 from pathlib import Path
@@ -34,8 +35,8 @@ NAV_CSS = """
       top: calc(100% + 8px);
       left: 50%;
       transform: translateX(-50%) translateY(6px);
-      width: 680px;
-      max-width: 92vw;
+      width: 820px;
+      max-width: 94vw;
       background: #FFFFFF;
       border: 1px solid rgba(226, 232, 240, 0.9);
       border-radius: 12px;
@@ -78,8 +79,8 @@ NAV_CSS = """
     }
     .nav-dropdown-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
     }
     .nav-dropdown-cat {
       font-size: 11px;
@@ -91,10 +92,10 @@ NAV_CSS = """
     }
     .nav-dropdown-col a {
       display: block !important;
-      font-size: 13px !important;
+      font-size: 12.5px !important;
       color: #334155 !important;
       text-decoration: none;
-      padding: 5px 8px !important;
+      padding: 4px 6px !important;
       border-radius: 6px;
       height: auto !important;
       font-weight: 500 !important;
@@ -149,7 +150,7 @@ NAV_CSS = """
     .nav-dropdown-all-btn {
       color: #2563EB !important;
       font-size: 12px !important;
-      font-weight: 600 !important;
+      font-weight: 700 !important;
       text-decoration: none;
       height: auto !important;
       padding: 0 !important;
@@ -190,42 +191,53 @@ DROPDOWN_HTML = """      <div class="nav-item-dropdown" id="navCareerGuidesDropd
         </a>
         <div class="nav-dropdown-menu">
           <div class="nav-dropdown-header">
-            <span>Career Guides (30 Specialized Tracks)</span>
-            <a href="/articles.html">Browse All &rarr;</a>
+            <span>Career Guides (50 Specialized Tracks)</span>
+            <a href="/articles.html">Browse All 50 &rarr;</a>
           </div>
           <div class="nav-dropdown-grid">
             <div class="nav-dropdown-col">
-              <div class="nav-dropdown-cat">Engineering &amp; Dev</div>
+              <div class="nav-dropdown-cat">Engineering &amp; Web</div>
               <a href="/jobs/software-engineer.html">Software Engineer</a>
               <a href="/jobs/full-stack-developer.html">Full-Stack Developer</a>
               <a href="/jobs/frontend-developer.html">Frontend Developer</a>
               <a href="/jobs/backend-developer.html">Backend Developer</a>
+              <a href="/jobs/blockchain-engineer.html">Blockchain Engineer</a>
+              <a href="/jobs/salesforce-developer.html">Salesforce Developer</a>
+              <a href="/jobs/game-developer.html">Game Developer</a>
+              <a href="/jobs/solutions-architect.html">Solutions Architect</a>
+            </div>
+            <div class="nav-dropdown-col">
+              <div class="nav-dropdown-cat">Cloud, Sys &amp; Sec</div>
               <a href="/jobs/devops-engineer.html">DevOps Engineer</a>
               <a href="/jobs/cloud-engineer.html">Cloud Engineer</a>
-              <a href="/jobs/site-reliability-engineer.html">Site Reliability Engineer</a>
-              <a href="/jobs/systems-engineer.html">Systems Engineer</a>
-            </div>
-            <div class="nav-dropdown-col">
-              <div class="nav-dropdown-cat">AI, Data &amp; Security</div>
-              <a href="/jobs/data-scientist.html">Data Scientist</a>
-              <a href="/jobs/machine-learning-engineer.html">ML Engineer</a>
-              <a href="/jobs/data-engineer.html">Data Engineer</a>
-              <a href="/jobs/data-analyst.html">Data Analyst</a>
-              <a href="/jobs/ai-research-scientist.html">AI Research Scientist</a>
+              <a href="/jobs/site-reliability-engineer.html">Site Reliability (SRE)</a>
+              <a href="/jobs/platform-engineer.html">Platform Engineer</a>
               <a href="/jobs/cybersecurity-engineer.html">Cybersecurity Engineer</a>
-              <a href="/jobs/security-engineer.html">Security Engineer</a>
-              <a href="/jobs/qa-automation-engineer.html">QA Automation Engineer</a>
+              <a href="/jobs/infosec-analyst.html">InfoSec Analyst</a>
+              <a href="/jobs/network-engineer.html">Network Engineer</a>
+              <a href="/jobs/database-administrator.html">Database Admin (DBA)</a>
             </div>
             <div class="nav-dropdown-col">
-              <div class="nav-dropdown-cat">Product, Mobile &amp; Mgmt</div>
+              <div class="nav-dropdown-cat">AI, Data &amp; HW</div>
+              <a href="/jobs/machine-learning-engineer.html">ML Engineer</a>
+              <a href="/jobs/ai-research-scientist.html">AI Research Scientist</a>
+              <a href="/jobs/mlops-engineer.html">MLOps Engineer</a>
+              <a href="/jobs/nlp-engineer.html">NLP &amp; LLM Engineer</a>
+              <a href="/jobs/computer-vision-engineer.html">Computer Vision</a>
+              <a href="/jobs/data-scientist.html">Data Scientist</a>
+              <a href="/jobs/data-engineer.html">Data Engineer</a>
+              <a href="/jobs/embedded-software-engineer.html">Embedded Engineer</a>
+            </div>
+            <div class="nav-dropdown-col">
+              <div class="nav-dropdown-cat">Product, Agile &amp; Ops</div>
               <a href="/jobs/product-manager.html">Product Manager</a>
-              <a href="/jobs/technical-program-manager.html">Tech Program Manager</a>
+              <a href="/jobs/technical-program-manager.html">Tech Program Mgr</a>
               <a href="/jobs/engineering-manager.html">Engineering Manager</a>
+              <a href="/jobs/scrum-master.html">Scrum Master / Agile</a>
               <a href="/jobs/ui-ux-designer.html">UI/UX Designer</a>
               <a href="/jobs/product-designer.html">Product Designer</a>
-              <a href="/jobs/mobile-app-developer.html">Mobile App Developer</a>
-              <a href="/jobs/ios-developer.html">iOS Developer</a>
-              <a href="/jobs/android-developer.html">Android Developer</a>
+              <a href="/jobs/business-analyst.html">Business Analyst</a>
+              <a href="/jobs/fintech-engineer.html">Fintech / Quant Eng</a>
             </div>
           </div>
           <div class="nav-dropdown-footer">
@@ -235,10 +247,15 @@ DROPDOWN_HTML = """      <div class="nav-item-dropdown" id="navCareerGuidesDropd
               <a href="/jobs.html?workplace=remote" class="nav-tag-pill">Remote Jobs</a>
               <a href="/jobs.html?experience=entry" class="nav-tag-pill">Entry Level</a>
             </div>
-            <a href="/articles.html" class="nav-dropdown-all-btn">View All 30 Guides &rarr;</a>
+            <a href="/articles.html" class="nav-dropdown-all-btn">View All 50 Career Guides &rarr;</a>
           </div>
         </div>
       </div>"""
+
+EXISTING_DROPDOWN_REGEX = re.compile(
+    r'<div class="nav-item-dropdown" id="navCareerGuidesDropdown">.*?</div>\s*</div>\s*</div>',
+    re.DOTALL
+)
 
 OLD_LINK_REGEX = re.compile(
     r'<a\s+href="/articles\.html"(?:\s+class="[^"]*")?>\s*<svg[^>]*>.*?</svg>\s*Career Guides\s*</a>',
@@ -249,8 +266,13 @@ def update_file(path: Path):
     content = path.read_text(encoding="utf-8")
     modified = False
 
-    # Check if inside site-nav-links we have the old link
-    if "Career Guides" in content and "nav-item-dropdown" not in content:
+    # 1. If existing dropdown is present, replace it with updated 50-guide dropdown
+    if "navCareerGuidesDropdown" in content:
+        new_content = EXISTING_DROPDOWN_REGEX.sub(DROPDOWN_HTML, content)
+        if new_content != content:
+            content = new_content
+            modified = True
+    elif "Career Guides" in content:
         # Match only inside <header class="site-nav"> ... </header>
         header_match = re.search(r'(<header class="site-nav">.*?</header>)', content, re.DOTALL)
         if header_match:
@@ -260,9 +282,16 @@ def update_file(path: Path):
                 content = content.replace(orig_header, new_header)
                 modified = True
 
-    if modified or "Career Guides Menu Dropdown" not in content:
-        if "</style>" in content and "Career Guides Menu Dropdown" not in content:
-            # Insert NAV_CSS before the first or last </style>
+    # 2. Ensure updated CSS is present
+    if "/* Career Guides Menu Dropdown */" in content:
+        # Update CSS block
+        css_pattern = re.compile(r'/\* Career Guides Menu Dropdown \*/.*?(?=</style>)', re.DOTALL)
+        new_content = css_pattern.sub(NAV_CSS.strip() + "\n  ", content)
+        if new_content != content:
+            content = new_content
+            modified = True
+    else:
+        if "</style>" in content:
             content = content.replace("</style>", NAV_CSS + "\n  </style>", 1)
             modified = True
 
@@ -270,7 +299,7 @@ def update_file(path: Path):
         path.write_text(content, encoding="utf-8")
         print(f"Updated: {path.relative_to(ROOT_DIR)}")
     else:
-        print(f"Skipped (already updated or no match): {path.relative_to(ROOT_DIR)}")
+        print(f"Skipped (already current): {path.relative_to(ROOT_DIR)}")
 
 def main():
     target_files = [
@@ -287,6 +316,7 @@ def main():
     for jf in sorted((FRONTEND_DIR / "jobs").glob("*.html")):
         target_files.append(jf)
 
+    print(f"Updating navigation bar across {len(target_files)} HTML pages...")
     for tf in target_files:
         if tf.exists():
             update_file(tf)

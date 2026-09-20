@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Update frontend/articles.html with all 30 career guides, domain categories,
-live search filter, and interactive Career Guides dropdown in the top navbar.
+Update frontend/articles.html with all 50 career guides, domain categories,
+live search filter, and interactive Career Guides navigation.
 """
 
 from pathlib import Path
@@ -10,9 +10,9 @@ import re
 WORKSPACE = Path(__file__).resolve().parent.parent
 ARTICLES_HTML = WORKSPACE / "frontend" / "articles.html"
 
-# List of all 30 Career Guides with Category and Metadata
+# Complete directory of all 50 Career Guides across 7 Core Domains
 GUIDES = [
-    # 1. Engineering & Architecture
+    # 1. Engineering & Architecture (15 guides)
     {
         "slug": "software-engineer.html",
         "title": "Software Engineer",
@@ -98,123 +98,255 @@ GUIDES = [
         "title": "iOS Developer",
         "category": "Engineering & Architecture",
         "desc": "Crafting premium experiences in Apple's ecosystem with Swift, SwiftUI, Combine, and App Store engineering.",
-        "icon": '<path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 1.29 0 2.5-1.06 4-1.06 2.33 0 4.22 1.89 4.22 4.22 0 1.5-.72 2.87-1.84 3.75l-6.38 5.09-6.38-5.09A4.69 4.69 0 0 1 3.78 25.16C3.78 22.83 5.67 20.94 8 20.94c1.5 0 2.71 1.06 4 1.06z"/>',
+        "icon": '<path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z"/>',
         "color": "#0284C7"
     },
     {
         "slug": "android-developer.html",
         "title": "Android Developer",
         "category": "Engineering & Architecture",
-        "desc": "Engineering scalable Android apps with modern Kotlin, Jetpack Compose, Coroutines, and Material Design.",
-        "icon": '<rect width="16" height="16" x="4" y="4" rx="2"/><circle cx="9" cy="9" r="1"/><circle cx="15" cy="9" r="1"/>',
+        "desc": "Building high-performance Android mobile apps using Kotlin, Jetpack Compose, Coroutines, and MVVM architecture.",
+        "icon": '<path d="M4 10v6m16-6v6M7 16h10V9H7zM9 5l-2-3m8 3 2-3"/>',
         "color": "#16A34A"
     },
-
-    # 2. Data, AI & Machine Learning
     {
-        "slug": "data-scientist.html",
-        "title": "Data Scientist",
-        "category": "Data, AI & Machine Learning",
-        "desc": "Applying advanced statistical modeling, predictive algorithms, and machine learning to solve business problems.",
-        "icon": '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+        "slug": "blockchain-engineer.html",
+        "title": "Blockchain & Web3 Engineer",
+        "category": "Engineering & Architecture",
+        "desc": "Architecting smart contracts, decentralized protocols, and dApps with Solidity, Rust, EVM, and cryptography.",
+        "icon": '<rect width="8" height="8" x="2" y="2" rx="1"/><rect width="8" height="8" x="14" y="2" rx="1"/><rect width="8" height="8" x="8" y="14" rx="1"/><path d="M6 10v4h5m2-4v4h-5"/>',
         "color": "#8B5CF6"
     },
     {
-        "slug": "entry-level-data-scientist.html",
-        "title": "Entry-Level Data Scientist",
-        "category": "Data, AI & Machine Learning",
-        "desc": "How to transition into data science, showcase Kaggle portfolios, master SQL/Python, and crack interviews.",
-        "icon": '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-        "color": "#059669"
+        "slug": "salesforce-developer.html",
+        "title": "Salesforce Developer",
+        "category": "Engineering & Architecture",
+        "desc": "Building bespoke business logic, Apex triggers, Lightning Web Components (LWC), and enterprise CRM integrations.",
+        "icon": '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+        "color": "#0284C7"
     },
     {
-        "slug": "machine-learning-engineer.html",
-        "title": "Machine Learning Engineer",
-        "category": "Data, AI & Machine Learning",
-        "desc": "Deploying transformer architectures, LLMs, and low-latency inference pipelines with PyTorch and MLOps.",
-        "icon": '<circle cx="12" cy="12" r="3"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="18" r="2"/><circle cx="5" cy="18" r="2"/><line x1="7" y1="7" x2="10" y2="10"/><line x1="17" y1="7" x2="14" y2="10"/><line x1="7" y1="17" x2="10" y2="14"/><line x1="17" y1="17" x2="14" y2="14"/>',
-        "color": "#7C3AED"
-    },
-    {
-        "slug": "data-engineer.html",
-        "title": "Data Engineer",
-        "category": "Data, AI & Machine Learning",
-        "desc": "Designing high-throughput data highways with Apache Spark, Kafka, Airflow, Snowflake, BigQuery, and dbt.",
-        "icon": '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/>',
-        "color": "#0D9488"
-    },
-    {
-        "slug": "data-analyst.html",
-        "title": "Data Analyst",
-        "category": "Data, AI & Machine Learning",
-        "desc": "Transforming raw figures into strategic insights using advanced SQL, Tableau, Power BI, and experimentation.",
-        "icon": '<circle cx="12" cy="12" r="10"/><path d="m14 10-4 4"/><path d="m10 10 4 4"/>',
-        "color": "#D97706"
-    },
-    {
-        "slug": "ai-research-scientist.html",
-        "title": "AI Research Scientist",
-        "category": "Data, AI & Machine Learning",
-        "desc": "Pioneering novel foundation models, multimodal intelligence, and publishing at NeurIPS, ICML, and ICLR.",
-        "icon": '<path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6h4c0-3 2-4 2-6a4 4 0 0 0-4-4z"/><path d="M10 18h4"/><path d="M11 22h2"/>',
-        "color": "#4338CA"
+        "slug": "game-developer.html",
+        "title": "Game Developer",
+        "category": "Engineering & Architecture",
+        "desc": "Programming interactive gameplay, 3D graphics shaders, physics engines, and netcode in Unreal Engine and Unity.",
+        "icon": '<polygon points="6 3 18 3 21 9 12 22 3 9 6 3"/><line x1="12" x2="12" y1="22" y2="9"/>',
+        "color": "#7C2D12"
     },
 
-    # 3. Cloud, DevOps & Security
+    # 2. Cloud, DevOps & Infrastructure (8 guides)
     {
         "slug": "devops-engineer.html",
         "title": "DevOps Engineer",
-        "category": "Cloud, DevOps & Security",
-        "desc": "Automating continuous integration and delivery with Docker, Kubernetes, Terraform, and GitHub Actions.",
-        "icon": '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+        "category": "Cloud, DevOps & Infrastructure",
+        "desc": "Accelerating release frequency while safeguarding uptime with Docker, Kubernetes, Terraform, and CI/CD.",
+        "icon": '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
         "color": "#059669"
     },
     {
         "slug": "cloud-engineer.html",
         "title": "Cloud Engineer",
-        "category": "Cloud, DevOps & Security",
-        "desc": "Architecting resilient multi-cloud infrastructures, VPC networking, IAM security, and FinOps across AWS/GCP/Azure.",
+        "category": "Cloud, DevOps & Infrastructure",
+        "desc": "Designing scalable, fault-tolerant enterprise infrastructure across AWS, GCP, and Microsoft Azure.",
         "icon": '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
-        "color": "#0284C7"
+        "color": "#2563EB"
     },
     {
         "slug": "site-reliability-engineer.html",
         "title": "Site Reliability Engineer (SRE)",
-        "category": "Cloud, DevOps & Security",
-        "desc": "Guarding five-nines uptime, managing SLOs and error budgets, incident postmortems, and chaos engineering.",
+        "category": "Cloud, DevOps & Infrastructure",
+        "desc": "Safeguarding five-nines availability through automated failover, SLIs/SLOs, Chaos Engineering, and error budgets.",
         "icon": '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
-        "color": "#2563EB"
+        "color": "#D97706"
     },
+    {
+        "slug": "platform-engineer.html",
+        "title": "Platform Engineer",
+        "category": "Cloud, DevOps & Infrastructure",
+        "desc": "Building Internal Developer Platforms (IDPs), golden paths, and self-service cloud infrastructure with Go and K8s.",
+        "icon": '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+        "color": "#3B82F6"
+    },
+    {
+        "slug": "release-engineer.html",
+        "title": "Release & Build Engineer",
+        "category": "Cloud, DevOps & Infrastructure",
+        "desc": "Ensuring predictable, regression-free software delivery with Bazel, Gradle, monorepo caching, and canary rollouts.",
+        "icon": '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+        "color": "#047857"
+    },
+    {
+        "slug": "network-engineer.html",
+        "title": "Network Engineer",
+        "category": "Cloud, DevOps & Infrastructure",
+        "desc": "Engineering global telecom and cloud backbones using BGP, OSPF, SD-WAN, Cisco, and automated NetDevOps.",
+        "icon": '<rect width="18" height="12" x="3" y="4" rx="2"/><line x1="2" x2="22" y1="20" y2="20"/>',
+        "color": "#0D9488"
+    },
+    {
+        "slug": "database-administrator.html",
+        "title": "Database Administrator (DBA)",
+        "category": "Cloud, DevOps & Infrastructure",
+        "desc": "Safeguarding enterprise data integrity, query optimization, high availability, replication, and disaster recovery.",
+        "icon": '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/>',
+        "color": "#0284C7"
+    },
+    {
+        "slug": "it-support-specialist.html",
+        "title": "IT Support Specialist",
+        "category": "Cloud, DevOps & Infrastructure",
+        "desc": "Frontline endpoint administration, identity access management (Okta/AD), MDM deployments, and hardware support.",
+        "icon": '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
+        "color": "#0891B2"
+    },
+
+    # 3. Hardware & Embedded Systems (3 guides)
+    {
+        "slug": "embedded-software-engineer.html",
+        "title": "Embedded Software Engineer",
+        "category": "Hardware & Embedded Systems",
+        "desc": "Developing deterministic real-time software for IoT, automotive ECUs, and medical devices using C/C++ and RTOS.",
+        "icon": '<rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M9 1v3m6-3v3M9 20v3m6-3v3M20 9h3m-3 6h3M1 9h3m-3 6h3"/>',
+        "color": "#D97706"
+    },
+    {
+        "slug": "firmware-engineer.html",
+        "title": "Firmware Engineer",
+        "category": "Hardware & Embedded Systems",
+        "desc": "Writing bare-metal drivers, custom bootloaders, Board Support Packages (BSPs), and silicon bring-up routines.",
+        "icon": '<path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><circle cx="12" cy="12" r="2"/>',
+        "color": "#EA580C"
+    },
+    {
+        "slug": "hardware-engineer.html",
+        "title": "Hardware Engineer",
+        "category": "Hardware & Embedded Systems",
+        "desc": "Designing high-speed digital circuits, multi-layer PCBs, power delivery networks, and FPGA logic systems.",
+        "icon": '<circle cx="12" cy="12" r="10"/><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/>',
+        "color": "#B45309"
+    },
+
+    # 4. AI, Machine Learning & Data (10 guides)
+    {
+        "slug": "machine-learning-engineer.html",
+        "title": "Machine Learning Engineer",
+        "category": "AI, ML & Data",
+        "desc": "Translating predictive research into production inference pipelines using PyTorch, TensorFlow, and Triton.",
+        "icon": '<path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>',
+        "color": "#8B5CF6"
+    },
+    {
+        "slug": "data-scientist.html",
+        "title": "Data Scientist",
+        "category": "AI, ML & Data",
+        "desc": "Transforming unstructured petabyte-scale data into predictive business insights, algorithms, and models.",
+        "icon": '<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
+        "color": "#6366F1"
+    },
+    {
+        "slug": "ai-research-scientist.html",
+        "title": "AI Research Scientist",
+        "category": "AI, ML & Data",
+        "desc": "Pushing the frontiers of intelligence across foundation models, multimodal learning, and neural synthesis.",
+        "icon": '<circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/>',
+        "color": "#7C3AED"
+    },
+    {
+        "slug": "data-engineer.html",
+        "title": "Data Engineer",
+        "category": "AI, ML & Data",
+        "desc": "Building robust streaming pipelines, data lakes, and lakehouse architectures with Spark, Kafka, and Snowflake.",
+        "icon": '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+        "color": "#06B6D4"
+    },
+    {
+        "slug": "data-analyst.html",
+        "title": "Data Analyst",
+        "category": "AI, ML & Data",
+        "desc": "Empowering strategic business decisions through SQL analytics, interactive Tableau/Power BI dashboards, and metrics.",
+        "icon": '<line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/>',
+        "color": "#0284C7"
+    },
+    {
+        "slug": "entry-level-data-scientist.html",
+        "title": "Entry-Level Data Scientist",
+        "category": "AI, ML & Data",
+        "desc": "Step-by-step career path to land your first data science position, build a competitive portfolio, and ace interviews.",
+        "icon": '<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10M6 10h10"/>',
+        "color": "#10B981"
+    },
+    {
+        "slug": "mlops-engineer.html",
+        "title": "MLOps Engineer",
+        "category": "AI, ML & Data",
+        "desc": "Bridging machine learning and operations with automated continuous training, Kubeflow, Triton, and GPU clusters.",
+        "icon": '<circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/>',
+        "color": "#10B981"
+    },
+    {
+        "slug": "nlp-engineer.html",
+        "title": "NLP & LLM Engineer",
+        "category": "AI, ML & Data",
+        "desc": "Building generative AI models, enterprise RAG pipelines, fine-tuning (LoRA), and semantic vector search systems.",
+        "icon": '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+        "color": "#6366F1"
+    },
+    {
+        "slug": "computer-vision-engineer.html",
+        "title": "Computer Vision Engineer",
+        "category": "AI, ML & Data",
+        "desc": "Developing visual perception systems for robotics, autonomous vehicles, and edge devices with OpenCV and PyTorch.",
+        "icon": '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+        "color": "#06B6D4"
+    },
+    {
+        "slug": "fintech-engineer.html",
+        "title": "Fintech & Algorithmic Trading Engineer",
+        "category": "AI, ML & Data",
+        "desc": "Engineering microsecond-latency trading platforms, low-overhead C++ execution engines, and payment ledgers.",
+        "icon": '<circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8m4-10v2m0 8v2"/>',
+        "color": "#1E3A8A"
+    },
+
+    # 5. Cybersecurity & Quality Assurance (4 guides)
     {
         "slug": "cybersecurity-engineer.html",
         "title": "Cybersecurity Engineer",
-        "category": "Cloud, DevOps & Security",
-        "desc": "Defending enterprise perimeters with threat modeling, SIEM threat hunting, penetration testing, and zero-trust.",
+        "category": "Cybersecurity & Quality",
+        "desc": "Fortifying digital perimeters against threat vectors, zero-day vulnerabilities, and adversarial actors.",
         "icon": '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
         "color": "#DC2626"
     },
     {
         "slug": "security-engineer.html",
         "title": "Security Engineer",
-        "category": "Cloud, DevOps & Security",
+        "category": "Cybersecurity & Quality",
         "desc": "Proactive application security (AppSec), DevSecOps pipeline scanning (SAST/DAST), and cryptographic controls.",
         "icon": '<path d="m10 10 4 4m0-4-4 4"/><circle cx="12" cy="12" r="10"/>',
         "color": "#E11D48"
     },
     {
+        "slug": "infosec-analyst.html",
+        "title": "Information Security Analyst",
+        "category": "Cybersecurity & Quality",
+        "desc": "Frontline SOC monitoring, digital forensics, threat intelligence hunting, and cyber incident containment.",
+        "icon": '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+        "color": "#991B1B"
+    },
+    {
         "slug": "qa-automation-engineer.html",
         "title": "QA Automation Engineer",
-        "category": "Cloud, DevOps & Security",
+        "category": "Cybersecurity & Quality",
         "desc": "Ensuring zero-defect releases with Playwright, Cypress, Selenium, API testing, and CI automated test suites.",
         "icon": '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
         "color": "#16A34A"
     },
 
-    # 4. Product, Design & Leadership
+    # 6. Product, Design & Agile (6 guides)
     {
         "slug": "product-manager.html",
         "title": "Product Manager",
-        "category": "Product, Design & Leadership",
+        "category": "Product, Design & Agile",
         "desc": "Driving product vision, user problem discovery, roadmap prioritization, and commercial feature delivery.",
         "icon": '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
         "color": "#DB2777"
@@ -222,7 +354,7 @@ GUIDES = [
     {
         "slug": "remote-product-manager.html",
         "title": "Remote Product Manager",
-        "category": "Product, Design & Leadership",
+        "category": "Product, Design & Agile",
         "desc": "Leading distributed product squads and async discovery across global time zones from anywhere.",
         "icon": '<path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777z"/>',
         "color": "#EC4899"
@@ -230,23 +362,23 @@ GUIDES = [
     {
         "slug": "technical-program-manager.html",
         "title": "Technical Program Manager (TPM)",
-        "category": "Product, Design & Leadership",
+        "category": "Product, Design & Agile",
         "desc": "Orchestrating multifaceted multi-team engineering programs, managing dependencies, and mitigating technical risks.",
         "icon": '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
         "color": "#B45309"
     },
     {
-        "slug": "engineering-manager.html",
-        "title": "Engineering Manager",
-        "category": "Product, Design & Leadership",
-        "desc": "Coaching high-performing engineering teams, hiring talent, driving technical strategy, and nurturing culture.",
-        "icon": '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-        "color": "#BE185D"
+        "slug": "scrum-master.html",
+        "title": "Scrum Master / Agile Coach",
+        "category": "Product, Design & Agile",
+        "desc": "Empowering engineering squads through servant leadership, impediment removal, sprint health, and delivery velocity.",
+        "icon": '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/>',
+        "color": "#7C3AED"
     },
     {
         "slug": "ui-ux-designer.html",
         "title": "UI/UX Designer",
-        "category": "Product, Design & Leadership",
+        "category": "Product, Design & Agile",
         "desc": "Crafting intuitive digital interfaces through user research, wireframing, Figma design systems, and usability testing.",
         "icon": '<circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>',
         "color": "#EA580C"
@@ -254,10 +386,44 @@ GUIDES = [
     {
         "slug": "product-designer.html",
         "title": "Product Designer",
-        "category": "Product, Design & Leadership",
+        "category": "Product, Design & Agile",
         "desc": "Owning end-to-end product design from problem validation and rapid prototyping to metric analysis and launch.",
         "icon": '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
         "color": "#DB2777"
+    },
+
+    # 7. Leadership, Strategy & Operations (4 guides)
+    {
+        "slug": "engineering-manager.html",
+        "title": "Engineering Manager",
+        "category": "Leadership, Strategy & Operations",
+        "desc": "Coaching high-performing engineering teams, hiring talent, driving technical strategy, and nurturing culture.",
+        "icon": '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        "color": "#BE185D"
+    },
+    {
+        "slug": "business-analyst.html",
+        "title": "Business Analyst",
+        "category": "Leadership, Strategy & Operations",
+        "desc": "Translating complex business problems into clear technical requirements, process flows, and value-driven features.",
+        "icon": '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+        "color": "#2563EB"
+    },
+    {
+        "slug": "growth-marketer.html",
+        "title": "Growth Marketing Specialist",
+        "category": "Leadership, Strategy & Operations",
+        "desc": "Designing full-funnel acquisition, conversion rate optimization (CRO), viral retention loops, and paid performance ads.",
+        "icon": '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+        "color": "#BE185D"
+    },
+    {
+        "slug": "technical-writer.html",
+        "title": "Technical Writer",
+        "category": "Leadership, Strategy & Operations",
+        "desc": "Authoring world-class API references, SDK documentation, and developer guides using Docs-as-Code best practices.",
+        "icon": '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+        "color": "#475569"
     }
 ]
 
@@ -292,11 +458,11 @@ search_filter_html = """
   <div style="max-width: 800px; margin: -30px auto 30px; padding: 0 20px; position: relative; z-index: 10;">
     <div style="background: #FFFFFF; border: 1px solid var(--card-bdr); border-radius: 14px; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08); padding: 10px 16px; display: flex; align-items: center; gap: 12px;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--txt-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      <input type="text" id="guideSearchInput" placeholder="Filter 30 career guides by title or domain (e.g., Full Stack, DevOps, Data, SRE)..." style="width: 100%; border: none; outline: none; font-size: 15px; color: var(--txt); background: transparent;" oninput="filterCareerGuides()" />
+      <input type="text" id="guideSearchInput" placeholder="Filter 50 career guides by title or domain (e.g., Full Stack, MLOps, Blockchain, SRE)..." style="width: 100%; border: none; outline: none; font-size: 15px; color: var(--txt); background: transparent;" oninput="filterCareerGuides()" />
       <button type="button" onclick="clearGuideSearch()" id="clearGuideBtn" style="display: none; background: none; border: none; color: var(--txt-dim); cursor: pointer; font-size: 16px;">&times;</button>
     </div>
     <div id="guideCountNotice" style="text-align: center; font-size: 13px; color: var(--txt-muted); margin-top: 10px;">
-      Showing all <strong>30</strong> specialized career blueprints
+      Showing all <strong>50</strong> specialized career blueprints
     </div>
   </div>
 """
@@ -324,7 +490,7 @@ filter_script = """
       });
       const notice = document.getElementById('guideCountNotice');
       if (notice) {
-        notice.innerHTML = `Showing <strong>${visibleCount}</strong> of 30 career guides`;
+        notice.innerHTML = `Showing <strong>${visibleCount}</strong> of 50 career guides`;
       }
     }
 
@@ -339,25 +505,36 @@ filter_script = """
   </script>
 """
 
-# Read existing articles.html
-with open(ARTICLES_HTML, "r", encoding="utf-8") as f:
-    content = f.read()
+def main():
+    print(f"Updating {ARTICLES_HTML} with all {len(GUIDES)} career guides...")
+    with open(ARTICLES_HTML, "r", encoding="utf-8") as f:
+        content = f.read()
 
-# Replace the grid in articles.html
-grid_pattern = r'<main class="results-container"[^>]*>.*?<div style="display: grid;[^>]*>.*?</div>\s*</main>'
-replacement = f"""<main class="results-container" style="max-width: 1200px; margin: 40px auto; padding: 0 20px;">
+    # Replace the grid in articles.html
+    grid_pattern = r'<main class="results-container"[^>]*>.*?<div id="guidesGrid"[^>]*>.*?</div>\s*</main>'
+    # If guidesGrid doesn't match, fallback to general grid pattern
+    if not re.search(grid_pattern, content, flags=re.DOTALL):
+        grid_pattern = r'<main class="results-container"[^>]*>.*?<div style="display: grid;[^>]*>.*?</div>\s*</main>'
+
+    replacement = f"""<main class="results-container" style="max-width: 1200px; margin: 40px auto; padding: 0 20px;">
 {search_filter_html}
     <div id="guidesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;">
 {cards_html}    </div>
   </main>"""
 
-new_content = re.sub(grid_pattern, replacement, content, flags=re.DOTALL)
+    new_content = re.sub(grid_pattern, replacement, content, flags=re.DOTALL)
 
-# Insert the filter script before </body>
-if "function filterCareerGuides" not in new_content:
-    new_content = new_content.replace("</body>", f"{filter_script}\n</body>")
+    # Insert or update the filter script before </body>
+    if "function filterCareerGuides" in new_content:
+        # replace script block
+        new_content = re.sub(r'<script>\s*function filterCareerGuides\(\).*?</script>', filter_script.strip(), new_content, flags=re.DOTALL)
+    else:
+        new_content = new_content.replace("</body>", f"{filter_script}\n</body>")
 
-with open(ARTICLES_HTML, "w", encoding="utf-8") as f:
-    f.write(new_content)
+    with open(ARTICLES_HTML, "w", encoding="utf-8") as f:
+        f.write(new_content)
 
-print(f"Successfully updated {ARTICLES_HTML} with all 30 career guides!")
+    print(f"Successfully updated {ARTICLES_HTML} with all {len(GUIDES)} career guides!")
+
+if __name__ == "__main__":
+    main()
