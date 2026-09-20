@@ -1163,11 +1163,13 @@ def search_jobs_direct_db(
                 params.extend([param, param, param])
             elif search_type == "role" and role_synonyms:
                 syns = [q] + [s.lower().strip() for s in role_synonyms if s.lower().strip() != q and len(s.strip()) > 2]
-                syns_clauses = " OR ".join(["LOWER(role_category) LIKE ? OR LOWER(title) LIKE ? OR LOWER(tags) LIKE ?" for _ in syns])
-                conditions.append(f"({syns_clauses})")
-                for s in syns:
+                top_syns = syns[:6]
+                syns_clauses = " OR ".join(["LOWER(role_category) LIKE ? OR LOWER(title) LIKE ?" for _ in top_syns])
+                conditions.append(f"({syns_clauses} OR LOWER(tags) LIKE ?)")
+                for s in top_syns:
                     p = f"%{s}%"
-                    params.extend([p, p, p])
+                    params.extend([p, p])
+                params.append(f"%{q}%")
             else:
                 param = f"%{q}%"
                 conditions.append("(LOWER(role_category) LIKE ? OR LOWER(title) LIKE ? OR LOWER(tags) LIKE ? OR LOWER(company) LIKE ?)")

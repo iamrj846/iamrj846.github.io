@@ -981,22 +981,27 @@ class SearchService:
                 for s in all_syns:
                     matching_hashes.update(get_hashes_by_tag(s))
 
-                # 2. Extract significant tokens from query
+                # 2. Extract significant tokens from query, prioritizing domain-specific tokens
                 tokens = [t for t in q_norm.split() if t not in ("jobs", "job", "careers", "career", "hiring", "openings", "positions", "in", "at", "for") and len(t) > 2]
-                for t in tokens:
+                generic_role_tokens = {"engineer", "developer", "programmer", "specialist", "analyst", "manager", "associate", "lead", "officer", "consultant"}
+                specific_tokens = [t for t in tokens if t not in generic_role_tokens]
+                tokens_to_search = specific_tokens if specific_tokens else tokens
+
+                for t in tokens_to_search:
                     matching_hashes.update(get_hashes_by_tag(t))
                     for st_syn in STEM_SYNONYMS.get(t, []):
                         matching_hashes.update(get_hashes_by_tag(st_syn))
 
-                # 3. Hash name matching with word boundary verification
-                for k in all_keys:
-                    c, r = parse_hash_name(k)
-                    combined = f"{c} {r}".lower()
-                    if role_matches(all_syns, combined) or (tokens and all(role_matches([t], combined) for t in tokens)):
-                        matching_hashes.add(k)
-                    elif HAS_RAPIDFUZZ and (fuzz.token_sort_ratio(query_lower, r.lower()) >= 65 or fuzz.token_sort_ratio(query_lower, combined) >= 85):
-                        if any(role_matches([t], combined) for t in tokens):
+                # 3. Hash name matching with word boundary verification (fast fallback only if tag index has < 10 candidates)
+                if len(matching_hashes) < 10:
+                    for k in all_keys:
+                        c, r = parse_hash_name(k)
+                        combined = f"{c} {r}".lower()
+                        if role_matches(all_syns, combined) or (tokens and all(role_matches([t], combined) for t in tokens)):
                             matching_hashes.add(k)
+                        elif HAS_RAPIDFUZZ and (fuzz.token_sort_ratio(query_lower, r.lower()) >= 65 or fuzz.token_sort_ratio(query_lower, combined) >= 85):
+                            if any(role_matches([t], combined) for t in tokens):
+                                matching_hashes.add(k)
             else:
                 matching_hashes = set(all_keys)
 
