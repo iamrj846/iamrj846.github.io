@@ -64,11 +64,13 @@ def run_reindex():
     logger.info("Generating exactly 20 ranked tags for all jobs in lightweight batches...")
     ttl_seconds = config.redis_ttl_seconds
 
-    batch_size = 150
+    batch_size = 200
     updated_count = 0
     pipe = client.pipeline(transaction=False) if client else None
     tag_accum = defaultdict(set)
     import time
+
+    update_cur = conn.cursor()
 
     # Stream rows without loading full table into RAM
     cur.execute("""
@@ -82,6 +84,7 @@ def run_reindex():
         if not rows:
             break
 
+        update_batch = []
         for row in rows:
             job_id = row["id"]
             title = (row["title"] or "Software Engineer").strip()
@@ -106,9 +109,7 @@ def run_reindex():
             )
 
             tags_json = json.dumps(tags)
-
-            # Update SQLite
-            cur.execute("UPDATE jobs SET tags = ?, role_category = ? WHERE id = ?", (tags_json, canonical_role, job_id))
+            update_batch.append((tags_json, canonical_role, job_id))
 
             # Update Redis if connected
             if client and pipe is not None:
@@ -154,7 +155,10 @@ def run_reindex():
 
             updated_count += 1
 
+        # Execute batch updates in SQLite
+        update_cur.executemany("UPDATE jobs SET tags = ?, role_category = ? WHERE id = ?", update_batch)
         conn.commit()
+
         if client and pipe is not None:
             for tag_str, hash_set in tag_accum.items():
                 pipe.sadd(f"tag_idx:{tag_str}", *hash_set)
@@ -163,7 +167,7 @@ def run_reindex():
             pipe.execute()
 
         logger.info(f"Progress: {updated_count}/{total_jobs} jobs reindexed ({updated_count/total_jobs*100:.1f}%).")
-        time.sleep(0.02)  # Cooperative yielding for system health and stability
+        time.sleep(0.01)
 
     conn.commit()
 
