@@ -128,25 +128,25 @@ def serve_html(path_obj):
     return FileResponse(str(path_obj), headers=NO_CACHE_HEADERS)
 
 # Clean Page Routes (Served from frontend/)
-@app.get("/")
-@app.get("/home")
-@app.get("/index.html")
+@app.api_route("/", methods=["GET", "HEAD"])
+@app.api_route("/home", methods=["GET", "HEAD"])
+@app.api_route("/index.html", methods=["GET", "HEAD"])
 async def serve_home():
     # Primary landing is the Job Search Portal
     return serve_html(FRONTEND_DIR / "index.html")
 
-@app.get("/favicon.ico")
+@app.api_route("/favicon.ico", methods=["GET", "HEAD"])
 async def serve_favicon():
     if (STATIC_DIR / "favicon.ico").exists():
         return FileResponse(str(STATIC_DIR / "favicon.ico"))
     return FileResponse(str(STATIC_DIR / "logo.png"))
 
-@app.get("/jobs")
-@app.get("/jobs.html")
+@app.api_route("/jobs", methods=["GET", "HEAD"])
+@app.api_route("/jobs.html", methods=["GET", "HEAD"])
 async def serve_jobs():
     return serve_html(FRONTEND_DIR / "jobs.html")
 
-@app.get("/jobs/{slug}")
+@app.api_route("/jobs/{slug}", methods=["GET", "HEAD"])
 async def serve_article(slug: str):
     path = FRONTEND_DIR / "jobs" / slug
     if path.exists() and path.is_file():
@@ -157,81 +157,81 @@ async def serve_article(slug: str):
             return serve_html(path_html)
     raise HTTPException(status_code=404, detail="Not Found")
 
-@app.get("/portfolio")
-@app.get("/portfolio.html")
+@app.api_route("/portfolio", methods=["GET", "HEAD"])
+@app.api_route("/portfolio.html", methods=["GET", "HEAD"])
 async def serve_portfolio():
     return serve_html(FRONTEND_DIR / "portfolio.html")
 
-@app.get("/articles")
-@app.get("/articles.html")
+@app.api_route("/articles", methods=["GET", "HEAD"])
+@app.api_route("/articles.html", methods=["GET", "HEAD"])
 async def serve_articles():
     return serve_html(FRONTEND_DIR / "articles.html")
 
-@app.get("/contact")
-@app.get("/contact.html")
+@app.api_route("/contact", methods=["GET", "HEAD"])
+@app.api_route("/contact.html", methods=["GET", "HEAD"])
 async def serve_contact():
     return serve_html(FRONTEND_DIR / "contact.html")
 
-@app.get("/privacy")
-@app.get("/privacy.html")
+@app.api_route("/privacy", methods=["GET", "HEAD"])
+@app.api_route("/privacy.html", methods=["GET", "HEAD"])
 async def serve_privacy():
     return serve_html(FRONTEND_DIR / "privacy.html")
 
-@app.get("/disclaimer")
-@app.get("/disclaimer.html")
+@app.api_route("/disclaimer", methods=["GET", "HEAD"])
+@app.api_route("/disclaimer.html", methods=["GET", "HEAD"])
 async def serve_disclaimer():
     return serve_html(FRONTEND_DIR / "disclaimer.html")
 
-@app.get("/admin")
-@app.get("/admin.html")
-@app.get(config.admin_dashboard_url)
+@app.api_route("/admin", methods=["GET", "HEAD"])
+@app.api_route("/admin.html", methods=["GET", "HEAD"])
+@app.api_route(config.admin_dashboard_url, methods=["GET", "HEAD"])
 async def serve_admin():
     return serve_html(FRONTEND_DIR / "admin.html")
 
 # Static & SEO files transparent root fallbacks (Served from frontend/static/)
-@app.get("/logo.png")
+@app.api_route("/logo.png", methods=["GET", "HEAD"])
 async def serve_logo():
     return FileResponse(str(STATIC_DIR / "logo.png"))
 
-@app.get("/robots.txt")
+@app.api_route("/robots.txt", methods=["GET", "HEAD"])
 async def serve_robots():
     return FileResponse(str(STATIC_DIR / "robots.txt"), media_type="text/plain; charset=utf-8")
 
-@app.get("/sitemap.xml")
+@app.api_route("/sitemap.xml", methods=["GET", "HEAD"])
 async def serve_sitemap():
     return FileResponse(str(STATIC_DIR / "sitemap.xml"), media_type="application/xml; charset=utf-8")
 
-@app.get("/manifest.json")
+@app.api_route("/manifest.json", methods=["GET", "HEAD"])
 async def serve_manifest():
     return FileResponse(str(STATIC_DIR / "manifest.json"), media_type="application/manifest+json; charset=utf-8")
 
-@app.get("/schema.json")
+@app.api_route("/schema.json", methods=["GET", "HEAD"])
 async def serve_schema():
     return FileResponse(str(STATIC_DIR / "schema.json"), media_type="application/ld+json; charset=utf-8")
 
-@app.get("/humans.txt")
+@app.api_route("/humans.txt", methods=["GET", "HEAD"])
 async def serve_humans():
     return FileResponse(str(STATIC_DIR / "humans.txt"), media_type="text/plain; charset=utf-8")
 
-@app.get("/.well-known/security.txt")
-@app.get("/security.txt")
+@app.api_route("/.well-known/security.txt", methods=["GET", "HEAD"])
+@app.api_route("/security.txt", methods=["GET", "HEAD"])
 async def serve_security():
     return FileResponse(str(STATIC_DIR / "security.txt"), media_type="text/plain; charset=utf-8")
 
-@app.get("/health")
-@app.get("/api/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 async def health_check():
     return {"status": "ok", "service": "corporateguild", "version": "1.0.0"}
 
-@app.get("/llms.txt")
+@app.api_route("/llms.txt", methods=["GET", "HEAD"])
 async def serve_llms():
     return FileResponse(str(STATIC_DIR / "llms.txt"), media_type="text/markdown; charset=utf-8")
 
-@app.get("/llms-full.txt")
+@app.api_route("/llms-full.txt", methods=["GET", "HEAD"])
 async def serve_llms_full():
     return FileResponse(str(STATIC_DIR / "llms-full.txt"), media_type="text/markdown; charset=utf-8")
 
-@app.get("/telemetry.js")
+@app.api_route("/telemetry.js", methods=["GET", "HEAD"])
 async def serve_telemetry():
     return FileResponse(str(STATIC_DIR / "telemetry.js"), media_type="application/javascript; charset=utf-8")
 
