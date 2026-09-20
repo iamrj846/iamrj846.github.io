@@ -826,6 +826,62 @@ class SearchService:
             metrics_svc.record_db_latency((time.time() - db_start) * 1000)
             return data
 
+        # Cache key for fast pagination and repeat queries
+        cache_key = (
+            search_type,
+            query_lower,
+            (custom_input or "").strip().lower(),
+            (location_filter or "").strip().lower(),
+            (role_filter or "").strip().lower(),
+            (employment_type or "").strip().lower(),
+            (workplace_type or "").strip().lower(),
+            (experience_level or "").strip().lower(),
+            active_time_filter.lower()
+        )
+
+        now_time = time.time()
+        q_cache = getattr(self, "_query_cache", None)
+        if q_cache is None:
+            self._query_cache = {}
+            q_cache = self._query_cache
+
+        cached_entry = q_cache.get(cache_key)
+        if cached_entry and (now_time - cached_entry["ts"] < 60.0):
+            cached_filtered = cached_entry["jobs"]
+            total_count = len(cached_filtered)
+            total_pages = max(1, (total_count + page_size - 1) // page_size)
+            page = max(1, min(page, total_pages))
+
+            start_idx = (page - 1) * page_size
+            end_idx = start_idx + page_size
+            paginated_results = cached_filtered[start_idx:end_idx]
+
+            clean_results = []
+            for j in paginated_results:
+                job_copy = dict(j)
+                job_copy["tags"] = []
+                clean_results.append(job_copy)
+
+            return {
+                "total_count": total_count,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": total_pages,
+                "has_next": page < total_pages,
+                "has_prev": page > 1,
+                "search_type": search_type,
+                "search_term": query_term,
+                "applied_filters": {
+                    "location": location_filter,
+                    "role": role_filter,
+                    "employment_type": employment_type,
+                    "workplace_type": workplace_type,
+                    "experience_level": experience_level,
+                    "time_filter": active_time_filter
+                },
+                "results": clean_results
+            }
+
         try:
             client = get_redis_client()
             redis_start = time.time()
@@ -835,35 +891,24 @@ class SearchService:
             except:
                 pass
 
-            now_ts = time.time()
-            cached_keys = getattr(self, "_cached_all_keys", None)
-            cached_ts = getattr(self, "_cached_keys_ts", 0)
-            if not cached_keys or (now_ts - cached_ts > 1800):
-                all_keys = [k for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-                self._cached_all_keys = all_keys
-                self._cached_keys_ts = now_ts
-            else:
-                all_keys = cached_keys
-
-            metrics_svc.record_redis_latency((time.time() - redis_start) * 1000)
-
-            if not all_keys:
-                from app.services.ingestion_service import get_ingestion_manager
-                get_ingestion_manager().seed_initial_jobs()
-                try:
-                    metrics_svc.inc_redis()
-                except:
-                    pass
-                all_keys = [k for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-                self._cached_all_keys = all_keys
-                self._cached_keys_ts = time.time()
+            def get_all_keys():
+                now_ts = time.time()
+                cached_keys = getattr(self, "_cached_all_keys", None)
+                cached_ts = getattr(self, "_cached_keys_ts", 0)
+                if not cached_keys or (now_ts - cached_ts > 1800):
+                    keys = [k for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:")]
+                    self._cached_all_keys = keys
+                    self._cached_keys_ts = now_ts
+                    return keys
+                return cached_keys
 
             if search_type == "company":
                 matching_hashes.update(get_hashes_by_tag(query_lower))
-                for k in all_keys:
-                    c, r = parse_hash_name(k)
-                    if company_matches(query_lower, c):
-                        matching_hashes.add(k)
+                if len(matching_hashes) < 5:
+                    for k in get_all_keys():
+                        c, r = parse_hash_name(k)
+                        if company_matches(query_lower, c):
+                            matching_hashes.add(k)
 
                 # If no cached jobs in Redis, check if company is in our master ATS directory and fetch live
                 if not matching_hashes:
@@ -909,7 +954,7 @@ class SearchService:
                     all_syns = list(set(synonyms + [query_lower]))
                     for s in all_syns:
                         matching_hashes.update(get_hashes_by_tag(s))
-                    for k in all_keys:
+                    for k in get_all_keys():
                         c, r = parse_hash_name(k)
                         if role_matches(all_syns, r):
                             matching_hashes.add(k)
@@ -929,7 +974,7 @@ class SearchService:
 
                 # 3. Hash name matching with word boundary verification (only if tag index has < 10 candidates)
                 if len(matching_hashes) < 10:
-                    for k in all_keys:
+                    for k in get_all_keys():
                         c, r = parse_hash_name(k)
                         combined = f"{c} {r}".lower()
                         if role_matches(all_syns, combined) or (tokens and all(role_matches([t], combined) for t in tokens)):
@@ -938,7 +983,7 @@ class SearchService:
                             if any(role_matches([t], combined) for t in tokens):
                                 matching_hashes.add(k)
             else:
-                matching_hashes = set(all_keys)
+                matching_hashes = set(get_all_keys())
 
             # Fetch all jobs from matching Redis hashes in high-speed batch pipeline
             valid_keys = [k for k in matching_hashes if not k.startswith("tag_idx:") and not k.startswith("cg:")]
@@ -1224,6 +1269,14 @@ class SearchService:
                 return rel_boost
 
         filtered_jobs.sort(key=sort_key, reverse=True)
+
+        # Store in query cache for fast pagination (< 1ms)
+        try:
+            if len(self._query_cache) > 100:
+                self._query_cache = {k: v for k, v in self._query_cache.items() if (time.time() - v["ts"]) < 60.0}
+            self._query_cache[cache_key] = {"ts": time.time(), "jobs": filtered_jobs}
+        except Exception:
+            pass
 
         # Step 5: Paginate (Page size 10)
         total_count = len(filtered_jobs)

@@ -2535,24 +2535,34 @@
 
     let hasExecutedSearch = false;
 
-    async function resilientFetch(url, options = {}, maxRetries = 3, baseDelayMs = 500) {
+    async function resilientFetch(url, options = {}, maxRetries = 4, baseDelayMs = 600) {
       if (window.fetchWithRetry) return window.fetchWithRetry(url, options, maxRetries, baseDelayMs);
       let attempt = 0;
       while (true) {
         attempt++;
+        let timeoutId = null;
         try {
-          const res = await fetch(url, options);
+          let fetchOptions = { ...options };
+          if (!fetchOptions.signal && typeof AbortController !== 'undefined') {
+            const controller = new AbortController();
+            fetchOptions.signal = controller.signal;
+            timeoutId = setTimeout(() => controller.abort(), 15000);
+          }
+          const res = await fetch(url, fetchOptions);
+          if (timeoutId) clearTimeout(timeoutId);
+
           if (!res.ok && (res.status === 500 || res.status === 502 || res.status === 503 || res.status === 504) && attempt <= maxRetries) {
-            const delay = baseDelayMs * Math.pow(1.5, attempt - 1);
-            console.warn(`[resilientFetch] HTTP ${res.status} on attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`);
+            const delay = baseDelayMs * Math.pow(1.5, attempt - 1) + Math.random() * 200;
+            console.warn(`[resilientFetch] HTTP ${res.status} on attempt ${attempt}/${maxRetries}. Retrying in ${Math.round(delay)}ms...`);
             await new Promise(r => setTimeout(r, delay));
             continue;
           }
           return res;
         } catch (err) {
+          if (timeoutId) clearTimeout(timeoutId);
           if (attempt <= maxRetries) {
-            const delay = baseDelayMs * Math.pow(1.5, attempt - 1);
-            console.warn(`[resilientFetch] Network error on attempt ${attempt}/${maxRetries}: ${err.message || err}. Retrying in ${delay}ms...`);
+            const delay = baseDelayMs * Math.pow(1.5, attempt - 1) + Math.random() * 200;
+            console.warn(`[resilientFetch] Network error on attempt ${attempt}/${maxRetries}: ${err.message || err}. Retrying in ${Math.round(delay)}ms...`);
             await new Promise(r => setTimeout(r, delay));
             continue;
           }
@@ -2883,19 +2893,34 @@
         const fetchFn = window.fetchWithRetry || resilientFetch;
         const res = await fetchFn(`/api/jobs/search?${params.toString()}`, {
           headers: { 'X-Guest-ID': getOrCreateGuestId() }
-        }, 3, 500);
-        const data = await res.json();
-        if (data.guest_id) {
-          try { localStorage.setItem('cg_guest_id', data.guest_id); } catch (e) {}
+        }, 4, 600);
+
+        let data = null;
+        if (res.ok) {
+          try {
+            data = await res.json();
+          } catch (jsonErr) {
+            console.error('Failed to parse search JSON:', jsonErr);
+          }
+        } else {
+          try {
+            data = await res.json();
+          } catch (e) {
+            data = { success: false, error: `Search service temporarily busy (HTTP ${res.status}). Please retry.` };
+          }
         }
         document.getElementById('loader').style.display = 'none';
 
-        if (!res.ok || data.success === false) {
+        if (data && data.guest_id) {
+          try { localStorage.setItem('cg_guest_id', data.guest_id); } catch (e) {}
+        }
+
+        if (!data || !res.ok || data.success === false) {
           if (data && data.requires_auth) {
             applyQuotaExhaustedUI(isUserAction);
             return;
           }
-          throw new Error((data && data.error) || 'Search request failed');
+          throw new Error((data && (data.message || data.error)) || 'Search request failed');
         }
 
         if (data.requires_auth) {
@@ -2921,7 +2946,8 @@
       } catch (err) {
         console.error('Search execution error:', err);
         document.getElementById('loader').style.display = 'none';
-        document.getElementById('jobsList').innerHTML = `<div style="text-align: center; color: #DC2626; padding: 40px; background: #FEF2F2; border-radius: 12px; margin: 20px 0;"><p style="font-weight: 700; font-size: 15px;">Search request failed. Please check network.</p><p style="font-size: 12.5px; color: #991B1B; margin-top: 6px;">Connection to search service timed out. Please verify your connection or click retry below.</p><button type="button" onclick="executeSearch(${page}, false, true)" style="margin-top: 14px; background: #4F46E5; color: white; border: none; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">🔄 Retry Search</button></div>`;
+        const errMsg = err.message || 'Connection to search service timed out. Please verify your connection or click retry below.';
+        document.getElementById('jobsList').innerHTML = `<div style="text-align: center; color: #DC2626; padding: 40px; background: #FEF2F2; border-radius: 12px; margin: 20px 0;"><p style="font-weight: 700; font-size: 15px;">Search request failed. Please check network.</p><p style="font-size: 12.5px; color: #991B1B; margin-top: 6px;">${escapeHtml(errMsg)}</p><button type="button" onclick="executeSearch(${page}, false, true)" style="margin-top: 14px; background: #4F46E5; color: white; border: none; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">🔄 Retry Search</button></div>`;
         const meta = document.getElementById('resultsMeta');
         if (meta) meta.style.display = 'none';
         const bar = document.getElementById('paginationBar');
@@ -3171,8 +3197,8 @@
         
         graph.push({
           "@type": "JobPosting",
-          "title": j.role_name,
-          "description": `Verified opportunity for ${j.role_name} at ${j.company_name} located in ${j.location}.`,
+          "title": j.title || j.role_name,
+          "description": `Verified opportunity for ${j.title || j.role_name} at ${j.company_name} located in ${j.location}.`,
           "datePosted": j.posted_timestamp_raw || new Date().toISOString(),
           "employmentType": (j.employment_type || "FULL_TIME").toUpperCase().replace(" ", "_"),
           "hiringOrganization": {
@@ -3227,7 +3253,7 @@
         <article class="job-card">
           <div class="job-header">
             <div>
-              <h2 class="job-role">${escapeHtml(j.role_name)}</h2>
+              <h2 class="job-role">${escapeHtml(j.title || j.role_name)}</h2>
               <div class="job-company">
                 <span>🏢 ${escapeHtml(j.company_name)}</span>
                 ${j.ats_platform ? `<span class="ats-badge">${escapeHtml(j.ats_platform)}</span>` : ''}
@@ -3255,7 +3281,7 @@
               target="_blank" 
               rel="noopener noreferrer" 
               class="apply-btn"
-              onclick="trackJobClick('${escapeQuotes(j.company_name)}', '${escapeQuotes(j.role_name)}', '${escapeQuotes(j.apply_link || '')}')"
+              onclick="trackJobClick('${escapeQuotes(j.company_name)}', '${escapeQuotes(j.title || j.role_name)}', '${escapeQuotes(j.apply_link || '')}')"
             >
               Direct Apply ↗
             </a>

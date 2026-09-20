@@ -73,26 +73,37 @@
 })();
 
 /**
- * Universal Resilient Fetch with Exponential Backoff Retries
- * Handles intermittent network drops and transient proxy/gateway errors (502, 503, 504)
+ * Universal Resilient Fetch with Exponential Backoff Retries & Timeout Safeguards
+ * Handles intermittent network drops, transient proxy/gateway errors (500, 502, 503, 504), and stalled connections.
  */
-window.fetchWithRetry = async function (url, options = {}, maxRetries = 3, baseDelayMs = 500) {
+window.fetchWithRetry = async function (url, options = {}, maxRetries = 4, baseDelayMs = 600) {
   let attempt = 0;
   while (true) {
     attempt++;
+    let timeoutId = null;
     try {
-      const res = await fetch(url, options);
+      let fetchOptions = { ...options };
+      if (!fetchOptions.signal && typeof AbortController !== 'undefined') {
+        const controller = new AbortController();
+        fetchOptions.signal = controller.signal;
+        timeoutId = setTimeout(() => controller.abort(), 15000);
+      }
+
+      const res = await fetch(url, fetchOptions);
+      if (timeoutId) clearTimeout(timeoutId);
+
       if (!res.ok && (res.status === 500 || res.status === 502 || res.status === 503 || res.status === 504) && attempt <= maxRetries) {
-        const delay = baseDelayMs * Math.pow(1.5, attempt - 1);
-        console.warn(`[fetchWithRetry] HTTP ${res.status} on attempt ${attempt}/${maxRetries} for ${url}. Retrying in ${delay}ms...`);
+        const delay = baseDelayMs * Math.pow(1.5, attempt - 1) + Math.random() * 200;
+        console.warn(`[fetchWithRetry] HTTP ${res.status} on attempt ${attempt}/${maxRetries} for ${url}. Retrying in ${Math.round(delay)}ms...`);
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
       return res;
     } catch (err) {
+      if (timeoutId) clearTimeout(timeoutId);
       if (attempt <= maxRetries) {
-        const delay = baseDelayMs * Math.pow(1.5, attempt - 1);
-        console.warn(`[fetchWithRetry] Network failure on attempt ${attempt}/${maxRetries} for ${url}: ${err.message || err}. Retrying in ${delay}ms...`);
+        const delay = baseDelayMs * Math.pow(1.5, attempt - 1) + Math.random() * 200;
+        console.warn(`[fetchWithRetry] Network error/timeout on attempt ${attempt}/${maxRetries} for ${url}: ${err.message || err}. Retrying in ${Math.round(delay)}ms...`);
         await new Promise(r => setTimeout(r, delay));
         continue;
       }
