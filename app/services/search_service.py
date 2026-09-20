@@ -614,29 +614,17 @@ class SearchService:
         active_companies, active_roles = self._get_active_companies_and_roles()
 
         if mode == "company":
-            all_comps = self.ats_service.get_all_companies()
-            client = get_redis_client()
-            try:
-                try:
-                    get_metrics_service().inc_redis()
-                except:
-                    pass
-                keys = [k for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-                for k in keys:
-                    k_str = k.decode("utf-8") if isinstance(k, bytes) else k
-                    c, _ = parse_hash_name(k_str)
-                    if c and c not in all_comps:
-                        all_comps.append(c)
-            except Exception:
-                pass
-
             prominent = [
                 "Stripe", "Google", "Microsoft", "Amazon", "Swiggy", "Zomato",
                 "Razorpay", "Flipkart", "Atlassian", "Uber", "Cisco", "PhonePe",
                 "CRED", "InMobi", "Meesho", "Coinbase", "Airbnb", "Snowflake",
                 "Databricks", "Oracle", "Intuit", "ServiceNow"
             ]
-            all_comps = sorted(list(set(all_comps + prominent)))
+            all_comps_set = set(self.ats_service.get_all_companies())
+            all_comps_set.update(prominent)
+            if active_companies:
+                all_comps_set.update(active_companies)
+            all_comps = sorted(list(all_comps_set))
 
             # Filter to companies that have live jobs; fall back to full list on cold start
             if active_companies:
@@ -681,16 +669,19 @@ class SearchService:
         return results
 
     def get_role_synonyms(self, role_name: str) -> List[str]:
-        target = role_name.strip().lower()
-        if not target:
+        raw_target = role_name.strip().lower()
+        if not raw_target:
             return []
+        norm_target = re.sub(r"[\s\-_]+", " ", raw_target).strip()
+        nospace_target = re.sub(r"[\s\-_]+", "", raw_target).strip()
+        targets = {raw_target, norm_target, nospace_target}
 
         # 1. Exact match with a role category or its exact synonym
         for item in FIXED_ROLES:
             r_lower = item["role"].lower()
             all_s = [r_lower] + [s.lower() for s in item["synonyms"]]
-            if target == r_lower or target in all_s:
-                return all_s
+            if any(t == r_lower or t in all_s for t in targets):
+                return list(dict.fromkeys(all_s + [raw_target, norm_target]))
 
         # 2. Phrase matching: check if any multi-word or distinct synonym appears in target
         syns_found = set()
@@ -701,13 +692,13 @@ class SearchService:
                 if len(s) < 2:
                     continue
                 pattern = rf"\b{re.escape(s)}\b"
-                if re.search(pattern, target):
+                if any(re.search(pattern, t) for t in targets):
                     syns_found.update(all_s)
                     break
 
         if syns_found:
-            return list(syns_found)
-        return [target]
+            return list(dict.fromkeys(list(syns_found) + [raw_target, norm_target]))
+        return list(dict.fromkeys([raw_target, norm_target]))
 
     def search_jobs(
         self,
@@ -781,7 +772,7 @@ class SearchService:
             now_ts = time.time()
             cached_keys = getattr(self, "_cached_all_keys", None)
             cached_ts = getattr(self, "_cached_keys_ts", 0)
-            if not cached_keys or (now_ts - cached_ts > 30):
+            if not cached_keys or (now_ts - cached_ts > 1800):
                 all_keys = [k for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:")]
                 self._cached_all_keys = all_keys
                 self._cached_keys_ts = now_ts
@@ -870,21 +861,22 @@ class SearchService:
                 for t in tokens:
                     matching_hashes.update(get_hashes_by_tag(t))
 
-                # 3. Hash name matching with word boundary verification
-                for k in all_keys:
-                    c, r = parse_hash_name(k)
-                    combined = f"{c} {r}".lower()
-                    if role_matches(all_syns, combined) or (tokens and all(role_matches([t], combined) for t in tokens)):
-                        matching_hashes.add(k)
-                    elif HAS_RAPIDFUZZ and (fuzz.token_sort_ratio(query_lower, r.lower()) >= 65 or fuzz.token_sort_ratio(query_lower, combined) >= 85):
-                        if any(role_matches([t], combined) for t in tokens):
+                # 3. Hash name matching with word boundary verification (only if tag index has < 10 candidates)
+                if len(matching_hashes) < 10:
+                    for k in all_keys:
+                        c, r = parse_hash_name(k)
+                        combined = f"{c} {r}".lower()
+                        if role_matches(all_syns, combined) or (tokens and all(role_matches([t], combined) for t in tokens)):
                             matching_hashes.add(k)
+                        elif HAS_RAPIDFUZZ and (fuzz.token_sort_ratio(query_lower, r.lower()) >= 65 or fuzz.token_sort_ratio(query_lower, combined) >= 85):
+                            if any(role_matches([t], combined) for t in tokens):
+                                matching_hashes.add(k)
             else:
                 matching_hashes = set(all_keys)
 
             # Fetch all jobs from matching Redis hashes in high-speed batch pipeline
             valid_keys = [k for k in matching_hashes if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-            if len(valid_keys) > 500:
+            if len(valid_keys) > 300:
                 # If too many matching hashes, use indexed DB search to prevent Redis pipeline stalls
                 db_start = time.time()
                 syns = self.get_role_synonyms(role_filter or query_term) if (role_filter or search_type == "role") else []
