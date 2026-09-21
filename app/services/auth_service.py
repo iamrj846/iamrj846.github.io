@@ -202,7 +202,7 @@ class AuthService:
 
         if not pw_ok:
             # Fallback for plain admin password in config
-            if (email.startswith(self.config.admin_username) or email in ("jainraunak846@gmail.com", f"{self.config.admin_username}@corporateguild.com")) and password == self.config.admin_password_fallback:
+            if (email.startswith(self.config.admin_username) or email in ("jainraunak846@gmail.com", "support@corporateguild.com", f"{self.config.admin_username}@corporateguild.com")) and password == self.config.admin_password_fallback:
                 pw_ok = True
 
         if not pw_ok:

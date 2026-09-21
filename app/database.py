@@ -199,7 +199,7 @@ def init_db():
     """)
     conn.commit()
 
-    # Seed admin user if not exists (with both jainraunak846@gmail.com and iamrj846)
+    # Seed admin user if not exists (primary: support@corporateguild.com, legacy: jainraunak846@gmail.com)
     config = get_config()
     # Admin sessions table for cross-process multi-worker session validity
     cur.execute("""
@@ -240,8 +240,8 @@ def init_db():
     # Admin Account Seeding
     admin_user = config.admin_username
     admin_pass = config.admin_password_fallback
-    admin_email = "jainraunak846@gmail.com"
-    cur.execute("SELECT id FROM users WHERE LOWER(email) IN (?, ?) OR name = ?", (admin_email, f"{admin_user}@corporateguild.com", admin_user))
+    admin_email = "support@corporateguild.com"
+    cur.execute("SELECT id FROM users WHERE LOWER(email) IN (?, ?, ?) OR name = ?", (admin_email, "jainraunak846@gmail.com", f"{admin_user}@corporateguild.com", admin_user))
     row = cur.fetchone()
     now_str = get_ist_now_str()
     if not row:
@@ -253,7 +253,7 @@ def init_db():
         conn.commit()
         logger.info(f"Initialized admin user: {admin_user} ({admin_email})")
     else:
-        # Ensure email is updated to jainraunak846@gmail.com
+        # Ensure email is updated to support@corporateguild.com
         cur.execute("UPDATE users SET email = ?, is_admin = 1, is_blocked = 0 WHERE id = ?", (admin_email, row["id"]))
         conn.commit()
 

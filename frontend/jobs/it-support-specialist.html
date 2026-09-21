@@ -40,7 +40,7 @@
         "contactPoint": {
           "@type": "ContactPoint",
           "contactType": "Customer Support & Partnerships",
-          "email": "contact@corporateguild.com",
+          "email": "support@corporateguild.com",
           "url": "https://corporateguild.com/contact.html"
         }
       },
@@ -2436,7 +2436,11 @@ Brush up on IP configuration commands (`ipconfig`/`ifconfig`, `traceroute`, `nsl
 
         // Update quotas
         if (data.remaining_searches !== undefined) {
-          updateQuotaDisplay(data.remaining_searches, data.is_authenticated);
+          try {
+            updateQuotaDisplay(data.remaining_searches, data.is_authenticated);
+          } catch (qErr) {
+            console.warn('Could not update quota display:', qErr);
+          }
           if (data.remaining_searches === 0 && !data.is_authenticated) {
             isQuotaExhausted = true;
           }
@@ -2924,11 +2928,16 @@ Brush up on IP configuration commands (`ipconfig`/`ifconfig`, `traceroute`, `nsl
 
     function updateQuotaDisplay(remaining, isAuthed) {
       remainingSearches = remaining;
-      const countEl = document.getElementById('remainingSearches');
       const textEl = document.getElementById('quotaText');
-      if (isAuthed) {
-        textEl.innerHTML = `Unlimited Search Access (Member)`;
-      } else {
+      if (textEl) {
+        if (isAuthed) {
+          textEl.innerHTML = `Unlimited Search Access (Member)`;
+        } else {
+          textEl.innerHTML = `Remaining free searches: <strong class="quota-counter" id="remainingSearches" style="${remaining <= 1 ? 'color: #f87171;' : ''}">${remaining}</strong>`;
+        }
+      }
+      const countEl = document.getElementById('remainingSearches');
+      if (countEl && !isAuthed) {
         countEl.textContent = remaining;
         if (remaining <= 1) {
           countEl.style.color = '#f87171';

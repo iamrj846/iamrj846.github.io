@@ -144,26 +144,26 @@ class Config:
 
     @property
     def smtp_host(self) -> str:
-        val = os.getenv("SMTP_HOST", self.smtp.get("host", "smtp.gmail.com"))
-        return str(val).strip() if val and str(val).strip() else "smtp.gmail.com"
+        val = os.getenv("SMTP_HOST", self.smtp.get("host", "smtp.zoho.in"))
+        return str(val).strip() if val and str(val).strip() else "smtp.zoho.in"
 
     @property
     def smtp_port(self) -> int:
-        val = os.getenv("SMTP_PORT", self.smtp.get("port", 587))
+        val = os.getenv("SMTP_PORT", self.smtp.get("port", 465))
         try:
             return int(val)
         except (ValueError, TypeError):
-            return 587
+            return 465
 
     @property
     def smtp_user(self) -> str:
         val = os.getenv("SMTP_USER", os.getenv("SMTP_USERNAME", self.smtp.get("user", "")))
-        return str(val).strip() if val and str(val).strip() else "jainraunak846@gmail.com"
+        return str(val).strip() if val and str(val).strip() else "support@corporateguild.com"
 
     @property
     def smtp_password(self) -> str:
         val = os.getenv("SMTP_PASSWORD", os.getenv("SMTP_PASS", self.smtp.get("password", "")))
-        return str(val).strip() if val and str(val).strip() else "tseh nxws lxzh gtgj"
+        return str(val).strip() if val and str(val).strip() else "ndRhkw3xFc5F"
 
     @property
     def smtp_from_email(self) -> str:

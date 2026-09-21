@@ -40,7 +40,7 @@
         "contactPoint": {
           "@type": "ContactPoint",
           "contactType": "Customer Support & Partnerships",
-          "email": "contact@corporateguild.com",
+          "email": "support@corporateguild.com",
           "url": "https://corporateguild.com/contact.html"
         }
       },
@@ -2689,8 +2689,9 @@
       const input = document.getElementById('searchInput');
       const isAll = !val || /^(all\s*(roles?|companies|jobs?|positions?)?|any)$/i.test(String(val).trim());
       if (isAll) {
-        input.value = '';
-        selectedTerm = '';
+        const displayVal = val && val.trim() ? val.trim() : (searchMode === 'company' ? 'All Companies' : 'All Roles');
+        if (input) input.value = displayVal;
+        selectedTerm = displayVal;
         hideDropdown();
         appliedFilters.role = 'all';
         const roleSel = document.getElementById('filterRole');
@@ -2701,7 +2702,7 @@
         executeSearch(1, false, true);
         return;
       }
-      input.value = val;
+      if (input) input.value = val;
       selectedTerm = val;
       hideDropdown();
       if (searchMode === 'role') {
@@ -2842,7 +2843,7 @@
       const inputVal = inputEl ? (inputEl.value || '').trim() : '';
       const isAll = !inputVal || /^(all\s*(roles?|companies|jobs?|positions?)?|any)$/i.test(inputVal);
       const query = isAll ? '' : inputVal;
-      selectedTerm = isAll ? '' : inputVal;
+      selectedTerm = inputVal;
 
       if (isAll) {
         appliedFilters.role = 'all';
@@ -2932,7 +2933,11 @@
 
         // Update quotas
         if (data.remaining_searches !== undefined) {
-          updateQuotaDisplay(data.remaining_searches, data.is_authenticated);
+          try {
+            updateQuotaDisplay(data.remaining_searches, data.is_authenticated);
+          } catch (qErr) {
+            console.warn('Could not update quota display:', qErr);
+          }
           if (data.remaining_searches === 0 && !data.is_authenticated) {
             isQuotaExhausted = true;
           }
@@ -2946,8 +2951,7 @@
       } catch (err) {
         console.error('Search execution error:', err);
         document.getElementById('loader').style.display = 'none';
-        const errMsg = err.message || 'Connection to search service timed out. Please verify your connection or click retry below.';
-        document.getElementById('jobsList').innerHTML = `<div style="text-align: center; color: #DC2626; padding: 40px; background: #FEF2F2; border-radius: 12px; margin: 20px 0;"><p style="font-weight: 700; font-size: 15px;">Search request failed. Please check network.</p><p style="font-size: 12.5px; color: #991B1B; margin-top: 6px;">${escapeHtml(errMsg)}</p><button type="button" onclick="executeSearch(${page}, false, true)" style="margin-top: 14px; background: #4F46E5; color: white; border: none; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">🔄 Retry Search</button></div>`;
+        document.getElementById('jobsList').innerHTML = `<div style="text-align: center; color: #DC2626; padding: 40px; background: #FEF2F2; border-radius: 12px; margin: 20px 0;"><p style="font-weight: 700; font-size: 15px;">Search request failed. Please check network.</p><p style="font-size: 12.5px; color: #991B1B; margin-top: 6px;">Something went wrong while fetching jobs. Please check your connection and try again.</p><button type="button" onclick="executeSearch(${page}, false, true)" style="margin-top: 14px; background: #4F46E5; color: white; border: none; padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer;">Retry Search</button></div>`;
         const meta = document.getElementById('resultsMeta');
         if (meta) meta.style.display = 'none';
         const bar = document.getElementById('paginationBar');
@@ -3459,11 +3463,16 @@
 
     function updateQuotaDisplay(remaining, isAuthed) {
       remainingSearches = remaining;
-      const countEl = document.getElementById('remainingSearches');
       const textEl = document.getElementById('quotaText');
-      if (isAuthed) {
-        textEl.innerHTML = `Unlimited Search Access (Member)`;
-      } else {
+      if (textEl) {
+        if (isAuthed) {
+          textEl.innerHTML = `Unlimited Search Access (Member)`;
+        } else {
+          textEl.innerHTML = `Remaining free searches: <strong class="quota-counter" id="remainingSearches" style="${remaining <= 1 ? 'color: #f87171;' : ''}">${remaining}</strong>`;
+        }
+      }
+      const countEl = document.getElementById('remainingSearches');
+      if (countEl && !isAuthed) {
         countEl.textContent = remaining;
         if (remaining <= 1) {
           countEl.style.color = '#f87171';
@@ -3773,8 +3782,8 @@
 
     function quickSearch(roleName) {
       const input = document.getElementById('searchInput');
-      if (input) input.value = (roleName === 'All Roles' ? '' : roleName);
-      selectedTerm = (roleName === 'All Roles' ? '' : roleName);
+      if (input) input.value = roleName;
+      selectedTerm = roleName;
       setSearchMode('role', false);
       if (roleName !== 'All Roles') {
         const roleSel = document.getElementById('filterRole');

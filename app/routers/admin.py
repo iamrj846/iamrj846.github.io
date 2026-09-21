@@ -91,7 +91,7 @@ def verify_admin_session(request: Request) -> Dict[str, Any]:
             user = get_user_by_session(token)
             if user and user.get("is_admin", 0):
                 return user
-            return {"name": config.admin_username, "email": "jainraunak846@gmail.com", "is_admin": True}
+            return {"name": config.admin_username, "email": "support@corporateguild.com", "is_admin": True}
 
         user = get_user_by_session(token)
         if user and user.get("is_admin", 0):
@@ -109,6 +109,7 @@ async def admin_login(payload: AdminLoginRequest, request: Request, response: Re
     ident = (payload.email or payload.username or "").strip().lower()
     valid_idents = [
         "jainraunak846@gmail.com",
+        "support@corporateguild.com",
         config.admin_username.lower(),
         f"{config.admin_username.lower()}@corporateguild.com"
     ]
