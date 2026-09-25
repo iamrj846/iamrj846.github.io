@@ -550,7 +550,8 @@ def is_incompatible_role_match(query: str, title: str, role_cat: str = "") -> bo
             "process engineer", "control panel", "eica", "commissioning", "metallurg", "welding",
             "subsurface", "electrical design", "electrical drafter", "network engineer",
             "support engineer", "technical support", "technical assistant", "manufacturing",
-            "field engineer", "sales engineer", "hardware engineer"
+            "field engineer", "field service", "service engineer", "maintenance engineer", 
+            "plant engineer", "facilities engineer", "sales engineer", "hardware engineer"
         ]
         has_non_sw = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in non_sw_terms)
         has_sw_override = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in ["software engineer", "software development", "software developer", "sde", "swe", "programmer"])
