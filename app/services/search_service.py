@@ -930,6 +930,8 @@ class SearchService:
                 if len(matching_hashes) < 5:
                     for k in get_all_keys():
                         c, r = parse_hash_name(k)
+                        if query_lower not in c.lower():
+                            continue
                         if company_matches(query_lower, c):
                             matching_hashes.add(k)
 
@@ -1000,6 +1002,8 @@ class SearchService:
                     for k in get_all_keys():
                         c, r = parse_hash_name(k)
                         combined = f"{c} {r}".lower()
+                        if not any(t in combined for t in tokens) and not any(s in combined for s in all_syns):
+                            continue
                         if role_matches(all_syns, combined) or (tokens and all(role_matches([t], combined) for t in tokens)):
                             matching_hashes.add(k)
                         elif HAS_RAPIDFUZZ and (fuzz.token_sort_ratio(query_lower, r.lower()) >= 65 or fuzz.token_sort_ratio(query_lower, combined) >= 85):
