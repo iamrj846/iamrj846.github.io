@@ -540,7 +540,7 @@ def is_incompatible_role_match(query: str, title: str, role_cat: str = "") -> bo
         if has_pure_frontend and not has_backend:
             return True
 
-    # 4. Software Engineer / SDE queries - strictly disqualify non-software / industrial engineering
+    # 4. Software Engineer / SDE queries - strictly disqualify non-software / industrial engineering / networking / support
     if any(k in q_norm for k in ["software engineer", "sde", "swe", "software developer", "programmer", "software development engineer"]):
         non_sw_terms = [
             "chemical", "materials engineer", "material engineering", "civil engineer",
@@ -548,13 +548,15 @@ def is_incompatible_role_match(query: str, title: str, role_cat: str = "") -> bo
             "structural engineer", "petroleum", "mining engineer", "mining", "piping",
             "hvac", "instrumentation engineer", "environmental engineer", "safety engineer",
             "process engineer", "control panel", "eica", "commissioning", "metallurg", "welding",
-            "subsurface", "electrical design", "electrical drafter"
+            "subsurface", "electrical design", "electrical drafter", "network engineer",
+            "support engineer", "technical support", "technical assistant", "manufacturing",
+            "field engineer", "sales engineer", "hardware engineer"
         ]
         has_non_sw = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in non_sw_terms)
-        has_sw_override = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in ["software", "developer", "sde", "swe", "firmware", "embedded", "full stack", "frontend", "backend"])
+        has_sw_override = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in ["software engineer", "software development", "software developer", "sde", "swe", "programmer"])
         if has_non_sw and not has_sw_override:
             return True
-        if role_cat == "Traditional / Core Engineering" and not has_sw_override:
+        if role_cat in ("Traditional / Core Engineering", "Technical Support / IT", "Network Engineer", "Hardware Engineer", "Hardware / Embedded Engineer") and not has_sw_override:
             return True
 
     return False
@@ -994,8 +996,9 @@ class SearchService:
 
                 # 2. Extract significant tokens from query
                 tokens = [t for t in query_lower.split() if t not in ("jobs", "job", "careers", "career", "hiring", "openings", "positions", "in", "at", "for") and len(t) > 2]
-                for t in tokens:
-                    matching_hashes.update(get_hashes_by_tag(t))
+                if len(matching_hashes) < 10:
+                    for t in tokens:
+                        matching_hashes.update(get_hashes_by_tag(t))
 
                 # 3. Hash name matching with word boundary verification (only if tag index has < 10 candidates)
                 if len(matching_hashes) < 10:

@@ -1203,15 +1203,14 @@ def search_jobs_direct_db(
                 syns = [q] + [s.lower().strip() for s in role_synonyms if s.lower().strip() != q and len(s.strip()) > 2]
                 top_syns = syns[:8]
                 syns_clauses = " OR ".join(["LOWER(role_category) LIKE ? OR LOWER(title) LIKE ?" for _ in top_syns])
-                conditions.append(f"({syns_clauses} OR LOWER(tags) LIKE ?)")
+                conditions.append(f"({syns_clauses})")
                 for s in top_syns:
                     p = f"%{s}%"
                     params.extend([p, p])
-                params.append(f"%{q}%")
             else:
                 param = f"%{q}%"
-                conditions.append("(LOWER(role_category) LIKE ? OR LOWER(title) LIKE ? OR LOWER(tags) LIKE ? OR LOWER(company) LIKE ?)")
-                params.extend([param, param, param, param])
+                conditions.append("(LOWER(role_category) LIKE ? OR LOWER(title) LIKE ? OR LOWER(company) LIKE ?)")
+                params.extend([param, param, param])
 
         rf = (role_filter or "").strip().lower()
         if rf and rf not in ("all", "all roles", "all role", "all categories", "all category", ""):
@@ -1232,7 +1231,7 @@ def search_jobs_direct_db(
         if "intern" in target_check or ("intern" in emp_check):
             conditions.append("LOWER(title) NOT LIKE '%internal%' AND LOWER(title) NOT LIKE '%internet%' AND LOWER(title) NOT LIKE '%international%'")
         if any(k in target_check for k in ["software engineer", "software development engineer", "sde", "swe", "software developer", "programmer"]):
-            conditions.append("(LOWER(title) NOT LIKE '%chemical%' AND LOWER(title) NOT LIKE '%materials engineer%' AND LOWER(title) NOT LIKE '%materials engineering%' AND LOWER(title) NOT LIKE '%civil engineer%' AND LOWER(title) NOT LIKE '%mechanical%' AND LOWER(title) NOT LIKE '%project engineer%' AND LOWER(title) NOT LIKE '%structural engineer%' AND LOWER(title) NOT LIKE '%petroleum%' AND LOWER(title) NOT LIKE '%mining%' AND LOWER(title) NOT LIKE '%piping%' AND LOWER(title) NOT LIKE '%hvac%' AND LOWER(title) NOT LIKE '%instrumentation%' AND LOWER(title) NOT LIKE '%environmental engineer%' AND LOWER(title) NOT LIKE '%process engineer%' AND LOWER(title) NOT LIKE '%commissioning%' AND LOWER(title) NOT LIKE '%metallurg%' AND LOWER(title) NOT LIKE '%control panel%')")
+            conditions.append("(LOWER(title) NOT LIKE '%chemical%' AND LOWER(title) NOT LIKE '%materials engineer%' AND LOWER(title) NOT LIKE '%materials engineering%' AND LOWER(title) NOT LIKE '%civil engineer%' AND LOWER(title) NOT LIKE '%mechanical%' AND LOWER(title) NOT LIKE '%project engineer%' AND LOWER(title) NOT LIKE '%structural engineer%' AND LOWER(title) NOT LIKE '%petroleum%' AND LOWER(title) NOT LIKE '%mining%' AND LOWER(title) NOT LIKE '%piping%' AND LOWER(title) NOT LIKE '%hvac%' AND LOWER(title) NOT LIKE '%instrumentation%' AND LOWER(title) NOT LIKE '%environmental engineer%' AND LOWER(title) NOT LIKE '%process engineer%' AND LOWER(title) NOT LIKE '%commissioning%' AND LOWER(title) NOT LIKE '%metallurg%' AND LOWER(title) NOT LIKE '%control panel%' AND LOWER(title) NOT LIKE '%network engineer%' AND LOWER(title) NOT LIKE '%support engineer%' AND LOWER(title) NOT LIKE '%technical support%' AND LOWER(title) NOT LIKE '%technical assistant%' AND LOWER(title) NOT LIKE '%manufacturing%' AND LOWER(title) NOT LIKE '%hardware engineer%' AND LOWER(title) NOT LIKE '%sales engineer%' AND LOWER(title) NOT LIKE '%field engineer%')")
 
         lf = (location_filter or "").strip().lower()
         if lf and lf not in ("all", "all locations", "all location", "india", "pan india", "anywhere in india", ""):

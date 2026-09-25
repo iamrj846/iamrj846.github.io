@@ -426,8 +426,160 @@ ROLE_TAXONOMY_MAP = {
         "skills": ["Corporate Law", "Regulatory Compliance", "Contract Negotiation", "Legal Drafting", "Risk Assessment", "Intellectual Property", "Policy Development", "Corporate Governance", "Statutory Compliance", "Legal Advisory"]
     },
     "Technical Support / IT": {
-        "synonyms": ["IT Support Engineer", "Technical Support Specialist", "Desktop Support", "System Administrator", "IT Helpdesk"],
+        "synonyms": [
+            "IT Support Engineer", "Technical Support Specialist", "Technical Support Engineer", "Technical Support", 
+            "Support Engineer", "Customer Support Engineer", "Application Support Engineer", "Desktop Support", 
+            "System Administrator", "IT Helpdesk", "IT Administrator", "Service Desk Analyst", "Help Desk Technician"
+        ],
         "skills": ["Technical Support", "IT Infrastructure", "Troubleshooting", "Hardware Diagnostics", "Network Configuration", "Operating Systems", "User Provisioning", "Helpdesk Support", "IT Service Management", "Remote Assistance"]
+    },
+    "Network Engineer": {
+        "synonyms": [
+            "Network Engineer", "Network Administrator", "CCNA", "CCNP", "Cisco Network Engineer", 
+            "Network Security Engineer", "Telecom Engineer", "Infrastructure Network", "Network Specialist", 
+            "Cloud Network Engineer", "NOC Engineer"
+        ],
+        "skills": ["Network Engineering", "Cisco Routing & Switching", "BGP", "OSPF", "TCP/IP", "Firewalls", "VPN Configuration", "Network Security", "Subnetting", "Network Monitoring", "Wireshark"]
+    },
+    "Hardware / Embedded Engineer": {
+        "synonyms": [
+            "Hardware Engineer", "Embedded Systems Engineer", "Firmware Engineer", "IoT Engineer", 
+            "Electronics Engineer", "Embedded Engineer"
+        ],
+        "skills": ["Embedded Systems", "Firmware Development", "C / C++", "Microcontrollers", "PCB Design", "Hardware Testing", "IoT Protocols", "Device Drivers", "Circuit Design", "Signal Processing"]
+    },
+    "Embedded Software Engineer": {
+        "synonyms": [
+            "Embedded Software Engineer", "Embedded Software", "Embedded Systems Developer", 
+            "Embedded C++", "Embedded C", "IoT Software Engineer", "Embedded Linux Engineer"
+        ],
+        "skills": ["Embedded C", "Embedded C++", "RTOS", "Device Drivers", "Microcontrollers", "Embedded Linux", "Communication Protocols", "UART", "SPI", "I2C", "Debugging Tools"]
+    },
+    "Firmware Engineer": {
+        "synonyms": [
+            "Firmware Engineer", "Firmware Developer", "Microcontroller Developer", 
+            "BSP Engineer", "Board Support Package", "RTOS Engineer", "Device Driver Developer"
+        ],
+        "skills": ["Firmware Development", "C / C++", "Microcontrollers", "ARM Cortex", "Board Support Packages", "RTOS", "Hardware Debugging", "JTAG", "Oscilloscopes", "Low-Level Programming"]
+    },
+    "Hardware Engineer": {
+        "synonyms": [
+            "Hardware Engineer", "Hardware Design Engineer", "Electronics Engineer", 
+            "PCB Design Engineer", "FPGA Engineer", "VLSI Design Engineer", "ASIC Engineer"
+        ],
+        "skills": ["Hardware Design", "PCB Design", "Schematic Capture", "Altium", "FPGA", "Verilog / VHDL", "VLSI", "Circuit Analysis", "Signal Integrity", "Hardware Verification"]
+    },
+    "Database Administrator (DBA)": {
+        "synonyms": [
+            "Database Administrator", "DBA", "SQL DBA", "Oracle DBA", "Postgres DBA", 
+            "MongoDB DBA", "Database Engineer", "Data Architect DBA", "DB Admin"
+        ],
+        "skills": ["Database Administration", "PostgreSQL", "MySQL", "Oracle Database", "Performance Tuning", "Query Optimization", "Database Replication", "Backup & Recovery", "High Availability", "Database Security"]
+    },
+    "MLOps Engineer": {
+        "synonyms": [
+            "MLOps Engineer", "Machine Learning Operations", "ML Platform Engineer", 
+            "AI Platform Engineer", "Model Deployment Engineer", "ML Infrastructure Engineer"
+        ],
+        "skills": ["MLOps", "Model Deployment", "MLflow", "Kubeflow", "Docker", "Kubernetes", "CI/CD for ML", "Feature Stores", "Model Monitoring", "Cloud AI", "Python", "Data Versioning"]
+    },
+    "NLP / LLM Engineer": {
+        "synonyms": [
+            "NLP Engineer", "LLM Engineer", "Natural Language Processing", "Prompt Engineer", 
+            "AI Prompt Engineer", "Large Language Model", "LLM Developer", "NLP Scientist", "GenAI Engineer"
+        ],
+        "skills": ["Natural Language Processing", "Large Language Models", "Transformers", "LangChain", "LlamaIndex", "Hugging Face", "Fine-Tuning", "Vector Databases", "Prompt Engineering", "Python", "PyTorch"]
+    },
+    "Computer Vision Engineer": {
+        "synonyms": [
+            "Computer Vision Engineer", "Computer Vision", "CV Engineer", "Image Processing Engineer", 
+            "Perception Engineer", "Deep Learning Vision", "Vision AI Engineer"
+        ],
+        "skills": ["Computer Vision", "OpenCV", "Image Processing", "Object Detection", "Image Segmentation", "Deep Learning", "Convolutional Neural Networks", "PyTorch", "TensorFlow", "Video Analysis"]
+    },
+    "Platform / Infrastructure Engineer": {
+        "synonyms": [
+            "Platform Engineer", "Infrastructure Engineer", "Cloud Platform Engineer", 
+            "Core Platform Developer", "Systems Infrastructure", "Developer Platform", "Developer Tooling"
+        ],
+        "skills": ["Platform Engineering", "Infrastructure as Code", "Terraform", "Kubernetes", "Developer Experience", "CI/CD", "Internal Developer Platforms", "Cloud Architecture", "Observability", "Linux"]
+    },
+    "Blockchain / Web3 Engineer": {
+        "synonyms": [
+            "Blockchain Engineer", "Web3 Engineer", "Smart Contract Developer", "Solidity Developer", 
+            "Ethereum Developer", "Web3 Developer", "Blockchain Developer", "Crypto Engineer", "DeFi Engineer"
+        ],
+        "skills": ["Blockchain", "Smart Contracts", "Solidity", "Ethereum", "Web3.js", "Ethers.js", "Rust", "Cryptography", "DeFi", "Consensus Algorithms", "Hardhat", "Truffle"]
+    },
+    "Release / Build Engineer": {
+        "synonyms": [
+            "Release Engineer", "Build Engineer", "Release Manager", "CI CD Engineer", 
+            "DevOps Release", "Deployment Engineer", "Configuration Manager", "Build and Release"
+        ],
+        "skills": ["Build Automation", "Release Management", "CI/CD Pipelines", "Jenkins", "GitHub Actions", "Artifact Management", "Deployment Automation", "Version Tagging", "Environment Management"]
+    },
+    "Information Security Analyst": {
+        "synonyms": [
+            "Information Security Analyst", "InfoSec Analyst", "Security Analyst", "SOC Analyst", 
+            "Cyber Defense Analyst", "Threat Intelligence Analyst", "Incident Response Analyst", "SecOps Analyst"
+        ],
+        "skills": ["Information Security", "SIEM Tools", "Log Analysis", "Incident Response", "Vulnerability Scanning", "Threat Hunting", "Security Operations", "Security Frameworks (NIST/ISO)", "Forensics"]
+    },
+    "Salesforce Developer": {
+        "synonyms": [
+            "Salesforce Developer", "Salesforce", "Salesforce Administrator", "Salesforce Engineer", 
+            "Apex Developer", "Salesforce Architect", "Lightning Developer", "SFDC Developer"
+        ],
+        "skills": ["Salesforce CRM", "Apex", "Lightning Web Components", "Visualforce", "SOQL / SOSL", "Salesforce Integration", "Workflow Automation", "Process Builder", "Platform Events"]
+    },
+    "Game Developer": {
+        "synonyms": [
+            "Game Developer", "Unity Developer", "Unreal Engine Developer", "Game Programmer", 
+            "Game Designer", "Gameplay Engineer", "3D Game Developer", "Unreal Developer", "Unity 3D"
+        ],
+        "skills": ["Game Development", "Unity 3D", "Unreal Engine", "C#", "C++", "3D Math & Physics", "Game Mechanics", "Shader Programming", "Animation Systems", "Game Optimization"]
+    },
+    "Fintech / Algorithmic Trading Engineer": {
+        "synonyms": [
+            "Fintech Engineer", "Algorithmic Trading Engineer", "Quant Developer", "Quantitative Developer", 
+            "Trading Systems Engineer", "Low Latency Engineer", "HFT Developer", "Financial Software Engineer"
+        ],
+        "skills": ["Low Latency Systems", "High Frequency Trading", "C++", "Order Execution Systems", "Financial Markets", "FIX Protocol", "Algorithms", "Market Data Feeds", "Performance Profiling"]
+    },
+    "Business Analyst": {
+        "synonyms": [
+            "Business Analyst", "Technical Business Analyst", "Functional Analyst", 
+            "IT Business Analyst", "Senior Business Analyst", "Lead Business Analyst", "Business Analysis"
+        ],
+        "skills": ["Business Analysis", "Requirements Elicitation", "Use Case Modeling", "BRD / FRD Creation", "Stakeholder Management", "User Stories", "Agile / Scrum", "Process Mapping", "SQL Basics", "Data Analysis"]
+    },
+    "Scrum Master / Agile Coach": {
+        "synonyms": [
+            "Scrum Master", "Agile Coach", "Certified Scrum Master", "CSM", 
+            "Agile Project Manager", "Kanban Coach", "Agile Facilitator", "Scrum Lead"
+        ],
+        "skills": ["Agile Frameworks", "Scrum Ceremonies", "Sprint Retrospectives", "Backlog Refinement", "Kanban", "Agile Coaching", "Continuous Improvement", "Team Facilitation", "Jira", "Velocity Tracking"]
+    },
+    "Growth Marketing Specialist": {
+        "synonyms": [
+            "Growth Marketing Specialist", "Growth Marketer", "Growth Hacker", "Acquisition Marketer", 
+            "Lifecycle Marketer", "Growth Marketing Manager", "Demand Generation", "Growth Lead Marketing"
+        ],
+        "skills": ["Growth Marketing", "A/B Testing", "Funnel Optimization", "Customer Acquisition", "CAC / LTV Optimization", "Retention Strategies", "Marketing Automation", "Performance Analytics", "Attribution Modeling"]
+    },
+    "Technical Writer": {
+        "synonyms": [
+            "Technical Writer", "Tech Writer", "API Documenter", "Documentation Engineer", 
+            "Technical Documentation", "Content Developer Tech", "SDK Documenter"
+        ],
+        "skills": ["Technical Writing", "API Documentation", "Markdown", "Developer Portals", "SDK Guides", "Release Notes", "Information Architecture", "Content Management", "Technical Editing"]
+    },
+    "IT Support Specialist": {
+        "synonyms": [
+            "IT Support Specialist", "IT Support Engineer", "IT Technician", "Desktop Support Engineer", 
+            "Help Desk Technician", "Service Desk Analyst", "Workstation Support", "IT Desk Engineer"
+        ],
+        "skills": ["IT Support", "Desktop Support", "Troubleshooting", "Windows / macOS Administration", "Active Directory", "Hardware Maintenance", "Ticketing Systems", "Customer Service", "Remote Support"]
     },
     "Intern / Trainee": {
         "synonyms": ["Software Intern", "Engineering Intern", "Graduate Trainee", "Summer Intern", "College Intern", "Apprentice"],
@@ -446,7 +598,12 @@ ROLE_TAXONOMY_MAP = {
         "skills": ["Data Structures", "Algorithms", "System Design", "Object Oriented Programming", "REST APIs", "Git", "Code Review", "Unit Testing", "Debugging", "Clean Code", "Design Patterns", "Problem Solving", "Scalability", "High Availability"]
     },
     "Traditional / Core Engineering": {
-        "synonyms": ["Mechanical Engineer", "Civil Engineer", "Chemical Engineer", "Materials Engineer", "Project Engineer", "Structural Engineer", "Electrical Design Engineer", "Industrial Engineer", "Core Engineering", "Process Engineer", "Manufacturing Engineer"],
+        "synonyms": [
+            "Mechanical Engineer", "Civil Engineer", "Chemical Engineer", "Materials Engineer", "Project Engineer", 
+            "Structural Engineer", "Electrical Design Engineer", "Industrial Engineer", "Core Engineering", 
+            "Process Engineer", "Manufacturing Engineer", "Technical Assistant", "Manufacturing", "Shop Floor", 
+            "Technician", "Machinist", "Operator"
+        ],
         "skills": ["Mechanical Engineering", "Civil Engineering", "Chemical Engineering", "AutoCAD", "Thermodynamics", "Materials Science", "Project Management", "Site Engineering", "Structural Analysis", "Process Engineering", "Manufacturing Operations", "Quality Standards"]
     }
 }
@@ -504,6 +661,30 @@ def classify_job_canonical_role(title: str, role_cat: str = "") -> str:
     if any(re.search(p, title_lower) for p in [r"\bsdet\b", r"\bqa\b", r"\bquality\s+assurance\b", r"\btest\s+automation\b", r"\bsoftware\s+tester\b", r"\btest\s+engineer\b", r"\bquality\s+engineer\b"]):
         return "QA / SDET"
 
+    # Network Engineer overrides
+    if any(re.search(p, title_lower) for p in [r"\bnetwork\s+engineer\b", r"\bnetwork\s+administrator\b", r"\bccna\b", r"\bccnp\b", r"\bcisco\b", r"\bcloud\s+network\b", r"\bnoc\s+engineer\b"]):
+        return "Network Engineer"
+
+    # Technical Support / IT overrides
+    if any(re.search(p, title_lower) for p in [r"\btechnical\s+support\b", r"\bsupport\s+engineer\b", r"\bapplication\s+support\b", r"\bdesktop\s+support\b", r"\bit\s+support\b", r"\bhelpdesk\b", r"\bservice\s+desk\b"]):
+        return "Technical Support / IT"
+
+    # Hardware / Embedded / Firmware overrides
+    if any(re.search(p, title_lower) for p in [r"\bfirmware\b", r"\bbsp\s+engineer\b"]):
+        return "Firmware Engineer"
+    if any(re.search(p, title_lower) for p in [r"\bhardware\s+engineer\b", r"\bhardware\s+design\b", r"\bpcb\s+design\b", r"\bvlsi\b", r"\basic\b", r"\bfpga\b"]):
+        return "Hardware Engineer"
+    if any(re.search(p, title_lower) for p in [r"\bembedded\s+software\b", r"\bembedded\s+systems?\s+developer\b"]):
+        return "Embedded Software Engineer"
+
+    # Database Administrator overrides
+    if any(re.search(p, title_lower) for p in [r"\bdatabase\s+administrator\b", r"\bdba\b", r"\bsql\s+dba\b", r"\bpostgres\s+dba\b", r"\boracle\s+dba\b"]):
+        return "Database Administrator (DBA)"
+
+    # Manufacturing / Assistant / Operations overrides
+    if any(re.search(p, title_lower) for p in [r"\bmanufacturing\b", r"\btechnical\s+assistant\b", r"\bshop\s+floor\b", r"\btechnician\b", r"\bmachinist\b", r"\boperator\b"]):
+        return "Traditional / Core Engineering"
+
     # 4. Specific non-engineering precedence overrides
     if any(re.search(p, combined) for p in [r"\baccount(s|ing)?\b", r"\breceivable\b", r"\bpayable\b", r"\bfinance\b", r"\btax\b", r"\baudit\b", r"\bbilling\b"]) and "engineer" not in combined:
         return "Finance / Accounting"
@@ -531,7 +712,8 @@ def classify_job_canonical_role(title: str, role_cat: str = "") -> str:
         r"\bmining\b", r"\bpiping\b", r"\bhvac\b", r"\binstrumentation\b", r"\benvironmental\s+engineer\b",
         r"\bsafety\s+engineer\b", r"\bprocess\s+engineer\b", r"\bcontrol\s+panel\b", r"\beica\b",
         r"\bcommissioning\s+(\(?cx\)?\s+)?engineer\b", r"\bmetallurg\b", r"\bwelding\b", r"\bsubsurface\b",
-        r"\belectrical\s+design\b", r"\belectrical\s+engineer\b", r"\belectrical\s+drafter\b"
+        r"\belectrical\s+design\b", r"\belectrical\s+engineer\b", r"\belectrical\s+drafter\b",
+        r"\bmanufacturing\b", r"\btechnical\s+assistant\b", r"\bshop\s+floor\b"
     ]
     is_non_sw_eng = any(re.search(p, combined) for p in non_sw_patterns)
     has_sw_keyword = any(re.search(p, combined) for p in [r"\bsoftware\b", r"\bdeveloper\b", r"\bsde\b", r"\bswe\b", r"\bfirmware\b", r"\bembedded\b", r"\bfull[\s\-_]*stack\b", r"\bfront[\s\-_]*end\b", r"\bback[\s\-_]*end\b"])
@@ -548,11 +730,19 @@ def classify_job_canonical_role(title: str, role_cat: str = "") -> str:
                 return role_name
 
     # 6. Intelligent fallback based on title keywords
+    is_support_or_net = any(re.search(p, combined) for p in [r"\bnetwork\b", r"\bsupport\b", r"\bhelpdesk\b", r"\bhardware\b", r"\bmanufacturing\b", r"\bassistant\b", r"\btechnician\b"])
     if any(k in combined for k in ["software engineer", "developer", "software", "programmer", "sde", "swe", "software architect"]):
-        return "Software Engineer"
-    if re.search(r"\bengineer\b", combined) and not is_non_sw_eng:
+        if not is_support_or_net:
+            return "Software Engineer"
+    if re.search(r"\bengineer\b", combined) and not is_non_sw_eng and not is_support_or_net:
         return "Software Engineer"
     if is_non_sw_eng:
+        return "Traditional / Core Engineering"
+    if is_support_or_net:
+        if "network" in combined:
+            return "Network Engineer"
+        if "support" in combined or "helpdesk" in combined:
+            return "Technical Support / IT"
         return "Traditional / Core Engineering"
     if any(k in combined for k in ["designer", "design", "creative"]):
         return "UI/UX Designer"
