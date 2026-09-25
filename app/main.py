@@ -7,7 +7,7 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response, HTTPException
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -131,7 +131,39 @@ def serve_html(path_obj):
 @app.api_route("/", methods=["GET", "HEAD"])
 @app.api_route("/home", methods=["GET", "HEAD"])
 @app.api_route("/index.html", methods=["GET", "HEAD"])
-async def serve_home():
+async def serve_home(request: Request):
+    # Check for legacy query parameters that caused GSC redirect issues
+    qp = request.query_params
+    role = (qp.get("role") or "").strip().lower()
+    loc = (qp.get("location") or "").strip().lower()
+    
+    role_to_page = {
+        "software engineer": "/jobs/software-engineer.html",
+        "frontend developer": "/jobs/frontend-developer.html",
+        "frontend engineer": "/jobs/frontend-developer.html",
+        "backend developer": "/jobs/backend-developer.html",
+        "backend engineer": "/jobs/backend-developer.html",
+        "full stack developer": "/jobs/full-stack-developer.html",
+        "full stack engineer": "/jobs/full-stack-developer.html",
+        "data engineer": "/jobs/data-engineer.html",
+        "data scientist": "/jobs/data-scientist.html",
+        "product manager": "/jobs/product-manager.html",
+        "devops engineer": "/jobs/devops-engineer.html",
+        "cloud engineer": "/jobs/cloud-engineer.html",
+        "ui/ux designer": "/jobs/ui-ux-designer.html",
+        "machine learning engineer": "/jobs/machine-learning-engineer.html",
+        "cybersecurity engineer": "/jobs/cybersecurity-engineer.html",
+        "software engineer india": "/jobs/software-engineer-india.html",
+        "entry level software engineer": "/jobs/entry-level-software-engineer.html",
+        "remote software engineer": "/jobs/remote-software-engineer.html",
+    }
+    
+    if role and role in role_to_page and not loc:
+        return RedirectResponse(url=role_to_page[role], status_code=301)
+    
+    if role or loc:
+        return RedirectResponse(url=f"/jobs.html?{request.url.query}", status_code=301)
+
     # Primary landing is the Job Search Portal
     return serve_html(FRONTEND_DIR / "index.html")
 

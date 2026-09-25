@@ -424,6 +424,167 @@ GUIDES = [
         "desc": "Authoring world-class API references, SDK documentation, and developer guides using Docs-as-Code best practices.",
         "icon": '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
         "color": "#475569"
+    },
+    # 8. Additional Modern Tech & Leadership Tracks (20 new guides - Total 70)
+    {
+        "slug": "cloud-architect.html",
+        "title": "Cloud Architect",
+        "category": "Cloud, DevOps & Infrastructure",
+        "desc": "Designing enterprise multi-cloud blueprints, hybrid interconnects, disaster recovery, and FinOps governance.",
+        "icon": '<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+        "color": "#0284C7"
+    },
+    {
+        "slug": "generative-ai-engineer.html",
+        "title": "Generative AI Engineer",
+        "category": "AI, ML & Data",
+        "desc": "Architecting production LLM applications, RAG retrieval pipelines, agentic workflows, and fine-tuning models.",
+        "icon": '<path d="M12 2a8 8 0 0 0-8 8c0 3.3 2 6.2 5 7.4V20a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-2.6c3-1.2 5-4.1 5-7.4a8 8 0 0 0-8-8z"/><path d="M9 22h6"/>',
+        "color": "#8B5CF6"
+    },
+    {
+        "slug": "data-architect.html",
+        "title": "Data Architect",
+        "category": "AI, ML & Data",
+        "desc": "Designing enterprise Lakehouse platforms, Star Schema data vaults, Apache Iceberg, and streaming architectures.",
+        "icon": '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>',
+        "color": "#2563EB"
+    },
+    {
+        "slug": "rust-developer.html",
+        "title": "Rust Developer",
+        "category": "Engineering & Architecture",
+        "desc": "Building memory-safe, ultra-low-latency backend systems, Tokio services, WebAssembly, and crypto protocols.",
+        "icon": '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v5"/><path d="M12 16v5"/><path d="M3 12h5"/><path d="M16 12h5"/>',
+        "color": "#EA580C"
+    },
+    {
+        "slug": "golang-developer.html",
+        "title": "Golang Developer",
+        "category": "Engineering & Architecture",
+        "desc": "Engineering high-concurrency cloud-native microservices, gRPC endpoints, and distributed systems with Go.",
+        "icon": '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+        "color": "#00ADD8"
+    },
+    {
+        "slug": "python-developer.html",
+        "title": "Python Developer",
+        "category": "Engineering & Architecture",
+        "desc": "Developing scalable backend APIs, Celery task pipelines, and asynchronous microservices with FastAPI and Django.",
+        "icon": '<path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.5V14h-2v2.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5V12h5v-1.5a.5.5 0 0 0-.5-.5H9"/>',
+        "color": "#3B82F6"
+    },
+    {
+        "slug": "java-developer.html",
+        "title": "Java Developer",
+        "category": "Engineering & Architecture",
+        "desc": "Building enterprise microservices, Spring Boot backends, Kafka event streams, and tuning JVM performance.",
+        "icon": '<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" x2="6" y1="1" y2="4"/><line x1="10" x2="10" y1="1" y2="4"/><line x1="14" x2="14" y1="1" y2="4"/>',
+        "color": "#DC2626"
+    },
+    {
+        "slug": "react-developer.html",
+        "title": "React Developer",
+        "category": "Engineering & Architecture",
+        "desc": "Creating dynamic web applications, Next.js server components, design systems, and responsive user experiences.",
+        "icon": '<circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(30 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(90 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4.5" transform="rotate(150 12 12)"/>',
+        "color": "#06B6D4"
+    },
+    {
+        "slug": "nodejs-developer.html",
+        "title": "Node.js Developer",
+        "category": "Engineering & Architecture",
+        "desc": "Engineering scalable event-driven REST/GraphQL APIs, NestJS architectures, and real-time WebSockets.",
+        "icon": '<polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>',
+        "color": "#16A34A"
+    },
+    {
+        "slug": "kubernetes-administrator.html",
+        "title": "Kubernetes Administrator",
+        "category": "Cloud, DevOps & Infrastructure",
+        "desc": "Deploying, securing, and operating large-scale production container fleets with Helm, Istio, and GitOps.",
+        "icon": '<polygon points="12 2 21.5 7.5 21.5 18.5 12 24 2.5 18.5 2.5 7.5 12 2"/><circle cx="12" cy="12" r="3"/>',
+        "color": "#326CE5"
+    },
+    {
+        "slug": "chief-technology-officer.html",
+        "title": "Chief Technology Officer (CTO)",
+        "category": "Leadership, Strategy & Operations",
+        "desc": "Defining executive technology strategy, scaling engineering organizations, tech budgeting, and innovation roadmaps.",
+        "icon": '<circle cx="12" cy="12" r="10"/><path d="m12 6 2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1z"/>',
+        "color": "#4338CA"
+    },
+    {
+        "slug": "staff-software-engineer.html",
+        "title": "Staff Software Engineer",
+        "category": "Leadership, Strategy & Operations",
+        "desc": "Setting architectural direction, authoring RFCs, resolving complex cross-team bottlenecks, and technical mentorship.",
+        "icon": '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+        "color": "#4F46E5"
+    },
+    {
+        "slug": "principal-software-engineer.html",
+        "title": "Principal Software Engineer",
+        "category": "Leadership, Strategy & Operations",
+        "desc": "Defining company-wide technical strategy, distributed consensus, high-stakes crisis response, and executive counsel.",
+        "icon": '<path d="M6 3h12l4 6-10 13L2 9z"/><path d="M11 3v18"/><path d="M2 9h20"/>',
+        "color": "#312E81"
+    },
+    {
+        "slug": "penetration-tester.html",
+        "title": "Penetration Tester",
+        "category": "Cybersecurity & Quality",
+        "desc": "Simulating real-world cyberattacks, ethical hacking, web/API vulnerability assessments, and remediation guidance.",
+        "icon": '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+        "color": "#E11D48"
+    },
+    {
+        "slug": "soc-analyst.html",
+        "title": "SOC Analyst",
+        "category": "Cybersecurity & Quality",
+        "desc": "Monitoring enterprise security telemetry, triaging SIEM/EDR alerts, and orchestrating live incident responses.",
+        "icon": '<circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/>',
+        "color": "#D97706"
+    },
+    {
+        "slug": "product-operations-manager.html",
+        "title": "Product Operations Manager",
+        "category": "Product, Design & Agile",
+        "desc": "Scaling product team systems, democratizing user insights, optimizing launch governance, and managing product analytics.",
+        "icon": '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+        "color": "#0D9488"
+    },
+    {
+        "slug": "quantitative-analyst.html",
+        "title": "Quantitative Analyst",
+        "category": "AI, ML & Data",
+        "desc": "Developing mathematical models, algorithmic trading strategies, derivatives pricing, and high-frequency risk modeling.",
+        "icon": '<line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/>',
+        "color": "#059669"
+    },
+    {
+        "slug": "bi-developer.html",
+        "title": "Business Intelligence Developer",
+        "category": "AI, ML & Data",
+        "desc": "Transforming enterprise data into actionable Power BI & Tableau dashboards, DAX metrics, and star schemas.",
+        "icon": '<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
+        "color": "#2563EB"
+    },
+    {
+        "slug": "etl-developer.html",
+        "title": "ETL Developer",
+        "category": "AI, ML & Data",
+        "desc": "Engineering automated batch and streaming data extraction, dbt transformations, and Airflow orchestration.",
+        "icon": '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="m8 17 4 4 4-4"/><path d="M12 12v9"/>',
+        "color": "#475569"
+    },
+    {
+        "slug": "sdet-engineer.html",
+        "title": "SDET Engineer",
+        "category": "Cybersecurity & Quality",
+        "desc": "Engineering automated test frameworks with Playwright, Selenium, API validation, and continuous testing in CI/CD.",
+        "icon": '<path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><circle cx="12" cy="12" r="2"/>',
+        "color": "#7C3AED"
     }
 ]
 
@@ -458,11 +619,11 @@ search_filter_html = """
   <div style="max-width: 800px; margin: -30px auto 30px; padding: 0 20px; position: relative; z-index: 10;">
     <div style="background: #FFFFFF; border: 1px solid var(--card-bdr); border-radius: 14px; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08); padding: 10px 16px; display: flex; align-items: center; gap: 12px;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--txt-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-      <input type="text" id="guideSearchInput" placeholder="Filter 50 career guides by title or domain (e.g., Full Stack, MLOps, Blockchain, SRE)..." style="width: 100%; border: none; outline: none; font-size: 15px; color: var(--txt); background: transparent;" oninput="filterCareerGuides()" />
+      <input type="text" id="guideSearchInput" placeholder="Filter 70 career guides by title or domain (e.g., Full Stack, MLOps, Blockchain, SRE, Cloud Architect)..." style="width: 100%; border: none; outline: none; font-size: 15px; color: var(--txt); background: transparent;" oninput="filterCareerGuides()" />
       <button type="button" onclick="clearGuideSearch()" id="clearGuideBtn" style="display: none; background: none; border: none; color: var(--txt-dim); cursor: pointer; font-size: 16px;">&times;</button>
     </div>
     <div id="guideCountNotice" style="text-align: center; font-size: 13px; color: var(--txt-muted); margin-top: 10px;">
-      Showing all <strong>50</strong> specialized career blueprints
+      Showing all <strong>70</strong> specialized career blueprints
     </div>
   </div>
 """
@@ -490,7 +651,7 @@ filter_script = """
       });
       const notice = document.getElementById('guideCountNotice');
       if (notice) {
-        notice.innerHTML = `Showing <strong>${visibleCount}</strong> of 50 career guides`;
+        notice.innerHTML = `Showing <strong>${visibleCount}</strong> of 70 career guides`;
       }
     }
 
@@ -504,6 +665,7 @@ filter_script = """
     }
   </script>
 """
+
 
 def main():
     print(f"Updating {ARTICLES_HTML} with all {len(GUIDES)} career guides...")

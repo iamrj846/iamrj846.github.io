@@ -1231,6 +1231,8 @@ def search_jobs_direct_db(
             conditions.append("LOWER(title) NOT LIKE '%uipath%' AND LOWER(title) NOT LIKE '%ui path%'")
         if "intern" in target_check or ("intern" in emp_check):
             conditions.append("LOWER(title) NOT LIKE '%internal%' AND LOWER(title) NOT LIKE '%internet%' AND LOWER(title) NOT LIKE '%international%'")
+        if any(k in target_check for k in ["software engineer", "software development engineer", "sde", "swe", "software developer", "programmer"]):
+            conditions.append("(LOWER(title) NOT LIKE '%chemical%' AND LOWER(title) NOT LIKE '%materials engineer%' AND LOWER(title) NOT LIKE '%materials engineering%' AND LOWER(title) NOT LIKE '%civil engineer%' AND LOWER(title) NOT LIKE '%mechanical%' AND LOWER(title) NOT LIKE '%project engineer%' AND LOWER(title) NOT LIKE '%structural engineer%' AND LOWER(title) NOT LIKE '%petroleum%' AND LOWER(title) NOT LIKE '%mining%' AND LOWER(title) NOT LIKE '%piping%' AND LOWER(title) NOT LIKE '%hvac%' AND LOWER(title) NOT LIKE '%instrumentation%' AND LOWER(title) NOT LIKE '%environmental engineer%' AND LOWER(title) NOT LIKE '%process engineer%' AND LOWER(title) NOT LIKE '%commissioning%' AND LOWER(title) NOT LIKE '%metallurg%' AND LOWER(title) NOT LIKE '%control panel%')")
 
         lf = (location_filter or "").strip().lower()
         if lf and lf not in ("all", "all locations", "all location", "india", "pan india", "anywhere in india", ""):

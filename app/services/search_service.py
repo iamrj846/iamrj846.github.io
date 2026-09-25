@@ -137,7 +137,8 @@ FIXED_ROLES = [
         "synonyms": [
             "engineering manager", "tech lead", "lead engineer", "director of engineering", 
             "vp engineering", "software engineering manager", "architect", "engineering lead", 
-            "principal engineer", "staff engineer"
+            "principal engineer", "staff engineer", "cto", "chief technology officer",
+            "head of engineering", "vp of engineering"
         ]
     },
     {
@@ -539,6 +540,23 @@ def is_incompatible_role_match(query: str, title: str, role_cat: str = "") -> bo
         if has_pure_frontend and not has_backend:
             return True
 
+    # 4. Software Engineer / SDE queries - strictly disqualify non-software / industrial engineering
+    if any(k in q_norm for k in ["software engineer", "sde", "swe", "software developer", "programmer", "software development engineer"]):
+        non_sw_terms = [
+            "chemical", "materials engineer", "material engineering", "civil engineer",
+            "mechanical engineer", "mechanical design", "project engineer", "site engineer",
+            "structural engineer", "petroleum", "mining engineer", "mining", "piping",
+            "hvac", "instrumentation engineer", "environmental engineer", "safety engineer",
+            "process engineer", "control panel", "eica", "commissioning", "metallurg", "welding",
+            "subsurface", "electrical design", "electrical drafter"
+        ]
+        has_non_sw = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in non_sw_terms)
+        has_sw_override = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in ["software", "developer", "sde", "swe", "firmware", "embedded", "full stack", "frontend", "backend"])
+        if has_non_sw and not has_sw_override:
+            return True
+        if role_cat == "Traditional / Core Engineering" and not has_sw_override:
+            return True
+
     return False
 
 def calculate_semantic_relevance(query: str, title: str, role_cat: str = "", tags: List[str] = None, synonyms: List[str] = None) -> float:
@@ -604,6 +622,8 @@ def calculate_semantic_relevance(query: str, title: str, role_cat: str = "", tag
 
     return 0.0
 
+_GLOBAL_ACTIVE_CACHE = None
+
 class SearchService:
     def __init__(self):
         self.config = get_config()
@@ -615,10 +635,10 @@ class SearchService:
         from database rows and active keys with an in-process 1-hour cache
         to eliminate blocking Redis scans.
         """
+        global _GLOBAL_ACTIVE_CACHE
         import time as _time
-        cache = getattr(self, "_active_cache", None)
-        if cache and (_time.time() - cache["ts"]) < 3600:
-            return cache["companies"], cache["roles"]
+        if _GLOBAL_ACTIVE_CACHE and (_time.time() - _GLOBAL_ACTIVE_CACHE["ts"]) < 3600:
+            return _GLOBAL_ACTIVE_CACHE["companies"], _GLOBAL_ACTIVE_CACHE["roles"]
 
         active_companies: set = set()
         active_roles: set = set()
@@ -661,6 +681,7 @@ class SearchService:
                 logger.debug(f"Redis active-suggestions query error: {e}")
 
         self._active_cache = {"ts": _time.time(), "companies": active_companies, "roles": active_roles}
+        _GLOBAL_ACTIVE_CACHE = self._active_cache
         return active_companies, active_roles
 
     def get_suggestions(self, mode: str, query: str, limit: int = 25) -> List[Dict[str, str]]:
@@ -718,9 +739,11 @@ class SearchService:
                 # Filter roles to those with active jobs; skip filter on cold start
                 if active_roles:
                     all_syns_lower = [r_name.lower()] + [s.lower() for s in syns]
-                    has_active = any(
-                        role_matches(all_syns_lower, ar) for ar in active_roles
-                    )
+                    syn_set = set(all_syns_lower)
+                    if syn_set & active_roles:
+                        has_active = True
+                    else:
+                        has_active = any(any(s in ar for s in all_syns_lower) for ar in active_roles)
                     if not has_active:
                         continue
 

@@ -51,6 +51,38 @@ def test_frontend_search_precision(search_service):
         assert "devops" not in t_lower
         assert r_lower == "frontend engineer" or "frontend" in t_lower or "front-end" in t_lower or "ui developer" in t_lower or "web developer" in t_lower
 
+def test_software_engineer_search_precision(search_service):
+    res = search_service.search_jobs("role", "Software Engineer", page_size=20)
+    assert res["total_count"] > 0
+    disallowed = [
+        "chemical", "materials engineer", "civil engineer", "mechanical",
+        "project engineer", "structural engineer", "petroleum", "mining",
+        "piping", "hvac", "instrumentation", "environmental engineer"
+    ]
+    for j in res["results"][:20]:
+        t_lower = j["title"].lower()
+        for d in disallowed:
+            assert d not in t_lower, f"Irrelevant job found in Software Engineer search: {j['title']}"
+
+def test_redis_kill_switch_search_parity(search_service):
+    from app.database import set_redis_kill_switch
+    # Test Redis mode
+    set_redis_kill_switch(False)
+    res_redis = search_service.search_jobs("role", "Software Engineer", page_size=10)
+
+    # Test direct DB mode
+    set_redis_kill_switch(True)
+    res_db = search_service.search_jobs("role", "Software Engineer", page_size=10)
+
+    # Reset
+    set_redis_kill_switch(False)
+
+    assert res_redis["total_count"] == res_db["total_count"]
+    assert len(res_redis["results"]) == len(res_db["results"])
+    for r_job, db_job in zip(res_redis["results"], res_db["results"]):
+        assert r_job["id"] == db_job["id"]
+        assert r_job["title"] == db_job["title"]
+
 def test_guest_quota_24h_reset():
     auth_svc = AuthService()
     test_ip = "10.0.0.123"

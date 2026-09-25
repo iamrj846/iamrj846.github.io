@@ -370,7 +370,7 @@ ROLE_TAXONOMY_MAP = {
         "skills": ["System Architecture", "Cloud Solutions", "Enterprise Architecture", "Technical Consulting", "Integration Architecture", "Scalable Systems", "Client Engagement", "Proof of Concept", "Technology Selection", "Architecture Blueprint", "Design Reviews"]
     },
     "Engineering Manager / Lead": {
-        "synonyms": ["Engineering Manager", "Tech Lead", "Director of Engineering", "Software Engineering Manager", "Lead Software Engineer", "Engineering Leadership", "VP Engineering"],
+        "synonyms": ["Engineering Manager", "Tech Lead", "Director of Engineering", "Software Engineering Manager", "Lead Software Engineer", "Engineering Leadership", "VP Engineering", "CTO", "Chief Technology Officer", "Head of Engineering", "VP of Engineering"],
         "skills": ["Engineering Management", "Technical Leadership", "People Management", "Sprint Planning", "Team Mentorship", "Architecture Review", "Agile Delivery", "Project Management", "Hiring & Talent", "Code Quality", "Resource Allocation", "System Scalability"]
     },
     "Technical Program Manager": {
@@ -444,6 +444,10 @@ ROLE_TAXONOMY_MAP = {
     "Software Engineer": {
         "synonyms": ["Software Engineer", "Software Development Engineer", "SDE", "SWE", "Software Developer", "Programmer", "Application Developer", "Software Architecture"],
         "skills": ["Data Structures", "Algorithms", "System Design", "Object Oriented Programming", "REST APIs", "Git", "Code Review", "Unit Testing", "Debugging", "Clean Code", "Design Patterns", "Problem Solving", "Scalability", "High Availability"]
+    },
+    "Traditional / Core Engineering": {
+        "synonyms": ["Mechanical Engineer", "Civil Engineer", "Chemical Engineer", "Materials Engineer", "Project Engineer", "Structural Engineer", "Electrical Design Engineer", "Industrial Engineer", "Core Engineering", "Process Engineer", "Manufacturing Engineer"],
+        "skills": ["Mechanical Engineering", "Civil Engineering", "Chemical Engineering", "AutoCAD", "Thermodynamics", "Materials Science", "Project Management", "Site Engineering", "Structural Analysis", "Process Engineering", "Manufacturing Operations", "Quality Standards"]
     }
 }
 
@@ -520,6 +524,20 @@ def classify_job_canonical_role(title: str, role_cat: str = "") -> str:
     if any(re.search(p, combined) for p in [r"\blegal\s+counsel\b", r"\bparalegal\b", r"\bcompliance\s+analyst\b", r"\bcompliance\s+officer\b"]):
         return "Legal / Compliance Specialist"
 
+    # Core / Non-software engineering overrides (chemical, civil, mechanical, materials, etc.)
+    non_sw_patterns = [
+        r"\bchemical\b", r"\bmaterials?\s+engineer(ing)?\b", r"\bcivil\b", r"\bmechanical\b",
+        r"\bproject\s+engineer\b", r"\bsite\s+engineer\b", r"\bstructural\b", r"\bpetroleum\b",
+        r"\bmining\b", r"\bpiping\b", r"\bhvac\b", r"\binstrumentation\b", r"\benvironmental\s+engineer\b",
+        r"\bsafety\s+engineer\b", r"\bprocess\s+engineer\b", r"\bcontrol\s+panel\b", r"\beica\b",
+        r"\bcommissioning\s+(\(?cx\)?\s+)?engineer\b", r"\bmetallurg\b", r"\bwelding\b", r"\bsubsurface\b",
+        r"\belectrical\s+design\b", r"\belectrical\s+engineer\b", r"\belectrical\s+drafter\b"
+    ]
+    is_non_sw_eng = any(re.search(p, combined) for p in non_sw_patterns)
+    has_sw_keyword = any(re.search(p, combined) for p in [r"\bsoftware\b", r"\bdeveloper\b", r"\bsde\b", r"\bswe\b", r"\bfirmware\b", r"\bembedded\b", r"\bfull[\s\-_]*stack\b", r"\bfront[\s\-_]*end\b", r"\bback[\s\-_]*end\b"])
+    if is_non_sw_eng and not has_sw_keyword:
+        return "Traditional / Core Engineering"
+
     # 5. Iterate through ordered taxonomy map (specific specializations are evaluated first)
     for role_name, data in ROLE_TAXONOMY_MAP.items():
         syns = [role_name.lower()] + [s.lower() for s in data["synonyms"]]
@@ -530,8 +548,12 @@ def classify_job_canonical_role(title: str, role_cat: str = "") -> str:
                 return role_name
 
     # 6. Intelligent fallback based on title keywords
-    if any(k in combined for k in ["engineer", "developer", "software", "tech", "programmer", "architect", "sde", "swe"]):
+    if any(k in combined for k in ["software engineer", "developer", "software", "programmer", "sde", "swe", "software architect"]):
         return "Software Engineer"
+    if re.search(r"\bengineer\b", combined) and not is_non_sw_eng:
+        return "Software Engineer"
+    if is_non_sw_eng:
+        return "Traditional / Core Engineering"
     if any(k in combined for k in ["designer", "design", "creative"]):
         return "UI/UX Designer"
     if any(k in combined for k in ["sales", "bdr", "sdr", "account executive"]):
@@ -1007,6 +1029,34 @@ class ATSService:
                                 self.endpoints.append(ATSEndpoint(tenant.title(), "Workday", u))
             except Exception as e:
                 logger.warning(f"Error loading workday_companies.json: {e}")
+
+        # 9. Workable
+        wb_file = resources_dir / "workable_companies.json"
+        if wb_file.exists():
+            try:
+                with open(wb_file, "r") as f:
+                    for slug in json.load(f):
+                        u = f"https://apply.workable.com/api/v1/widget/accounts/{slug}"
+                        k = (slug.lower(), u.lower())
+                        if k not in seen:
+                            seen.add(k)
+                            self.endpoints.append(ATSEndpoint(slug.title(), "Workable", u))
+            except Exception as e:
+                logger.warning(f"Error loading workable_companies.json: {e}")
+
+        # 10. Rippling
+        rip_file = resources_dir / "rippling_companies.json"
+        if rip_file.exists():
+            try:
+                with open(rip_file, "r") as f:
+                    for slug in json.load(f):
+                        u = f"https://api.rippling.com/platform/api/ats/v1/board/{slug}/jobs"
+                        k = (slug.lower(), u.lower())
+                        if k not in seen:
+                            seen.add(k)
+                            self.endpoints.append(ATSEndpoint(slug.title(), "Rippling", u))
+            except Exception as e:
+                logger.warning(f"Error loading rippling_companies.json: {e}")
 
         logger.info(f"Total unified ATS endpoints active: {len(self.endpoints)}")
 
