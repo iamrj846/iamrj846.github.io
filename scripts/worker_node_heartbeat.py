@@ -124,13 +124,14 @@ def main():
             r_client.set(redis_key, json.dumps(payload), ex=ttl_seconds)
             logger.info(f"Heartbeat reported: CPU={cpu}% | Mem={mem}% (key={redis_key})")
         except Exception as e:
-            logger.warning(f"Failed to publish heartbeat to local Redis: {e}. Attempting fallback to Gateway Redis (10.0.0.136)...")
-            try:
-                r_gw = redis.Redis(host="10.0.0.136", port=6379, password=args.redis_pass, decode_responses=True, socket_timeout=3.0)
-                r_gw.set(redis_key, json.dumps(payload), ex=ttl_seconds)
-                logger.info(f"Heartbeat reported via Gateway fallback: CPU={cpu}% | Mem={mem}%")
-            except Exception as fe:
-                logger.error(f"Fallback to Gateway Redis failed: {fe}")
+            logger.warning(f"Failed to publish heartbeat to local Redis: {e}")
+
+        # Also publish directly to Gateway Redis (10.0.0.136) so VM 1 dashboard has immediate live data
+        try:
+            r_gw = redis.Redis(host="10.0.0.136", port=6379, password=args.redis_pass, decode_responses=True, socket_timeout=2.0)
+            r_gw.set(redis_key, json.dumps(payload), ex=ttl_seconds)
+        except Exception as fe:
+            logger.debug(f"Direct Gateway Redis push notice: {fe}")
 
         # Sleep for interval in 1s increments for fast interrupt handling
         for _ in range(args.interval):
