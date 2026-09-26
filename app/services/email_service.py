@@ -205,6 +205,12 @@ def send_otp_email(to_email: str, otp: str, user_name: str = "") -> bool:
     from_email = config.smtp_from_email
     use_tls = config.smtp_use_tls
 
+    # Strictly ensure From header and sender address are support@corporateguild.com
+    # Personal email must NEVER be used in the From header
+    if not from_email or "jainraunak846@gmail.com" in from_email:
+        from_email = "CorporateGuild <support@corporateguild.com>"
+    sender_addr = "support@corporateguild.com"
+
     if not smtp_user or not smtp_pass:
         logger.error(
             f"SMTP credentials not configured (user='{smtp_user}'). "
@@ -226,9 +232,6 @@ def send_otp_email(to_email: str, otp: str, user_name: str = "") -> bool:
         msg.attach(MIMEText(html_text, "html", "utf-8"))
 
         clean_pass = smtp_pass.strip()
-        sender_addr = from_email
-        if "<" in from_email and ">" in from_email:
-            sender_addr = from_email.split("<")[1].split(">")[0].strip()
 
         def _login_server(srv):
             users_to_try = [smtp_user]

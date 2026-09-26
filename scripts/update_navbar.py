@@ -192,6 +192,15 @@ NAV_CSS = """
         width: 100%;
         display: block;
       }
+      .nav-dropdown-trigger {
+        width: 100%;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+      }
+      .nav-dropdown-trigger .dropdown-chevron {
+        margin-left: auto;
+      }
       .nav-dropdown-menu {
         position: static;
         transform: none !important;
@@ -215,33 +224,76 @@ NAV_CSS = """
       }
       .nav-dropdown-header {
         display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 6px;
-        padding-bottom: 8px;
-        margin-bottom: 10px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        padding-bottom: 10px;
+        margin-bottom: 12px;
         border-bottom: 1px solid #F1F5F9;
       }
       .nav-dropdown-header span {
         font-size: 11px;
-        font-weight: 700;
+        font-weight: 800;
         letter-spacing: 0.05em;
         text-transform: uppercase;
-        color: #64748B;
+        color: #475569;
         line-height: 1.3;
+        white-space: nowrap;
       }
       .nav-dropdown-header a {
-        font-size: 12px !important;
+        font-size: 11.5px !important;
         font-weight: 700 !important;
         color: #2563EB !important;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
+        background: #EFF6FF !important;
+        border: 1px solid #DBEAFE !important;
+        border-radius: 6px !important;
+        padding: 4px 10px !important;
+        text-decoration: none !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        white-space: nowrap !important;
+        line-height: 1 !important;
+        margin-left: auto;
       }
       .nav-dropdown-grid {
         grid-template-columns: 1fr;
         gap: 10px;
+      }
+      .nav-dropdown-col {
+        background: #F8FAFC;
+        border: 1px solid #F1F5F9;
+        border-radius: 10px;
+        padding: 10px;
+      }
+      .nav-dropdown-cat {
+        font-size: 11px;
+        font-weight: 800;
+        color: #2563EB;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid #E2E8F0;
+      }
+      .nav-dropdown-col a {
+        display: block !important;
+        font-size: 12px !important;
+        color: #334155 !important;
+        text-decoration: none;
+        padding: 5px 8px !important;
+        border-radius: 6px;
+        margin-bottom: 2px;
+        font-weight: 500 !important;
+        transition: background 0.15s ease, color 0.15s ease;
+      }
+      .nav-dropdown-col a:hover,
+      .nav-dropdown-col a:active {
+        background: #EFF6FF !important;
+        color: #1D4ED8 !important;
+        font-weight: 600 !important;
       }
       .nav-dropdown-footer {
         flex-direction: column;
@@ -257,13 +309,6 @@ NAV_CSS = """
         display: block !important;
       }
     }
-    @media (min-width: 601px) and (max-width: 900px) {
-      .nav-dropdown-header {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-      }
-    }
 """
 
 DROPDOWN_HTML = """      <div class="nav-item-dropdown" id="navCareerGuidesDropdown">
@@ -274,7 +319,7 @@ DROPDOWN_HTML = """      <div class="nav-item-dropdown" id="navCareerGuidesDropd
         </a>
         <div class="nav-dropdown-menu">
           <div class="nav-dropdown-header">
-            <span>Career Guides (70 Specialized Tracks)</span>
+            <span>Career Tracks (70 Guides)</span>
             <a href="/articles.html">Browse All 70 &rarr;</a>
           </div>
           <div class="nav-dropdown-grid">

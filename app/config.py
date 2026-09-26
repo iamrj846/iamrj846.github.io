@@ -158,7 +158,7 @@ class Config:
     @property
     def smtp_user(self) -> str:
         val = os.getenv("SMTP_USER", os.getenv("SMTP_USERNAME", self.smtp.get("user", "")))
-        return str(val).strip() if val and str(val).strip() else "support@corporateguild.com"
+        return str(val).strip() if val and str(val).strip() else "jainraunak846@gmail.com"
 
     @property
     def smtp_password(self) -> str:
@@ -167,13 +167,16 @@ class Config:
 
     @property
     def smtp_from_email(self) -> str:
-        default_from = f"CorporateGuild <{self.smtp_user}>"
+        default_from = "CorporateGuild <support@corporateguild.com>"
         val = os.getenv("SMTP_FROM_EMAIL", self.smtp.get("from_email", default_from))
-        return str(val).strip() if val and str(val).strip() else default_from
+        val_str = str(val).strip() if val and str(val).strip() else default_from
+        if "jainraunak846@gmail.com" in val_str:
+            return default_from
+        return val_str
 
     @property
     def smtp_use_tls(self) -> bool:
-        val = os.getenv("SMTP_USE_TLS", str(self.smtp.get("use_tls", True)))
+        val = os.getenv("SMTP_USE_TLS", str(self.smtp.get("use_tls", False)))
         return str(val).lower() in ("1", "true", "yes")
 
     @property
