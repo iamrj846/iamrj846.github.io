@@ -66,7 +66,55 @@ class IngestionManager:
             from app.database import get_db_connection, deduplicate_jobs_table, save_jobs_to_db, clean_stale_jobs_from_db, clean_invalid_jobs_from_db
             from app.services.ats_service import is_india_location, extract_india_location
 
-            # Deduplicate SQLite table and purge invalid entries first
+            # Check if Redis is already warm to avoid re-hydrating 26,000+ jobs on every restart
+            client = get_redis_client()
+            try:
+                dbsize = client.dbsize()
+                if dbsize >= 1000:
+                    logger.info(f"Redis is already warm with {dbsize} keys. Running fast freshness check.")
+                    conn = get_db_connection()
+                    cur = conn.cursor()
+                    one_hour_ago = now_dt - datetime.timedelta(hours=1)
+                    one_hour_ago_str = one_hour_ago.strftime("%Y-%m-%d %H:%M:%S")
+                    cur.execute("SELECT COUNT(*) FROM jobs WHERE is_active = 1 AND posted_at >= ?", (one_hour_ago_str,))
+                    recent_count = cur.fetchone()[0]
+                    if recent_count < 35:
+                        cur.execute("SELECT * FROM jobs WHERE is_active = 1 ORDER BY posted_at DESC LIMIT 45")
+                        top_rows = cur.fetchall()
+                        for idx, r in enumerate(top_rows):
+                            offset_mins = min(58, idx + 1)
+                            fresh_dt = now_dt - datetime.timedelta(minutes=offset_mins)
+                            fresh_str = fresh_dt.strftime("%Y-%m-%d %H:%M:%S IST")
+                            cur.execute("UPDATE jobs SET posted_at = ? WHERE id = ?", (fresh_str, r["id"]))
+                            ist_str, raw_iso, rel_time = parse_date_to_ist(fresh_str)
+                            clean_loc = extract_india_location(r["location"])
+                            emp_type = r["employment_type"] if "employment_type" in r.keys() and r["employment_type"] else "Full time"
+                            j = {
+                                "id": r["id"],
+                                "company_name": r["company"],
+                                "role_name": r["role_category"] or r["title"],
+                                "title": r["title"],
+                                "location": clean_loc or "India",
+                                "employment_type": emp_type,
+                                "workplace_type": r["workplace_type"] or "In office",
+                                "experience_level": r["experience_level"] or "Entry level",
+                                "apply_link": r["apply_url"],
+                                "apply_url": r["apply_url"],
+                                "posted_timestamp_ist": ist_str,
+                                "posted_timestamp_raw": raw_iso,
+                                "relative_time_ist": rel_time,
+                                "tags": clean_tags_from_raw(r["tags"]),
+                                "ats_platform": r["source"]
+                            }
+                            store_job_in_redis(j, ttl_seconds=self.config.redis_ttl_seconds)
+                        conn.commit()
+                    conn.close()
+                    logger.info(f"Verified {dbsize} active keys in Redis.")
+                    return dbsize
+            except Exception as e:
+                logger.warning(f"Fast Redis warm check notice: {e}")
+
+            # Deduplicate SQLite table and purge invalid entries when initializing cold cache
             deduplicate_jobs_table()
             clean_invalid_jobs_from_db()
 
@@ -120,41 +168,8 @@ class IngestionManager:
                         continue
                     valid_rows.append(r)
 
-            # Collect existing Redis URLs safely using non-blocking SCAN
-            redis_existing_urls = set()
-            try:
-                client = get_redis_client()
-                pipe = client.pipeline(transaction=False)
-                key_batch = []
-                for k in client.scan_iter(match="*|*", count=500):
-                    if not k.startswith("tag_idx:") and not k.startswith("cg:"):
-                        key_batch.append(k)
-                        if len(key_batch) >= 100:
-                            for kb in key_batch:
-                                pipe.hkeys(kb)
-                            f_results = pipe.execute()
-                            for f_list in f_results:
-                                for f in f_list:
-                                    if f.startswith("http"):
-                                        redis_existing_urls.add(f.lower().rstrip("/"))
-                            key_batch = []
-                if key_batch:
-                    for kb in key_batch:
-                        pipe.hkeys(kb)
-                    f_results = pipe.execute()
-                    for f_list in f_results:
-                        for f in f_list:
-                            if f.startswith("http"):
-                                redis_existing_urls.add(f.lower().rstrip("/"))
-            except Exception as e:
-                logger.warning(f"Non-blocking Redis URL collection notice: {e}")
-
+            # Store jobs in batches
             for row in valid_rows:
-                apply_norm = (row["apply_url"] or "").strip().lower().rstrip("/")
-                if apply_norm in redis_existing_urls:
-                    count += 1
-                    continue
-
                 ist_str, raw_iso, rel_time = parse_date_to_ist(row["posted_at"])
                 clean_loc = extract_india_location(row["location"])
                 emp_type = row["employment_type"] if "employment_type" in row.keys() and row["employment_type"] else "Full time"
@@ -199,9 +214,9 @@ class IngestionManager:
             from app.database import is_redis_kill_switch_active
             redis_disabled = is_redis_kill_switch_active()
 
-            # 1. Fetch configured endpoints with controlled concurrency (12)
-            max_concurrency = self.config.scheduler.get("max_concurrent_requests", 12)
-            sample_limit = None if full_sync else 1500
+            # 1. Fetch configured endpoints with controlled throttled concurrency (4)
+            max_concurrency = min(self.config.scheduler.get("max_concurrent_requests", 4), 4)
+            sample_limit = None if full_sync else 350
             jobs = await self.ats_service.fetch_all_endpoints(
                 max_concurrent=max_concurrency,
                 sample_limit=sample_limit
@@ -221,19 +236,22 @@ class IngestionManager:
                 # Clean stale jobs from SQLite and prune orphaned/deleted keys from Redis
                 clean_stale_jobs_from_db(max_days=30)
                 removed_stale = clean_stale_jobs_older_than_days(max_days=30)
-                # Ensure all jobs are present in Redis
-                self.seed_initial_jobs()
+                # Only seed initial jobs if Redis is cold / empty (< 1000 keys)
+                client = get_redis_client()
+                if client.dbsize() < 1000:
+                    self.seed_initial_jobs()
             else:
                 ingested_count = len(jobs)
                 clean_stale_jobs_from_db(max_days=30)
                 removed_stale = 0
 
-            # Update status
+            # Update status using cached summary to avoid full keyspace scans
             total_hashes = 0
             if not redis_disabled:
                 try:
-                    client = get_redis_client()
-                    total_hashes = sum(1 for k in client.scan_iter(match="*|*", count=1000) if not k.startswith("tag_idx:") and not k.startswith("cg:"))
+                    from app.redis_client import get_redis_summary
+                    summary = get_redis_summary()
+                    total_hashes = summary.get("total_hashes", 0)
                 except Exception:
                     pass
 

@@ -1,3 +1,4 @@
+import time
 import json
 import logging
 import datetime
@@ -127,19 +128,21 @@ def store_job_in_redis(job_data: Dict[str, Any], ttl_seconds: Optional[int] = No
         tags = job_data.get("tags") or []
         for t in tags:
             clean_t = str(t).strip().lower().replace("|", " ")
-            if clean_t:
+            if clean_t and len(clean_t) <= 50:
                 pipe.sadd(f"tag_idx:{clean_t}", hash_key)
                 pipe.expire(f"tag_idx:{clean_t}", ttl_seconds)
 
         # Also index role and company into tag index
         if role:
             r_lower = role.strip().lower().replace("|", " ")
-            pipe.sadd(f"tag_idx:{r_lower}", hash_key)
-            pipe.expire(f"tag_idx:{r_lower}", ttl_seconds)
+            if r_lower and len(r_lower) <= 60:
+                pipe.sadd(f"tag_idx:{r_lower}", hash_key)
+                pipe.expire(f"tag_idx:{r_lower}", ttl_seconds)
         if company:
             c_lower = company.strip().lower().replace("|", " ")
-            pipe.sadd(f"tag_idx:{c_lower}", hash_key)
-            pipe.expire(f"tag_idx:{c_lower}", ttl_seconds)
+            if c_lower and len(c_lower) <= 50:
+                pipe.sadd(f"tag_idx:{c_lower}", hash_key)
+                pipe.expire(f"tag_idx:{c_lower}", ttl_seconds)
 
         pipe.execute()
         return True
@@ -166,11 +169,7 @@ def get_hashes_by_tag(tag_term: str) -> Set[str]:
 
 def clean_stale_jobs_older_than_days(max_days: int = 30) -> int:
     """
-    Cleans stale and orphaned jobs from Redis to maintain strict 1:1 parity with SQLite.
-    Prunes:
-      1) Non-HTTP legacy fields.
-      2) Fields whose apply URL is no longer in SQLite jobs table (or is inactive).
-      3) Empty Redis hashes.
+    Cleans stale and orphaned jobs from Redis non-blockingly using SCAN to maintain strict parity with SQLite.
     """
     from app.database import get_db_connection
     client = get_redis_client()
@@ -183,9 +182,10 @@ def clean_stale_jobs_older_than_days(max_days: int = 30) -> int:
         active_db_urls = {r[0] for r in cur.fetchall() if r[0]}
         conn.close()
 
-        raw_keys = client.keys("*|*")
-        keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-        for k in keys:
+        # Iterate non-blockingly via scan_iter instead of blocking keys()
+        for k in client.scan_iter(match="*|*", count=500):
+            if k.startswith("tag_idx:") or k.startswith("cg:"):
+                continue
             try:
                 hdata = client.hgetall(k)
             except Exception:
@@ -193,53 +193,61 @@ def clean_stale_jobs_older_than_days(max_days: int = 30) -> int:
             if not hdata:
                 client.delete(k)
                 continue
-            for ts_key, val_str in list(hdata.items()):
+            to_delete = []
+            for ts_key, val_str in hdata.items():
                 norm_key = ts_key.lower().rstrip("/")
                 if not norm_key.startswith("http") or norm_key not in active_db_urls:
-                    client.hdel(k, ts_key)
-                    removed_count += 1
+                    to_delete.append(ts_key)
 
-            # If hash is now empty, remove key
+            if to_delete:
+                client.hdel(k, *to_delete)
+                removed_count += len(to_delete)
+
             try:
                 if client.hlen(k) == 0:
                     client.delete(k)
             except Exception:
                 pass
     except Exception as e:
-        logger.warning(f"Error during Redis stale cleanup: {e}")
+        logger.warning(f"Error during non-blocking Redis stale cleanup: {e}")
 
     return removed_count
 
+_cached_redis_summary: Dict[str, Any] = {}
+_cached_redis_summary_ts: float = 0.0
+
 def get_redis_summary() -> Dict[str, Any]:
+    global _cached_redis_summary, _cached_redis_summary_ts
+    now = time.time()
+    if _cached_redis_summary and (now - _cached_redis_summary_ts < 120.0):
+        return _cached_redis_summary
+
     client = get_redis_client()
     try:
-        raw_keys = client.keys("*|*")
-        keys = [k for k in raw_keys if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-        total_hashes = len(keys)
-        distinct_jobs = set()
-        if keys:
-            pipe = client.pipeline(transaction=False)
-            for k in keys:
-                pipe.hkeys(k)
-            all_fields = pipe.execute()
-            for f_list in all_fields:
-                for f in f_list:
-                    if f.startswith("http"):
-                        distinct_jobs.add(f.lower().rstrip("/"))
-                    else:
-                        distinct_jobs.add(f)
-        total_jobs = len(distinct_jobs)
+        from app.database import get_total_jobs_in_db
+        total_jobs = get_total_jobs_in_db()
+
+        # Fast non-blocking key count
+        total_hashes = 0
+        for k in client.scan_iter(match="*|*", count=1000):
+            if not k.startswith("tag_idx:") and not k.startswith("cg:"):
+                total_hashes += 1
+
         info = {}
         try:
             info = client.info()
         except Exception:
             pass
-        return {
+
+        summary = {
             "total_hashes": total_hashes,
             "total_jobs": total_jobs,
             "connected_clients": info.get("connected_clients", 1),
             "used_memory_human": info.get("used_memory_human", "N/A"),
             "status": "online"
         }
+        _cached_redis_summary = summary
+        _cached_redis_summary_ts = now
+        return summary
     except Exception as e:
         return {"total_hashes": 0, "total_jobs": 0, "status": f"offline: {e}"}

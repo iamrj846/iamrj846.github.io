@@ -208,13 +208,60 @@ NAV_CSS = """
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
         overscroll-behavior: contain !important;
+        padding: 12px 14px;
       }
       .nav-item-dropdown.mobile-expanded .nav-dropdown-menu {
         display: block;
       }
+      .nav-dropdown-header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding-bottom: 8px;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #F1F5F9;
+      }
+      .nav-dropdown-header span {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #64748B;
+        line-height: 1.3;
+      }
+      .nav-dropdown-header a {
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        color: #2563EB !important;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
       .nav-dropdown-grid {
         grid-template-columns: 1fr;
         gap: 10px;
+      }
+      .nav-dropdown-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .nav-dropdown-all-btn {
+        width: 100%;
+        text-align: center;
+        padding: 8px 12px !important;
+        background: #EFF6FF;
+        border-radius: 6px;
+        display: block !important;
+      }
+    }
+    @media (min-width: 601px) and (max-width: 900px) {
+      .nav-dropdown-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
       }
     }
 """

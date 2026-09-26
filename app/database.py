@@ -96,6 +96,7 @@ def init_db():
     try:
         deduplicate_jobs_table(conn)
         cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_apply_url ON jobs(apply_url);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_norm_apply_url ON jobs(LOWER(RTRIM(apply_url, '/')));")
     except Exception as e:
         logger.warning(f"Could not index apply_url: {e}")
 
