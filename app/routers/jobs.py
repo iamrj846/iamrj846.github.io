@@ -22,6 +22,23 @@ def get_client_ip(request: Request) -> str:
         return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "127.0.0.1"
 
+def extract_session_token(request: Request) -> Optional[str]:
+    # 1. Cookies (session / admin session)
+    token = request.cookies.get("cg_session") or request.cookies.get("cg_admin_session")
+    if token and str(token).strip():
+        return str(token).strip()
+    # 2. Custom header
+    token = request.headers.get("x-session-token")
+    if token and str(token).strip():
+        return str(token).strip()
+    # 3. Authorization: Bearer <token>
+    auth = request.headers.get("authorization", "")
+    if auth.startswith("Bearer "):
+        bearer = auth.split(" ", 1)[1].strip()
+        if bearer:
+            return bearer
+    return None
+
 @router.get("/suggest")
 async def get_suggestions(
     mode: str = Query(..., pattern="^(company|role)$"),
@@ -60,7 +77,7 @@ async def search_jobs(
     is_search_action: bool = Query(False)
 ):
     ip = get_client_ip(request)
-    session_token = request.cookies.get("cg_session") or request.cookies.get("cg_admin_session")
+    session_token = extract_session_token(request)
     guest_id = request.cookies.get("cg_guest_id") or request.headers.get("x-guest-id")
     auth_service = get_auth_service()
 
@@ -148,7 +165,7 @@ async def search_jobs(
 @router.post("/click")
 async def track_click(request: Request, payload: ClickRequest):
     ip = get_client_ip(request)
-    session_token = request.cookies.get("cg_session") or request.cookies.get("cg_admin_session")
+    session_token = extract_session_token(request)
     auth_service = get_auth_service()
     auth_service.record_job_click(ip, session_token, payload.model_dump())
     record_job_apply_click(

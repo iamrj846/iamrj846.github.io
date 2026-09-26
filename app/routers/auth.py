@@ -120,8 +120,17 @@ async def logout(request: Request, response: Response):
 async def get_current_user(request: Request, response: Response):
     import secrets
     ip = get_client_ip(request)
-    session_token = request.cookies.get("cg_session") or request.cookies.get("cg_admin_session")
     guest_id = request.cookies.get("cg_guest_id") or request.headers.get("x-guest-id")
+    auth_hdr = request.headers.get("authorization", "")
+    bearer_token = auth_hdr.split(" ", 1)[1].strip() if auth_hdr.startswith("Bearer ") else None
+    session_token = (
+        request.cookies.get("cg_session") or
+        request.cookies.get("cg_admin_session") or
+        request.headers.get("x-session-token") or
+        bearer_token
+    )
+    if session_token:
+        session_token = str(session_token).strip()
     if not guest_id:
         guest_id = f"cg_guest_{secrets.token_urlsafe(16)}"
     if not request.cookies.get("cg_guest_id"):

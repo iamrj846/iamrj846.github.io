@@ -271,12 +271,48 @@ def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
 def get_user_by_session(session_token: str) -> Optional[Dict[str, Any]]:
     if not session_token:
         return None
+    session_token = str(session_token).strip()
     conn = get_db_connection()
     cur = conn.cursor()
+    # 1. Primary lookup by users.session_token
     cur.execute("SELECT * FROM users WHERE session_token = ? AND session_active = 1 AND (is_blocked IS NULL OR is_blocked = 0)", (session_token,))
     row = cur.fetchone()
+    if row:
+        conn.close()
+        return dict(row)
+
+    # 2. Check admin_sessions table (supports multi-device/multi-tab admin logins)
+    try:
+        cur.execute("SELECT admin_email FROM admin_sessions WHERE token = ?", (session_token,))
+        admin_row = cur.fetchone()
+        if admin_row and admin_row[0]:
+            admin_email = admin_row[0]
+            cur.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?) AND (is_blocked IS NULL OR is_blocked = 0)", (admin_email,))
+            u_row = cur.fetchone()
+            if u_row:
+                conn.close()
+                return dict(u_row)
+    except Exception:
+        pass
+
+    # 3. Check Redis admin session cache
+    try:
+        from app.redis_client import get_redis_client
+        rc = get_redis_client()
+        admin_email = rc.get(f"cg:admin_session:{session_token}")
+        if admin_email:
+            if isinstance(admin_email, bytes):
+                admin_email = admin_email.decode("utf-8")
+            cur.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?) AND (is_blocked IS NULL OR is_blocked = 0)", (admin_email,))
+            u_row = cur.fetchone()
+            if u_row:
+                conn.close()
+                return dict(u_row)
+    except Exception:
+        pass
+
     conn.close()
-    return dict(row) if row else None
+    return None
 
 def create_user(name: str, email: str, password_hash: str, otp_code: str, otp_expiry: str, ip_address: str = "") -> int:
     conn = get_db_connection()

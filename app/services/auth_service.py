@@ -31,7 +31,7 @@ class AuthService:
           Only decrements when increment=True (i.e. user explicitly clicked Search or Apply Filters).
         """
         user = get_user_by_session(session_token) if session_token else None
-        if user and user.get("is_verified", 0) == 1:
+        if user and (user.get("is_verified", 0) == 1 or user.get("is_admin", 0) == 1):
             if increment:
                 increment_user_metric(user["id"], "total_searches")
                 log_activity(user["id"], ip_address, "search", "authenticated search")

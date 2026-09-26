@@ -1051,6 +1051,109 @@
       font-weight: 600;
     }
 
+    /* Explore Verified Opportunities Hero Card */
+    .explore-hero-card {
+      text-align: center;
+      padding: 36px 24px;
+      background: #FFFFFF;
+      border: 1.5px dashed var(--card-bdr, #E2E8F0);
+      border-radius: 18px;
+      margin: 12px 0 24px;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.03);
+    }
+    .explore-hero-icon {
+      width: 46px;
+      height: 46px;
+      margin: 0 auto 12px;
+      background: #EEF2FF;
+      border: 1px solid #C7D2FE;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #4F46E5;
+    }
+    .explore-hero-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #0F172A;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+    .explore-hero-desc {
+      font-size: 13.5px;
+      color: #64748B;
+      max-width: 580px;
+      margin: 0 auto 18px;
+      line-height: 1.55;
+    }
+    .explore-hero-pills {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .explore-hero-pill {
+      background: #F8FAFC;
+      color: #334155;
+      border: 1px solid #E2E8F0;
+      padding: 7px 14px;
+      border-radius: 99px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .explore-hero-pill:hover {
+      background: #EEF2FF;
+      color: #4F46E5;
+      border-color: #C7D2FE;
+      transform: translateY(-1px);
+    }
+    .explore-hero-pill.all-btn {
+      background: #0F172A;
+      color: #FFFFFF;
+      border-color: #0F172A;
+      font-weight: 700;
+    }
+    .explore-hero-pill.all-btn:hover {
+      background: #4F46E5;
+      border-color: #4F46E5;
+      color: #FFFFFF;
+    }
+    @media (max-width: 640px) {
+      .explore-hero-card {
+        padding: 20px 14px;
+        margin: 8px 0 16px;
+        border-radius: 14px;
+      }
+      .explore-hero-icon {
+        width: 38px;
+        height: 38px;
+        margin-bottom: 8px;
+        border-radius: 10px;
+      }
+      .explore-hero-title {
+        font-size: 17px;
+        margin-bottom: 6px;
+      }
+      .explore-hero-desc {
+        font-size: 12px;
+        margin-bottom: 14px;
+        line-height: 1.45;
+      }
+      .explore-hero-pills {
+        gap: 6px;
+      }
+      .explore-hero-pill {
+        padding: 6px 10px;
+        font-size: 11.5px;
+      }
+    }
+
     /* Job Card (Modern Light Look) */
     .jobs-list {
       display: flex;
@@ -2584,11 +2687,17 @@
         const res = await fetch('/api/jobs/stats');
         if (!res.ok) return;
         const data = await res.json();
-        if (data.formatted_jobs && document.getElementById('statJobsCount')) {
-          document.getElementById('statJobsCount').textContent = data.formatted_jobs;
+        if (data.formatted_jobs) {
+          const sCount = document.getElementById('statJobsCount');
+          if (sCount) sCount.textContent = data.formatted_jobs;
+          const hCount = document.getElementById('heroJobCountPlaceholder');
+          if (hCount) hCount.textContent = data.formatted_jobs;
         }
-        if (data.formatted_companies && document.getElementById('statCompaniesCount')) {
-          document.getElementById('statCompaniesCount').textContent = data.formatted_companies;
+        if (data.formatted_companies) {
+          const cCount = document.getElementById('statCompaniesCount');
+          if (cCount) cCount.textContent = data.formatted_companies;
+          const hcCount = document.getElementById('heroCompanyCountPlaceholder');
+          if (hcCount) hcCount.textContent = data.formatted_companies;
         }
       } catch (e) {
         console.warn('Could not load live stats:', e);
@@ -2632,6 +2741,15 @@
         }
       }
     }
+
+    // Immediate auth state restoration from localStorage to prevent flash of guest state
+    try {
+      const storedUser = localStorage.getItem('cg_user');
+      if (storedUser) {
+        currentUser = JSON.parse(storedUser);
+        isQuotaExhausted = false;
+      }
+    } catch (e) {}
 
     // Initialize on DOM load
     document.addEventListener('DOMContentLoaded', () => {
@@ -2845,6 +2963,20 @@
     let isQuotaExhausted = false;
 
     function applyQuotaExhaustedUI(isUserAction = false) {
+      if (currentUser && (currentUser.email || currentUser.id || currentUser.name)) {
+        isQuotaExhausted = false;
+        removeQuotaExhaustedUI();
+        return;
+      }
+      try {
+        const raw = localStorage.getItem('cg_user');
+        if (raw && JSON.parse(raw)) {
+          isQuotaExhausted = false;
+          removeQuotaExhaustedUI();
+          return;
+        }
+      } catch (e) {}
+
       isQuotaExhausted = true;
       const consoleEl = document.getElementById('searchFilterConsole');
       if (consoleEl) consoleEl.classList.add('quota-disabled');
@@ -2892,6 +3024,11 @@
 
     async function executeSearch(page = 1, isFilterApplied = false, isUserAction = false) {
       hasExecutedSearch = true;
+
+      if (currentUser || localStorage.getItem('cg_user')) {
+        isQuotaExhausted = false;
+        removeQuotaExhaustedUI();
+      }
 
       if (isQuotaExhausted && isUserAction) {
         applyQuotaExhaustedUI(true);
@@ -2945,9 +3082,17 @@
       }
 
       try {
+        const token = localStorage.getItem('cg_session_token') || sessionStorage.getItem('cg_session_token') || '';
+        const searchHeaders = { 'X-Guest-ID': getOrCreateGuestId() };
+        if (token) {
+          searchHeaders['Authorization'] = `Bearer ${token}`;
+          searchHeaders['X-Session-Token'] = token;
+        }
+
         const fetchFn = window.fetchWithRetry || resilientFetch;
         const res = await fetchFn(`/api/jobs/search?${params.toString()}`, {
-          headers: { 'X-Guest-ID': getOrCreateGuestId() }
+          headers: searchHeaders,
+          credentials: 'include'
         }, 4, 600);
 
         let data = null;
@@ -2972,15 +3117,19 @@
 
         if (!data || !res.ok || data.success === false) {
           if (data && data.requires_auth) {
-            applyQuotaExhaustedUI(isUserAction);
-            return;
+            if (!currentUser && !localStorage.getItem('cg_user')) {
+              applyQuotaExhaustedUI(isUserAction);
+              return;
+            }
           }
           throw new Error((data && (data.message || data.error)) || 'Search request failed');
         }
 
         if (data.requires_auth) {
-          applyQuotaExhaustedUI(isUserAction);
-          return;
+          if (!currentUser && !localStorage.getItem('cg_user')) {
+            applyQuotaExhaustedUI(isUserAction);
+            return;
+          }
         }
 
         removeQuotaExhaustedUI();
@@ -2988,11 +3137,11 @@
         // Update quotas
         if (data.remaining_searches !== undefined) {
           try {
-            updateQuotaDisplay(data.remaining_searches, data.is_authenticated);
+            updateQuotaDisplay(data.remaining_searches, data.is_authenticated || Boolean(currentUser));
           } catch (qErr) {
             console.warn('Could not update quota display:', qErr);
           }
-          if (data.remaining_searches === 0 && !data.is_authenticated) {
+          if (data.remaining_searches === 0 && !data.is_authenticated && !currentUser) {
             isQuotaExhausted = true;
           }
         }
@@ -3002,6 +3151,20 @@
         updatePagination(data);
         updateBreadcrumbs(query, appliedFilters.location, appliedFilters.role, appliedFilters.workplace_type);
         updateDynamicSeo(data.results || [], data.total_count || 0, query, appliedFilters.location, appliedFilters.role, appliedFilters.workplace_type, appliedFilters.time_filter, appliedFilters.employment_type, appliedFilters.experience_level);
+
+        // Auto-scroll user smoothly to search results panel so they don't have to scroll manually
+        if (isUserAction) {
+          const resultsAnchor = document.getElementById('resultsMeta') || document.getElementById('jobsList');
+          if (resultsAnchor) {
+            const navOffset = 75; // sticky navigation clearance
+            const elementPosition = resultsAnchor.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - navOffset;
+            window.scrollTo({
+              top: Math.max(0, offsetPosition),
+              behavior: 'smooth'
+            });
+          }
+        }
       } catch (err) {
         console.error('Search execution error:', err);
         document.getElementById('loader').style.display = 'none';
@@ -3405,8 +3568,16 @@
     /* ══ AUTH MANAGEMENT & USER PROFILE ══ */
     async function checkAuthStatus() {
       try {
+        const token = localStorage.getItem('cg_session_token') || sessionStorage.getItem('cg_session_token') || '';
+        const authHeaders = { 'X-Guest-ID': getOrCreateGuestId() };
+        if (token) {
+          authHeaders['Authorization'] = `Bearer ${token}`;
+          authHeaders['X-Session-Token'] = token;
+        }
+
         const res = await fetch('/api/auth/me', {
-          headers: { 'X-Guest-ID': getOrCreateGuestId() }
+          headers: authHeaders,
+          credentials: 'include'
         });
         const data = await res.json();
         if (data.guest_id) {
@@ -3416,6 +3587,7 @@
 
         if (data.is_authenticated && data.user) {
           currentUser = data.user;
+          isQuotaExhausted = false;
           try { localStorage.setItem('cg_user', JSON.stringify(data.user)); } catch (e) {}
           const uname = data.user.username || data.user.name || 'iamrj846';
           badge.innerHTML = `
@@ -3689,10 +3861,23 @@
         }, 3, 500);
         const data = await res.json();
         if (res.ok && data.success) {
+          if (data.session_token) {
+            try {
+              localStorage.setItem('cg_session_token', data.session_token);
+              sessionStorage.setItem('cg_session_token', data.session_token);
+              document.cookie = `cg_session=${data.session_token}; path=/; max-age=2592000; SameSite=Lax`;
+            } catch (e) {}
+          }
+          if (data.user) {
+            currentUser = data.user;
+            try { localStorage.setItem('cg_user', JSON.stringify(data.user)); } catch (e) {}
+          }
+          isQuotaExhausted = false;
+          removeQuotaExhaustedUI();
           closeAuthModal();
           checkAuthStatus();
           if (typeof executeSearch === 'function') {
-            executeSearch(1);
+            executeSearch(1, false, true);
           }
         } else {
           showAuthError(data.detail || data.message || 'Invalid verification code.');
@@ -3730,10 +3915,23 @@
         }, 3, 500);
         const data = await res.json();
         if (res.ok && data.success) {
+          if (data.session_token) {
+            try {
+              localStorage.setItem('cg_session_token', data.session_token);
+              sessionStorage.setItem('cg_session_token', data.session_token);
+              document.cookie = `cg_session=${data.session_token}; path=/; max-age=2592000; SameSite=Lax`;
+            } catch (e) {}
+          }
+          if (data.user) {
+            currentUser = data.user;
+            try { localStorage.setItem('cg_user', JSON.stringify(data.user)); } catch (e) {}
+          }
+          isQuotaExhausted = false;
+          removeQuotaExhaustedUI();
           closeAuthModal();
           checkAuthStatus();
           if (typeof executeSearch === 'function') {
-            executeSearch(1);
+            executeSearch(1, false, true);
           }
         } else {
           showAuthError(data.detail || data.message || 'Invalid email or password.');
@@ -3750,15 +3948,24 @@
     }
 
     async function logout() {
+      const token = localStorage.getItem('cg_session_token') || '';
       try {
         localStorage.removeItem('cg_user');
+        localStorage.removeItem('cg_session_token');
         localStorage.removeItem('cg_admin_token');
         sessionStorage.clear();
         document.cookie = "cg_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
         document.cookie = "cg_admin_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
       } catch (e) {}
       try {
-        await fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          credentials: 'include'
+        });
       } catch (e) {}
       window.location.reload();
     }
@@ -3839,19 +4046,26 @@
       const list = document.getElementById('jobsList');
       if (list) {
         list.innerHTML = `
-          <div style="text-align: center; padding: 48px 24px; background: #FFFFFF; border: 1.5px dashed var(--bdr); border-radius: 16px; margin: 12px 0 24px;">
-            <div style="font-size: 38px; margin-bottom: 12px;">💼</div>
-            <h2 style="font-size: 20px; font-weight: 800; color: #1E293B; margin-bottom: 8px;">Explore Verified Tech Opportunities Across India</h2>
-            <p style="font-size: 14px; color: #64748B; max-width: 540px; margin: 0 auto 20px; line-height: 1.5;">
-              Search over 9,300+ live positions directly from 1,000+ top engineering employers. Click Search, apply a filter, or choose a popular role below to begin.
+          <div class="explore-hero-card">
+            <div class="explore-hero-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
+            </div>
+            <h2 class="explore-hero-title">Explore Verified Career Opportunities Across India</h2>
+            <p class="explore-hero-desc">
+              Search over <strong id="heroJobCountPlaceholder">26,600+</strong> verified active openings across engineering, technology, product, finance, marketing, design, and operations. Apply directly on verified employer portals with zero intermediaries.
             </p>
-            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-              <button type="button" onclick="quickSearch('Software Engineer')" style="background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">💻 Software Engineer</button>
-              <button type="button" onclick="quickSearch('Backend Developer')" style="background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">⚙️ Backend Developer</button>
-              <button type="button" onclick="quickSearch('Frontend Developer')" style="background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">🎨 Frontend Developer</button>
-              <button type="button" onclick="quickSearch('Product Manager')" style="background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">💼 Product Manager</button>
-              <button type="button" onclick="quickSearch('Data Scientist')" style="background: #EEF2FF; color: #4F46E5; border: 1px solid #C7D2FE; padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">📊 Data Scientist</button>
-              <button type="button" onclick="quickSearch('All Roles')" style="background: #F1F5F9; color: #334155; border: 1px solid #CBD5E1; padding: 7px 14px; border-radius: 99px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;">🌐 Browse All Jobs</button>
+            <div class="explore-hero-pills">
+              <button type="button" class="explore-hero-pill" onclick="quickSearch('Software Engineer')">💻 Software Engineer</button>
+              <button type="button" class="explore-hero-pill" onclick="quickSearch('Product Manager')">💼 Product &amp; Design</button>
+              <button type="button" class="explore-hero-pill" onclick="quickSearch('Data Scientist')">📊 Data &amp; Analytics</button>
+              <button type="button" class="explore-hero-pill" onclick="quickSearch('Finance / Accounting')">📈 Finance &amp; Accounts</button>
+              <button type="button" class="explore-hero-pill" onclick="quickSearch('Marketing / Growth Specialist')">🎯 Marketing &amp; Growth</button>
+              <button type="button" class="explore-hero-pill" onclick="quickSearch('Human Resources / Recruiter')">👥 HR &amp; Talent</button>
+              <button type="button" class="explore-hero-pill" onclick="quickSearch('Operations / Supply Chain')">⚙️ Operations</button>
+              <button type="button" class="explore-hero-pill all-btn" onclick="quickSearch('All Roles')">🌐 Browse All 26,000+ Jobs</button>
             </div>
           </div>
         `;

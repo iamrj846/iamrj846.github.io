@@ -2411,6 +2411,20 @@ Be ready to explain how to mitigate hallucination in production RAG systems, opt
     let isQuotaExhausted = false;
 
     function applyQuotaExhaustedUI(isUserAction = false) {
+      if (currentUser && (currentUser.email || currentUser.id || currentUser.name)) {
+        isQuotaExhausted = false;
+        removeQuotaExhaustedUI();
+        return;
+      }
+      try {
+        const raw = localStorage.getItem('cg_user');
+        if (raw && JSON.parse(raw)) {
+          isQuotaExhausted = false;
+          removeQuotaExhaustedUI();
+          return;
+        }
+      } catch (e) {}
+
       isQuotaExhausted = true;
       const consoleEl = document.getElementById('searchFilterConsole');
       if (consoleEl) consoleEl.classList.add('quota-disabled');
@@ -2457,6 +2471,11 @@ Be ready to explain how to mitigate hallucination in production RAG systems, opt
     }
 
     async function executeSearch(page = 1, isFilterApplied = false, isUserAction = false) {
+      if (currentUser || localStorage.getItem('cg_user')) {
+        isQuotaExhausted = false;
+        removeQuotaExhaustedUI();
+      }
+
       if (isQuotaExhausted && isUserAction) {
         applyQuotaExhaustedUI(true);
         return;
@@ -2508,8 +2527,16 @@ Be ready to explain how to mitigate hallucination in production RAG systems, opt
       }
 
       try {
+        const token = localStorage.getItem('cg_session_token') || sessionStorage.getItem('cg_session_token') || '';
+        const searchHeaders = { 'X-Guest-ID': getOrCreateGuestId() };
+        if (token) {
+          searchHeaders['Authorization'] = `Bearer ${token}`;
+          searchHeaders['X-Session-Token'] = token;
+        }
+
         const res = await fetch(`/api/jobs/search?${params.toString()}`, {
-          headers: { 'X-Guest-ID': getOrCreateGuestId() }
+          headers: searchHeaders,
+          credentials: 'include'
         });
         const data = await res.json();
         if (data.guest_id) {
@@ -2546,6 +2573,20 @@ Be ready to explain how to mitigate hallucination in production RAG systems, opt
 
         // Render results
         renderJobCards(data.results || []);
+
+        // Auto-scroll user smoothly to search results panel
+        if (isUserAction) {
+          const resultsAnchor = document.getElementById('resultsMeta') || document.getElementById('jobsList');
+          if (resultsAnchor) {
+            const navOffset = 75;
+            const elementPosition = resultsAnchor.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - navOffset;
+            window.scrollTo({
+              top: Math.max(0, offsetPosition),
+              behavior: 'smooth'
+            });
+          }
+        }
         updatePagination(data);
         updateBreadcrumbs(query, appliedFilters.location, appliedFilters.role, appliedFilters.workplace_type);
         updateDynamicSeo(data.results || [], data.total_count || 0, query, appliedFilters.location, appliedFilters.role, appliedFilters.workplace_type, appliedFilters.time_filter, appliedFilters.employment_type, appliedFilters.experience_level);
@@ -2916,8 +2957,16 @@ Be ready to explain how to mitigate hallucination in production RAG systems, opt
     /* ══ AUTH MANAGEMENT & USER PROFILE ══ */
     async function checkAuthStatus() {
       try {
+        const token = localStorage.getItem('cg_session_token') || sessionStorage.getItem('cg_session_token') || '';
+        const authHeaders = { 'X-Guest-ID': getOrCreateGuestId() };
+        if (token) {
+          authHeaders['Authorization'] = `Bearer ${token}`;
+          authHeaders['X-Session-Token'] = token;
+        }
+
         const res = await fetch('/api/auth/me', {
-          headers: { 'X-Guest-ID': getOrCreateGuestId() }
+          headers: authHeaders,
+          credentials: 'include'
         });
         const data = await res.json();
         if (data.guest_id) {
@@ -2927,6 +2976,7 @@ Be ready to explain how to mitigate hallucination in production RAG systems, opt
 
         if (data.is_authenticated && data.user) {
           currentUser = data.user;
+          isQuotaExhausted = false;
           try { localStorage.setItem('cg_user', JSON.stringify(data.user)); } catch (e) {}
           const uname = data.user.username || data.user.name || 'iamrj846';
           badge.innerHTML = `
