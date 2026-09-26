@@ -25,22 +25,12 @@ PING_URL="http://127.0.0.1:${HTTP_PORT}/api/jobs/suggest?mode=company&q=a"
 
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$PING_URL" 2>/dev/null || echo "000")
 
-# 2. Safe Controlled Micro-Burst CPU Activity (15 seconds)
-python3 -c "
-import time, hashlib, math
-
-start = time.time()
-duration = 15.0 # Run for 15 seconds
-count = 0
-
-while (time.time() - start) < duration:
-    val = math.sqrt(1234567.89 + count)
-    digest = hashlib.sha256(str(val).encode('utf-8')).hexdigest()
-    count += 1
-" 2>/dev/null || true
+# 2. Lightweight Keep-Alive Ping (0% CPU impact)
+# Simply ping healthcheck to maintain socket and system activity without CPU burn
+curl -s -o /dev/null --max-time 5 "http://127.0.0.1:${HTTP_PORT}/api/health" 2>/dev/null || true
 
 # 3. Log Heartbeat
-echo "[$IST_TIME] [KeepAlive] Heartbeat ping: HTTP $HTTP_STATUS | 15s CPU micro-burst completed safely." >> "$LOG_FILE"
+echo "[$IST_TIME] [KeepAlive] Heartbeat ping: HTTP $HTTP_STATUS | Normal operations active." >> "$LOG_FILE"
 
 # 4. Truncate log if exceeding 5000 lines
 if [ -f "$LOG_FILE" ]; then

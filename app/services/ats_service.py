@@ -2300,8 +2300,8 @@ class ATSService:
                         logger.debug(f"Error fetching {ep.company_name}: {e}")
                         return []
 
-            # Throttled execution in chunks of 15 with 100ms pauses to yield event loop and prevent CPU spikes
-            chunk_size = 15
+            # Throttled execution in small chunks of 8 with 200ms pauses to keep CPU flat
+            chunk_size = 8
             for i in range(0, len(endpoints_to_query), chunk_size):
                 chunk = endpoints_to_query[i:i + chunk_size]
                 tasks = [worker(ep) for ep in chunk]
@@ -2310,7 +2310,7 @@ class ATSService:
                     if isinstance(res, list):
                         all_jobs.extend(res)
                 if i + chunk_size < len(endpoints_to_query):
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(0.2)
 
         logger.info(f"Fetched {len(all_jobs)} India-specific jobs across {len(endpoints_to_query)} ATS endpoints.")
         return all_jobs

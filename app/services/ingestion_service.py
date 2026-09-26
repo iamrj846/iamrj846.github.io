@@ -214,9 +214,9 @@ class IngestionManager:
             from app.database import is_redis_kill_switch_active
             redis_disabled = is_redis_kill_switch_active()
 
-            # 1. Fetch configured endpoints with controlled throttled concurrency (4)
-            max_concurrency = min(self.config.scheduler.get("max_concurrent_requests", 4), 4)
-            sample_limit = None if full_sync else 350
+            # 1. Fetch configured endpoints with controlled throttled concurrency (2)
+            max_concurrency = 2
+            sample_limit = None if full_sync else 120
             jobs = await self.ats_service.fetch_all_endpoints(
                 max_concurrent=max_concurrency,
                 sample_limit=sample_limit
@@ -227,12 +227,15 @@ class IngestionManager:
                 save_jobs_to_db(jobs)
                 deduplicate_jobs_table()
 
-            # 3. If Redis is NOT bypassed, store into Redis
+            # 3. If Redis is NOT bypassed, store into Redis in small batches
             if not redis_disabled:
-                for j in jobs:
-                    ok = store_job_in_redis(j, ttl_seconds=self.config.redis_ttl_seconds)
-                    if ok:
-                        ingested_count += 1
+                for i in range(0, len(jobs), 25):
+                    chunk = jobs[i:i + 25]
+                    for j in chunk:
+                        ok = store_job_in_redis(j, ttl_seconds=self.config.redis_ttl_seconds)
+                        if ok:
+                            ingested_count += 1
+                    await asyncio.sleep(0.05)
                 # Clean stale jobs from SQLite and prune orphaned/deleted keys from Redis
                 clean_stale_jobs_from_db(max_days=30)
                 removed_stale = clean_stale_jobs_older_than_days(max_days=30)
