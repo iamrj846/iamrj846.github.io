@@ -46,7 +46,17 @@ async def get_suggestions(
     limit: int = Query(100, ge=1, le=200)
 ):
     service = get_search_service()
-    suggestions = await asyncio.to_thread(service.get_suggestions, mode, q, limit=limit)
+    raw_suggestions = await asyncio.to_thread(service.get_suggestions, mode, q, limit=limit)
+    
+    # Strict case-insensitive deduplication
+    seen_keys = set()
+    suggestions = []
+    for item in raw_suggestions:
+        val = str(item.get("value") or item.get("label") or "").strip()
+        k = val.lower()
+        if k and k not in seen_keys:
+            seen_keys.add(k)
+            suggestions.append(item)
     
     # Inject "All Roles" / "All Companies"
     top_val = "All Roles" if mode == "role" else "All Companies"

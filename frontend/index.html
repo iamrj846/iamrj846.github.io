@@ -2919,12 +2919,28 @@
         return;
       }
 
+      // Strict case-insensitive deduplication of suggestions
+      const seenVals = new Set();
+      const uniqueItems = [];
+      for (const it of items) {
+        const k = (it.value || it.label || '').trim().toLowerCase();
+        if (k && !seenVals.has(k)) {
+          seenVals.add(k);
+          uniqueItems.push(it);
+        }
+      }
+
+      if (!uniqueItems.length) {
+        drop.style.display = 'none';
+        return;
+      }
+
       const headerTitle = searchMode === 'role'
-        ? (q ? `Matching Roles (${items.length})` : '')
-        : (q ? `Matching Employers (${items.length})` : '');
+        ? (q ? `Matching Roles (${uniqueItems.length})` : '')
+        : (q ? `Matching Employers (${uniqueItems.length})` : '');
 
       const headerHtml = headerTitle ? `<div class="suggestions-header">${headerTitle}</div>` : '';
-      const itemsHtml = items.map((item) => `
+      const itemsHtml = uniqueItems.map((item) => `
         <div class="suggestion-item" onpointerdown="selectSuggestion('${escapeQuotes(item.value)}'); event.preventDefault();" onmousedown="selectSuggestion('${escapeQuotes(item.value)}')">
           <div style="display: flex; flex-direction: column; gap: 2px;">
             <span style="font-weight: 600; color: #0F172A;">${escapeHtml(item.label)}</span>

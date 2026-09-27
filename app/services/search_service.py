@@ -708,36 +708,119 @@ class SearchService:
                 "Stripe", "Google", "Microsoft", "Amazon", "Swiggy", "Zomato",
                 "Razorpay", "Flipkart", "Atlassian", "Uber", "Cisco", "PhonePe",
                 "CRED", "InMobi", "Meesho", "Coinbase", "Airbnb", "Snowflake",
-                "Databricks", "Oracle", "Intuit", "ServiceNow"
+                "Databricks", "Oracle", "Intuit", "ServiceNow", "Intel", "Adobe",
+                "Salesforce", "Nvidia", "Mastercard", "Dell", "Qualcomm", "AMD",
+                "HP", "HPE", "PayPal", "Micron", "Autodesk", "NetApp", "Synopsys",
+                "Target", "Lowes"
             ]
-            all_comps_set = set(self.ats_service.get_all_companies())
-            all_comps_set.update(prominent)
-            if active_companies:
-                all_comps_set.update(active_companies)
-            all_comps = sorted(list(all_comps_set))
 
-            # Filter to companies that have live jobs; fall back to full list on cold start
+            # Build canonical company dictionary: lower_key -> best display name
+            canonical_map: Dict[str, str] = {}
+
+            def add_company(name: str):
+                if not name:
+                    return
+                c_clean = str(name).strip()
+                k = c_clean.lower()
+                if not k:
+                    return
+                display_candidate = c_clean.capitalize() if c_clean.islower() else c_clean
+                if k not in canonical_map:
+                    canonical_map[k] = display_candidate
+                else:
+                    existing = canonical_map[k]
+                    # If existing is already curated in prominent, keep it
+                    if existing in prominent:
+                        return
+                    if c_clean in prominent:
+                        canonical_map[k] = c_clean
+                        return
+                    if existing.islower() and not display_candidate.islower():
+                        canonical_map[k] = display_candidate
+                    # CamelCase / MixedCase preference (e.g. PayPal, InMobi, ServiceNow) over flat TitleCase
+                    elif not c_clean.isupper() and any(c.isupper() for c in c_clean[1:]) and not any(c.isupper() for c in existing[1:]):
+                        canonical_map[k] = c_clean
+
+            # First add curated prominent names
+            for p in prominent:
+                add_company(p)
+
+            # Add from ATS service
+            for c in self.ats_service.get_all_companies():
+                add_company(c)
+
+            # Also add from DB distinct companies if available
+            try:
+                from app.database import get_db_connection
+                conn = get_db_connection()
+                cur = conn.cursor()
+                cur.execute("SELECT DISTINCT company FROM jobs WHERE is_active = 1")
+                for row in cur.fetchall():
+                    if row[0]:
+                        add_company(row[0])
+                conn.close()
+            except Exception:
+                pass
+
+            # Ensure any active companies found in Redis are also registered
             if active_companies:
-                valid_comps = [c for c in all_comps if c.lower() in active_companies]
+                for ac in active_companies:
+                    if ac:
+                        add_company(ac)
+                valid_comps = [name for k, name in canonical_map.items() if k in active_companies]
             else:
-                valid_comps = all_comps
+                valid_comps = list(canonical_map.values())
 
             if not q:
-                matched = [c for c in prominent if c.lower() in active_companies] if active_companies else list(prominent)
+                matched = []
+                seen_k = set()
+                for p in prominent:
+                    k = p.lower()
+                    if (not active_companies or k in active_companies) and k in canonical_map:
+                        disp = canonical_map[k]
+                        if k not in seen_k:
+                            matched.append(disp)
+                            seen_k.add(k)
                 for ac in valid_comps:
-                    if ac not in matched and len(matched) < max(limit, 120):
+                    k = ac.lower()
+                    if k not in seen_k and len(matched) < max(limit, 120):
                         matched.append(ac)
+                        seen_k.add(k)
             else:
-                matched = [c for c in valid_comps if q in c.lower()]
+                # Rank prefix matches first, then substring matches, with strict case-insensitive deduplication
+                starts = []
+                contains = []
+                seen_k = set()
+                for ac in valid_comps:
+                    k = ac.lower()
+                    if k in seen_k:
+                        continue
+                    if k.startswith(q):
+                        starts.append(ac)
+                        seen_k.add(k)
+                    elif q in k:
+                        contains.append(ac)
+                        seen_k.add(k)
+                matched = sorted(starts, key=lambda x: (len(x), x.lower())) + sorted(contains, key=lambda x: (len(x), x.lower()))
 
-            for c in matched[:max(limit, 120)]:
-                results.append({"type": "company", "value": c, "label": c})
+            seen_res = set()
+            for c in matched:
+                k = c.lower()
+                if k not in seen_res:
+                    seen_res.add(k)
+                    results.append({"type": "company", "value": c, "label": c})
+                    if len(results) >= max(limit, 120):
+                        break
 
         elif mode == "role":
             matched = []
+            seen_roles = set()
             for item in FIXED_ROLES:
                 r_name = item["role"]
                 syns = item["synonyms"]
+                r_k = r_name.lower()
+                if r_k in seen_roles:
+                    continue
 
                 # Filter roles to those with active jobs; skip filter on cold start
                 if active_roles:
@@ -752,8 +835,10 @@ class SearchService:
 
                 if not q:
                     matched.append((r_name, ", ".join(syns[:2])))
+                    seen_roles.add(r_k)
                 elif q in r_name.lower() or any(q in s.lower() for s in syns):
                     matched.append((r_name, ", ".join(syns[:2])))
+                    seen_roles.add(r_k)
 
             for r, sub in matched:
                 results.append({"type": "role", "value": r, "label": r, "subtitle": sub})

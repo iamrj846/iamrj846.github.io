@@ -1498,29 +1498,36 @@ def get_db_suggestions(mode: str, q: str = "", limit: int = 100) -> List[Dict[st
                     SELECT company, COUNT(*) as cnt 
                     FROM jobs 
                     WHERE is_active = 1 AND LOWER(company) LIKE ? 
-                    GROUP BY company 
+                    GROUP BY LOWER(company) 
                     ORDER BY cnt DESC, company ASC 
                     LIMIT ?
-                """, (f"%{q_clean}%", limit))
+                """, (f"%{q_clean}%", limit * 2))
             else:
                 cur.execute("""
                     SELECT company, COUNT(*) as cnt 
                     FROM jobs 
                     WHERE is_active = 1 
-                    GROUP BY company 
+                    GROUP BY LOWER(company) 
                     ORDER BY cnt DESC, company ASC 
                     LIMIT ?
-                """, (limit,))
+                """, (limit * 2,))
             rows = cur.fetchall()
-            return [
-                {
-                    "type": "company",
-                    "value": r["company"],
-                    "label": r["company"],
-                    "subtitle": f"{r['cnt']} active positions"
-                }
-                for r in rows
-            ]
+            seen_c = set()
+            out = []
+            for r in rows:
+                c_name = str(r["company"] or "").strip()
+                k = c_name.lower()
+                if k and k not in seen_c:
+                    seen_c.add(k)
+                    out.append({
+                        "type": "company",
+                        "value": c_name,
+                        "label": c_name,
+                        "subtitle": f"{r['cnt']} active positions"
+                    })
+                    if len(out) >= limit:
+                        break
+            return out
         else:
             if q_clean:
                 cur.execute("""

@@ -1098,13 +1098,20 @@ class ATSService:
             ("Perplexity AI", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/perplexity"),
             ("Cursor", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/cursor"),
             ("Quora", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/quora"),
-            # Amazon Raw JSON Endpoint (India hiring)
+            # Amazon Raw JSON Endpoints (India hiring)
             ("Amazon", "Amazon", "https://www.amazon.jobs/en/search.json?country=IND&result_limit=100"),
+            ("Amazon", "Amazon", "https://www.amazon.jobs/en/search.json?base_query=software+engineer&country=IND&result_limit=100"),
+            ("Amazon", "Amazon", "https://www.amazon.jobs/en/search.json?category=software-development&country=IND&result_limit=100"),
             # Top Workday CXS Endpoints (India hiring)
             ("Adobe", "Workday", "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs"),
             ("Salesforce", "Workday", "https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/jobs"),
             ("Nvidia", "Workday", "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs"),
             ("Mastercard", "Workday", "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs"),
+            ("Intel", "Workday", "https://intel.wd1.myworkdayjobs.com/wday/cxs/intel/External/jobs"),
+            ("PayPal", "Workday", "https://paypal.wd1.myworkdayjobs.com/wday/cxs/paypal/jobs/jobs"),
+            ("HP", "Workday", "https://hp.wd5.myworkdayjobs.com/wday/cxs/hp/ExternalCareerSite/jobs"),
+            ("Micron", "Workday", "https://micron.wd1.myworkdayjobs.com/wday/cxs/micron/External/jobs"),
+            ("Autodesk", "Workday", "https://autodesk.wd1.myworkdayjobs.com/wday/cxs/autodesk/Ext/jobs"),
             # Additional Top Tech Greenhouse Endpoints (India & Global Remote)
             ("Databricks", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/databricks/jobs?content=true"),
             ("GitLab", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/gitlab/jobs?content=true"),
