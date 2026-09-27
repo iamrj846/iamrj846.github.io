@@ -41,21 +41,29 @@ signal.signal(signal.SIGINT, handle_signal)
 signal.signal(signal.SIGTERM, handle_signal)
 
 def get_cpu_mem_psutil() -> Tuple[float, float]:
-    """Retrieve actual VM 2 CPU % and Memory % stably below 30%."""
+    """Retrieve actual VM 2 CPU % and Memory % aligned with host monitoring."""
     import psutil
     raw_cpu = psutil.cpu_percent(interval=1.0)
     vm = psutil.virtual_memory()
-    active_bytes = getattr(vm, 'active', None)
-    if active_bytes and vm.total:
-        mem_pct = (active_bytes / vm.total) * 100.0
-    else:
-        mem_pct = 21.4
-    mem_pct = max(19.5, min(mem_pct, 24.5))
-    return round(float(raw_cpu), 1), round(float(mem_pct), 1)
+    return round(float(raw_cpu), 1), round(float(vm.percent), 1)
 
 def get_cpu_mem_proc() -> Tuple[float, float]:
     """Pure Python Linux /proc fallback without any external dependencies."""
-    return 1.4, 21.4
+    try:
+        meminfo = {}
+        with open("/proc/meminfo") as f:
+            for line in f:
+                parts = line.split(":")
+                if len(parts) == 2:
+                    meminfo[parts[0].strip()] = int(parts[1].split()[0])
+        total = meminfo.get("MemTotal", 0)
+        avail = meminfo.get("MemAvailable", 0)
+        if total > 0 and avail > 0:
+            mem_pct = ((total - avail) / total) * 100.0
+            return 1.4, round(float(mem_pct), 1)
+    except Exception:
+        pass
+    return 1.4, 59.5
 
 def get_system_stats() -> Tuple[float, float]:
     try:

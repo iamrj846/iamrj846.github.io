@@ -1089,10 +1089,44 @@ class ATSService:
             ("Spotify", "Lever", "https://api.lever.co/v0/postings/spotify?mode=json"),
             ("Cred", "Lever", "https://api.lever.co/v0/postings/cred?mode=json"),
             ("Palantir", "Lever", "https://api.lever.co/v0/postings/palantir?mode=json"),
+            ("Meesho", "Lever", "https://api.lever.co/v0/postings/meesho?mode=json"),
             # Top Ashby Tech Endpoints
             ("Linear", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/linear"),
             ("Ramp", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/ramp"),
-            ("Notion", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/notion")
+            ("Notion", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/notion"),
+            ("OpenAI", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/OpenAI"),
+            ("Perplexity AI", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/perplexity"),
+            ("Cursor", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/cursor"),
+            ("Quora", "Ashby", "https://api.ashbyhq.com/posting-api/job-board/quora"),
+            # Amazon Raw JSON Endpoint (India hiring)
+            ("Amazon", "Amazon", "https://www.amazon.jobs/en/search.json?country=IND&result_limit=100"),
+            # Top Workday CXS Endpoints (India hiring)
+            ("Adobe", "Workday", "https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/jobs"),
+            ("Salesforce", "Workday", "https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/jobs"),
+            ("Nvidia", "Workday", "https://nvidia.wd5.myworkdayjobs.com/wday/cxs/nvidia/NVIDIAExternalCareerSite/jobs"),
+            ("Mastercard", "Workday", "https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/jobs"),
+            # Additional Top Tech Greenhouse Endpoints (India & Global Remote)
+            ("Databricks", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/databricks/jobs?content=true"),
+            ("GitLab", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/gitlab/jobs?content=true"),
+            ("MongoDB", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/mongodb/jobs?content=true"),
+            ("Zscaler", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/zscaler/jobs?content=true"),
+            ("Okta", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/okta/jobs?content=true"),
+            ("Pinterest", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/pinterest/jobs?content=true"),
+            ("Twilio", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/twilio/jobs?content=true"),
+            ("Elastic", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/elastic/jobs?content=true"),
+            ("Roblox", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/roblox/jobs?content=true"),
+            ("Instacart", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/instacart/jobs?content=true"),
+            ("Airbnb", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/airbnb/jobs?content=true"),
+            ("Lyft", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/lyft/jobs?content=true"),
+            ("Affirm", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/affirm/jobs?content=true"),
+            ("Brex", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/brex/jobs?content=true"),
+            ("Gusto", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/gusto/jobs?content=true"),
+            ("Robinhood", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/robinhood/jobs?content=true"),
+            ("Datadog", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/datadog/jobs?content=true"),
+            ("Samsara", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/samsara/jobs?content=true"),
+            ("Asana", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/asana/jobs?content=true"),
+            ("Scale AI", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/scaleai/jobs?content=true"),
+            ("PagerDuty", "Greenhouse", "https://boards-api.greenhouse.io/v1/boards/pagerduty/jobs?content=true")
         ]
         for c_name, plat, ep_url in curated:
             k = (c_name.lower(), ep_url.split("?")[0].lower())
@@ -1321,6 +1355,8 @@ class ATSService:
             return self._parse_comeet(ep, data)
         elif "jobvite" in platform:
             return self._parse_jobvite(ep, data)
+        elif "amazon" in platform:
+            return self._parse_amazon(ep, data)
         else:
             # Try generic detection
             if isinstance(data, list):
@@ -2231,6 +2267,71 @@ class ATSService:
                 "workplace_type": workplace,
                 "experience_level": exp_level,
                 "ats_platform": "Jobvite",
+                "ingested_at": now_str
+            })
+        return results
+
+    def _parse_amazon(self, ep: ATSEndpoint, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        results = []
+        jobs = data.get("jobs", [])
+        if not jobs:
+            return results
+
+        for j in jobs:
+            title = j.get("title", "").strip()
+            if not title:
+                continue
+
+            city = (j.get("city") or "").strip()
+            state = (j.get("state") or "").strip()
+            country = (j.get("country_code") or "").strip()
+            loc_str = j.get("location") or f"{city}, {state}, {country}".strip(", ")
+
+            if country.upper() == "IND" or is_india_location(loc_str) or is_india_location(city):
+                clean_loc = extract_india_location(loc_str) if is_india_location(loc_str) else (f"{city}, India" if city else "India")
+            else:
+                continue
+
+            job_path = j.get("job_path", "")
+            if not job_path:
+                continue
+            apply_link = f"https://www.amazon.jobs{job_path}"
+
+            posted_date = j.get("posted_date", "")
+            ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
+
+            qualifications = (j.get("basic_qualifications") or "") + " " + (j.get("description_short") or "")
+            schedule_type = j.get("job_schedule_type", "")
+            emp_type = normalize_employment_type(schedule_type, title)
+            is_rem = "remote" in loc_str.lower() or "virtual" in loc_str.lower()
+            workplace = normalize_workplace(loc_str, is_remote=is_rem)
+            exp_level = normalize_experience_level(title, qualifications[:300])
+            tags = generate_job_tags(
+                title=title,
+                company=ep.company_name or "Amazon",
+                location=clean_loc,
+                workplace_type=workplace,
+                experience_level=exp_level,
+                employment_type=emp_type,
+                dept=j.get("job_category") or ""
+            )
+
+            now_str = datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
+            results.append({
+                "company_name": ep.company_name or "Amazon",
+                "role_name": title,
+                "title": title,
+                "location": clean_loc or "India",
+                "apply_link": apply_link,
+                "apply_url": apply_link,
+                "posted_timestamp_ist": ist_str,
+                "posted_timestamp_raw": raw_iso,
+                "relative_time_ist": rel_time or posted_date,
+                "tags": tags,
+                "employment_type": emp_type,
+                "workplace_type": workplace,
+                "experience_level": exp_level,
+                "ats_platform": "Amazon",
                 "ingested_at": now_str
             })
         return results
