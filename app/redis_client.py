@@ -121,12 +121,34 @@ def store_job_in_redis(job_data: Dict[str, Any], ttl_seconds: Optional[int] = No
     if ttl_seconds is None:
         ttl_seconds = config.redis_ttl_seconds
 
-    company = job_data.get("company_name", "").strip()
-    role = job_data.get("role_name", "").strip()
-    posted_ts = job_data.get("posted_timestamp_ist") or job_data.get("posted_timestamp_raw") or datetime.datetime.now(pytz.timezone("Asia/Kolkata")).isoformat()
+    company = (job_data.get("company_name") or job_data.get("company") or "").strip()
+    role = (job_data.get("role_name") or job_data.get("role_category") or "").strip()
+    posted_ts = job_data.get("posted_timestamp_ist") or job_data.get("posted_at") or job_data.get("posted_timestamp_raw") or datetime.datetime.now(pytz.timezone("Asia/Kolkata")).isoformat()
 
     if not company or not role:
         return False
+
+    # Ensure consistent fields in stored JSON
+    job_data["company_name"] = company
+    job_data["company"] = company
+    job_data["role_name"] = role
+    job_data["role_category"] = role
+    job_data["posted_timestamp_ist"] = str(posted_ts)
+    job_data["posted_at"] = str(posted_ts)
+
+    t_derived = job_data.get("time_derived")
+    if t_derived is None:
+        rel = job_data.get("relative_time_ist") or job_data.get("relative_time") or ""
+        t_derived = 0 if rel == "Recently indexed" else 1
+    else:
+        t_derived = 1 if t_derived else 0
+    job_data["time_derived"] = t_derived
+
+    from app.services.ats_service import parse_date_to_ist
+    _, _, rel_time = parse_date_to_ist(posted_ts)
+    if not t_derived:
+        rel_time = "Recently indexed"
+    job_data["relative_time_ist"] = rel_time
 
     apply_link = (job_data.get("apply_link") or job_data.get("apply_url") or "").strip()
     field_key = apply_link.rstrip("/").lower() if apply_link else str(posted_ts)

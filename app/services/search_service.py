@@ -947,6 +947,9 @@ class SearchService:
             for j in paginated_results:
                 job_copy = dict(j)
                 job_copy["tags"] = []
+                t_der = job_copy.get("time_derived")
+                if t_der is not None and not t_der:
+                    job_copy["relative_time_ist"] = "Recently indexed"
                 clean_results.append(job_copy)
 
             return {
@@ -1347,6 +1350,9 @@ class SearchService:
 
             # Calculate live relative time in IST
             _, _, rel = parse_date_to_ist(job.get("posted_timestamp_raw") or job.get("posted_timestamp_ist") or job.get("posted_at"))
+            t_derived = job.get("time_derived")
+            if t_derived is not None and not t_derived:
+                rel = "Recently indexed"
             job["relative_time_ist"] = rel
             job["tags"] = sanitize_tags(job.get("tags"))
 
@@ -1451,6 +1457,9 @@ class SearchService:
         for j in paginated_results:
             job_copy = dict(j)
             job_copy["tags"] = []  # Strictly conceal internal search tags
+            t_der = job_copy.get("time_derived")
+            if t_der is not None and not t_der:
+                job_copy["relative_time_ist"] = "Recently indexed"
             clean_results.append(job_copy)
 
         return {
