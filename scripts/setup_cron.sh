@@ -60,6 +60,7 @@ if command -v crontab &> /dev/null; then
         if [ "$IS_GATEWAY" = true ]; then
             echo "# CorporateGuild 10-Minute Cluster DB Synchronizer"
             echo "$SYNC_CRON"
+        fi
     ) | crontab -
 
     echo "🎉 Successfully installed! Active crontab entries:"
