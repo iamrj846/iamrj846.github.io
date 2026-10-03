@@ -139,6 +139,30 @@ def init_db():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_telem_session ON site_telemetry(session_id);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_telem_event ON site_telemetry(event_type);")
 
+    # System metrics historical monitoring table (1-minute samples synced with Oracle instance monitoring)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS system_metrics (
+        ts INTEGER PRIMARY KEY,
+        cpu REAL NOT NULL,
+        mem REAL NOT NULL,
+        vm1_cpu REAL NOT NULL,
+        vm1_mem REAL NOT NULL,
+        vm2_cpu REAL NOT NULL,
+        vm2_mem REAL NOT NULL,
+        tps_home REAL NOT NULL,
+        tps_jobs_page REAL NOT NULL,
+        tps_portfolio REAL NOT NULL,
+        tps_search_btn REAL NOT NULL,
+        tps_filter_btn REAL NOT NULL,
+        tps_apply_btn REAL NOT NULL,
+        tps_redis REAL NOT NULL,
+        tps_db REAL NOT NULL,
+        data_json TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    )
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_sys_metrics_ts ON system_metrics(ts);")
+
     # Guest quota tracking (by persistent guest_id cookie and fallback IP)
     cur.execute("PRAGMA table_info(guest_quotas);")
     cols = cur.fetchall()
@@ -1252,6 +1276,59 @@ def set_redis_enabled(enabled: bool) -> bool:
     # For backward compatibility, keep redis_kill_switch synchronized (1 when redis is disabled)
     set_system_setting("redis_kill_switch", "0" if enabled else "1")
     return bool(enabled)
+
+def save_system_metric_point(doc: Dict[str, Any]) -> None:
+    """Persists a 1-minute system metric snapshot to SQLite so metrics survive reboots and Redis flushes."""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        ts = int(doc.get("ts", 0))
+        cur.execute("""
+            INSERT OR REPLACE INTO system_metrics (
+                ts, cpu, mem, vm1_cpu, vm1_mem, vm2_cpu, vm2_mem,
+                tps_home, tps_jobs_page, tps_portfolio, tps_search_btn, tps_filter_btn, tps_apply_btn,
+                tps_redis, tps_db, data_json, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+        """, (
+            ts,
+            float(doc.get("cpu", 0.0)),
+            float(doc.get("mem", 0.0)),
+            float(doc.get("vm1_cpu", 0.0)),
+            float(doc.get("vm1_mem", 0.0)),
+            float(doc.get("vm2_cpu", 0.0)),
+            float(doc.get("vm2_mem", 0.0)),
+            float(doc.get("tps_home", 0.0)),
+            float(doc.get("tps_jobs_page", 0.0)),
+            float(doc.get("tps_portfolio", 0.0)),
+            float(doc.get("tps_search_btn", 0.0)),
+            float(doc.get("tps_filter_btn", 0.0)),
+            float(doc.get("tps_apply_btn", 0.0)),
+            float(doc.get("tps_redis", 0.0)),
+            float(doc.get("tps_db", 0.0)),
+            json.dumps(doc),
+        ))
+        conn.commit()
+    except Exception as e:
+        logger.warning(f"Failed to save system metric to DB: {e}")
+    finally:
+        conn.close()
+
+def get_system_metrics_from_db(hours: int = 1) -> List[Dict[str, Any]]:
+    """Retrieves chronological 1-minute system metrics from SQLite."""
+    import time
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        safe_hours = max(1, min(int(hours), 24))
+        cutoff_ts = int(time.time()) - (safe_hours * 3600)
+        cur.execute("SELECT data_json FROM system_metrics WHERE ts >= ? ORDER BY ts ASC", (cutoff_ts,))
+        rows = cur.fetchall()
+        return [json.loads(r["data_json"]) for r in rows if r["data_json"]]
+    except Exception as e:
+        logger.warning(f"Error fetching system metrics from DB: {e}")
+        return []
+    finally:
+        conn.close()
 
 def is_redis_kill_switch_active() -> bool:
     """Legacy helper: Kill switch active means Redis is bypassed/disabled."""

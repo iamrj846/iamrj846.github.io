@@ -1130,6 +1130,11 @@ class SearchService:
                     pipe.hgetall(h_key)
                 try:
                     batch_results = pipe.execute()
+                    if redis_start:
+                        try:
+                            metrics_svc.record_redis_latency((time.time() - redis_start) * 1000)
+                        except Exception:
+                            pass
                     for hdata in batch_results:
                         if not hdata or not isinstance(hdata, dict):
                             continue
@@ -1363,16 +1368,32 @@ class SearchService:
             if not ts:
                 return 0.0
             try:
-                clean_ts = str(ts).replace(" IST", "").replace("Z", "+00:00").strip()
+                s = str(ts).strip()
+                if s.replace(".", "", 1).isdigit():
+                    return float(s)
+                clean_ts = s.replace(" IST", "").strip()
                 if "T" in clean_ts:
+                    clean_ts = clean_ts.replace("Z", "+00:00")
                     dt = datetime.datetime.fromisoformat(clean_ts)
+                elif len(clean_ts) == 10 and clean_ts.count("-") == 2:
+                    dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d")
+                elif len(clean_ts) == 16 and clean_ts.count(":") == 1:
+                    dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M")
                 else:
-                    dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M:%S")
+                    base = clean_ts[:19]
+                    dt = datetime.datetime.strptime(base, "%Y-%m-%d %H:%M:%S")
                 if dt.tzinfo is None:
-                    dt = pytz.timezone("Asia/Kolkata").localize(dt)
-                return dt.astimezone(IST_TZ).timestamp()
+                    dt = IST_TZ.localize(dt)
+                return dt.timestamp()
             except Exception:
-                return 0.0
+                try:
+                    from dateutil import parser as date_parser
+                    dt = date_parser.parse(str(ts).replace(" IST", "").strip())
+                    if dt.tzinfo is None:
+                        dt = IST_TZ.localize(dt)
+                    return dt.timestamp()
+                except Exception:
+                    return 0.0
 
         filtered_jobs.sort(key=sort_key, reverse=True)
 

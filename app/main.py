@@ -83,20 +83,28 @@ import time
 
 @app.middleware("http")
 async def metrics_middleware(request: Request, call_next):
-    if request.url.path == "/api/jobs/search":
-        start_time = time.time()
-        response = await call_next(request)
-        duration_ms = (time.time() - start_time) * 1000
-        metrics = get_metrics_service()
-        # metrics.increment_search()
+    start_time = time.time()
+    response = await call_next(request)
+    duration_ms = (time.time() - start_time) * 1000
+
+    path = request.url.path
+    metrics = get_metrics_service()
+
+    if path == "/api/jobs/search":
+        metrics.inc_search_btn()
         metrics.record_search_latency(duration_ms)
-        return response
-    elif request.url.path == "/api/jobs/click":
-        metrics = get_metrics_service()
-        # metrics.increment_click()
-        return await call_next(request)
-    else:
-        return await call_next(request)
+    elif path in ("/api/jobs/click", "/api/telemetry/click"):
+        metrics.inc_apply_btn()
+    elif path in ("/", "/index.html", "/home"):
+        metrics.inc_home()
+    elif path in ("/jobs", "/jobs.html"):
+        metrics.inc_jobs_page()
+    elif path in ("/portfolio", "/portfolio.html"):
+        metrics.inc_portfolio()
+    elif "filter" in request.url.query.lower():
+        metrics.inc_filter_btn()
+
+    return response
 
 app.add_middleware(
     CORSMiddleware,

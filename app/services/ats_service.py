@@ -2034,19 +2034,26 @@ class ATSService:
         for j in jobs:
             title = j.get("title", "").strip()
             loc_name = j.get("locationsText", "")
+            external_path = j.get("externalPath", "")
+            if not external_path:
+                continue
             
-            # India location verification
-            if not is_india_location(loc_name):
+            # India location verification: check locationsText, externalPath, or title
+            clean_loc = None
+            if is_india_location(loc_name):
+                clean_loc = extract_india_location(loc_name)
+            elif external_path:
+                path_parts = external_path.strip("/").split("/")
+                if len(path_parts) >= 2:
+                    loc_part = path_parts[1].replace("-", " ")
+                    if is_india_location(loc_part):
+                        clean_loc = extract_india_location(loc_part)
+            
+            if not clean_loc:
                 if not loc_name.strip() and is_india_location(title):
                     clean_loc = "India"
                 else:
                     continue
-            else:
-                clean_loc = extract_india_location(loc_name)
-                
-            external_path = j.get("externalPath", "")
-            if not external_path:
-                continue
                 
             apply_link = f"{base_url}{external_path}"
             posted_date = j.get("postedOn", "")

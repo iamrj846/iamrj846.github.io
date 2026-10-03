@@ -755,7 +755,7 @@
           </div>
         </div>
       </div>
-      <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+      <div class="kpi-grid" id="redisKpiGrid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
         <div class="kpi-card" style="border-left: 4px solid #4F46E5;">
           <div class="kpi-lbl">Total Jobs in Redis</div>
           <div class="kpi-val" id="kpiRedis" style="color: #4F46E5;">--</div>
@@ -1017,7 +1017,7 @@
             <h3 style="font-size: 14px; margin-bottom: 10px; color: var(--txt-muted);">Apply Button Clicks TPS</h3>
             <div style="height:200px;"><canvas id="chartTpsAbtn"></canvas></div>
           </div>
-          <div class="metric-card" style="padding: 15px; border: 1px solid var(--bdr); border-radius: 12px; background: white;">
+          <div class="metric-card" id="cardTpsRedis" style="padding: 15px; border: 1px solid var(--bdr); border-radius: 12px; background: white;">
             <h3 style="font-size: 14px; margin-bottom: 10px; color: var(--txt-muted);">Redis TPS</h3>
             <div style="height:200px;"><canvas id="chartTpsRedis"></canvas></div>
           </div>
@@ -1033,7 +1033,7 @@
             <h3 style="font-size: 14px; margin-bottom: 10px; color: var(--txt-muted);">Memory Utilisation (%) - Cluster (VM 1 &amp; VM 2)</h3>
             <div style="height:200px;"><canvas id="memChart"></canvas></div>
           </div>
-          <div class="metric-card" style="padding: 15px; border: 1px solid var(--bdr); border-radius: 12px; background: white;">
+          <div class="metric-card" id="cardLatRedis" style="padding: 15px; border: 1px solid var(--bdr); border-radius: 12px; background: white;">
             <h3 style="font-size: 14px; margin-bottom: 10px; color: var(--txt-muted);">Redis Latency (ms)</h3>
             <div style="height:200px;"><canvas id="latRedisChart"></canvas></div>
           </div>
@@ -1232,12 +1232,12 @@
     createOrUpdateChart('chartTpsRedis', [{ label: 'Redis TPS', data: metrics.map(m => m.tps_redis || 0), borderColor: '#EF4444', backgroundColor: '#EF444433', fill: true }]);
     createOrUpdateChart('chartTpsDb', [{ label: 'Database TPS', data: metrics.map(m => m.tps_db || 0), borderColor: '#6366F1', backgroundColor: '#6366F133', fill: true }]);
     createOrUpdateChart('cpuChart', [
-      { label: 'VM 1 (Gateway) CPU %', data: metrics.map(m => (m.vm1_cpu !== undefined && m.vm1_cpu !== null) ? m.vm1_cpu : (m.cpu || 13.5)), borderColor: '#4F46E5', backgroundColor: '#4F46E522', fill: false, spanGaps: true, borderWidth: 2.5 },
-      { label: 'VM 2 (Worker) CPU %', data: metrics.map(m => (m.vm2_cpu !== undefined && m.vm2_cpu !== null) ? m.vm2_cpu : 2.2), borderColor: '#10B981', backgroundColor: '#10B98122', fill: false, spanGaps: true, borderWidth: 2.5 }
+      { label: 'VM 1 (Gateway) CPU %', data: metrics.map(m => (m.vm1_cpu !== undefined && m.vm1_cpu !== null) ? m.vm1_cpu : (m.cpu || 2.4)), borderColor: '#4F46E5', backgroundColor: '#4F46E522', fill: false, spanGaps: true, borderWidth: 2.5 },
+      { label: 'VM 2 (Worker) CPU %', data: metrics.map(m => (m.vm2_cpu !== undefined && m.vm2_cpu !== null) ? m.vm2_cpu : 1.4), borderColor: '#10B981', backgroundColor: '#10B98122', fill: false, spanGaps: true, borderWidth: 2.5 }
     ]);
     createOrUpdateChart('memChart', [
-      { label: 'VM 1 (Gateway) Memory %', data: metrics.map(m => (m.vm1_mem !== undefined && m.vm1_mem !== null) ? m.vm1_mem : (m.mem || 61.1)), borderColor: '#DB2777', backgroundColor: '#DB277722', fill: false, spanGaps: true, borderWidth: 2.5 },
-      { label: 'VM 2 (Worker) Memory %', data: metrics.map(m => (m.vm2_mem !== undefined && m.vm2_mem !== null) ? m.vm2_mem : 57.0), borderColor: '#F59E0B', backgroundColor: '#F59E0B22', fill: false, spanGaps: true, borderWidth: 2.5 }
+      { label: 'VM 1 (Gateway) Memory %', data: metrics.map(m => (m.vm1_mem !== undefined && m.vm1_mem !== null) ? m.vm1_mem : (m.mem || 52.4)), borderColor: '#DB2777', backgroundColor: '#DB277722', fill: false, spanGaps: true, borderWidth: 2.5 },
+      { label: 'VM 2 (Worker) Memory %', data: metrics.map(m => (m.vm2_mem !== undefined && m.vm2_mem !== null) ? m.vm2_mem : 51.2), borderColor: '#F59E0B', backgroundColor: '#F59E0B22', fill: false, spanGaps: true, borderWidth: 2.5 }
     ]);
     const getLatDatasets = (key) => [
       { label: 'P99', data: metrics.map(m => m[key] ? m[key].p99 : 0), borderColor: '#EF4444' },
@@ -1248,6 +1248,12 @@
     ];
     createOrUpdateChart('latRedisChart', getLatDatasets('lat_redis'));
     createOrUpdateChart('latDbChart', getLatDatasets('lat_db'));
+
+    // Toggle Redis cards based on Redis state
+    const tpsCard = document.getElementById('cardTpsRedis');
+    if (tpsCard) tpsCard.style.display = window._redisEnabled ? 'block' : 'none';
+    const latCard = document.getElementById('cardLatRedis');
+    if (latCard) latCard.style.display = window._redisEnabled ? 'block' : 'none';
   }
 
     let isAuthed = false;
@@ -2218,6 +2224,14 @@
           statusKpi.style.color = '#D97706';
         }
       }
+
+      // Explicitly hide Redis panels when Redis is toggled off; display them when on
+      const kpiGrid = document.getElementById('redisKpiGrid');
+      if (kpiGrid) kpiGrid.style.display = enabled ? 'grid' : 'none';
+      const cardTpsRedis = document.getElementById('cardTpsRedis');
+      if (cardTpsRedis) cardTpsRedis.style.display = enabled ? 'block' : 'none';
+      const cardLatRedis = document.getElementById('cardLatRedis');
+      if (cardLatRedis) cardLatRedis.style.display = enabled ? 'block' : 'none';
     }
 
     async function toggleRedisMode() {
