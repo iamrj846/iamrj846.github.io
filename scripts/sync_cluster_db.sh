@@ -39,8 +39,8 @@ rm -f "$DB_TEMP"
 sqlite3 "$DB_SOURCE" "PRAGMA wal_checkpoint(PASSIVE);" >/dev/null 2>&1 || true
 sqlite3 "$DB_SOURCE" ".backup '$DB_TEMP'"
 
-# 2. Verify snapshot integrity
-INTEGRITY=$(sqlite3 "$DB_TEMP" "PRAGMA integrity_check;" 2>/dev/null || echo "corrupt")
+# 2. Verify snapshot integrity with fast non-blocking quick_check
+INTEGRITY=$(sqlite3 "$DB_TEMP" "PRAGMA quick_check;" 2>/dev/null || echo "corrupt")
 if [ "$INTEGRITY" != "ok" ]; then
     log "ERROR: Integrity check failed on database snapshot: $INTEGRITY. Aborting sync."
     rm -f "$DB_TEMP"

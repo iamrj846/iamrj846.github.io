@@ -94,6 +94,17 @@ def parse_hash_name(hash_name: str) -> Tuple[str, str]:
         return parts[0], parts[1]
     return hash_name, ""
 
+def flush_redis() -> bool:
+    """Empties all keys from Redis across all databases to completely reclaim memory."""
+    try:
+        client = get_redis_client()
+        client.flushall()
+        logger.info("Successfully executed Redis FLUSHALL.")
+        return True
+    except Exception as e:
+        logger.warning(f"Error executing Redis FLUSHALL: {e}")
+        return False
+
 def store_job_in_redis(job_data: Dict[str, Any], ttl_seconds: Optional[int] = None) -> bool:
     """
     Stores a job in Redis under:
@@ -102,6 +113,10 @@ def store_job_in_redis(job_data: Dict[str, Any], ttl_seconds: Optional[int] = No
     Value: JSON object string
     TTL: 7 days
     """
+    from app.database import is_redis_enabled
+    if not is_redis_enabled():
+        return False
+
     config = get_config()
     if ttl_seconds is None:
         ttl_seconds = config.redis_ttl_seconds

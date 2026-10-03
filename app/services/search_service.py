@@ -668,7 +668,8 @@ class SearchService:
             logger.debug(f"DB active-suggestions query error: {e}")
 
         # Fallback: extract company & role directly from Redis key names without calling hgetall
-        if not active_companies or not active_roles:
+        from app.database import is_redis_enabled
+        if (not active_companies or not active_roles) and is_redis_enabled():
             try:
                 client = get_redis_client()
                 for k in client.scan_iter(match="*|*", count=1000):
@@ -691,15 +692,11 @@ class SearchService:
         """
         Provides autocomplete suggestions based on verified company names or industry roles.
         Only includes entries that have at least one active job posted in the last 7 days
-        (checked against Redis + DB) to minimise zero-result searches.
+        (checked against DB / Redis) to minimise zero-result searches.
         Falls back to full list if the data store is empty (cold start / warm-up).
         """
         q = (query or "").strip().lower()
         results = []
-
-        from app.database import is_redis_kill_switch_active, get_db_suggestions
-        if is_redis_kill_switch_active():
-            return get_db_suggestions(mode, query, limit=limit)
 
         active_companies, active_roles = self._get_active_companies_and_roles()
 
@@ -916,28 +913,7 @@ class SearchService:
         metrics_svc = get_metrics_service()
         raw_jobs = []
 
-        use_direct_db = is_redis_kill_switch_active()
-
-        if use_direct_db or not query_term:
-            db_start = time.time()
-            syns = self.get_role_synonyms(role_filter or query_term) if (role_filter or search_type == "role") else []
-            data = search_jobs_direct_db(
-                search_type=search_type,
-                query_term=query_term,
-                role_synonyms=syns,
-                location_filter=location_filter,
-                role_filter=role_filter,
-                employment_type=employment_type,
-                workplace_type=workplace_type,
-                experience_level=experience_level,
-                time_filter=active_time_filter,
-                page=page,
-                page_size=page_size
-            )
-            metrics_svc.record_db_latency((time.time() - db_start) * 1000)
-            return data
-
-        # Cache key for fast pagination and repeat queries
+        # Cache key for fast pagination and repeat queries (< 1ms)
         cache_key = (
             search_type,
             query_lower,
@@ -992,6 +968,27 @@ class SearchService:
                 },
                 "results": clean_results
             }
+
+        use_direct_db = is_redis_kill_switch_active()
+
+        if use_direct_db or not query_term:
+            db_start = time.time()
+            syns = self.get_role_synonyms(role_filter or query_term) if (role_filter or search_type == "role") else []
+            data = search_jobs_direct_db(
+                search_type=search_type,
+                query_term=query_term,
+                role_synonyms=syns,
+                location_filter=location_filter,
+                role_filter=role_filter,
+                employment_type=employment_type,
+                workplace_type=workplace_type,
+                experience_level=experience_level,
+                time_filter=active_time_filter,
+                page=page,
+                page_size=page_size
+            )
+            metrics_svc.record_db_latency((time.time() - db_start) * 1000)
+            return data
 
         try:
             client = get_redis_client()
@@ -1354,24 +1351,17 @@ class SearchService:
 
         filtered_jobs = deduped_jobs
 
-        # Step 5: Sort by Decreasing Timestamp Order (newest first in IST) with Semantic Relevance
-        if query_term:
-            precomputed_syns = self.get_role_synonyms(query_term)
-            for j in filtered_jobs:
-                score = calculate_semantic_relevance(query_term, j.get("title", ""), j.get("role_name", ""), j.get("tags"), precomputed_syns)
-                j["_rel_boost"] = score * 1000000.0
-
+        # Step 5: Sort strictly by Decreasing Timestamp Order (newest first in IST)
         def sort_key(j: Dict[str, Any]) -> float:
-            rel_boost = j.get("_rel_boost", 0.0)
             raw_epoch = j.get("posted_epoch")
             if raw_epoch is not None:
                 try:
-                    return float(raw_epoch) + rel_boost
+                    return float(raw_epoch)
                 except Exception:
                     pass
             ts = j.get("posted_timestamp_raw") or j.get("posted_timestamp_ist") or j.get("posted_at")
             if not ts:
-                return rel_boost
+                return 0.0
             try:
                 clean_ts = str(ts).replace(" IST", "").replace("Z", "+00:00").strip()
                 if "T" in clean_ts:
@@ -1380,9 +1370,9 @@ class SearchService:
                     dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M:%S")
                 if dt.tzinfo is None:
                     dt = pytz.timezone("Asia/Kolkata").localize(dt)
-                return dt.astimezone(IST_TZ).timestamp() + rel_boost
+                return dt.astimezone(IST_TZ).timestamp()
             except Exception:
-                return rel_boost
+                return 0.0
 
         filtered_jobs.sort(key=sort_key, reverse=True)
 

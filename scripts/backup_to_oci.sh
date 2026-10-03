@@ -80,9 +80,9 @@ src.close()
 "
 fi
 
-# Verify snapshot integrity
+# Verify snapshot integrity with fast non-blocking quick_check
 if command -v sqlite3 &> /dev/null; then
-    INTEGRITY=$(sqlite3 "$RAW_BACKUP" "PRAGMA integrity_check;" 2>/dev/null || echo "failed")
+    INTEGRITY=$(sqlite3 "$RAW_BACKUP" "PRAGMA quick_check;" 2>/dev/null || echo "failed")
     if [ "$INTEGRITY" != "ok" ]; then
         log "❌ Error: Snapshot integrity check failed ($INTEGRITY)!"
         rm -f "$RAW_BACKUP"
@@ -90,8 +90,12 @@ if command -v sqlite3 &> /dev/null; then
     fi
 fi
 
-# 3. Compress with maximum compression (gzip -9)
-gzip -9 -c "$RAW_BACKUP" > "$COMPRESSED_BACKUP"
+# 3. Compress with low CPU priority (nice -n 19, standard gzip -5) to eliminate CPU spikes
+if command -v nice &> /dev/null; then
+    nice -n 19 gzip -5 -c "$RAW_BACKUP" > "$COMPRESSED_BACKUP"
+else
+    gzip -5 -c "$RAW_BACKUP" > "$COMPRESSED_BACKUP"
+fi
 rm -f "$RAW_BACKUP"
 
 # 4. Generate SHA-256 Checksum
@@ -131,10 +135,33 @@ else
     log "   (Configure OCI CLI or set OCI_PAR_URL in .env.prod to enable cloud sync)"
 fi
 
-# 6. Rotate Local Backups (Keep latest 7 days / ~84 files for 2-hour cadence)
-log "🧹 Cleaning local backups older than $RETENTION_DAYS days..."
-find "$BACKUP_DIR" -type f -name "corporateguild_backup_*.db.gz" -mtime +"$RETENTION_DAYS" -delete 2>/dev/null || true
-find "$BACKUP_DIR" -type f -name "corporateguild_backup_*.sha256" -mtime +"$RETENTION_DAYS" -delete 2>/dev/null || true
+# 6. Rigorous Purge & Expiry Policy (Count-based: max 36 snapshots; Age-based: max 48 hours)
+MAX_LOCAL_BACKUPS=36
+RETENTION_HOURS=48
+
+log "🧹 Enforcing backup purge & expiry policy (max $MAX_LOCAL_BACKUPS snapshots, $RETENTION_HOURS hours)..."
+# A. Purge backups older than 48 hours
+find "$BACKUP_DIR" -type f -name "corporateguild_backup_*.db.gz" -mmin +$((RETENTION_HOURS * 60)) -delete 2>/dev/null || true
+find "$BACKUP_DIR" -type f -name "corporateguild_backup_*.sha256" -mmin +$((RETENTION_HOURS * 60)) -delete 2>/dev/null || true
+
+# B. Enforce count cap: strictly retain newest 36 snapshots
+TOTAL_FILES=$(ls -1t "$BACKUP_DIR"/corporateguild_backup_*.db.gz 2>/dev/null | wc -l || echo "0")
+if [ "$TOTAL_FILES" -gt "$MAX_LOCAL_BACKUPS" ]; then
+    PURGE_COUNT=$((TOTAL_FILES - MAX_LOCAL_BACKUPS))
+    log "🧹 Purging $PURGE_COUNT oldest local backup(s) to maintain $MAX_LOCAL_BACKUPS file quota..."
+    ls -1t "$BACKUP_DIR"/corporateguild_backup_*.db.gz | tail -n "$PURGE_COUNT" | while read -r old_file; do
+        rm -f "$old_file" "${old_file%.db.gz}.sha256"
+    done
+fi
+
+# C. Purge orphaned checksum files
+for chk in "$BACKUP_DIR"/corporateguild_backup_*.sha256; do
+    [ -f "$chk" ] || continue
+    base="${chk%.sha256}.db.gz"
+    if [ ! -f "$base" ]; then
+        rm -f "$chk"
+    fi
+done
 
 # Truncate log file if > 5000 lines
 if [ -f "$LOG_FILE" ] && [ "$(wc -l < "$LOG_FILE" || echo "0")" -gt 5000 ]; then

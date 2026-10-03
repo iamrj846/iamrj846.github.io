@@ -1,5 +1,5 @@
 from typing import Optional, Dict, Any
-from fastapi import APIRouter, Request, Response, HTTPException, Depends
+from fastapi import APIRouter, Request, Response, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel
 import secrets
 
@@ -38,6 +38,9 @@ class ContactStatusRequest(BaseModel):
     status: str
 
 class RedisKillSwitchRequest(BaseModel):
+    enabled: bool
+
+class RedisToggleRequest(BaseModel):
     enabled: bool
 
 
@@ -298,13 +301,15 @@ async def admin_stats(admin_user: Dict[str, Any] = Depends(verify_admin_session)
     except Exception:
         vm2_status = "active"
 
-    from app.database import is_redis_kill_switch_active
-    redis_kill_switch_on = is_redis_kill_switch_active()
+    from app.database import is_redis_enabled, is_redis_kill_switch_active
+    redis_enabled_on = is_redis_enabled()
+    redis_kill_switch_on = not redis_enabled_on
 
     return {
         "success": True,
         "metrics": db_metrics,
         "redis": redis_summary,
+        "redis_enabled": redis_enabled_on,
         "redis_kill_switch": redis_kill_switch_on,
         "sync": sync_status,
         "cluster": {
@@ -320,6 +325,71 @@ async def admin_stats(admin_user: Dict[str, Any] = Depends(verify_admin_session)
         }
     }
 
+@router.get("/redis-toggle")
+async def get_redis_toggle_status(admin_user: Dict[str, Any] = Depends(verify_admin_session)):
+    from app.database import is_redis_enabled
+    enabled = is_redis_enabled()
+    return {
+        "success": True,
+        "enabled": enabled,
+        "mode": "redis_cache" if enabled else "direct_db",
+        "description": "Redis In-Memory Cache Active" if enabled else "Direct SQLite Database Mode (Redis Bypassed & Empty)"
+    }
+
+@router.post("/redis-toggle")
+async def toggle_redis_cache(payload: RedisToggleRequest, background_tasks: BackgroundTasks, admin_user: Dict[str, Any] = Depends(verify_admin_session)):
+    import os, logging
+    logger = logging.getLogger("admin_router")
+    from app.database import set_redis_enabled
+    from app.redis_client import flush_redis
+
+    enabled = set_redis_enabled(payload.enabled)
+
+    if not enabled:
+        # Flush Redis completely to reclaim RAM immediately
+        flush_redis()
+        logger.info("Redis disabled via Admin Dashboard: FLUSHALL executed to free in-memory RAM.")
+    else:
+        # User toggled ON: warm Redis from DB in background task
+        from app.services.ingestion_service import warm_redis_from_db
+        background_tasks.add_task(warm_redis_from_db)
+        logger.info("Redis enabled via Admin Dashboard: background warming initiated from SQLite DB.")
+
+    # Broadcast switch state to worker node (VM 2) across private network
+    worker_ip = os.getenv("CLUSTER_WORKER_IP", "10.0.0.12")
+    if worker_ip and worker_ip not in ("127.0.0.1", "localhost"):
+        try:
+            import httpx
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                headers = {"Content-Type": "application/json"}
+                await client.post(
+                    f"http://{worker_ip}:80/api/admin/redis-toggle-worker",
+                    json={"enabled": payload.enabled},
+                    headers=headers
+                )
+        except Exception as e:
+            logger.debug(f"Failed to propagate Redis toggle to worker {worker_ip}: {e}")
+
+    mode_str = "Redis In-Memory Cache Mode" if enabled else "Direct SQLite Database Mode (Redis Bypassed & Empty)"
+    return {
+        "success": True,
+        "enabled": enabled,
+        "mode": "redis_cache" if enabled else "direct_db",
+        "message": f"Redis is now {'ENABLED (warming in background)' if enabled else 'DISABLED (RAM freed, direct DB mode active)'}."
+    }
+
+@router.post("/redis-toggle-worker")
+async def toggle_redis_cache_worker(payload: RedisToggleRequest, background_tasks: BackgroundTasks):
+    from app.database import set_redis_enabled
+    from app.redis_client import flush_redis
+    enabled = set_redis_enabled(payload.enabled)
+    if not enabled:
+        flush_redis()
+    else:
+        from app.services.ingestion_service import warm_redis_from_db
+        background_tasks.add_task(warm_redis_from_db)
+    return {"success": True, "enabled": enabled}
+
 @router.get("/redis-kill-switch")
 async def get_redis_kill_switch_status(admin_user: Dict[str, Any] = Depends(verify_admin_session)):
     from app.database import is_redis_kill_switch_active
@@ -332,11 +402,18 @@ async def get_redis_kill_switch_status(admin_user: Dict[str, Any] = Depends(veri
     }
 
 @router.post("/redis-kill-switch")
-async def toggle_redis_kill_switch(request: Request, payload: RedisKillSwitchRequest, admin_user: Dict[str, Any] = Depends(verify_admin_session)):
+async def toggle_redis_kill_switch(request: Request, payload: RedisKillSwitchRequest, background_tasks: BackgroundTasks, admin_user: Dict[str, Any] = Depends(verify_admin_session)):
     import os, logging
     logger = logging.getLogger("admin_router")
     from app.database import set_redis_kill_switch
+    from app.redis_client import flush_redis
+
     enabled = set_redis_kill_switch(payload.enabled)
+    if enabled:
+        flush_redis()
+    else:
+        from app.services.ingestion_service import warm_redis_from_db
+        background_tasks.add_task(warm_redis_from_db)
 
     # Broadcast switch state to worker node (VM 2) across private network
     worker_ip = os.getenv("CLUSTER_WORKER_IP", "10.0.0.12")
@@ -362,9 +439,15 @@ async def toggle_redis_kill_switch(request: Request, payload: RedisKillSwitchReq
     }
 
 @router.post("/redis-kill-switch-worker")
-async def set_worker_redis_kill_switch(payload: RedisKillSwitchRequest):
+async def set_worker_redis_kill_switch(payload: RedisKillSwitchRequest, background_tasks: BackgroundTasks):
     from app.database import set_redis_kill_switch
+    from app.redis_client import flush_redis
     enabled = set_redis_kill_switch(payload.enabled)
+    if enabled:
+        flush_redis()
+    else:
+        from app.services.ingestion_service import warm_redis_from_db
+        background_tasks.add_task(warm_redis_from_db)
     return {"success": True, "enabled": enabled}
 
 @router.get("/analytics")

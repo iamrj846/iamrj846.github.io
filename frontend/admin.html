@@ -636,10 +636,16 @@
   </header>
 
   <div class="container">
-    <div class="action-bar">
+    <div class="action-bar" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
       <div>
         <h1 style="font-size: 26px; font-weight: 900;">Platform Operations &amp; User Telemetry</h1>
         <div style="color: var(--txt-muted); font-size: 13px;" id="lastRefreshed">Auto-sync active</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button type="button" id="redisKillSwitchBtn" onclick="toggleRedisMode()" style="display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; border: 1.5px solid #FCD34D; background: #FFFBEB; color: #B45309; transition: all 0.2s ease;">
+          <span id="killSwitchDot">🟡</span>
+          <span id="killSwitchLabel">Redis Cache: OFF (DB Mode)</span>
+        </button>
       </div>
     </div>
 
@@ -729,6 +735,24 @@
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 16px; font-weight: 800; color: #1E1B4B;">🔴 Redis In-Memory Operations &amp; Real-time Cache</span>
           <span style="font-size: 12px; color: var(--txt-muted); font-weight: 500;">High-throughput search indices across cluster</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="redisStateBadge" style="font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 99px; background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D;">OFF (Direct DB Mode — 0 MB Cache)</span>
+          <button type="button" id="sectionRedisToggleBtn" onclick="toggleRedisMode()" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; border: 1.5px solid #CBD5E1; background: #FFFFFF; color: #334155; transition: all 0.2s ease;">
+            <span id="sectionRedisDot" style="width: 8px; height: 8px; border-radius: 50%; background: #94A3B8;"></span>
+            <span id="sectionRedisText">⚡ Turn Redis ON</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Redis Explainer Banner -->
+      <div id="redisModeBanner" style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 20px;">💡</span>
+          <div>
+            <div id="redisBannerTitle" style="font-weight: 700; font-size: 13px; color: #92400E;">Redis In-Memory Cache is OFF (Default Mode)</div>
+            <div id="redisBannerDesc" style="font-size: 12px; color: #B45309;">All search, autocomplete, and job data are served directly from SQLite database. Redis is empty to maintain low memory utilization (&lt; 30% VM RAM). Toggling Redis ON will populate it from DB.</div>
+          </div>
         </div>
       </div>
       <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
@@ -1387,9 +1411,9 @@
               if (document.getElementById('kpiDbAvgJobs')) {
                 document.getElementById('kpiDbAvgJobs').textContent = (m.avg_jobs_per_company !== undefined ? m.avg_jobs_per_company : '1.0');
               }
-              const isKillSwitchActive = !!stats.redis_kill_switch;
-              window._redisKillSwitch = isKillSwitchActive;
-              updateRedisKillSwitchUI(isKillSwitchActive);
+              const isRedisEnabled = (stats.redis_enabled !== undefined) ? !!stats.redis_enabled : !stats.redis_kill_switch;
+              window._redisEnabled = isRedisEnabled;
+              updateRedisToggleUI(isRedisEnabled);
               document.getElementById('lastRefreshed').textContent = 'Last sync: ' + new Date().toLocaleTimeString('en-IN') + ' IST';
             }
           } catch (e) {
@@ -2105,90 +2129,137 @@
       }
     }
 
-    function updateRedisKillSwitchUI(enabled) {
-      window._redisKillSwitch = !!enabled;
+    function updateRedisToggleUI(enabled) {
+      window._redisEnabled = !!enabled;
       const topBtn = document.getElementById('redisKillSwitchBtn');
       const dot = document.getElementById('killSwitchDot');
       const lbl = document.getElementById('killSwitchLabel');
-      const banner = document.getElementById('redisKillSwitchBanner');
-      const badge = document.getElementById('killSwitchBadge');
+      const badge = document.getElementById('redisStateBadge');
+      const secBtn = document.getElementById('sectionRedisToggleBtn');
+      const secDot = document.getElementById('sectionRedisDot');
+      const secText = document.getElementById('sectionRedisText');
+      const banner = document.getElementById('redisModeBanner');
+      const bannerTitle = document.getElementById('redisBannerTitle');
+      const bannerDesc = document.getElementById('redisBannerDesc');
       const statusKpi = document.getElementById('kpiRedisStatus');
 
       if (enabled) {
-        if (topBtn) {
-          topBtn.style.background = '#FFFBEB';
-          topBtn.style.borderColor = '#FCD34D';
-          topBtn.style.color = '#B45309';
-        }
-        if (dot) dot.textContent = '🟡';
-        if (lbl) lbl.textContent = 'Redis: BYPASSED (DB Mode)';
-        if (banner) banner.style.display = 'block';
-        if (badge) {
-          badge.textContent = 'DIRECT DB MODE (REDIS BYPASSED)';
-          badge.style.background = '#FEF3C7';
-          badge.style.color = '#92400E';
-        }
-        if (statusKpi) {
-          statusKpi.textContent = 'Bypassed 🟡';
-          statusKpi.style.color = '#D97706';
-        }
-      } else {
         if (topBtn) {
           topBtn.style.background = '#ECFDF5';
           topBtn.style.borderColor = '#A7F3D0';
           topBtn.style.color = '#047857';
         }
         if (dot) dot.textContent = '🟢';
-        if (lbl) lbl.textContent = 'Redis Cache: Active';
-        if (banner) banner.style.display = 'none';
+        if (lbl) lbl.textContent = 'Redis Cache: ON';
         if (badge) {
-          badge.textContent = 'REDIS CACHE ACTIVE';
+          badge.textContent = 'ON (Redis In-Memory Cache Active)';
           badge.style.background = '#DEF7EC';
           badge.style.color = '#03543F';
+          badge.style.borderColor = '#31C48D';
+        }
+        if (secBtn) {
+          secBtn.style.background = '#FEF2F2';
+          secBtn.style.borderColor = '#FCA5A5';
+          secBtn.style.color = '#B91C1C';
+        }
+        if (secDot) secDot.style.background = '#EF4444';
+        if (secText) secText.textContent = '🛑 Turn Redis OFF & Flush RAM';
+        if (banner) {
+          banner.style.background = '#ECFDF5';
+          banner.style.borderColor = '#A7F3D0';
+        }
+        if (bannerTitle) {
+          bannerTitle.textContent = 'Redis In-Memory Cache is ON';
+          bannerTitle.style.color = '#065F46';
+        }
+        if (bannerDesc) {
+          bannerDesc.textContent = 'High-throughput in-memory Redis cache is currently active across the cluster. If you wish to reduce VM memory usage below 30%, toggle Redis OFF.';
+          bannerDesc.style.color = '#047857';
         }
         if (statusKpi) {
-          statusKpi.textContent = 'Online 🟢';
+          statusKpi.textContent = 'Active 🟢';
           statusKpi.style.color = '#0EA5E9';
+        }
+      } else {
+        if (topBtn) {
+          topBtn.style.background = '#FFFBEB';
+          topBtn.style.borderColor = '#FCD34D';
+          topBtn.style.color = '#B45309';
+        }
+        if (dot) dot.textContent = '🟡';
+        if (lbl) lbl.textContent = 'Redis: OFF (Direct DB Mode)';
+        if (badge) {
+          badge.textContent = 'OFF (Direct DB Mode — 0 MB Cache)';
+          badge.style.background = '#FEF3C7';
+          badge.style.color = '#92400E';
+          badge.style.borderColor = '#FCD34D';
+        }
+        if (secBtn) {
+          secBtn.style.background = '#F0FDF4';
+          secBtn.style.borderColor = '#86EFAC';
+          secBtn.style.color = '#15803D';
+        }
+        if (secDot) secDot.style.background = '#10B981';
+        if (secText) secText.textContent = '⚡ Turn Redis ON & Warm Cache';
+        if (banner) {
+          banner.style.background = '#FFFBEB';
+          banner.style.borderColor = '#FDE68A';
+        }
+        if (bannerTitle) {
+          bannerTitle.textContent = 'Redis In-Memory Cache is OFF (Default Setting)';
+          bannerTitle.style.color = '#92400E';
+        }
+        if (bannerDesc) {
+          bannerDesc.textContent = 'All search, autocomplete, and job data are served directly from SQLite database. Redis is empty to maintain low memory utilization (< 30% VM RAM). Toggling Redis ON will populate it from DB.';
+          bannerDesc.style.color = '#B45309';
+        }
+        if (statusKpi) {
+          statusKpi.textContent = 'Disabled (0 MB Cache) 🟡';
+          statusKpi.style.color = '#D97706';
         }
       }
     }
 
-    async function toggleRedisKillSwitch() {
-      const current = !!window._redisKillSwitch;
+    async function toggleRedisMode() {
+      const current = !!window._redisEnabled;
       const targetState = !current;
       const confirmMsg = targetState
-        ? "⚠️ Activate Redis Kill Switch?\n\nThis will bypass Redis completely. All search, autocomplete/suggest, and listing requests will be served directly from the SQLite database with 100% parity.\n\nProceed?"
-        : "✅ Deactivate Redis Kill Switch?\n\nThis will restore high-throughput Redis in-memory cache operations across the cluster.\n\nProceed?";
+        ? "⚡ Turn Redis In-Memory Cache ON?\n\nThis will populate Redis with latest job data from the SQLite database and enable in-memory caching across both cluster nodes.\n\nProceed?"
+        : "🛑 Turn Redis In-Memory Cache OFF?\n\nThis will completely flush Redis in-memory storage (freeing RAM to keep VM memory utilization below 30%). All search and listing requests will be served directly from SQLite DB with 100% parity.\n\nProceed?";
 
       if (!confirm(confirmMsg)) return;
 
       const topBtn = document.getElementById('redisKillSwitchBtn');
-      const secBtn = document.getElementById('sectionKillSwitchBtn');
+      const secBtn = document.getElementById('sectionRedisToggleBtn');
       if (topBtn) topBtn.disabled = true;
       if (secBtn) secBtn.disabled = true;
 
       try {
-        const res = await fetch('/api/admin/redis-kill-switch', {
+        const res = await fetch('/api/admin/redis-toggle', {
           method: 'POST',
           headers: getAdminHeaders(),
           body: JSON.stringify({ enabled: targetState })
         });
         const data = await res.json();
         if (res.ok && data.success) {
-          window._redisKillSwitch = data.enabled;
-          updateRedisKillSwitchUI(data.enabled);
-          alert(data.message || 'Redis Kill Switch state updated.');
+          window._redisEnabled = data.enabled;
+          updateRedisToggleUI(data.enabled);
+          alert(data.message || 'Redis state updated successfully.');
         } else {
-          alert(data.detail || data.message || 'Failed to toggle Redis Kill Switch.');
+          alert(data.detail || data.message || 'Failed to toggle Redis state.');
         }
       } catch (e) {
-        alert('Network error while toggling Redis Kill Switch: ' + e);
+        alert('Network error while toggling Redis: ' + e);
       } finally {
         if (topBtn) topBtn.disabled = false;
         if (secBtn) secBtn.disabled = false;
         loadAdminData();
       }
     }
+
+    // Keep legacy aliases for safety
+    window.updateRedisKillSwitchUI = function(active) { updateRedisToggleUI(!active); };
+    window.toggleRedisKillSwitch = toggleRedisMode;
 
     async function adminLogout() {
       try {

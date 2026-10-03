@@ -54,9 +54,14 @@ class IngestionManager:
 
     def seed_initial_jobs(self) -> int:
         """Hydrates verified active India jobs from SQLite into Redis so the portal is instantly functional with 100% authentic live opportunities."""
-        from app.database import is_redis_kill_switch_active
-        if is_redis_kill_switch_active():
-            logger.info("Redis Kill Switch is active. Skipping Redis hydration.")
+        from app.database import is_redis_enabled
+        if not is_redis_enabled():
+            logger.info("Redis is disabled by default. Ensuring Redis is empty to conserve RAM.")
+            try:
+                from app.redis_client import flush_redis
+                flush_redis()
+            except Exception as e:
+                logger.debug(f"Redis flush notice: {e}")
             return 0
 
         count = 0
@@ -211,8 +216,8 @@ class IngestionManager:
 
         ingested_count = 0
         try:
-            from app.database import is_redis_kill_switch_active
-            redis_disabled = is_redis_kill_switch_active()
+            from app.database import is_redis_enabled
+            redis_enabled = is_redis_enabled()
 
             # 1. Fetch configured endpoints with controlled throttled concurrency (2)
             max_concurrency = 2
@@ -225,10 +230,9 @@ class IngestionManager:
             # 2. Always persist into SQLite DB (authoritative source of truth)
             if jobs:
                 save_jobs_to_db(jobs)
-                deduplicate_jobs_table()
 
-            # 3. If Redis is NOT bypassed, store into Redis in small batches
-            if not redis_disabled:
+            # 3. If Redis is ENABLED, store into Redis in small batches
+            if redis_enabled:
                 for i in range(0, len(jobs), 25):
                     chunk = jobs[i:i + 25]
                     for j in chunk:
@@ -250,7 +254,7 @@ class IngestionManager:
 
             # Update status using cached summary to avoid full keyspace scans
             total_hashes = 0
-            if not redis_disabled:
+            if redis_enabled:
                 try:
                     from app.redis_client import get_redis_summary
                     summary = get_redis_summary()
@@ -316,3 +320,54 @@ def get_ingestion_manager() -> IngestionManager:
 def get_sync_status() -> Dict[str, Any]:
     global _sync_status
     return dict(_sync_status)
+
+def warm_redis_from_db() -> int:
+    """
+    Populates Redis with all active jobs from SQLite DB when Redis is toggled ON.
+    Runs asynchronously and logs progress without impacting request latency.
+    """
+    from app.database import is_redis_enabled, get_db_connection
+    if not is_redis_enabled():
+        logger.info("warm_redis_from_db skipped: Redis is currently disabled.")
+        return 0
+
+    from app.redis_client import store_job_in_redis
+    from app.services.ats_service import parse_date_to_ist, extract_india_location
+    from app.config import get_config
+
+    config = get_config()
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM jobs WHERE is_active = 1")
+    rows = cur.fetchall()
+    conn.close()
+
+    count = 0
+    logger.info(f"Starting Redis warming for {len(rows)} active jobs from SQLite DB...")
+    for r in rows:
+        ist_str, raw_iso, rel_time = parse_date_to_ist(r["posted_at"])
+        clean_loc = extract_india_location(r["location"]) if r["location"] else "India"
+        emp_type = r["employment_type"] if "employment_type" in r.keys() and r["employment_type"] else "Full time"
+        j = {
+            "id": r["id"],
+            "company_name": r["company"],
+            "role_name": r["role_category"] or r["title"],
+            "title": r["title"],
+            "location": clean_loc or "India",
+            "employment_type": emp_type,
+            "workplace_type": r["workplace_type"] or "In office",
+            "experience_level": r["experience_level"] or "Entry level",
+            "apply_link": r["apply_url"],
+            "apply_url": r["apply_url"],
+            "posted_timestamp_ist": ist_str,
+            "posted_timestamp_raw": raw_iso,
+            "relative_time_ist": rel_time,
+            "tags": clean_tags_from_raw(r["tags"]),
+            "ats_platform": r["source"]
+        }
+        if store_job_in_redis(j, ttl_seconds=config.redis_ttl_seconds):
+            count += 1
+
+    logger.info(f"Redis warming complete: {count} jobs successfully populated in Redis cache.")
+    return count
+

@@ -93,6 +93,8 @@ def init_db():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_active_posted ON jobs(is_active, posted_at DESC);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_active_role ON jobs(is_active, role_category);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_active_company ON jobs(is_active, company);")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_lower_company ON jobs(LOWER(company));")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_lower_role ON jobs(LOWER(role_category));")
     try:
         deduplicate_jobs_table(conn)
         cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_apply_url ON jobs(apply_url);")
@@ -100,7 +102,7 @@ def init_db():
     except Exception as e:
         logger.warning(f"Could not index apply_url: {e}")
 
-    # System settings table for platform operational toggles (e.g. Redis kill switch)
+    # System settings table for platform operational toggles (e.g. Redis toggle)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS system_settings (
         key TEXT PRIMARY KEY,
@@ -108,6 +110,8 @@ def init_db():
         updated_at TEXT NOT NULL
     );
     """)
+    cur.execute("INSERT OR IGNORE INTO system_settings (key, value, updated_at) VALUES ('redis_enabled', '0', datetime('now'));")
+    cur.execute("INSERT OR IGNORE INTO system_settings (key, value, updated_at) VALUES ('redis_kill_switch', '1', datetime('now'));")
 
     # Ensure employment_type column exists
     cur.execute("PRAGMA table_info(jobs);")
@@ -1218,27 +1222,44 @@ def set_system_setting(key: str, value: str) -> None:
     finally:
         conn.close()
 
-_redis_kill_switch_cache = None
-_redis_kill_switch_cache_ts = 0.0
+_redis_enabled_cache = None
+_redis_enabled_cache_ts = 0.0
 
-def is_redis_kill_switch_active() -> bool:
-    global _redis_kill_switch_cache, _redis_kill_switch_cache_ts
+def is_redis_enabled() -> bool:
+    """
+    Checks if Redis in-memory cache is enabled.
+    Defaults to False (OFF) to keep memory utilization low (<30% VM RAM)
+    and eliminate unnecessary background cache overhead.
+    """
+    global _redis_enabled_cache, _redis_enabled_cache_ts
     import time
     now = time.time()
-    if _redis_kill_switch_cache is not None and (now - _redis_kill_switch_cache_ts < 5.0):
-        return _redis_kill_switch_cache
-    val = get_system_setting("redis_kill_switch", "0")
-    _redis_kill_switch_cache = (val.strip() == "1")
-    _redis_kill_switch_cache_ts = now
-    return _redis_kill_switch_cache
+    if _redis_enabled_cache is not None and (now - _redis_enabled_cache_ts < 3.0):
+        return _redis_enabled_cache
+    # Default is "0" (OFF)
+    val = get_system_setting("redis_enabled", "0")
+    _redis_enabled_cache = (val.strip() == "1")
+    _redis_enabled_cache_ts = now
+    return _redis_enabled_cache
+
+def set_redis_enabled(enabled: bool) -> bool:
+    """Sets Redis enabled state and updates cached value and database setting."""
+    global _redis_enabled_cache, _redis_enabled_cache_ts
+    import time
+    _redis_enabled_cache = bool(enabled)
+    _redis_enabled_cache_ts = time.time()
+    set_system_setting("redis_enabled", "1" if enabled else "0")
+    # For backward compatibility, keep redis_kill_switch synchronized (1 when redis is disabled)
+    set_system_setting("redis_kill_switch", "0" if enabled else "1")
+    return bool(enabled)
+
+def is_redis_kill_switch_active() -> bool:
+    """Legacy helper: Kill switch active means Redis is bypassed/disabled."""
+    return not is_redis_enabled()
 
 def set_redis_kill_switch(enabled: bool) -> bool:
-    global _redis_kill_switch_cache, _redis_kill_switch_cache_ts
-    import time
-    _redis_kill_switch_cache = bool(enabled)
-    _redis_kill_switch_cache_ts = time.time()
-    set_system_setting("redis_kill_switch", "1" if enabled else "0")
-    return bool(enabled)
+    """Legacy helper: Activating kill switch disables Redis."""
+    return not set_redis_enabled(not enabled)
 
 def search_jobs_direct_db(
     search_type: str = "company",
