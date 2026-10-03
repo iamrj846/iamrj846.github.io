@@ -1322,6 +1322,10 @@ class SearchService:
 
             # Time filter ("1h", "12h", "24h", "2d", "7d", "all")
             if active_time_filter and active_time_filter.lower() not in ("all", "anytime", "anytime (7 days)", "all time", "none", ""):
+                # Exclude uncomputable / non-derived fallback timestamps from strict recency filters
+                if job.get("time_derived") is not None and not job.get("time_derived"):
+                    continue
+
                 hours_map = {
                     "1h": 1, "1 hour": 1,
                     "12h": 12, "12 hours": 12,
@@ -1332,21 +1336,30 @@ class SearchService:
                 }
                 max_hours = hours_map.get(active_time_filter.lower(), 168)
                 posted_iso = job.get("posted_timestamp_raw") or job.get("posted_timestamp_ist") or job.get("posted_at")
-                if posted_iso:
-                    try:
-                        clean_ts = str(posted_iso).replace(" IST", "").replace("Z", "+00:00").strip()
-                        if "T" in clean_ts:
-                            dt = datetime.datetime.fromisoformat(clean_ts)
-                        else:
-                            dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M:%S")
-                        if dt.tzinfo is None:
-                            dt = pytz.timezone("Asia/Kolkata").localize(dt)
-                        ist_dt = dt.astimezone(IST_TZ)
-                        diff_hours = (now_ist - ist_dt).total_seconds() / 3600.0
-                        if diff_hours > max_hours:
-                            continue
-                    except Exception:
-                        pass
+                if not posted_iso:
+                    continue
+
+                try:
+                    clean_ts = str(posted_iso).replace(" IST", "").replace("Z", "+00:00").strip()
+                    if "T" in clean_ts:
+                        dt = datetime.datetime.fromisoformat(clean_ts)
+                    elif len(clean_ts) == 10 and clean_ts.count("-") == 2:
+                        dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d")
+                    elif len(clean_ts) == 16 and clean_ts.count(":") == 1:
+                        dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M")
+                    else:
+                        base = clean_ts[:19]
+                        dt = datetime.datetime.strptime(base, "%Y-%m-%d %H:%M:%S")
+                    if dt.tzinfo is None:
+                        dt = pytz.timezone("Asia/Kolkata").localize(dt)
+                    ist_dt = dt.astimezone(IST_TZ)
+                    diff_hours = (now_ist - ist_dt).total_seconds() / 3600.0
+                    if diff_hours < 0:
+                        diff_hours = 0.0
+                    if diff_hours > max_hours:
+                        continue
+                except Exception:
+                    continue
 
             # Calculate live relative time in IST
             _, _, rel = parse_date_to_ist(job.get("posted_timestamp_raw") or job.get("posted_timestamp_ist") or job.get("posted_at"))

@@ -1458,12 +1458,24 @@ def search_jobs_direct_db(
 
         tf = (time_filter or "all").strip().lower()
         if tf and tf not in ("all", "anytime", "anytime (7 days)", "all time", ""):
-            hours_map = {"1h": 1, "12h": 12, "24h": 24, "1d": 24, "2d": 48, "7d": 168, "30d": 720}
+            hours_map = {
+                "1h": 1, "1 hour": 1,
+                "12h": 12, "12 hours": 12,
+                "24h": 24, "24 hours": 24, "1d": 24, "1 day": 24,
+                "2d": 48, "2 days": 48, "48h": 48,
+                "7d": 168, "7 days": 168, "1w": 168, "1 week": 168,
+                "30d": 720, "30 days": 720, "1m": 720, "1 month": 720
+            }
             hours = hours_map.get(tf, 168)
             import datetime
-            cutoff = (datetime.datetime.utcnow() - datetime.timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
+            import pytz
+            ist_tz = pytz.timezone("Asia/Kolkata")
+            now_ist = datetime.datetime.now(ist_tz)
+            cutoff = (now_ist - datetime.timedelta(hours=hours)).strftime("%Y-%m-%d %H:%M:%S")
             conditions.append("posted_at >= ?")
             params.append(cutoff)
+            # When an explicit time filter is selected, strictly require authentic derived timestamps
+            conditions.append("time_derived = 1")
 
         where = " AND ".join(conditions)
 
