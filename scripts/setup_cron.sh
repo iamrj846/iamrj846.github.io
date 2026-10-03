@@ -16,7 +16,12 @@ mkdir -p "$WORKSPACE_ROOT/logs" "$WORKSPACE_ROOT/backups"
 chmod +x "$BACKUP_SCRIPT" "$FETCH_SCRIPT" "$KEEPALIVE_SCRIPT" "$SYNC_SCRIPT" 2>/dev/null || true
 
 # 1-Hour periodic ATS fetch & database update cron
-FETCH_CRON="0 * * * * cd $WORKSPACE_ROOT && python3 $FETCH_SCRIPT >> $WORKSPACE_ROOT/logs/hourly_fetch.log 2>&1"
+if command -v docker &>/dev/null && docker ps --format '{{.Names}}' | grep -q 'corporateguild_web'; then
+    CONTAINER_NAME=$(docker ps --format '{{.Names}}' | grep 'corporateguild_web' | head -n 1)
+    FETCH_CRON="0 * * * * docker exec $CONTAINER_NAME python3 scripts/periodic_fetch_and_update.py >> $WORKSPACE_ROOT/logs/hourly_fetch.log 2>&1"
+else
+    FETCH_CRON="0 * * * * cd $WORKSPACE_ROOT && python3 $FETCH_SCRIPT >> $WORKSPACE_ROOT/logs/hourly_fetch.log 2>&1"
+fi
 # 1-Hour SQLite backup cron (every hour at :30)
 BACKUP_CRON="30 * * * * /bin/bash $BACKUP_SCRIPT >> $WORKSPACE_ROOT/logs/backup.log 2>&1"
 KEEPALIVE_CRON="*/10 * * * * /bin/bash $KEEPALIVE_SCRIPT >> $WORKSPACE_ROOT/logs/keepalive.log 2>&1"
