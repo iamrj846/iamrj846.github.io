@@ -627,6 +627,7 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
             skills = excluded.skills,
             description = excluded.description,
             apply_url = excluded.apply_url,
+            posted_at = CASE WHEN excluded.posted_at IS NOT NULL AND excluded.posted_at != '' THEN excluded.posted_at ELSE jobs.posted_at END,
             is_active = 1,
             updated_at = excluded.updated_at
         """, (

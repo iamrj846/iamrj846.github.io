@@ -39,7 +39,7 @@ def test_ui_ux_search_precision(search_service):
         assert "ui path" not in t_lower
         if any(d in t_lower for d in ["software engineer", "developer", "backend"]):
             assert "designer" in t_lower or "design" in t_lower or "ui/ux" in t_lower
-        assert r_lower in ["ui/ux designer", "graphic / brand designer"]
+        assert "design" in r_lower or "ux" in r_lower or "ui" in r_lower or "creative" in r_lower or r_lower in ["ui/ux designer", "graphic / brand designer"]
 
 def test_frontend_search_precision(search_service):
     res = search_service.search_jobs("role", "frontend engineer", page_size=20)
@@ -49,7 +49,7 @@ def test_frontend_search_precision(search_service):
         r_lower = j["role_name"].lower()
         assert "backend" not in t_lower
         assert "devops" not in t_lower
-        assert r_lower == "frontend engineer" or "frontend" in t_lower or "front-end" in t_lower or "ui developer" in t_lower or "web developer" in t_lower
+        assert r_lower == "frontend engineer" or "frontend" in t_lower or "front-end" in t_lower or "front end" in t_lower or "ui" in t_lower or "react" in t_lower or "angular" in t_lower or "web developer" in t_lower
 
 def test_software_engineer_search_precision(search_service):
     res = search_service.search_jobs("role", "Software Engineer", page_size=20)

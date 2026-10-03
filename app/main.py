@@ -241,6 +241,10 @@ async def serve_robots():
 async def serve_sitemap():
     return FileResponse(str(STATIC_DIR / "sitemap.xml"), media_type="application/xml; charset=utf-8")
 
+@app.api_route("/8f3e2b1a9c4d7e6f.txt", methods=["GET", "HEAD"])
+async def serve_indexnow_key():
+    return FileResponse(str(STATIC_DIR / "8f3e2b1a9c4d7e6f.txt"), media_type="text/plain; charset=utf-8")
+
 @app.api_route("/manifest.json", methods=["GET", "HEAD"])
 async def serve_manifest():
     return FileResponse(str(STATIC_DIR / "manifest.json"), media_type="application/manifest+json; charset=utf-8")

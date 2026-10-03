@@ -6,7 +6,7 @@
 # - Compresses with gzip -9 and generates SHA-256 checksum
 # - Uploads to Oracle Cloud Object Storage bucket (Always Free: 10 GB limit)
 # - Rotates local and remote backups (7-day retention / 84 snapshots)
-# - Designed to run via cron every 2 hours: 0 */2 * * *
+# - Designed to run via cron every 1 hour: 30 * * * *
 # ==============================================================================
 
 set -euo pipefail

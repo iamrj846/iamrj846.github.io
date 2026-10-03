@@ -83,19 +83,62 @@ def to_ist(dt: datetime.datetime) -> datetime.datetime:
 
 def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
     """
+    Parses any date string, relative expression, or epoch timestamp into IST.
     Returns (posted_timestamp_ist, posted_timestamp_raw, relative_time_ist)
     """
     now_ist = datetime.datetime.now(IST_TZ)
     if not date_str:
         raw_iso = now_ist.isoformat()
         ist_str = now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
-        return ist_str, raw_iso, "Just now"
+        return ist_str, raw_iso, "Recent"
 
-    dt = None
     clean_str = str(date_str).strip()
-    is_explicit_ist = False
+    clean_lower = clean_str.lower()
 
-    # Handle numeric epoch timestamp (ms or s)
+    # 1. Check relative date strings (Workday, Workable, Lever, etc.)
+    # e.g. "Posted 4 Days Ago", "Posted 30+ Days Ago", "Posted Yesterday", "Posted Today", "2 days ago", "3 hours ago"
+    m_rel = re.search(r"(?:posted\s+)?(\d+)\+?\s+(day|days|hour|hours|hr|hrs|minute|minutes|min|mins|week|weeks|month|months)\s+ago", clean_lower)
+    if m_rel:
+        val, unit = int(m_rel.group(1)), m_rel.group(2)
+        if "min" in unit:
+            dt = now_ist - datetime.timedelta(minutes=val)
+            rel = f"{val}m ago"
+        elif "hour" in unit or "hr" in unit:
+            dt = now_ist - datetime.timedelta(hours=val)
+            rel = f"{val}h ago"
+        elif "day" in unit:
+            dt = now_ist - datetime.timedelta(days=val)
+            if "30+" in clean_lower or val >= 30:
+                rel = "30+ days ago"
+            elif val == 1:
+                rel = "1 day ago"
+            else:
+                rel = f"{val} days ago"
+        elif "week" in unit:
+            dt = now_ist - datetime.timedelta(weeks=val)
+            rel = "1 week ago" if val == 1 else f"{val} weeks ago"
+        elif "month" in unit:
+            dt = now_ist - datetime.timedelta(days=val * 30)
+            rel = "1 month ago" if val == 1 else f"{val} months ago"
+        else:
+            dt = now_ist
+            rel = "Recent"
+
+        ist_dt = to_ist(dt)
+        return ist_dt.strftime("%Y-%m-%d %H:%M:%S IST"), ist_dt.isoformat(), rel
+
+    if "yesterday" in clean_lower:
+        dt = to_ist(now_ist - datetime.timedelta(days=1))
+        return dt.strftime("%Y-%m-%d %H:%M:%S IST"), dt.isoformat(), "Yesterday"
+
+    if "today" in clean_lower:
+        return now_ist.strftime("%Y-%m-%d %H:%M:%S IST"), now_ist.isoformat(), "Today"
+
+    if "just now" in clean_lower:
+        return now_ist.strftime("%Y-%m-%d %H:%M:%S IST"), now_ist.isoformat(), "Just now"
+
+    # 2. Check numeric epoch timestamp (ms or s)
+    dt = None
     if isinstance(date_str, (int, float)) or (clean_str.isdigit() and len(clean_str) >= 9):
         try:
             val = float(clean_str)
@@ -105,21 +148,24 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
         except Exception:
             dt = None
 
-    # Strip explicit IST suffix if present
+    # 3. Strip explicit IST suffix if present
+    is_explicit_ist = False
     if dt is None and clean_str.endswith(" IST"):
         clean_str = clean_str[:-4].strip()
         is_explicit_ist = True
 
-    try:
-        cleaned_iso = clean_str.replace("Z", "+00:00")
-        dt = datetime.datetime.fromisoformat(cleaned_iso)
-        if is_explicit_ist and dt.tzinfo is None:
-            dt = IST_TZ.localize(dt)
-    except Exception:
-        pass
-
+    # 4. ISO 8601 parsing
     if dt is None:
-        # Try standard datetime formats
+        try:
+            cleaned_iso = clean_str.replace("Z", "+00:00")
+            dt = datetime.datetime.fromisoformat(cleaned_iso)
+            if is_explicit_ist and dt.tzinfo is None:
+                dt = IST_TZ.localize(dt)
+        except Exception:
+            pass
+
+    # 5. Standard date format parsing
+    if dt is None:
         for fmt in (
             "%Y-%m-%d %H:%M:%S",
             "%Y-%m-%dT%H:%M:%S",
@@ -127,8 +173,14 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
             "%Y-%m-%d",
             "%d-%m-%Y %H:%M:%S",
             "%d/%m/%Y %H:%M:%S",
+            "%d-%m-%Y",
+            "%d/%m/%Y",
+            "%Y/%m/%d %H:%M:%S",
+            "%Y/%m/%d",
             "%b %d, %Y",
-            "%B %d, %Y"
+            "%B %d, %Y",
+            "%d %b %Y",
+            "%d %B %Y",
         ):
             try:
                 dt = datetime.datetime.strptime(clean_str, fmt)
@@ -137,8 +189,8 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
             except Exception:
                 continue
 
+    # 6. Fallback email/RFC 2822 date parsing
     if dt is None:
-        # Fallback regex / email parsing
         try:
             from email.utils import parsedate_to_datetime
             dt = parsedate_to_datetime(date_str)
@@ -148,13 +200,16 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
     ist_dt = to_ist(dt)
     if ist_dt.year < 2020 or ist_dt.year > 2030:
         ist_dt = now_ist
+
     raw_iso = ist_dt.isoformat()
     ist_str = ist_dt.strftime("%Y-%m-%d %H:%M:%S IST")
 
-    # Relative time string
+    # Compute live relative time string accurately
     diff = now_ist - ist_dt
     seconds = int(diff.total_seconds())
-    if seconds < 60:
+    if seconds < 0:
+        rel = "Today"
+    elif seconds < 60:
         rel = "Just now"
     elif seconds < 3600:
         rel = f"{max(1, seconds // 60)}m ago"
@@ -168,6 +223,9 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
     elif seconds < 2592000:
         weeks = max(1, seconds // 604800)
         rel = f"{weeks} week{'s' if weeks > 1 else ''} ago"
+    elif seconds < 31536000:
+        months = max(1, seconds // 2592000)
+        rel = f"{months} month{'s' if months > 1 else ''} ago"
     else:
         rel = ist_dt.strftime("%d %b %Y")
 
@@ -1152,6 +1210,11 @@ class ATSService:
             try:
                 with open(sr_file, "r") as f:
                     for slug in json.load(f):
+                        u_in = f"https://api.smartrecruiters.com/v1/companies/{slug}/postings?country=in&limit=100"
+                        k_in = (slug.lower(), u_in.lower())
+                        if k_in not in seen:
+                            seen.add(k_in)
+                            self.endpoints.append(ATSEndpoint(slug, "SmartRecruiters", u_in))
                         u = f"https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=100"
                         k = (slug.lower(), u.lower())
                         if k not in seen:
@@ -1533,7 +1596,7 @@ class ATSService:
                 apply_link = f"https://jobs.smartrecruiters.com/{comp_identifier}/{job_id}"
             else:
                 apply_link = f"https://jobs.smartrecruiters.com/{comp_identifier}"
-            released_at = j.get("releasedDate")
+            released_at = j.get("releasedDate") or j.get("createdOn") or j.get("updatedOn")
             ist_str, raw_iso, rel_time = parse_date_to_ist(released_at)
 
             type_obj = j.get("typeOfEmployment") or {}
@@ -1850,7 +1913,7 @@ class ATSService:
                 shortcode = j.get("shortcode")
                 apply_link = f"https://apply.workable.com/j/{shortcode}" if shortcode else ep.endpoint_url
 
-            pub_date = j.get("published_on") or j.get("created_at") or ""
+            pub_date = j.get("published_on") or j.get("created_at") or j.get("updated_at") or ""
             ist_str, raw_iso, rel_time = parse_date_to_ist(pub_date)
 
             emp_type = normalize_employment_type(j.get("employment_type", ""), title)
@@ -1918,7 +1981,8 @@ class ATSService:
                 slug = ep.endpoint_url.split("/board/")[1].split("/")[0] if "/board/" in ep.endpoint_url else company_display.lower()
                 apply_link = f"https://ats.rippling.com/{slug}/jobs/{job_uuid}"
 
-            ist_str, raw_iso, rel_time = parse_date_to_ist(None)
+            raw_date = j.get("created_at") or j.get("updated_at") or j.get("posted_date") or j.get("published_at")
+            ist_str, raw_iso, rel_time = parse_date_to_ist(raw_date)
 
             dept_obj = j.get("department") or {}
             dept_name = dept_obj.get("label", "") if isinstance(dept_obj, dict) else ""

@@ -76,45 +76,7 @@ class IngestionManager:
             try:
                 dbsize = client.dbsize()
                 if dbsize >= 1000:
-                    logger.info(f"Redis is already warm with {dbsize} keys. Running fast freshness check.")
-                    conn = get_db_connection()
-                    cur = conn.cursor()
-                    one_hour_ago = now_dt - datetime.timedelta(hours=1)
-                    one_hour_ago_str = one_hour_ago.strftime("%Y-%m-%d %H:%M:%S")
-                    cur.execute("SELECT COUNT(*) FROM jobs WHERE is_active = 1 AND posted_at >= ?", (one_hour_ago_str,))
-                    recent_count = cur.fetchone()[0]
-                    if recent_count < 35:
-                        cur.execute("SELECT * FROM jobs WHERE is_active = 1 ORDER BY posted_at DESC LIMIT 45")
-                        top_rows = cur.fetchall()
-                        for idx, r in enumerate(top_rows):
-                            offset_mins = min(58, idx + 1)
-                            fresh_dt = now_dt - datetime.timedelta(minutes=offset_mins)
-                            fresh_str = fresh_dt.strftime("%Y-%m-%d %H:%M:%S IST")
-                            cur.execute("UPDATE jobs SET posted_at = ? WHERE id = ?", (fresh_str, r["id"]))
-                            ist_str, raw_iso, rel_time = parse_date_to_ist(fresh_str)
-                            clean_loc = extract_india_location(r["location"])
-                            emp_type = r["employment_type"] if "employment_type" in r.keys() and r["employment_type"] else "Full time"
-                            j = {
-                                "id": r["id"],
-                                "company_name": r["company"],
-                                "role_name": r["role_category"] or r["title"],
-                                "title": r["title"],
-                                "location": clean_loc or "India",
-                                "employment_type": emp_type,
-                                "workplace_type": r["workplace_type"] or "In office",
-                                "experience_level": r["experience_level"] or "Entry level",
-                                "apply_link": r["apply_url"],
-                                "apply_url": r["apply_url"],
-                                "posted_timestamp_ist": ist_str,
-                                "posted_timestamp_raw": raw_iso,
-                                "relative_time_ist": rel_time,
-                                "tags": clean_tags_from_raw(r["tags"]),
-                                "ats_platform": r["source"]
-                            }
-                            store_job_in_redis(j, ttl_seconds=self.config.redis_ttl_seconds)
-                        conn.commit()
-                    conn.close()
-                    logger.info(f"Verified {dbsize} active keys in Redis.")
+                    logger.info(f"Redis is already warm with {dbsize} verified keys.")
                     return dbsize
             except Exception as e:
                 logger.warning(f"Fast Redis warm check notice: {e}")
@@ -125,7 +87,7 @@ class IngestionManager:
 
             conn = get_db_connection()
             cur = conn.cursor()
-            cur.execute("SELECT * FROM jobs WHERE is_active = 1")
+            cur.execute("SELECT * FROM jobs WHERE is_active = 1 ORDER BY posted_at DESC LIMIT 1500")
             rows = cur.fetchall()
 
             # Filter rows strictly for authentic India/Remote jobs with valid URLs
@@ -139,39 +101,6 @@ class IngestionManager:
                 if not is_india_location(loc, workplace_type=wp):
                     continue
                 valid_rows.append(r)
-
-            # Check how many active jobs exist in the last 1 hour
-            one_hour_ago = now_dt - datetime.timedelta(hours=1)
-            recent_count = 0
-            for r in valid_rows:
-                try:
-                    _, raw_iso, _ = parse_date_to_ist(r["posted_at"])
-                    if datetime.datetime.fromisoformat(raw_iso) >= one_hour_ago:
-                        recent_count += 1
-                except Exception:
-                    pass
-
-            # If fewer than 35 jobs are within the last 1 hour, roll forward top 45 authentic active jobs
-            if recent_count < 35 and valid_rows:
-                for idx, r in enumerate(valid_rows[:45]):
-                    offset_mins = min(58, idx + 1)
-                    fresh_dt = now_dt - datetime.timedelta(minutes=offset_mins)
-                    fresh_str = fresh_dt.strftime("%Y-%m-%d %H:%M:%S IST")
-                    cur.execute("UPDATE jobs SET posted_at = ? WHERE id = ?", (fresh_str, r["id"]))
-                conn.commit()
-
-                # Re-query
-                cur.execute("SELECT * FROM jobs WHERE is_active = 1")
-                valid_rows = []
-                for r in cur.fetchall():
-                    loc = r["location"] or ""
-                    wp = r["workplace_type"] or ""
-                    apply_url = (r["apply_url"] or "").strip()
-                    if not apply_url or not apply_url.startswith("http"):
-                        continue
-                    if not is_india_location(loc, workplace_type=wp):
-                        continue
-                    valid_rows.append(r)
 
             # Store jobs in batches
             for row in valid_rows:

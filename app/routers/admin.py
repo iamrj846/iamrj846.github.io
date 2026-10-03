@@ -520,3 +520,13 @@ async def admin_delete_contact(contact_id: int, admin_user: Dict[str, Any] = Dep
     if not success:
         raise HTTPException(status_code=404, detail="Contact inquiry not found.")
     return {"success": True, "message": f"Contact inquiry #{contact_id} permanently deleted."}
+
+@router.post("/notify-search-engines")
+async def admin_notify_search_engines(
+    admin_user: Dict[str, Any] = Depends(verify_admin_session)
+):
+    import asyncio
+    from scripts.notify_search_engines import run_search_engine_notifications
+    result = await asyncio.to_thread(run_search_engine_notifications)
+    return {"success": True, "message": "Search engine notification completed.", "details": result}
+

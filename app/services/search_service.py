@@ -1167,6 +1167,26 @@ class SearchService:
             metrics_svc.record_db_latency((time.time() - db_start) * 1000)
             return data
 
+        if not raw_jobs:
+            db_start = time.time()
+            syns = self.get_role_synonyms(role_filter or query_term) if (role_filter or search_type == "role") else []
+            data = search_jobs_direct_db(
+                search_type=search_type,
+                query_term=query_term,
+                role_synonyms=syns,
+                location_filter=location_filter,
+                role_filter=role_filter,
+                employment_type=employment_type,
+                workplace_type=workplace_type,
+                experience_level=experience_level,
+                time_filter=active_time_filter,
+                page=page,
+                page_size=page_size
+            )
+            metrics_svc.record_db_latency((time.time() - db_start) * 1000)
+            if data and data.get("total_count", 0) > 0:
+                return data
+
         # Step 3: Apply Filters
         filtered_jobs = []
         now_ist = datetime.datetime.now(IST_TZ)
