@@ -349,7 +349,7 @@ DROPDOWN_HTML = """      <div class="nav-item-dropdown" id="navCareerGuidesDropd
         </a>
         <div class="nav-dropdown-menu">
           <div class="nav-dropdown-header">
-            <span>70 Career Tracks</span>
+            <span>100 Career Tracks</span>
             <a href="/articles.html">Browse All &rarr;</a>
           </div>
           <div class="nav-dropdown-grid">
@@ -414,7 +414,7 @@ DROPDOWN_HTML = """      <div class="nav-item-dropdown" id="navCareerGuidesDropd
               <a href="/jobs.html?workplace=remote" class="nav-tag-pill">Remote Jobs</a>
               <a href="/jobs.html?experience=entry" class="nav-tag-pill">Entry Level</a>
             </div>
-            <a href="/articles.html" class="nav-dropdown-all-btn">View All 70 Career Guides &rarr;</a>
+            <a href="/articles.html" class="nav-dropdown-all-btn">View All 100 Career Guides &rarr;</a>
           </div>
         </div>
       </div>"""

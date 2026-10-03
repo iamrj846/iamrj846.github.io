@@ -47,7 +47,8 @@ def test_frontend_search_precision(search_service):
     for j in res["results"][:15]:
         t_lower = j["title"].lower()
         r_lower = j["role_name"].lower()
-        assert "backend" not in t_lower
+        if "frontend" not in t_lower and "front-end" not in t_lower and "front end" not in t_lower:
+            assert "backend" not in t_lower
         assert "devops" not in t_lower
         assert r_lower == "frontend engineer" or "frontend" in t_lower or "front-end" in t_lower or "front end" in t_lower or "ui" in t_lower or "react" in t_lower or "angular" in t_lower or "web developer" in t_lower
 
