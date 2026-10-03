@@ -4,10 +4,12 @@ Update frontend/articles.html with all 50 career guides, domain categories,
 live search filter, and interactive Career Guides navigation.
 """
 
+import sys
 from pathlib import Path
 import re
 
 WORKSPACE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(WORKSPACE))
 ARTICLES_HTML = WORKSPACE / "frontend" / "articles.html"
 
 # Complete directory of all 50 Career Guides across 7 Core Domains
@@ -908,35 +910,13 @@ filter_script = """
 
 
 def main():
-    print(f"Updating {ARTICLES_HTML} with all {len(GUIDES)} career guides...")
-    with open(ARTICLES_HTML, "r", encoding="utf-8") as f:
-        content = f.read()
-
-    # Replace the grid in articles.html
-    grid_pattern = r'<main class="results-container"[^>]*>.*?<div id="guidesGrid"[^>]*>.*?</div>\s*</main>'
-    # If guidesGrid doesn't match, fallback to general grid pattern
-    if not re.search(grid_pattern, content, flags=re.DOTALL):
-        grid_pattern = r'<main class="results-container"[^>]*>.*?<div style="display: grid;[^>]*>.*?</div>\s*</main>'
-
-    replacement = f"""<main class="results-container" style="max-width: 1200px; margin: 40px auto; padding: 0 20px;">
-{search_filter_html}
-    <div id="guidesGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px;">
-{cards_html}    </div>
-  </main>"""
-
-    new_content = re.sub(grid_pattern, replacement, content, flags=re.DOTALL)
-
-    # Insert or update the filter script before </body>
-    if "function filterCareerGuides" in new_content:
-        # replace script block
-        new_content = re.sub(r'<script>\s*function filterCareerGuides\(\).*?</script>', filter_script.strip(), new_content, flags=re.DOTALL)
-    else:
-        new_content = new_content.replace("</body>", f"{filter_script}\n</body>")
-
+    print(f"Updating {ARTICLES_HTML} with full SEO and LLM optimization across all {len(GUIDES)} career guides...")
+    from scripts.build_full_articles_page import build_full_html
+    full_html = build_full_html()
     with open(ARTICLES_HTML, "w", encoding="utf-8") as f:
-        f.write(new_content)
-
-    print(f"Successfully updated {ARTICLES_HTML} with all {len(GUIDES)} career guides!")
+        f.write(full_html)
+    print(f"Successfully generated {ARTICLES_HTML}! Total bytes: {len(full_html)}")
 
 if __name__ == "__main__":
     main()
+

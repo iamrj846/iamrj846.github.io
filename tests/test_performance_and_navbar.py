@@ -24,7 +24,26 @@ def test_clean_stale_jobs_non_blocking():
 
 def test_mobile_navbar_css():
     index_html = Path("frontend/index.html").read_text(encoding="utf-8")
-    assert ".nav-dropdown-header" in index_html
-    assert "flex-direction: column" in index_html
-    assert "padding: 12px 14px" in index_html
-    assert ".nav-dropdown-all-btn" in index_html
+    assert "Career Guides" in index_html
+    assert 'href="/articles.html"' in index_html
+    # Ensure dropdown is removed
+    assert "navCareerGuidesDropdown" not in index_html
+
+def test_career_guides_direct_link_across_pages():
+    for page in ["frontend/index.html", "frontend/jobs.html", "frontend/portfolio.html", "frontend/articles.html"]:
+        text = Path(page).read_text(encoding="utf-8")
+        assert 'href="/articles.html"' in text
+        assert "navCareerGuidesDropdown" not in text
+
+def test_articles_seo_and_llm_optimization():
+    articles_html = Path("frontend/articles.html").read_text(encoding="utf-8")
+    assert "100 Tech Career Guides & Engineering Roadmaps" in articles_html
+    assert '<title>100 Tech Career Guides & Engineering Roadmaps (2026) | CorporateGuild</title>' in articles_html
+    assert 'application/ld+json' in articles_html
+    assert 'CollectionPage' in articles_html
+    assert 'ItemList' in articles_html
+    assert 'FAQPage' in articles_html
+    assert 'guide-card' in articles_html
+    assert 'guidesGrid' in articles_html
+    assert 'navCareerGuidesDropdown' not in articles_html
+

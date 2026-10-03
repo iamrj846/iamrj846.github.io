@@ -340,133 +340,49 @@ NAV_CSS = """
     }
 """
 
-DROPDOWN_HTML = """      <div class="nav-item-dropdown" id="navCareerGuidesDropdown">
-        <a href="/articles.html" class="nav-dropdown-trigger" onclick="if(window.innerWidth<=900){event.preventDefault();this.parentElement.classList.toggle('mobile-expanded');}">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-          <span>Career Guides</span>
-          <span class="nav-guide-pill-count">100</span>
-          <svg class="dropdown-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </a>
-        <div class="nav-dropdown-menu">
-          <div class="nav-dropdown-header">
-            <span>100 Career Tracks</span>
-            <a href="/articles.html">Browse All &rarr;</a>
-          </div>
-          <div class="nav-dropdown-grid">
-            <div class="nav-dropdown-col">
-              <div class="nav-dropdown-cat">Engineering &amp; Web</div>
-              <a href="/jobs/software-engineer.html">Software Engineer</a>
-              <a href="/jobs/full-stack-developer.html">Full-Stack Developer</a>
-              <a href="/jobs/frontend-developer.html">Frontend Developer</a>
-              <a href="/jobs/backend-developer.html">Backend Developer</a>
-              <a href="/jobs/react-developer.html">React Developer</a>
-              <a href="/jobs/nodejs-developer.html">Node.js Developer</a>
-              <a href="/jobs/python-developer.html">Python Developer</a>
-              <a href="/jobs/java-developer.html">Java Developer</a>
-              <a href="/jobs/rust-developer.html">Rust Developer</a>
-              <a href="/jobs/golang-developer.html">Golang Developer</a>
-              <a href="/jobs/blockchain-engineer.html">Blockchain Engineer</a>
-            </div>
-            <div class="nav-dropdown-col">
-              <div class="nav-dropdown-cat">Cloud, Sys &amp; Sec</div>
-              <a href="/jobs/cloud-architect.html">Cloud Architect</a>
-              <a href="/jobs/devops-engineer.html">DevOps Engineer</a>
-              <a href="/jobs/cloud-engineer.html">Cloud Engineer</a>
-              <a href="/jobs/site-reliability-engineer.html">Site Reliability (SRE)</a>
-              <a href="/jobs/kubernetes-administrator.html">Kubernetes Admin</a>
-              <a href="/jobs/platform-engineer.html">Platform Engineer</a>
-              <a href="/jobs/cybersecurity-engineer.html">Cybersecurity Engineer</a>
-              <a href="/jobs/penetration-tester.html">Penetration Tester</a>
-              <a href="/jobs/soc-analyst.html">SOC Analyst</a>
-              <a href="/jobs/infosec-analyst.html">InfoSec Analyst</a>
-            </div>
-            <div class="nav-dropdown-col">
-              <div class="nav-dropdown-cat">AI, Data &amp; Analytics</div>
-              <a href="/jobs/generative-ai-engineer.html">Generative AI Engineer</a>
-              <a href="/jobs/machine-learning-engineer.html">ML Engineer</a>
-              <a href="/jobs/ai-research-scientist.html">AI Research Scientist</a>
-              <a href="/jobs/mlops-engineer.html">MLOps Engineer</a>
-              <a href="/jobs/data-architect.html">Data Architect</a>
-              <a href="/jobs/data-scientist.html">Data Scientist</a>
-              <a href="/jobs/data-engineer.html">Data Engineer</a>
-              <a href="/jobs/bi-developer.html">BI Developer</a>
-              <a href="/jobs/quantitative-analyst.html">Quantitative Analyst</a>
-              <a href="/jobs/etl-developer.html">ETL Developer</a>
-            </div>
-            <div class="nav-dropdown-col">
-              <div class="nav-dropdown-cat">Product, Leadership &amp; Ops</div>
-              <a href="/jobs/chief-technology-officer.html">CTO (Exec Leadership)</a>
-              <a href="/jobs/staff-software-engineer.html">Staff Software Engineer</a>
-              <a href="/jobs/principal-software-engineer.html">Principal Engineer</a>
-              <a href="/jobs/product-manager.html">Product Manager</a>
-              <a href="/jobs/product-operations-manager.html">Product Operations</a>
-              <a href="/jobs/engineering-manager.html">Engineering Manager</a>
-              <a href="/jobs/technical-program-manager.html">Tech Program Mgr</a>
-              <a href="/jobs/ui-ux-designer.html">UI/UX Designer</a>
-              <a href="/jobs/solutions-architect.html">Solutions Architect</a>
-              <a href="/jobs/sdet-engineer.html">SDET / Automation</a>
-            </div>
-          </div>
-          <div class="nav-dropdown-footer">
-            <div class="nav-dropdown-tags">
-              <span class="nav-tag-label">Popular Filters:</span>
-              <a href="/jobs.html?role=software+engineer&location=india" class="nav-tag-pill">India Jobs</a>
-              <a href="/jobs.html?workplace=remote" class="nav-tag-pill">Remote Jobs</a>
-              <a href="/jobs.html?experience=entry" class="nav-tag-pill">Entry Level</a>
-            </div>
-            <a href="/articles.html" class="nav-dropdown-all-btn">View All 100 Career Guides &rarr;</a>
-          </div>
-        </div>
-      </div>"""
+NAV_LINK_HTML = """      <a href="/articles.html" title="100 Tech Career Guides & Engineering Roadmaps">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Career Guides</span>
+      </a>"""
 
-EXISTING_DROPDOWN_REGEX = re.compile(
-    r'<div class="nav-item-dropdown" id="navCareerGuidesDropdown">.*?</div>\s*</div>\s*</div>',
-    re.DOTALL
-)
-
-OLD_LINK_REGEX = re.compile(
-    r'<a\s+href="/articles\.html"(?:\s+class="[^"]*")?>\s*<svg[^>]*>.*?</svg>\s*Career Guides\s*</a>',
-    re.DOTALL
-)
+NAV_LINK_ACTIVE_HTML = """      <a href="/articles.html" class="active" title="100 Tech Career Guides & Engineering Roadmaps">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        <span>Career Guides</span>
+      </a>"""
 
 def update_file(path: Path):
     content = path.read_text(encoding="utf-8")
     modified = False
 
-    # 1. If existing dropdown is present, replace it with updated 50-guide dropdown
-    if "navCareerGuidesDropdown" in content:
-        new_content = EXISTING_DROPDOWN_REGEX.sub(DROPDOWN_HTML, content)
-        if new_content != content:
-            content = new_content
-            modified = True
-    elif "Career Guides" in content:
-        # Match only inside <header class="site-nav"> ... </header>
-        header_match = re.search(r'(<header class="site-nav">.*?</header>)', content, re.DOTALL)
-        if header_match:
-            orig_header = header_match.group(1)
-            new_header = OLD_LINK_REGEX.sub(DROPDOWN_HTML, orig_header)
-            if new_header != orig_header:
-                content = content.replace(orig_header, new_header)
-                modified = True
+    replacement = NAV_LINK_ACTIVE_HTML if path.name == "articles.html" else NAV_LINK_HTML
 
-    # 2. Ensure updated CSS is present
-    if "/* Career Guides Menu Dropdown */" in content:
-        # Update CSS block
-        css_pattern = re.compile(r'/\* Career Guides Menu Dropdown \*/.*?(?=</style>)', re.DOTALL)
-        new_content = css_pattern.sub(NAV_CSS.strip() + "\n  ", content)
-        if new_content != content:
-            content = new_content
-            modified = True
-    else:
-        if "</style>" in content:
-            content = content.replace("</style>", NAV_CSS + "\n  </style>", 1)
-            modified = True
+    # If dropdown is present, replace it with direct link
+    if "navCareerGuidesDropdown" in content:
+        lines = content.splitlines(keepends=True)
+        start_idx = None
+        for i, l in enumerate(lines):
+            if 'id="navCareerGuidesDropdown"' in l:
+                start_idx = i
+                break
+        if start_idx is not None:
+            depth = 0
+            end_idx = None
+            for i in range(start_idx, len(lines)):
+                depth += lines[i].count('<div')
+                depth -= lines[i].count('</div')
+                if depth == 0:
+                    end_idx = i
+                    break
+            if end_idx is not None:
+                content = "".join(lines[:start_idx]) + replacement + "\n" + "".join(lines[end_idx+1:])
+                modified = True
 
     if modified:
         path.write_text(content, encoding="utf-8")
         print(f"Updated: {path.relative_to(ROOT_DIR)}")
     else:
         print(f"Skipped (already current): {path.relative_to(ROOT_DIR)}")
+
 
 def main():
     target_files = [
