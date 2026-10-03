@@ -116,6 +116,14 @@ async def main():
     with open(resources_path) as f:
         site_lines = json.load(f)
         
+    FORTUNE_TARGETS = {
+        'pwc', 'cisco', 'barclays', 'gevernova', 'thermofisher', 'maersk', 'cadence', 'jci', 
+        'abbott', 'abb', 'hpe', 'adobe', 'relx', 'aveva', 'spgi', 'rockwellautomation', 
+        'medtronic', 'simcorp', 'sanofi', 'bpinternational', 'astreya', 'nike', 'nvidia', 
+        'aristocrat', 'visa', 'citicclsa', 'broadridge', 'stryker', 'thehartford', 'disney', 
+        'jll', 'agilent', 'bdx', 'hitachi', 'rbs', 'synnex', 'accenture', 'gsk', 'unisys', 'regeneron'
+    }
+
     priority_sites = []
     secondary_sites = []
     seen = set()
@@ -126,13 +134,13 @@ async def main():
             key = (tenant.lower(), site.lower())
             if key not in seen:
                 seen.add(key)
-                if tenant.lower() in db_companies or any(c in tenant.lower() for c in db_companies):
+                if tenant.lower() in FORTUNE_TARGETS:
                     priority_sites.append((tenant, host, site))
-                else:
+                elif tenant.lower() in db_companies:
                     secondary_sites.append((tenant, host, site))
                 
     sites_to_check = priority_sites + secondary_sites
-    logger.info(f"Prepared {len(sites_to_check)} Workday sites ({len(priority_sites)} high-priority matching DB companies).")
+    logger.info(f"Prepared {len(sites_to_check)} Workday sites ({len(priority_sites)} high-yield Fortune target sites).")
     
     limits = httpx.Limits(max_keepalive_connections=50, max_connections=80)
     timeout = httpx.Timeout(15.0, connect=8.0)
