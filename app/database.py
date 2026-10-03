@@ -113,7 +113,7 @@ def init_db():
     cur.execute("INSERT OR IGNORE INTO system_settings (key, value, updated_at) VALUES ('redis_enabled', '0', datetime('now'));")
     cur.execute("INSERT OR IGNORE INTO system_settings (key, value, updated_at) VALUES ('redis_kill_switch', '1', datetime('now'));")
 
-    # Ensure employment_type column exists
+    # Ensure employment_type and time_derived columns exist
     cur.execute("PRAGMA table_info(jobs);")
     existing_job_cols = [col["name"] for col in cur.fetchall()]
     if "employment_type" not in existing_job_cols:
@@ -121,6 +121,15 @@ def init_db():
             cur.execute("ALTER TABLE jobs ADD COLUMN employment_type TEXT DEFAULT 'Full time';")
         except Exception:
             pass
+    if "time_derived" not in existing_job_cols:
+        try:
+            cur.execute("ALTER TABLE jobs ADD COLUMN time_derived INTEGER DEFAULT 1;")
+        except Exception:
+            pass
+    try:
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_jobs_active_time_derived_posted ON jobs(is_active, time_derived DESC, posted_at DESC);")
+    except Exception:
+        pass
 
     # Site telemetry table (capturing visits, clicks on links/buttons, searches)
     cur.execute("""
@@ -607,12 +616,20 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
         skills_val = j.get("skills", [])
         skills_json = json.dumps(skills_val) if isinstance(skills_val, (list, dict)) else str(skills_val)
         
+        # Compute or propagate time_derived (1 for authentic ATS timestamps, 0 for fallback ingestion times)
+        time_derived_val = j.get("time_derived")
+        if time_derived_val is None:
+            rel_val = j.get("relative_time_ist") or j.get("relative_time") or ""
+            time_derived_val = 0 if rel_val == "Recently indexed" else 1
+        else:
+            time_derived_val = 1 if time_derived_val else 0
+
         cur.execute("""
         INSERT INTO jobs (
             id, title, company, location, role_category, workplace_type, 
             salary_range, experience_level, employment_type, source, tags, skills, 
-            description, apply_url, is_active, posted_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+            description, apply_url, is_active, posted_at, updated_at, time_derived
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             title = excluded.title,
             company = excluded.company,
@@ -628,6 +645,7 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
             description = excluded.description,
             apply_url = excluded.apply_url,
             posted_at = CASE WHEN excluded.posted_at IS NOT NULL AND excluded.posted_at != '' THEN excluded.posted_at ELSE jobs.posted_at END,
+            time_derived = excluded.time_derived,
             is_active = 1,
             updated_at = excluded.updated_at
         """, (
@@ -646,7 +664,8 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
             j.get("description", ""),
             apply_link_val,
             p_time,
-            now_str
+            now_str,
+            time_derived_val
         ))
         count += 1
     conn.commit()
@@ -1456,8 +1475,8 @@ def search_jobs_direct_db(
         page = max(1, min(page, total_pages))
         offset = (page - 1) * page_size
 
-        # 2. Paginated rows Query
-        cur.execute(f"SELECT * FROM jobs WHERE {where} ORDER BY posted_at DESC LIMIT ? OFFSET ?", tuple(params + [page_size, offset]))
+        # 2. Paginated rows Query (Derived authentic timestamps first, uncomputable/fallback at the end)
+        cur.execute(f"SELECT * FROM jobs WHERE {where} ORDER BY time_derived DESC, posted_at DESC LIMIT ? OFFSET ?", tuple(params + [page_size, offset]))
         rows = cur.fetchall()
 
         from app.services.ats_service import parse_date_to_ist, extract_india_location
@@ -1465,6 +1484,9 @@ def search_jobs_direct_db(
         clean_results = []
         for r in rows:
             ist_str, raw_iso, rel_time = parse_date_to_ist(r["posted_at"])
+            t_derived = r["time_derived"] if ("time_derived" in r.keys() and r["time_derived"] is not None) else 1
+            if not t_derived:
+                rel_time = "Recently indexed"
             clean_loc = extract_india_location(r["location"]) if r["location"] else "India"
             job = {
                 "id": r["id"],
@@ -1480,6 +1502,7 @@ def search_jobs_direct_db(
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
+                "time_derived": t_derived,
                 "tags": [],  # Strictly conceal internal search tags
                 "ats_platform": r["source"]
             }
@@ -1521,7 +1544,7 @@ def get_db_candidates_for_search(query_term: str = "", search_type: str = "compa
             rf = ""
 
         if not q_term and not rf:
-            cur.execute("SELECT * FROM jobs WHERE is_active = 1 ORDER BY posted_at DESC")
+            cur.execute("SELECT * FROM jobs WHERE is_active = 1 ORDER BY time_derived DESC, posted_at DESC")
         else:
             conditions = ["is_active = 1"]
             params = []
@@ -1540,7 +1563,7 @@ def get_db_candidates_for_search(query_term: str = "", search_type: str = "compa
                 conditions.append("(LOWER(role_category) LIKE ? OR LOWER(title) LIKE ?)")
                 params.extend([rf_param, rf_param])
                 
-            sql = f"SELECT * FROM jobs WHERE {' AND '.join(conditions)} ORDER BY posted_at DESC"
+            sql = f"SELECT * FROM jobs WHERE {' AND '.join(conditions)} ORDER BY time_derived DESC, posted_at DESC"
             cur.execute(sql, tuple(params))
             
         rows = cur.fetchall()
@@ -1550,6 +1573,9 @@ def get_db_candidates_for_search(query_term: str = "", search_type: str = "compa
         results = []
         for r in rows:
             ist_str, raw_iso, rel_time = parse_date_to_ist(r["posted_at"])
+            t_derived = r["time_derived"] if ("time_derived" in r.keys() and r["time_derived"] is not None) else 1
+            if not t_derived:
+                rel_time = "Recently indexed"
             clean_loc = extract_india_location(r["location"]) if r["location"] else "India"
             raw_t = r["tags"]
             cleaned_tags = []
@@ -1577,6 +1603,7 @@ def get_db_candidates_for_search(query_term: str = "", search_type: str = "compa
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
+                "time_derived": t_derived,
                 "tags": cleaned_tags,
                 "ats_platform": r["source"]
             }

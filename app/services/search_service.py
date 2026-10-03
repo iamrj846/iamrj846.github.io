@@ -1377,43 +1377,55 @@ class SearchService:
         filtered_jobs = deduped_jobs
 
         # Step 5: Sort strictly by Decreasing Timestamp Order (newest first in IST)
-        def sort_key(j: Dict[str, Any]) -> float:
+        # Authentic derived timestamps (is_derived=1) appear first (newest to oldest).
+        # Results where time could not be computed/fetched (is_derived=0) appear strictly at the end.
+        def sort_key(j: Dict[str, Any]) -> Tuple[int, float]:
+            time_derived = j.get("time_derived")
+            if time_derived is None:
+                rel = j.get("relative_time_ist") or j.get("relative_time") or ""
+                time_derived = 0 if rel == "Recently indexed" else 1
+            else:
+                time_derived = 1 if time_derived else 0
+
+            epoch = 0.0
             raw_epoch = j.get("posted_epoch")
             if raw_epoch is not None:
                 try:
-                    return float(raw_epoch)
+                    epoch = float(raw_epoch)
                 except Exception:
                     pass
-            ts = j.get("posted_timestamp_raw") or j.get("posted_timestamp_ist") or j.get("posted_at")
-            if not ts:
-                return 0.0
-            try:
-                s = str(ts).strip()
-                if s.replace(".", "", 1).isdigit():
-                    return float(s)
-                clean_ts = s.replace(" IST", "").strip()
-                if "T" in clean_ts:
-                    clean_ts = clean_ts.replace("Z", "+00:00")
-                    dt = datetime.datetime.fromisoformat(clean_ts)
-                elif len(clean_ts) == 10 and clean_ts.count("-") == 2:
-                    dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d")
-                elif len(clean_ts) == 16 and clean_ts.count(":") == 1:
-                    dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M")
-                else:
-                    base = clean_ts[:19]
-                    dt = datetime.datetime.strptime(base, "%Y-%m-%d %H:%M:%S")
-                if dt.tzinfo is None:
-                    dt = IST_TZ.localize(dt)
-                return dt.timestamp()
-            except Exception:
-                try:
-                    from dateutil import parser as date_parser
-                    dt = date_parser.parse(str(ts).replace(" IST", "").strip())
-                    if dt.tzinfo is None:
-                        dt = IST_TZ.localize(dt)
-                    return dt.timestamp()
-                except Exception:
-                    return 0.0
+            if epoch == 0.0:
+                ts = j.get("posted_timestamp_raw") or j.get("posted_timestamp_ist") or j.get("posted_at")
+                if ts:
+                    try:
+                        s = str(ts).strip()
+                        if s.replace(".", "", 1).isdigit():
+                            epoch = float(s)
+                        else:
+                            clean_ts = s.replace(" IST", "").strip()
+                            if "T" in clean_ts:
+                                clean_ts = clean_ts.replace("Z", "+00:00")
+                                dt = datetime.datetime.fromisoformat(clean_ts)
+                            elif len(clean_ts) == 10 and clean_ts.count("-") == 2:
+                                dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d")
+                            elif len(clean_ts) == 16 and clean_ts.count(":") == 1:
+                                dt = datetime.datetime.strptime(clean_ts, "%Y-%m-%d %H:%M")
+                            else:
+                                base = clean_ts[:19]
+                                dt = datetime.datetime.strptime(base, "%Y-%m-%d %H:%M:%S")
+                            if dt.tzinfo is None:
+                                dt = IST_TZ.localize(dt)
+                            epoch = dt.timestamp()
+                    except Exception:
+                        try:
+                            from dateutil import parser as date_parser
+                            dt = date_parser.parse(str(ts).replace(" IST", "").strip())
+                            if dt.tzinfo is None:
+                                dt = IST_TZ.localize(dt)
+                            epoch = dt.timestamp()
+                        except Exception:
+                            epoch = 0.0
+            return (time_derived, epoch)
 
         filtered_jobs.sort(key=sort_key, reverse=True)
 

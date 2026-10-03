@@ -81,16 +81,35 @@ def to_ist(dt: datetime.datetime) -> datetime.datetime:
         dt = pytz.utc.localize(dt)
     return dt.astimezone(IST_TZ)
 
-def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
+class DateParseResult(tuple):
+    """
+    Subclasses tuple of (ist_str, raw_iso, rel_time) so that standard 3-variable
+    unpacking `ist, raw, rel = parse_date_to_ist(...)` remains 100% backwards-compatible,
+    while also exposing .is_derived and .time_derived properties.
+    """
+    def __new__(cls, ist_str: str, raw_iso: str, rel_time: str, is_derived: bool = True):
+        obj = super().__new__(cls, (ist_str, raw_iso, rel_time))
+        obj.ist_str = ist_str
+        obj.raw_iso = raw_iso
+        obj.rel_time = rel_time
+        obj.is_derived = bool(is_derived)
+        return obj
+
+    @property
+    def time_derived(self) -> int:
+        return 1 if self.is_derived else 0
+
+
+def parse_date_to_ist(date_str: Optional[Any]) -> DateParseResult:
     """
     Parses any date string, relative expression, or epoch timestamp into IST.
-    Returns (posted_timestamp_ist, posted_timestamp_raw, relative_time_ist)
+    Returns DateParseResult(posted_timestamp_ist, posted_timestamp_raw, relative_time_ist, is_derived)
     """
     now_ist = datetime.datetime.now(IST_TZ)
-    if not date_str:
+    if not date_str or not str(date_str).strip():
         raw_iso = now_ist.isoformat()
         ist_str = now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
-        return ist_str, raw_iso, "Recent"
+        return DateParseResult(ist_str, raw_iso, "Recently indexed", is_derived=False)
 
     clean_str = str(date_str).strip()
     clean_lower = clean_str.lower()
@@ -119,23 +138,26 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
             rel = "1 week ago" if val == 1 else f"{val} weeks ago"
         elif "month" in unit:
             dt = now_ist - datetime.timedelta(days=val * 30)
-            rel = "1 month ago" if val == 1 else f"{val} months ago"
+            if val >= 1:
+                rel = "30+ days ago" if val == 1 else f"{val} months ago"
+            else:
+                rel = f"{val} months ago"
         else:
             dt = now_ist
             rel = "Recent"
 
         ist_dt = to_ist(dt)
-        return ist_dt.strftime("%Y-%m-%d %H:%M:%S IST"), ist_dt.isoformat(), rel
+        return DateParseResult(ist_dt.strftime("%Y-%m-%d %H:%M:%S IST"), ist_dt.isoformat(), rel, is_derived=True)
 
     if "yesterday" in clean_lower:
         dt = to_ist(now_ist - datetime.timedelta(days=1))
-        return dt.strftime("%Y-%m-%d %H:%M:%S IST"), dt.isoformat(), "Yesterday"
+        return DateParseResult(dt.strftime("%Y-%m-%d %H:%M:%S IST"), dt.isoformat(), "1 day ago", is_derived=True)
 
     if "today" in clean_lower:
-        return now_ist.strftime("%Y-%m-%d %H:%M:%S IST"), now_ist.isoformat(), "Today"
+        return DateParseResult(now_ist.strftime("%Y-%m-%d %H:%M:%S IST"), now_ist.isoformat(), "Today", is_derived=True)
 
     if "just now" in clean_lower:
-        return now_ist.strftime("%Y-%m-%d %H:%M:%S IST"), now_ist.isoformat(), "Just now"
+        return DateParseResult(now_ist.strftime("%Y-%m-%d %H:%M:%S IST"), now_ist.isoformat(), "Just now", is_derived=True)
 
     # 2. Check numeric epoch timestamp (ms or s)
     dt = None
@@ -190,16 +212,20 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
                 continue
 
     # 6. Fallback email/RFC 2822 date parsing
+    is_parsed_derived = (dt is not None)
     if dt is None:
         try:
             from email.utils import parsedate_to_datetime
             dt = parsedate_to_datetime(date_str)
+            is_parsed_derived = True
         except Exception:
             dt = now_ist
+            is_parsed_derived = False
 
     ist_dt = to_ist(dt)
     if ist_dt.year < 2020 or ist_dt.year > 2030:
         ist_dt = now_ist
+        is_parsed_derived = False
 
     raw_iso = ist_dt.isoformat()
     ist_str = ist_dt.strftime("%Y-%m-%d %H:%M:%S IST")
@@ -223,13 +249,64 @@ def parse_date_to_ist(date_str: Optional[str]) -> Tuple[str, str, str]:
     elif seconds < 2592000:
         weeks = max(1, seconds // 604800)
         rel = f"{weeks} week{'s' if weeks > 1 else ''} ago"
-    elif seconds < 31536000:
-        months = max(1, seconds // 2592000)
-        rel = f"{months} month{'s' if months > 1 else ''} ago"
+    elif seconds >= 2592000:
+        days = seconds // 86400
+        if days >= 30:
+            rel = "30+ days ago"
+        else:
+            rel = f"{days // 7} weeks ago"
     else:
         rel = ist_dt.strftime("%d %b %Y")
 
-    return ist_str, raw_iso, rel
+    if not is_parsed_derived:
+        rel = "Recently indexed"
+
+    return DateParseResult(ist_str, raw_iso, rel, is_derived=is_parsed_derived)
+
+
+UPDATED_ATS_KEYS = [
+    "updated_at", "updatedAt", "updatedOn", "lastModified", "lastModifiedDate",
+    "last_modified", "last_updated_date", "time_updated", "modifiedDate",
+    "modified_at", "updatedDate", "lastUpdated", "lastUpdateDate"
+]
+
+POSTED_ATS_KEYS = [
+    "posted_at", "postedAt", "postedOn", "postedDate", "PostedDate", "posted_date",
+    "releasedDate", "published_at", "publishedAt", "published_on", "published_date",
+    "datePosted", "created_at", "createdAt", "createdOn", "CreationDate",
+    "startDate", "time_created", "date", "first_published", "publishDate",
+    "openingDate", "openDate"
+]
+
+def resolve_ats_timestamp(
+    j: Dict[str, Any],
+    updated_keys: Optional[List[str]] = None,
+    posted_keys: Optional[List[str]] = None
+) -> DateParseResult:
+    """
+    Derives accurate actual posted or last updated time from raw ATS JSON with strict priority:
+    1. If last updated time is available in raw json, use that to compute the time.
+    2. If not, use last posted time if available.
+    3. If neither can be computed or fetched, use ingestion time with is_derived=False (sorted at the end).
+    """
+    # 1. Check last updated time first
+    for k in (updated_keys or UPDATED_ATS_KEYS):
+        val = j.get(k)
+        if val is not None and str(val).strip():
+            res = parse_date_to_ist(val)
+            if res.is_derived:
+                return res
+
+    # 2. Check last posted time second
+    for k in (posted_keys or POSTED_ATS_KEYS):
+        val = j.get(k)
+        if val is not None and str(val).strip():
+            res = parse_date_to_ist(val)
+            if res.is_derived:
+                return res
+
+    # 3. Cannot be derived/fetched: fallback to ingestion time (is_derived=False)
+    return parse_date_to_ist(None)
 
 GENERIC_REMOTE_KEYWORDS = [
     "remote", "anywhere", "worldwide", "global", "work from home", "wfh", "remote - global",
@@ -1486,8 +1563,8 @@ class ATSService:
                 apply_link = f"https://boards.greenhouse.io/{board_token}/jobs/{j.get('id')}"
             elif "api." in apply_link:
                 apply_link = apply_link.replace("api.", "boards.")
-            updated_at = j.get("updated_at") or j.get("first_published")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(updated_at)
+            date_res = resolve_ats_timestamp(j, updated_keys=["updated_at"], posted_keys=["first_published"])
+            ist_str, raw_iso, rel_time = date_res
             
             dept_names = [d.get("name", "") for d in j.get("departments", []) if isinstance(d, dict)]
             dept_str = " ".join(dept_names)
@@ -1507,6 +1584,7 @@ class ATSService:
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "ats_platform": "Greenhouse",
                 "ingested_at": datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
@@ -1534,8 +1612,8 @@ class ATSService:
                 clean_loc = extract_india_location(combined_loc)
 
             apply_link = j.get("applyUrl") or j.get("jobUrl") or f"https://jobs.ashbyhq.com/{ep.company_name.lower()}/{j.get('id')}"
-            published_at = j.get("publishedAt")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(published_at)
+            date_res = resolve_ats_timestamp(j, updated_keys=["updatedAt"], posted_keys=["publishedAt", "createdAt"])
+            ist_str, raw_iso, rel_time = date_res
 
             dept = j.get("department", "")
             emp_type = normalize_employment_type(j.get("employmentType", ""), title)
@@ -1554,6 +1632,7 @@ class ATSService:
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "ats_platform": "Ashby",
                 "ingested_at": datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
@@ -1596,8 +1675,8 @@ class ATSService:
                 apply_link = f"https://jobs.smartrecruiters.com/{comp_identifier}/{job_id}"
             else:
                 apply_link = f"https://jobs.smartrecruiters.com/{comp_identifier}"
-            released_at = j.get("releasedDate") or j.get("createdOn") or j.get("updatedOn")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(released_at)
+            date_res = resolve_ats_timestamp(j, updated_keys=["updatedOn"], posted_keys=["releasedDate", "createdOn"])
+            ist_str, raw_iso, rel_time = date_res
 
             type_obj = j.get("typeOfEmployment") or {}
             type_label = type_obj.get("label", "") if isinstance(type_obj, dict) else str(type_obj)
@@ -1624,6 +1703,7 @@ class ATSService:
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "ats_platform": "SmartRecruiters",
                 "ingested_at": now_str
@@ -1654,8 +1734,8 @@ class ATSService:
                 clean_loc = extract_india_location(loc_str)
 
             apply_link = j.get("hostedUrl") or j.get("applyUrl") or f"https://jobs.lever.co/{ep.company_name.lower()}/{j.get('id')}"
-            created_at = j.get("createdAt")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(created_at)
+            date_res = resolve_ats_timestamp(j, updated_keys=["updatedAt"], posted_keys=["createdAt"])
+            ist_str, raw_iso, rel_time = date_res
 
             dept = cats.get("department", "") or cats.get("team", "")
             emp_type = normalize_employment_type(cats.get("commitment", ""), title)
@@ -1674,6 +1754,7 @@ class ATSService:
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "ats_platform": "Lever",
                 "ingested_at": datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
@@ -1720,10 +1801,8 @@ class ATSService:
             base_careers = ep.endpoint_url.split("/careers/list")[0]
             apply_link = f"{base_careers}/careers/{job_id}" if job_id else ep.endpoint_url
             
-            now_ist = datetime.datetime.now(IST_TZ)
-            ist_str = now_ist.strftime("%Y-%m-%d %H:%M:%S IST")
-            raw_iso = now_ist.isoformat()
-            rel_time = "Recently"
+            date_res = resolve_ats_timestamp(j, updated_keys=["updated_at", "updatedDate"], posted_keys=["date", "postedDate", "created_at"])
+            ist_str, raw_iso, rel_time = date_res
 
             dept = j.get("departmentLabel", "") or ""
             emp_type = normalize_employment_type(j.get("employmentStatusLabel", ""), title)
@@ -1731,6 +1810,7 @@ class ATSService:
             exp_level = normalize_experience_level(title)
             tags = generate_job_tags(title=title, company=ep.company_name, location=clean_loc, workplace_type=workplace, experience_level=exp_level, employment_type=emp_type, dept=dept)
 
+            now_str = datetime.datetime.now(IST_TZ).strftime("%Y-%m-%d %H:%M:%S IST")
             results.append({
                 "company_name": ep.company_name,
                 "role_name": title,
@@ -1744,9 +1824,10 @@ class ATSService:
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "ats_platform": "BambooHR",
-                "ingested_at": ist_str
+                "ingested_at": now_str
             })
         return results
 
@@ -1777,8 +1858,8 @@ class ATSService:
                 clean_loc = extract_india_location(loc_str)
 
             apply_link = j.get("careers_apply_url") or j.get("careers_url") or ep.endpoint_url
-            created_at = j.get("published_at") or j.get("created_at")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(created_at)
+            date_res = resolve_ats_timestamp(j, updated_keys=["updated_at"], posted_keys=["published_at", "created_at"])
+            ist_str, raw_iso, rel_time = date_res
 
             dept = j.get("department", "") or ""
             emp_type = normalize_employment_type(j.get("employment_type_code", "") or "", title)
@@ -1800,6 +1881,7 @@ class ATSService:
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "ats_platform": "Recruitee",
                 "ingested_at": now_str
@@ -1832,8 +1914,8 @@ class ATSService:
                 clean_loc = extract_india_location(loc_str)
 
             apply_link = j.get("url") or ep.endpoint_url
-            published_at = j.get("published_date") or j.get("created_at")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(published_at)
+            date_res = resolve_ats_timestamp(j, updated_keys=["updated_at"], posted_keys=["published_date", "created_at"])
+            ist_str, raw_iso, rel_time = date_res
 
             dept = j.get("department", "") or ""
             type_obj = j.get("type", {})
@@ -1857,6 +1939,7 @@ class ATSService:
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "ats_platform": "Breezy HR",
                 "ingested_at": now_str
@@ -1913,8 +1996,8 @@ class ATSService:
                 shortcode = j.get("shortcode")
                 apply_link = f"https://apply.workable.com/j/{shortcode}" if shortcode else ep.endpoint_url
 
-            pub_date = j.get("published_on") or j.get("created_at") or j.get("updated_at") or ""
-            ist_str, raw_iso, rel_time = parse_date_to_ist(pub_date)
+            date_res = resolve_ats_timestamp(j, updated_keys=["updated_at"], posted_keys=["published_on", "created_at"])
+            ist_str, raw_iso, rel_time = date_res
 
             emp_type = normalize_employment_type(j.get("employment_type", ""), title)
             workplace = "Remote" if is_rem else normalize_workplace(loc_str)
@@ -1937,6 +2020,7 @@ class ATSService:
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "salary_range": "Competitive Market CTC",
                 "role_category": title,
@@ -1981,8 +2065,8 @@ class ATSService:
                 slug = ep.endpoint_url.split("/board/")[1].split("/")[0] if "/board/" in ep.endpoint_url else company_display.lower()
                 apply_link = f"https://ats.rippling.com/{slug}/jobs/{job_uuid}"
 
-            raw_date = j.get("created_at") or j.get("updated_at") or j.get("posted_date") or j.get("published_at")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(raw_date)
+            date_res = resolve_ats_timestamp(j, updated_keys=["updated_at"], posted_keys=["created_at", "posted_date", "published_at"])
+            ist_str, raw_iso, rel_time = date_res
 
             dept_obj = j.get("department") or {}
             dept_name = dept_obj.get("label", "") if isinstance(dept_obj, dict) else ""
@@ -2004,6 +2088,7 @@ class ATSService:
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "salary_range": "Competitive Market CTC",
                 "role_category": title,
@@ -2050,8 +2135,8 @@ class ATSService:
                 
             apply_link = f"{base_url}/hcmUI/CandidateExperience/en/sites/{site_number}/job/{job_id}"
             
-            posted_date = j.get("PostedDate")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
+            date_res = resolve_ats_timestamp(j, updated_keys=["lastModifiedDate", "LastModifiedDate"], posted_keys=["PostedDate", "CreationDate"])
+            ist_str, raw_iso, rel_time = date_res
             
             dept_str = j.get("JobFunction", "") or j.get("JobFamily", "") or ""
             worker_type = j.get("WorkerType", "") or j.get("JobType", "") or ""
@@ -2072,6 +2157,7 @@ class ATSService:
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
                 "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "employment_type": emp_type,
                 "workplace_type": workplace,
@@ -2120,8 +2206,8 @@ class ATSService:
                     continue
                 
             apply_link = f"{base_url}{external_path}"
-            posted_date = j.get("postedOn", "")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
+            date_res = resolve_ats_timestamp(j, updated_keys=["lastModifiedDate", "updatedOn", "updated_at"], posted_keys=["postedOn", "startDate", "postedDate"])
+            ist_str, raw_iso, rel_time = date_res
             
             bullets = " ".join(j.get("bulletFields", []))
             emp_type = normalize_employment_type(bullets, title)
@@ -2139,7 +2225,8 @@ class ATSService:
                 "apply_url": apply_link,
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
-                "relative_time_ist": rel_time or posted_date,
+                "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "employment_type": emp_type,
                 "workplace_type": workplace,
@@ -2193,8 +2280,8 @@ class ATSService:
             if apply_link and not str(apply_link).startswith("http"):
                 apply_link = urljoin(ep.endpoint_url, str(apply_link))
 
-            posted_date = item.get("created_at") or item.get("updated_at")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
+            date_res = resolve_ats_timestamp(item, updated_keys=["updated_at"], posted_keys=["created_at"])
+            ist_str, raw_iso, rel_time = date_res
 
             emp_type_raw = str(item.get("employment_type_text") or item.get("employment_type") or "")
             emp_type = normalize_employment_type(emp_type_raw, title)
@@ -2213,7 +2300,8 @@ class ATSService:
                 "apply_url": apply_link,
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
-                "relative_time_ist": rel_time or "",
+                "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "employment_type": emp_type,
                 "workplace_type": workplace,
@@ -2261,8 +2349,8 @@ class ATSService:
                 clean_loc = extract_india_location(loc_str)
 
             apply_link = pos.get("url_active_page") or pos.get("url_apply_page") or ep.endpoint_url
-            posted_date = pos.get("time_updated") or pos.get("time_created")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
+            date_res = resolve_ats_timestamp(pos, updated_keys=["time_updated"], posted_keys=["time_created"])
+            ist_str, raw_iso, rel_time = date_res
 
             emp_type = normalize_employment_type(str(pos.get("employment_type") or ""), title)
             workplace = "Remote" if is_rem else normalize_workplace(loc_str)
@@ -2280,7 +2368,8 @@ class ATSService:
                 "apply_url": apply_link,
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
-                "relative_time_ist": rel_time or "",
+                "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "employment_type": emp_type,
                 "workplace_type": workplace,
@@ -2320,8 +2409,8 @@ class ATSService:
                 clean_loc = extract_india_location(loc_str)
 
             apply_link = item.get("detailUrl") or item.get("applyUrl") or ep.endpoint_url
-            posted_date = item.get("date") or item.get("postedDate")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
+            date_res = resolve_ats_timestamp(item, updated_keys=["updated_at", "lastModified"], posted_keys=["date", "postedDate"])
+            ist_str, raw_iso, rel_time = date_res
 
             emp_type = normalize_employment_type(job_type, title)
             workplace = "Remote" if is_rem else normalize_workplace(loc_str)
@@ -2339,7 +2428,8 @@ class ATSService:
                 "apply_url": apply_link,
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
-                "relative_time_ist": rel_time or "",
+                "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "employment_type": emp_type,
                 "workplace_type": workplace,
@@ -2375,8 +2465,8 @@ class ATSService:
                 continue
             apply_link = f"https://www.amazon.jobs{job_path}"
 
-            posted_date = j.get("posted_date", "")
-            ist_str, raw_iso, rel_time = parse_date_to_ist(posted_date)
+            date_res = resolve_ats_timestamp(j, updated_keys=["updated_time", "updated_at"], posted_keys=["posted_date"])
+            ist_str, raw_iso, rel_time = date_res
 
             qualifications = (j.get("basic_qualifications") or "") + " " + (j.get("description_short") or "")
             schedule_type = j.get("job_schedule_type", "")
@@ -2404,7 +2494,8 @@ class ATSService:
                 "apply_url": apply_link,
                 "posted_timestamp_ist": ist_str,
                 "posted_timestamp_raw": raw_iso,
-                "relative_time_ist": rel_time or posted_date,
+                "relative_time_ist": rel_time,
+                "time_derived": date_res.time_derived,
                 "tags": tags,
                 "employment_type": emp_type,
                 "workplace_type": workplace,
