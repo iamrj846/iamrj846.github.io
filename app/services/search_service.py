@@ -1103,7 +1103,7 @@ class SearchService:
 
             # Fetch all jobs from matching Redis hashes in high-speed batch pipeline
             valid_keys = [k for k in matching_hashes if not k.startswith("tag_idx:") and not k.startswith("cg:")]
-            if len(valid_keys) > 300:
+            if len(valid_keys) > 60:
                 # If too many matching hashes, use indexed DB search to prevent Redis pipeline stalls
                 db_start = time.time()
                 syns = self.get_role_synonyms(role_filter or query_term) if (role_filter or search_type == "role") else []
