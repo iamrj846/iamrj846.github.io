@@ -48,12 +48,13 @@ async def lifespan(app: FastAPI):
     ingestion_mgr = get_ingestion_manager()
     asyncio.create_task(asyncio.to_thread(ingestion_mgr.seed_initial_jobs))
     
-    # Start 30-minute recurring scheduler if enabled
-    enable_scheduler = os.getenv("ENABLE_INGESTION_SCHEDULER", "true").lower() in ("1", "true", "yes")
+    # Background ingestion is managed via isolated 1-hour cron jobs (scripts/periodic_fetch_and_update.py)
+    # Keeping internal scheduler disabled by default prevents high CPU & memory spikes in web server
+    enable_scheduler = os.getenv("ENABLE_INGESTION_SCHEDULER", "false").lower() in ("1", "true", "yes")
     if enable_scheduler:
         ingestion_mgr.start_scheduler()
     else:
-        logger.info("Background ingestion scheduler disabled on this node (ENABLE_INGESTION_SCHEDULER=false)")
+        logger.info("Background ingestion scheduler disabled in web container (handled by isolated 1h cron)")
     
     from app.services.metrics_service import get_metrics_service
     get_metrics_service().start_flusher()
