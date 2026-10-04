@@ -242,6 +242,14 @@ async def serve_robots():
 async def serve_sitemap():
     return FileResponse(str(STATIC_DIR / "sitemap.xml"), media_type="application/xml; charset=utf-8")
 
+@app.api_route("/6c0a1040d124441ba49043e8116e5236.txt", methods=["GET", "HEAD"])
+async def serve_indexnow_user_key():
+    return PlainTextResponse("6c0a1040d124441ba49043e8116e5236", media_type="text/plain; charset=utf-8")
+
+@app.api_route("/34707ccc9e644c29abb43c43dae20e25.txt", methods=["GET", "HEAD"])
+async def serve_indexnow_alt_key():
+    return PlainTextResponse("34707ccc9e644c29abb43c43dae20e25", media_type="text/plain; charset=utf-8")
+
 @app.api_route("/8f3e2b1a9c4d7e6f.txt", methods=["GET", "HEAD"])
 async def serve_indexnow_key():
     return PlainTextResponse("8f3e2b1a9c4d7e6f", media_type="text/plain; charset=utf-8")

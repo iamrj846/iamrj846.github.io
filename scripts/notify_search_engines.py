@@ -20,20 +20,26 @@ logger = logging.getLogger("seo_notify")
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 SITEMAP_URL = "https://corporateguild.com/sitemap.xml"
-INDEXNOW_KEY = "34707ccc9e644c29abb43c43dae20e25"
-INDEXNOW_KEY_LOCATION = f"https://corporateguild.com/{INDEXNOW_KEY}.txt"
+INDEXNOW_KEY = "6c0a1040d124441ba49043e8116e5236"
+INDEXNOW_KEY_LOCATION = f"https://www.corporateguild.com/{INDEXNOW_KEY}.txt"
 DB_PATH = ROOT_DIR / "data" / "jobs_portal.db"
 
 def ensure_indexnow_key_file() -> None:
-    """Ensures the IndexNow verification key file exists in frontend/static and frontend/ with exact 16 bytes."""
-    for target in [ROOT_DIR / "frontend" / "static" / f"{INDEXNOW_KEY}.txt", ROOT_DIR / "frontend" / f"{INDEXNOW_KEY}.txt"]:
-        try:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if not target.exists() or target.read_bytes() != INDEXNOW_KEY.encode("utf-8"):
-                target.write_bytes(INDEXNOW_KEY.encode("utf-8"))
-                logger.info(f"Wrote exact IndexNow verification key to {target}")
-        except Exception as e:
-            logger.warning(f"Could not write IndexNow key file to {target}: {e}")
+    """Ensures all IndexNow verification key files exist in frontend/static and frontend/ with exact bytes."""
+    keys_to_write = [
+        "6c0a1040d124441ba49043e8116e5236",
+        "34707ccc9e644c29abb43c43dae20e25",
+        "8f3e2b1a9c4d7e6f"
+    ]
+    for k in keys_to_write:
+        for target in [ROOT_DIR / "frontend" / "static" / f"{k}.txt", ROOT_DIR / "frontend" / f"{k}.txt"]:
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                if not target.exists() or target.read_bytes() != k.encode("utf-8"):
+                    target.write_bytes(k.encode("utf-8"))
+                    logger.info(f"Wrote exact IndexNow verification key to {target}")
+            except Exception as e:
+                logger.warning(f"Could not write IndexNow key file to {target}: {e}")
 
 def update_sitemaps_and_llms() -> Dict[str, Any]:
     """Regenerates sitemap.xml, llms.txt, and llms-full.txt before notifying search engines."""
@@ -90,11 +96,31 @@ def collect_priority_urls() -> List[str]:
         except Exception as e:
             logger.debug(f"Could not parse sitemap.xml for URLs: {e}")
 
-    # Collect all 100 career guide pages from disk
+    # Collect all career guide pages from disk (automatically picks up any newly added articles)
     jobs_dir = ROOT_DIR / "frontend" / "jobs"
     if jobs_dir.exists():
         for f in sorted(jobs_dir.glob("*.html")):
             urls.append(f"https://corporateguild.com/jobs/{f.name}")
+
+    # Dynamic high-intent role search pages
+    top_roles = [
+        "Software Engineer", "Frontend Developer", "Backend Developer", "Full Stack Developer",
+        "DevOps Engineer", "Cloud Engineer", "Data Scientist", "Data Analyst", "Data Engineer",
+        "Machine Learning Engineer", "AI Engineer", "Cybersecurity Engineer", "Product Manager",
+        "UI UX Designer", "QA Automation Engineer", "Solutions Architect", "Engineering Manager"
+    ]
+    for r in top_roles:
+        enc_r = urllib.parse.quote_plus(r)
+        urls.append(f"https://corporateguild.com/jobs.html?role={enc_r}")
+
+    # Dynamic high-intent company search pages
+    top_companies = [
+        "Google", "Amazon", "Microsoft", "Meta", "Apple", "Netflix",
+        "Flipkart", "Uber", "Swiggy", "Zomato", "Adobe", "Oracle", "Cisco", "Salesforce"
+    ]
+    for comp in top_companies:
+        enc_c = urllib.parse.quote_plus(comp)
+        urls.append(f"https://corporateguild.com/jobs.html?search_type=company&search_term={enc_c}")
 
     # Collect recent active jobs from database
     if DB_PATH.exists():
@@ -144,7 +170,10 @@ def ping_bing_sitemap() -> bool:
         return False
 
 def submit_indexnow(urls: List[str]) -> Dict[str, Any]:
-    """Submits batch of URLs to the IndexNow protocol (Bing, Yandex, Seznam, Naver)."""
+    """
+    Submits batch of URLs to the IndexNow protocol (Bing, Yandex, Seznam, Naver)
+    for both 'www.corporateguild.com' and 'corporateguild.com'.
+    """
     ensure_indexnow_key_file()
     results = {}
     endpoints = [
@@ -152,32 +181,44 @@ def submit_indexnow(urls: List[str]) -> Dict[str, Any]:
         "https://www.bing.com/indexnow"
     ]
 
-    payload = {
-        "host": "corporateguild.com",
-        "key": INDEXNOW_KEY,
-        "keyLocation": INDEXNOW_KEY_LOCATION,
-        "urlList": urls[:1000] # IndexNow allows up to 10,000 URLs per batch
-    }
+    hosts = [
+        ("www.corporateguild.com", f"https://www.corporateguild.com/{INDEXNOW_KEY}.txt"),
+        ("corporateguild.com", f"https://corporateguild.com/{INDEXNOW_KEY}.txt")
+    ]
 
-    data = json.dumps(payload).encode("utf-8")
+    for host_name, key_loc in hosts:
+        if "www." in host_name:
+            host_urls = [u.replace("https://corporateguild.com", "https://www.corporateguild.com") for u in urls]
+        else:
+            host_urls = [u.replace("https://www.corporateguild.com", "https://corporateguild.com") for u in urls]
 
-    for ep in endpoints:
-        ep_name = "IndexNow-Org" if "indexnow.org" in ep else "Bing-IndexNow"
-        try:
-            req = urllib.request.Request(
-                ep,
-                data=data,
-                headers={
-                    "Content-Type": "application/json; charset=utf-8",
-                    "User-Agent": "CorporateGuild-Indexer/1.0"
-                }
-            )
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                logger.info(f"[{ep_name}] Response: {resp.status} (Submitted {len(payload['urlList'])} URLs)")
-                results[ep_name] = {"status": resp.status, "submitted": len(payload["urlList"])}
-        except Exception as e:
-            logger.warning(f"[{ep_name}] Notice: {e}")
-            results[ep_name] = {"error": str(e), "submitted": len(payload["urlList"])}
+        payload = {
+            "host": host_name,
+            "key": INDEXNOW_KEY,
+            "keyLocation": key_loc,
+            "urlList": host_urls[:1000] # IndexNow allows up to 10,000 URLs per batch
+        }
+
+        data = json.dumps(payload).encode("utf-8")
+
+        for ep in endpoints:
+            ep_short = "IndexNow-Org" if "indexnow.org" in ep else "Bing-IndexNow"
+            ep_label = f"{ep_short} ({host_name})"
+            try:
+                req = urllib.request.Request(
+                    ep,
+                    data=data,
+                    headers={
+                        "Content-Type": "application/json; charset=utf-8",
+                        "User-Agent": "CorporateGuild-Indexer/1.0"
+                    }
+                )
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    logger.info(f"[{ep_label}] Response: {resp.status} (Submitted {len(payload['urlList'])} URLs)")
+                    results[ep_label] = {"status": resp.status, "submitted": len(payload["urlList"])}
+            except Exception as e:
+                logger.warning(f"[{ep_label}] Notice: {e}")
+                results[ep_label] = {"error": str(e), "submitted": len(payload["urlList"])}
 
     return results
 

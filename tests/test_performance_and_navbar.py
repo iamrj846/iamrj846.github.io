@@ -97,3 +97,8 @@ def test_indexnow_endpoint_exact_bytes():
     assert resp2.content == b"34707ccc9e644c29abb43c43dae20e25"
     assert len(resp2.content) == 32
 
+    resp3 = client.get("/6c0a1040d124441ba49043e8116e5236.txt")
+    assert resp3.status_code == 200
+    assert resp3.content == b"6c0a1040d124441ba49043e8116e5236"
+    assert len(resp3.content) == 32
+
