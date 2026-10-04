@@ -25,13 +25,13 @@ INDEXNOW_KEY_LOCATION = f"https://corporateguild.com/{INDEXNOW_KEY}.txt"
 DB_PATH = ROOT_DIR / "data" / "jobs_portal.db"
 
 def ensure_indexnow_key_file() -> None:
-    """Ensures the IndexNow verification key file exists in frontend/static and frontend/."""
+    """Ensures the IndexNow verification key file exists in frontend/static and frontend/ with exact 16 bytes."""
     for target in [ROOT_DIR / "frontend" / "static" / f"{INDEXNOW_KEY}.txt", ROOT_DIR / "frontend" / f"{INDEXNOW_KEY}.txt"]:
         try:
             target.parent.mkdir(parents=True, exist_ok=True)
-            if not target.exists() or target.read_text().strip() != INDEXNOW_KEY:
-                target.write_text(INDEXNOW_KEY + "\n", encoding="utf-8")
-                logger.info(f"Wrote IndexNow verification key to {target}")
+            if not target.exists() or target.read_bytes() != INDEXNOW_KEY.encode("utf-8"):
+                target.write_bytes(INDEXNOW_KEY.encode("utf-8"))
+                logger.info(f"Wrote exact IndexNow verification key to {target}")
         except Exception as e:
             logger.warning(f"Could not write IndexNow key file to {target}: {e}")
 
@@ -63,7 +63,7 @@ def update_sitemaps_and_llms() -> Dict[str, Any]:
     return status
 
 def collect_priority_urls() -> List[str]:
-    """Collects all critical website pages, all 100 career guides, and recent jobs for indexing."""
+    """Collects all critical website pages, all 100 career guides, sitemap URLs, and recent jobs for indexing."""
     urls = [
         "https://corporateguild.com/",
         "https://corporateguild.com/jobs.html",
@@ -77,7 +77,20 @@ def collect_priority_urls() -> List[str]:
         "https://corporateguild.com/llms-full.txt",
     ]
 
-    # Collect all 100 career guide pages
+    # Harvest all URLs listed in sitemap.xml
+    sitemap_file = ROOT_DIR / "frontend" / "static" / "sitemap.xml"
+    if sitemap_file.exists():
+        try:
+            import xml.etree.ElementTree as ET
+            tree = ET.parse(sitemap_file)
+            root = tree.getroot()
+            for loc in root.findall(".//{http://www.sitemaps.org/schemas/sitemap/0.9}loc"):
+                if loc.text and loc.text.strip().startswith("https://"):
+                    urls.append(loc.text.strip())
+        except Exception as e:
+            logger.debug(f"Could not parse sitemap.xml for URLs: {e}")
+
+    # Collect all 100 career guide pages from disk
     jobs_dir = ROOT_DIR / "frontend" / "jobs"
     if jobs_dir.exists():
         for f in sorted(jobs_dir.glob("*.html")):
@@ -92,7 +105,6 @@ def collect_priority_urls() -> List[str]:
             for row in c.fetchall():
                 url = row[0]
                 if url and url.startswith("http"):
-                    # We can ping job-specific search queries on CorporateGuild
                     pass
             conn.close()
         except Exception as e:
