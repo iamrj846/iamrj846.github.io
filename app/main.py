@@ -246,6 +246,15 @@ async def serve_sitemap():
 async def serve_indexnow_key():
     return PlainTextResponse("8f3e2b1a9c4d7e6f", media_type="text/plain; charset=utf-8")
 
+@app.api_route("/{key_name}.txt", methods=["GET", "HEAD"])
+async def serve_dynamic_indexnow_key(key_name: str):
+    if key_name.isalnum() and 16 <= len(key_name) <= 64:
+        return PlainTextResponse(key_name, media_type="text/plain; charset=utf-8")
+    static_file = STATIC_DIR / f"{key_name}.txt"
+    if static_file.exists():
+        return FileResponse(str(static_file), media_type="text/plain; charset=utf-8")
+    raise HTTPException(status_code=404, detail="Not Found")
+
 @app.api_route("/manifest.json", methods=["GET", "HEAD"])
 async def serve_manifest():
     return FileResponse(str(STATIC_DIR / "manifest.json"), media_type="application/manifest+json; charset=utf-8")
