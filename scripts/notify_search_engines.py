@@ -20,7 +20,7 @@ logger = logging.getLogger("seo_notify")
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 SITEMAP_URL = "https://corporateguild.com/sitemap.xml"
-INDEXNOW_KEY = "8f3e2b1a9c4d7e6f"
+INDEXNOW_KEY = "34707ccc9e644c29abb43c43dae20e25"
 INDEXNOW_KEY_LOCATION = f"https://corporateguild.com/{INDEXNOW_KEY}.txt"
 DB_PATH = ROOT_DIR / "data" / "jobs_portal.db"
 

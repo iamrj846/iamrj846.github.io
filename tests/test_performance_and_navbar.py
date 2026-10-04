@@ -75,6 +75,14 @@ def test_indexnow_key_length():
     assert key1 == b"8f3e2b1a9c4d7e6f"
     assert key2 == b"8f3e2b1a9c4d7e6f"
 
+    active_key = b"34707ccc9e644c29abb43c43dae20e25"
+    key3 = Path("frontend/static/34707ccc9e644c29abb43c43dae20e25.txt").read_bytes()
+    key4 = Path("frontend/34707ccc9e644c29abb43c43dae20e25.txt").read_bytes()
+    assert len(key3) == 32
+    assert len(key4) == 32
+    assert key3 == active_key
+    assert key4 == active_key
+
 def test_indexnow_endpoint_exact_bytes():
     from fastapi.testclient import TestClient
     from app.main import app
@@ -83,4 +91,9 @@ def test_indexnow_endpoint_exact_bytes():
     assert resp.status_code == 200
     assert resp.content == b"8f3e2b1a9c4d7e6f"
     assert len(resp.content) == 16
+
+    resp2 = client.get("/34707ccc9e644c29abb43c43dae20e25.txt")
+    assert resp2.status_code == 200
+    assert resp2.content == b"34707ccc9e644c29abb43c43dae20e25"
+    assert len(resp2.content) == 32
 
