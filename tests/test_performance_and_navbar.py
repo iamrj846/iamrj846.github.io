@@ -75,3 +75,12 @@ def test_indexnow_key_length():
     assert key1 == b"8f3e2b1a9c4d7e6f"
     assert key2 == b"8f3e2b1a9c4d7e6f"
 
+def test_indexnow_endpoint_exact_bytes():
+    from fastapi.testclient import TestClient
+    from app.main import app
+    client = TestClient(app)
+    resp = client.get("/8f3e2b1a9c4d7e6f.txt")
+    assert resp.status_code == 200
+    assert resp.content == b"8f3e2b1a9c4d7e6f"
+    assert len(resp.content) == 16
+
