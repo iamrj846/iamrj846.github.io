@@ -763,6 +763,15 @@ ROLE_TAXONOMY_MAP = {
     }
 }
 
+# Synonymous role category aliases ensuring 100% database taxonomy coverage
+ROLE_TAXONOMY_MAP["Backend Developer"] = ROLE_TAXONOMY_MAP["Backend Engineer"]
+ROLE_TAXONOMY_MAP["DevOps Engineer"] = ROLE_TAXONOMY_MAP["DevOps / Cloud Engineer"]
+ROLE_TAXONOMY_MAP["Data Analyst"] = ROLE_TAXONOMY_MAP["Data Analyst / BI"]
+ROLE_TAXONOMY_MAP["Frontend Developer"] = ROLE_TAXONOMY_MAP["Frontend Engineer"]
+ROLE_TAXONOMY_MAP["Full Stack Developer"] = ROLE_TAXONOMY_MAP["Full Stack Engineer"]
+ROLE_TAXONOMY_MAP["Mobile Developer"] = ROLE_TAXONOMY_MAP["Mobile Engineer"]
+
+
 POPULAR_TECH_KEYWORDS = [
     "Python", "Java", "JavaScript", "TypeScript", "Go", "Golang", "Rust", "C++", "C#", ".NET",
     "React", "Angular", "Vue", "Next.js", "Node.js", "Express", "FastAPI", "Django", "Flask", "Spring Boot",

@@ -102,3 +102,21 @@ def test_indexnow_endpoint_exact_bytes():
     assert resp3.content == b"6c0a1040d124441ba49043e8116e5236"
     assert len(resp3.content) == 32
 
+def test_articles_page_auth_navbar_and_modals():
+    articles_html = Path("frontend/articles.html").read_text(encoding="utf-8")
+    assert 'id="authBadge"' in articles_html
+    assert 'btn-nav-guest-unlimited' in articles_html
+    assert 'Login for Free Unlimited Access' in articles_html
+    assert 'id="authModal"' in articles_html
+    assert 'id="userProfileModal"' in articles_html
+    assert 'checkAuthStatus' in articles_html
+    assert 'openAuthModal' in articles_html
+    assert 'handleLogin' in articles_html
+    assert 'handleSignup' in articles_html
+    assert 'handleVerifyOtp' in articles_html
+    assert 'logoutUser' in articles_html
+    assert '/api/auth/me' in articles_html
+    assert '/api/auth/login' in articles_html
+    assert '/api/auth/register' in articles_html
+    assert '/api/auth/logout' in articles_html
+
