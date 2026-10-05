@@ -599,7 +599,8 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
 
         loc_val = j.get("location") or "Bengaluru, Karnataka, India"
         wp_val = j.get("workplace_type") or "In office"
-        if not is_india_location(loc_val, workplace_type=wp_val):
+        src_val = (j.get("ats_platform") or j.get("source") or "").lower()
+        if src_val != "remoteok" and not is_india_location(loc_val, workplace_type=wp_val):
             continue
 
         c_name = j.get("company_name") or j.get("company", "Tech Enterprise")
@@ -685,13 +686,16 @@ def clean_invalid_jobs_from_db(conn=None) -> int:
     cur = conn.cursor()
     deleted = 0
     try:
-        cur.execute("SELECT id, location, workplace_type, apply_url FROM jobs WHERE is_active = 1")
+        cur.execute("SELECT id, location, workplace_type, apply_url, source FROM jobs WHERE is_active = 1")
         rows = cur.fetchall()
         to_delete = []
         for r in rows:
             u = (r["apply_url"] or "").strip()
             if not u or not u.startswith("http"):
                 to_delete.append(r["id"])
+                continue
+            src = (r["source"] or "").lower()
+            if src == "remoteok":
                 continue
             loc = r["location"] or ""
             wp = r["workplace_type"] or ""
@@ -1403,8 +1407,8 @@ def search_jobs_direct_db(
         if q and q not in ("all roles", "all companies", "all", "all positions", "all jobs", "any", "all category", "all categories"):
             if search_type == "company":
                 param = f"%{q}%"
-                conditions.append("(LOWER(company) LIKE ? OR LOWER(title) LIKE ? OR LOWER(tags) LIKE ?)")
-                params.extend([param, param, param])
+                conditions.append("(LOWER(company) LIKE ? OR LOWER(title) LIKE ? OR LOWER(tags) LIKE ? OR LOWER(source) LIKE ?)")
+                params.extend([param, param, param, param])
             elif search_type == "role" and role_synonyms:
                 syns = [q] + [s.lower().strip() for s in role_synonyms if s.lower().strip() != q and len(s.strip()) > 2]
                 top_syns = syns[:8]
@@ -1415,8 +1419,8 @@ def search_jobs_direct_db(
                     params.extend([p, p])
             else:
                 param = f"%{q}%"
-                conditions.append("(LOWER(role_category) LIKE ? OR LOWER(title) LIKE ? OR LOWER(company) LIKE ?)")
-                params.extend([param, param, param])
+                conditions.append("(LOWER(role_category) LIKE ? OR LOWER(title) LIKE ? OR LOWER(company) LIKE ? OR LOWER(source) LIKE ?)")
+                params.extend([param, param, param, param])
 
         rf = (role_filter or "").strip().lower()
         if rf and rf not in ("all", "all roles", "all role", "all categories", "all category", ""):
@@ -1517,7 +1521,10 @@ def search_jobs_direct_db(
             t_derived = r["time_derived"] if ("time_derived" in r.keys() and r["time_derived"] is not None) else 1
             if not t_derived:
                 rel_time = "Recently indexed"
-            clean_loc = extract_india_location(r["location"]) if r["location"] else "India"
+            if (r["source"] or "").lower() == "remoteok":
+                clean_loc = r["location"] if (r["location"] and r["location"].strip()) else "Remote"
+            else:
+                clean_loc = extract_india_location(r["location"]) if r["location"] else "India"
             job = {
                 "id": r["id"],
                 "company_name": r["company"],
@@ -1606,7 +1613,10 @@ def get_db_candidates_for_search(query_term: str = "", search_type: str = "compa
             t_derived = r["time_derived"] if ("time_derived" in r.keys() and r["time_derived"] is not None) else 1
             if not t_derived:
                 rel_time = "Recently indexed"
-            clean_loc = extract_india_location(r["location"]) if r["location"] else "India"
+            if (r["source"] or "").lower() == "remoteok":
+                clean_loc = r["location"] if (r["location"] and r["location"].strip()) else "Remote"
+            else:
+                clean_loc = extract_india_location(r["location"]) if r["location"] else "India"
             raw_t = r["tags"]
             cleaned_tags = []
             if raw_t:

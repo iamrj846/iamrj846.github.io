@@ -98,14 +98,18 @@ class IngestionManager:
                 apply_url = (r["apply_url"] or "").strip()
                 if not apply_url or not apply_url.startswith("http"):
                     continue
-                if not is_india_location(loc, workplace_type=wp):
+                src = (r["source"] or "").lower()
+                if src != "remoteok" and not is_india_location(loc, workplace_type=wp):
                     continue
                 valid_rows.append(r)
 
             # Store jobs in batches
             for row in valid_rows:
                 ist_str, raw_iso, rel_time = parse_date_to_ist(row["posted_at"])
-                clean_loc = extract_india_location(row["location"])
+                if (row["source"] or "").lower() == "remoteok":
+                    clean_loc = row["location"] if (row["location"] and row["location"].strip()) else "Remote"
+                else:
+                    clean_loc = extract_india_location(row["location"])
                 emp_type = row["employment_type"] if "employment_type" in row.keys() and row["employment_type"] else "Full time"
                 j = {
                     "id": row["id"],
@@ -156,6 +160,16 @@ class IngestionManager:
                 sample_limit=sample_limit
             )
 
+            # 1b. Fetch RemoteOK jobs (within last 14 days)
+            try:
+                from app.services.remoteok_service import fetch_remoteok_jobs
+                remoteok_jobs = await fetch_remoteok_jobs(max_days=14)
+                if remoteok_jobs:
+                    logger.info(f"Fetched {len(remoteok_jobs)} fresh RemoteOK jobs (posted <= 14 days).")
+                    jobs.extend(remoteok_jobs)
+            except Exception as e:
+                logger.error(f"Error fetching RemoteOK jobs in ingestion cycle: {e}")
+
             # 2. Always persist into SQLite DB (authoritative source of truth)
             if jobs:
                 save_jobs_to_db(jobs)
@@ -169,16 +183,16 @@ class IngestionManager:
                         if ok:
                             ingested_count += 1
                     await asyncio.sleep(0.05)
-                # Clean stale jobs from SQLite and prune orphaned/deleted keys from Redis
-                clean_stale_jobs_from_db(max_days=30)
-                removed_stale = clean_stale_jobs_older_than_days(max_days=30)
+                # Clean stale jobs from SQLite and prune orphaned/deleted keys from Redis (14-day purge policy)
+                clean_stale_jobs_from_db(max_days=14)
+                removed_stale = clean_stale_jobs_older_than_days(max_days=14)
                 # Only seed initial jobs if Redis is cold / empty (< 1000 keys)
                 client = get_redis_client()
                 if client.dbsize() < 1000:
                     self.seed_initial_jobs()
             else:
                 ingested_count = len(jobs)
-                clean_stale_jobs_from_db(max_days=30)
+                clean_stale_jobs_from_db(max_days=14)
                 removed_stale = 0
 
             # Update status using cached summary to avoid full keyspace scans
@@ -275,7 +289,10 @@ def warm_redis_from_db() -> int:
     logger.info(f"Starting Redis warming for {len(rows)} active jobs from SQLite DB...")
     for r in rows:
         ist_str, raw_iso, rel_time = parse_date_to_ist(r["posted_at"])
-        clean_loc = extract_india_location(r["location"]) if r["location"] else "India"
+        if (r["source"] or "").lower() == "remoteok":
+            clean_loc = r["location"] if (r["location"] and r["location"].strip()) else "Remote"
+        else:
+            clean_loc = extract_india_location(r["location"]) if r["location"] else "India"
         emp_type = r["employment_type"] if "employment_type" in r.keys() and r["employment_type"] else "Full time"
         j = {
             "id": r["id"],

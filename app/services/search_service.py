@@ -1202,13 +1202,17 @@ class SearchService:
             # Defense-in-depth: Strict India & Remote validation
             if not apply_link or not apply_link.startswith("http"):
                 continue
-            if not is_india_location(loc, workplace_type=wp):
+            src = (job.get("ats_platform") or job.get("source") or "").lower()
+            if src != "remoteok" and not is_india_location(loc, workplace_type=wp):
                 continue
 
             # Ensure location string is clean
-            clean_loc = extract_india_location(loc)
-            if clean_loc:
-                job["location"] = clean_loc
+            if src == "remoteok":
+                job["location"] = loc if loc else "Remote"
+            else:
+                clean_loc = extract_india_location(loc)
+                if clean_loc:
+                    job["location"] = clean_loc
 
             r_name = job.get("role_name", "")
             title = job.get("title", "")
