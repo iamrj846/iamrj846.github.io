@@ -99,15 +99,18 @@ class IngestionManager:
                 if not apply_url or not apply_url.startswith("http"):
                     continue
                 src = (r["source"] or "").lower()
-                if src != "remoteok" and not is_india_location(loc, workplace_type=wp):
+                if src not in ("remoteok", "naukri", "internshala", "foundit") and not is_india_location(loc, workplace_type=wp):
                     continue
                 valid_rows.append(r)
 
             # Store jobs in batches
             for row in valid_rows:
                 ist_str, raw_iso, rel_time = parse_date_to_ist(row["posted_at"])
-                if (row["source"] or "").lower() == "remoteok":
+                src_lower = (row["source"] or "").lower()
+                if src_lower == "remoteok":
                     clean_loc = row["location"] if (row["location"] and row["location"].strip()) else "Remote"
+                elif src_lower in ("naukri", "internshala", "foundit"):
+                    clean_loc = row["location"] or "India"
                 else:
                     clean_loc = extract_india_location(row["location"])
                 emp_type = row["employment_type"] if "employment_type" in row.keys() and row["employment_type"] else "Full time"
@@ -169,6 +172,24 @@ class IngestionManager:
                     jobs.extend(remoteok_jobs)
             except Exception as e:
                 logger.error(f"Error fetching RemoteOK jobs in ingestion cycle: {e}")
+
+            # 1c. Fetch Aggregator jobs from sitemaps (Naukri, Internshala, Foundit)
+            try:
+                from app.services.sitemaps_service import fetch_all_aggregator_jobs
+                naukri_lim = 300 if full_sync else 50
+                inter_lim = 1000 if full_sync else 200
+                found_lim = 200 if full_sync else 50
+                agg_jobs = await fetch_all_aggregator_jobs(
+                    max_days=14,
+                    naukri_limit_per_sitemap=naukri_lim,
+                    internshala_limit=inter_lim,
+                    foundit_limit_per_sitemap=found_lim
+                )
+                if agg_jobs:
+                    logger.info(f"Fetched {len(agg_jobs)} fresh aggregator jobs (Naukri, Internshala, Foundit).")
+                    jobs.extend(agg_jobs)
+            except Exception as e:
+                logger.error(f"Error fetching aggregator jobs in ingestion cycle: {e}")
 
             # 2. Always persist into SQLite DB (authoritative source of truth)
             if jobs:

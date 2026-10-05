@@ -600,7 +600,7 @@ def save_jobs_to_db(jobs_list: List[Dict[str, Any]]) -> int:
         loc_val = j.get("location") or "Bengaluru, Karnataka, India"
         wp_val = j.get("workplace_type") or "In office"
         src_val = (j.get("ats_platform") or j.get("source") or "").lower()
-        if src_val != "remoteok" and not is_india_location(loc_val, workplace_type=wp_val):
+        if src_val not in ("remoteok", "naukri", "internshala", "foundit") and not is_india_location(loc_val, workplace_type=wp_val):
             continue
 
         c_name = j.get("company_name") or j.get("company", "Tech Enterprise")
@@ -695,7 +695,7 @@ def clean_invalid_jobs_from_db(conn=None) -> int:
                 to_delete.append(r["id"])
                 continue
             src = (r["source"] or "").lower()
-            if src == "remoteok":
+            if src in ("remoteok", "naukri", "internshala", "foundit"):
                 continue
             loc = r["location"] or ""
             wp = r["workplace_type"] or ""
