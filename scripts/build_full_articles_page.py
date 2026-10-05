@@ -360,6 +360,12 @@ def build_full_html():
       --txt-dim: #64748B;
     }}
 
+    html, body {{
+      max-width: 100%;
+      overflow-x: hidden;
+      position: relative;
+    }}
+
     body {{
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background:
@@ -1306,14 +1312,6 @@ def build_full_html():
       display: inline-block;
       animation: pulseGreen 2s infinite;
     }}
-    .pulse-purple-dot {{
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #8B5CF6;
-      display: inline-block;
-      animation: pulseGreen 2s infinite;
-    }}
     @keyframes pulseGreen {{
       0%, 100% {{ transform: scale(1); opacity: 1; }}
       50% {{ transform: scale(1.3); opacity: 0.6; }}
@@ -1332,7 +1330,6 @@ def build_full_html():
     }}
     .track-speed-roles {{ animation: marqueeScroll 45s linear infinite; }}
     .track-speed-companies {{ animation: marqueeScrollReverse 48s linear infinite; }}
-    .track-speed-ats {{ animation: marqueeScroll 42s linear infinite; }}
     .marquee-band-track:hover {{ animation-play-state: paused; }}
     .marquee-band-group {{
       display: flex;
@@ -1386,11 +1383,6 @@ def build_full_html():
       background: #EFF6FF;
       border-color: #BFDBFE;
     }}
-    .chip-count-purple {{
-      color: #6D28D9;
-      background: #F5F3FF;
-      border-color: #DDD6FE;
-    }}
     .band-chip.chip-all {{
       background: #4F46E5;
       color: #FFFFFF;
@@ -1423,137 +1415,6 @@ def build_full_html():
         padding-right: 6px;
       }}
     }}
-
-    /* ══ ANIMATED WORD CLOUD ══ */
-    .word-cloud-section {{
-      max-width: 1140px;
-      margin: 36px auto;
-      padding: 26px 20px;
-      background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
-      border: 1px solid #E2E8F0;
-      border-radius: 20px;
-      box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
-      text-align: center;
-      overflow: hidden;
-      box-sizing: border-box;
-    }}
-    .word-cloud-header {{
-      margin-bottom: 20px;
-    }}
-    .word-cloud-badge {{
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: #ECFDF5;
-      border: 1px solid #A7F3D0;
-      color: #065F46;
-      font-size: 11.5px;
-      font-weight: 750;
-      padding: 3px 10px;
-      border-radius: 99px;
-      margin-bottom: 8px;
-    }}
-    .word-cloud-title {{
-      font-size: 20px;
-      font-weight: 850;
-      color: #0F172A;
-      margin-bottom: 6px;
-      letter-spacing: -0.02em;
-    }}
-    .word-cloud-subtitle {{
-      font-size: 13.5px;
-      color: #64748B;
-      max-width: 600px;
-      margin: 0 auto;
-    }}
-    .word-cloud-canvas {{
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-top: 18px;
-      overflow: hidden;
-      position: relative;
-    }}
-    .word-cloud-canvas::before, .word-cloud-canvas::after {{
-      content: "";
-      position: absolute;
-      top: 0; bottom: 0;
-      width: 40px;
-      z-index: 2;
-      pointer-events: none;
-    }}
-    .word-cloud-canvas::before {{
-      left: 0;
-      background: linear-gradient(90deg, #FFFFFF 0%, transparent 100%);
-    }}
-    .word-cloud-canvas::after {{
-      right: 0;
-      background: linear-gradient(270deg, #F8FAFC 0%, transparent 100%);
-    }}
-    .word-cloud-stream {{
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      white-space: nowrap;
-      animation-timing-function: linear;
-      animation-iteration-count: infinite;
-      animation-duration: 35s;
-    }}
-    .stream-left-to-right {{
-      animation-name: marqueeLeft;
-    }}
-    .stream-right-to-left {{
-      animation-name: marqueeRight;
-    }}
-    @keyframes marqueeLeft {{
-      0% {{ transform: translateX(0); }}
-      100% {{ transform: translateX(-50%); }}
-    }}
-    @keyframes marqueeRight {{
-      0% {{ transform: translateX(-50%); }}
-      100% {{ transform: translateX(0); }}
-    }}
-    .word-cloud-stream:hover {{
-      animation-play-state: paused;
-    }}
-    .wc-tag {{
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 15px;
-      border-radius: 99px;
-      font-size: 13px;
-      font-weight: 700;
-      background: #FFFFFF;
-      border: 1px solid #E2E8F0;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      user-select: none;
-      flex-shrink: 0;
-      text-decoration: none;
-    }}
-    .wc-tag:hover {{
-      transform: translateY(-2px) scale(1.04);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.09);
-    }}
-    .wc-glow-blue {{ color: #1D4ED8; border-color: #BFDBFE; background: #EFF6FF; }}
-    .wc-glow-indigo {{ color: #4338CA; border-color: #C7D2FE; background: #EEF2FF; }}
-    .wc-glow-emerald {{ color: #047857; border-color: #A7F3D0; background: #ECFDF5; }}
-    .wc-glow-purple {{ color: #6D28D9; border-color: #DDD6FE; background: #F5F3FF; }}
-    .wc-glow-pink {{ color: #BE185D; border-color: #FBCFE8; background: #FDF2F8; }}
-    .wc-glow-amber {{ color: #B45309; border-color: #FDE68A; background: #FFFBEB; }}
-    .wc-glow-cyan {{ color: #0E7490; border-color: #A5F3FC; background: #ECFEFF; }}
-    .wc-ats {{
-      font-size: 10px;
-      padding: 2px 5px;
-      border-radius: 4px;
-      background: rgba(0,0,0,0.06);
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }}
-
     /* ══ TRADITIONAL JOB BOARDS VS CORPORATEGUILD TABLE ══ */
     .comparison-section {{
       max-width: 1140px;
@@ -1746,7 +1607,7 @@ def build_full_html():
       <span>100% Verified Direct Applications</span>
     </div>
     <h2 class="direct-apply-title">Verified Direct Apply Links</h2>
-    <p class="direct-apply-subtitle">Direct application links across all industries, companies, diverse job roles, official enterprise ATS portals, and authentic hiring channels in one place with zero recruiter spam and no ad walls.</p>
+    <p class="direct-apply-subtitle">Direct application links across all industries, leading employers, official enterprise ATS portals, and premier job networks (LinkedIn, Naukri, Indeed, Foundit) in one place with zero recruiter spam and no ad walls.</p>
 
     <div class="direct-apply-bands-wrap">
       <!-- Band 1: Popular Roles -->
@@ -1834,44 +1695,6 @@ def build_full_html():
               <a href="/jobs.html?company=Flipkart" class="band-chip">🏢 Flipkart <span class="chip-count chip-count-blue">340+</span></a>
               <a href="/jobs.html?company=Swiggy" class="band-chip">🏢 Swiggy <span class="chip-count chip-count-blue">280+</span></a>
               <a href="/jobs.html?company=Zomato" class="band-chip">🏢 Zomato <span class="chip-count chip-count-blue">210+</span></a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Band 3: ATS & Verified Sources -->
-      <div class="marquee-band-row" aria-label="ATS and Verified Sources Band">
-        <div class="band-label-pill">
-          <span class="pulse-purple-dot"></span>
-          <span>Sources:</span>
-        </div>
-        <div class="marquee-band-viewport">
-          <div class="marquee-band-track track-speed-ats">
-            <div class="marquee-band-group">
-              <a href="/jobs.html?ats=Workday" class="band-chip">⚡ Workday ATS <span class="chip-count chip-count-purple">8.4k</span></a>
-              <a href="/jobs.html?ats=Greenhouse" class="band-chip">⚡ Greenhouse ATS <span class="chip-count chip-count-purple">6.1k</span></a>
-              <a href="/jobs.html?ats=Lever" class="band-chip">⚡ Lever Portal <span class="chip-count chip-count-purple">4.2k</span></a>
-              <a href="/jobs.html?ats=SmartRecruiters" class="band-chip">⚡ SmartRecruiters <span class="chip-count chip-count-purple">3.8k</span></a>
-              <a href="/jobs.html?ats=Taleo" class="band-chip">⚡ Taleo Enterprise <span class="chip-count chip-count-purple">2.9k</span></a>
-              <a href="/jobs.html?ats=SAP%20SuccessFactors" class="band-chip">⚡ SAP SuccessFactors <span class="chip-count chip-count-purple">3.5k</span></a>
-              <a href="/jobs.html?ats=BambooHR" class="band-chip">⚡ BambooHR <span class="chip-count chip-count-purple">1.8k</span></a>
-              <a href="/jobs.html?ats=Ashby" class="band-chip">⚡ Ashby ATS <span class="chip-count chip-count-purple">1.4k</span></a>
-              <a href="/jobs.html?ats=Jobvite" class="band-chip">⚡ Jobvite <span class="chip-count chip-count-purple">1.2k</span></a>
-              <a href="/jobs.html?ats=iCIMS" class="band-chip">⚡ iCIMS <span class="chip-count chip-count-purple">2.3k</span></a>
-              <a href="/jobs.html" class="band-chip">⚡ Official Career Portals <span class="chip-count chip-count-purple">5.6k</span></a>
-            </div>
-            <div class="marquee-band-group" aria-hidden="true">
-              <a href="/jobs.html?ats=Workday" class="band-chip">⚡ Workday ATS <span class="chip-count chip-count-purple">8.4k</span></a>
-              <a href="/jobs.html?ats=Greenhouse" class="band-chip">⚡ Greenhouse ATS <span class="chip-count chip-count-purple">6.1k</span></a>
-              <a href="/jobs.html?ats=Lever" class="band-chip">⚡ Lever Portal <span class="chip-count chip-count-purple">4.2k</span></a>
-              <a href="/jobs.html?ats=SmartRecruiters" class="band-chip">⚡ SmartRecruiters <span class="chip-count chip-count-purple">3.8k</span></a>
-              <a href="/jobs.html?ats=Taleo" class="band-chip">⚡ Taleo Enterprise <span class="chip-count chip-count-purple">2.9k</span></a>
-              <a href="/jobs.html?ats=SAP%20SuccessFactors" class="band-chip">⚡ SAP SuccessFactors <span class="chip-count chip-count-purple">3.5k</span></a>
-              <a href="/jobs.html?ats=BambooHR" class="band-chip">⚡ BambooHR <span class="chip-count chip-count-purple">1.8k</span></a>
-              <a href="/jobs.html?ats=Ashby" class="band-chip">⚡ Ashby ATS <span class="chip-count chip-count-purple">1.4k</span></a>
-              <a href="/jobs.html?ats=Jobvite" class="band-chip">⚡ Jobvite <span class="chip-count chip-count-purple">1.2k</span></a>
-              <a href="/jobs.html?ats=iCIMS" class="band-chip">⚡ iCIMS <span class="chip-count chip-count-purple">2.3k</span></a>
-              <a href="/jobs.html" class="band-chip">⚡ Official Career Portals <span class="chip-count chip-count-purple">5.6k</span></a>
             </div>
           </div>
         </div>
@@ -2030,66 +1853,6 @@ def build_full_html():
     </div>
   </main>
 
-  <!-- ══ ANIMATED WORD CLOUD SECTION ══ -->
-  <section class="word-cloud-section" aria-label="Verified Job Sources and Roles Cloud">
-    <div class="word-cloud-header">
-      <div class="word-cloud-badge">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        <span>Interactive Word Cloud</span>
-      </div>
-      <h2 class="word-cloud-title">Explore Job Ecosystem Word Cloud</h2>
-      <p class="word-cloud-subtitle">Interactive streaming word cloud of high-demand roles, leading employers, and official hiring sources</p>
-    </div>
-    <div class="word-cloud-canvas">
-      <div class="word-cloud-stream stream-left-to-right">
-        <a href="/jobs.html?company=Google" class="wc-tag wc-company wc-glow-blue">🏢 Google <small class="wc-ats">ATS Direct</small></a>
-        <a href="/jobs.html?role=AI%20%2F%20Machine%20Learning%20Engineer" class="wc-tag wc-role wc-glow-indigo">🤖 Generative AI Engineer</a>
-        <a href="/jobs.html?company=Microsoft" class="wc-tag wc-company wc-glow-emerald">🏢 Microsoft</a>
-        <a href="/jobs.html?role=Full%20Stack%20Developer" class="wc-tag wc-role wc-glow-purple">🚀 Full-Stack Architect</a>
-        <a href="/jobs.html?company=Amazon" class="wc-tag wc-company wc-glow-amber">🏢 Amazon</a>
-        <a href="/jobs.html?role=DevOps%20%2F%20Cloud%20Engineer" class="wc-tag wc-role wc-glow-cyan">☁️ Cloud Platform Engineer</a>
-        <a href="/jobs.html?company=NVIDIA" class="wc-tag wc-company wc-glow-pink">🏢 NVIDIA</a>
-        <a href="/jobs.html?role=Data%20Scientist" class="wc-tag wc-role wc-glow-blue">📊 Principal Data Scientist</a>
-        <a href="/jobs.html?company=Apple" class="wc-tag wc-company wc-glow-indigo">🏢 Apple</a>
-        <a href="/jobs.html?role=Site%20Reliability%20Engineer" class="wc-tag wc-role wc-glow-emerald">🛡️ Site Reliability Engineer</a>
-        <!-- Duplicated for seamless infinite marquee loop -->
-        <a href="/jobs.html?company=Google" class="wc-tag wc-company wc-glow-blue" aria-hidden="true">🏢 Google <small class="wc-ats">ATS Direct</small></a>
-        <a href="/jobs.html?role=AI%20%2F%20Machine%20Learning%20Engineer" class="wc-tag wc-role wc-glow-indigo" aria-hidden="true">🤖 Generative AI Engineer</a>
-        <a href="/jobs.html?company=Microsoft" class="wc-tag wc-company wc-glow-emerald" aria-hidden="true">🏢 Microsoft</a>
-        <a href="/jobs.html?role=Full%20Stack%20Developer" class="wc-tag wc-role wc-glow-purple" aria-hidden="true">🚀 Full-Stack Architect</a>
-        <a href="/jobs.html?company=Amazon" class="wc-tag wc-company wc-glow-amber" aria-hidden="true">🏢 Amazon</a>
-        <a href="/jobs.html?role=DevOps%20%2F%20Cloud%20Engineer" class="wc-tag wc-role wc-glow-cyan" aria-hidden="true">☁️ Cloud Platform Engineer</a>
-        <a href="/jobs.html?company=NVIDIA" class="wc-tag wc-company wc-glow-pink" aria-hidden="true">🏢 NVIDIA</a>
-        <a href="/jobs.html?role=Data%20Scientist" class="wc-tag wc-role wc-glow-blue" aria-hidden="true">📊 Principal Data Scientist</a>
-        <a href="/jobs.html?company=Apple" class="wc-tag wc-company wc-glow-indigo" aria-hidden="true">🏢 Apple</a>
-        <a href="/jobs.html?role=Site%20Reliability%20Engineer" class="wc-tag wc-role wc-glow-emerald" aria-hidden="true">🛡️ Site Reliability Engineer</a>
-      </div>
-      <div class="word-cloud-stream stream-right-to-left">
-        <a href="/jobs.html?ats=Workday" class="wc-tag wc-company wc-glow-purple">⚡ Workday ATS</a>
-        <a href="/jobs.html?role=Software%20Engineer" class="wc-tag wc-role wc-glow-amber">💻 Senior Software Engineer</a>
-        <a href="/jobs.html?ats=Greenhouse" class="wc-tag wc-company wc-glow-blue">⚡ Greenhouse ATS</a>
-        <a href="/jobs.html?role=Product%20Manager" class="wc-tag wc-role wc-glow-pink">💼 Technical Product Manager</a>
-        <a href="/jobs.html?ats=Lever" class="wc-tag wc-company wc-glow-cyan">⚡ Lever Portal</a>
-        <a href="/jobs.html?role=Golang%20Developer" class="wc-tag wc-role wc-glow-emerald">⚡ Go Systems Engineer</a>
-        <a href="/jobs.html?company=Meta" class="wc-tag wc-company wc-glow-indigo">🏢 Meta</a>
-        <a href="/jobs.html?role=Rust%20Developer" class="wc-tag wc-role wc-glow-purple">🦀 Rust Low-Latency Systems</a>
-        <a href="/jobs.html?ats=SmartRecruiters" class="wc-tag wc-company wc-glow-amber">⚡ SmartRecruiters</a>
-        <a href="/jobs.html?role=Cybersecurity%20Engineer" class="wc-tag wc-role wc-glow-blue">🔒 DevSecOps Lead</a>
-        <!-- Duplicated for seamless infinite marquee loop -->
-        <a href="/jobs.html?ats=Workday" class="wc-tag wc-company wc-glow-purple" aria-hidden="true">⚡ Workday ATS</a>
-        <a href="/jobs.html?role=Software%20Engineer" class="wc-tag wc-role wc-glow-amber" aria-hidden="true">💻 Senior Software Engineer</a>
-        <a href="/jobs.html?ats=Greenhouse" class="wc-tag wc-company wc-glow-blue" aria-hidden="true">⚡ Greenhouse ATS</a>
-        <a href="/jobs.html?role=Product%20Manager" class="wc-tag wc-role wc-glow-pink" aria-hidden="true">💼 Technical Product Manager</a>
-        <a href="/jobs.html?ats=Lever" class="wc-tag wc-company wc-glow-cyan" aria-hidden="true">⚡ Lever Portal</a>
-        <a href="/jobs.html?role=Golang%20Developer" class="wc-tag wc-role wc-glow-emerald" aria-hidden="true">⚡ Go Systems Engineer</a>
-        <a href="/jobs.html?company=Meta" class="wc-tag wc-company wc-glow-indigo" aria-hidden="true">🏢 Meta</a>
-        <a href="/jobs.html?role=Rust%20Developer" class="wc-tag wc-role wc-glow-purple" aria-hidden="true">🦀 Rust Low-Latency Systems</a>
-        <a href="/jobs.html?ats=SmartRecruiters" class="wc-tag wc-company wc-glow-amber" aria-hidden="true">⚡ SmartRecruiters</a>
-        <a href="/jobs.html?role=Cybersecurity%20Engineer" class="wc-tag wc-role wc-glow-blue" aria-hidden="true">🔒 DevSecOps Lead</a>
-      </div>
-    </div>
-  </section>
-
   <!-- ══ TRADITIONAL JOB BOARDS VS CORPORATEGUILD TABLE ══ -->
   <section class="comparison-section" aria-label="Traditional Job Boards vs CorporateGuild">
     <div class="comparison-header">
@@ -2101,43 +1864,49 @@ def build_full_html():
       <table class="comparison-table">
         <thead>
           <tr>
-            <th style="width: 32%;">Key Feature</th>
-            <th style="width: 34%;" class="th-traditional">Traditional Job Boards</th>
-            <th style="width: 34%;" class="th-corporateguild">
+            <th style="width: 28%;">Key Feature</th>
+            <th style="width: 36%;" class="th-traditional">Traditional Job Boards</th>
+            <th style="width: 36%;" class="th-corporateguild">
               <span class="table-brand-pill">✓ CorporateGuild</span>
             </th>
           </tr>
         </thead>
         <tbody>
           <tr>
+            <td><strong>Job Source Coverage</strong></td>
+            <td class="td-traditional"><span class="cross-mark">✕</span> Fragmented across 10+ portals with ghost jobs &amp; outdated reposts</td>
+            <td class="td-cg"><span class="check-mark">✓</span> <strong>Unified Ingestion: Company Sites, ATS &amp; Networks (LinkedIn, Naukri, Indeed, Foundit)</strong></td>
+          </tr>
+          <tr>
             <td><strong>Application Destination</strong></td>
-            <td class="td-traditional"><span class="cross-mark">✕</span> Spammy redirect forms &amp; third-party loops</td>
-            <td class="td-cg"><span class="check-mark">✓</span> <strong>100% Direct to Official Company ATS</strong></td>
+            <td class="td-traditional"><span class="cross-mark">✕</span> Spammy redirect forms, affiliate traps &amp; recruiter loops</td>
+            <td class="td-cg"><span class="check-mark">✓</span> <strong>100% Direct Links to Official Employer Portals &amp; ATS</strong></td>
           </tr>
           <tr>
             <td><strong>Listing Freshness</strong></td>
-            <td class="td-traditional"><span class="cross-mark">✕</span> Stale listings active for 60–90+ days</td>
-            <td class="td-cg"><span class="check-mark">✓</span> <strong>Strict 14-Day Automated Purge Policy</strong></td>
+            <td class="td-traditional"><span class="cross-mark">✕</span> Stale listings active for 60–90+ days without verification</td>
+            <td class="td-cg"><span class="check-mark">✓</span> <strong>Strict 14-Day Automated Purge Policy &amp; Real-Time Updates</strong></td>
           </tr>
           <tr>
             <td><strong>Listing Deduplication</strong></td>
-            <td class="td-traditional"><span class="cross-mark">✕</span> Multiple duplicate entries for 1 position</td>
-            <td class="td-cg"><span class="check-mark">✓</span> <strong>Unique Job ID &amp; Zero DB Duplication</strong></td>
+            <td class="td-traditional"><span class="cross-mark">✕</span> Multiple duplicate entries and clones for 1 position</td>
+            <td class="td-cg"><span class="check-mark">✓</span> <strong>Unique Job ID &amp; Zero DB Duplication Across Sources</strong></td>
           </tr>
           <tr>
             <td><strong>Candidate Privacy</strong></td>
-            <td class="td-traditional"><span class="cross-mark">✕</span> Resumes sold to third-party telemarketers</td>
-            <td class="td-cg"><span class="check-mark">✓</span> <strong>Zero Data Selling; 100% Private</strong></td>
+            <td class="td-traditional"><span class="cross-mark">✕</span> Resumes sold to third-party telemarketers &amp; spammers</td>
+            <td class="td-cg"><span class="check-mark">✓</span> <strong>Zero Data Selling; 100% Private Direct Applications</strong></td>
           </tr>
           <tr>
             <td><strong>Access &amp; Pricing</strong></td>
-            <td class="td-traditional"><span class="cross-mark">✕</span> Paid subscriptions &amp; recruiter paywalls</td>
-            <td class="td-cg"><span class="check-mark">✓</span> <strong>100% Free Forever (Quick 2-min verification)</strong></td>
+            <td class="td-traditional"><span class="cross-mark">✕</span> Paid subscriptions, hidden tiers &amp; recruiter paywalls</td>
+            <td class="td-cg"><span class="check-mark">✓</span> <strong>100% Free and Unlimited Access for Registered Users</strong></td>
           </tr>
         </tbody>
       </table>
     </div>
   </section>
+
 
   <!-- Comprehensive FAQ Section (Rich Snippets & LLM Context) -->
   <section class="faq-section" id="faqs">
