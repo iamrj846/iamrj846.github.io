@@ -62,9 +62,9 @@ async def run_hourly_sync(full_sync: bool = False):
     result = await ingestion_mgr.run_ingestion_cycle(full_sync=full_sync)
     logger.info(f"Ingestion cycle status: {result.get('status')} | Ingested/Refreshed: {result.get('ingested_count')}")
 
-    # Deduplicate and clean stale jobs
+    # Deduplicate and clean stale jobs older than 14 days
     deduplicate_jobs_table()
-    clean_stale_jobs_from_db(max_days=30)
+    clean_stale_jobs_from_db(max_days=14)
 
     final_count = get_active_job_count()
     elapsed = time.time() - start_time

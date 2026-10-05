@@ -56,6 +56,22 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Background ingestion scheduler disabled in web container (handled by isolated 1h cron)")
     
+    # Hourly Purge Policy Worker (removes jobs older than 14 days and cleans duplicates every 1 hour)
+    async def hourly_purge_worker():
+        while True:
+            try:
+                await asyncio.sleep(3600)
+                from app.database import clean_stale_jobs_from_db, deduplicate_jobs_table
+                deleted = await asyncio.to_thread(clean_stale_jobs_from_db, 14)
+                await asyncio.to_thread(deduplicate_jobs_table)
+                logger.info(f"[HourlyPurgeWorker] Executed 14-day purge policy. Deleted: {deleted}")
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"[HourlyPurgeWorker] Error in hourly purge: {e}")
+
+    purge_task = asyncio.create_task(hourly_purge_worker())
+    
     from app.services.metrics_service import get_metrics_service
     get_metrics_service().start_flusher()
     logger.info("CorporateGuild server ready.")
@@ -63,6 +79,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown tasks
+    purge_task.cancel()
     if enable_scheduler:
         logger.info("Shutting down background scheduler...")
         ingestion_mgr.stop_scheduler()
@@ -301,10 +318,12 @@ async def serve_telemetry():
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception on {request.url.path}: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"success": False, "error": "Internal server error. Please retry shortly."}
-    )
+    if request.url.path.startswith("/api/"):
+        return JSONResponse(
+            status_code=500,
+            content={"success": False, "message": "Unable to complete request right now. Please try again."}
+        )
+    return PlainTextResponse("Unable to load page right now. Please try again.", status_code=500)
 
 if __name__ == "__main__":
     import uvicorn

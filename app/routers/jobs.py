@@ -141,20 +141,34 @@ async def search_jobs(
         }
 
     search_svc = get_search_service()
-    data = await asyncio.to_thread(
-        search_svc.search_jobs,
-        search_type=search_type,
-        search_term=search_term,
-        custom_input=custom_input,
-        location_filter=location,
-        role_filter=role,
-        employment_type=employment_type,
-        workplace_type=workplace_type,
-        experience_level=experience_level,
-        time_filter=active_time_filter,
-        page=page,
-        page_size=page_size
-    )
+    try:
+        data = await asyncio.to_thread(
+            search_svc.search_jobs,
+            search_type=search_type,
+            search_term=search_term,
+            custom_input=custom_input,
+            location_filter=location,
+            role_filter=role,
+            employment_type=employment_type,
+            workplace_type=workplace_type,
+            experience_level=experience_level,
+            time_filter=active_time_filter,
+            page=page,
+            page_size=page_size
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger("app.routers.jobs").error(f"Search jobs execution error: {e}", exc_info=True)
+        return {
+            "success": False,
+            "requires_auth": False,
+            "message": "Unable to load jobs right now. Please try again.",
+            "results": [],
+            "total_count": 0,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": 1
+        }
 
     # Record search telemetry in SQLite
     q_str = (custom_input or search_term or role or "").strip()

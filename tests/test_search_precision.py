@@ -103,7 +103,7 @@ def test_guest_quota_24h_reset():
     # 6th search blocked
     res_6 = auth_svc.check_search_allowed(test_ip, None, guest_id=test_guest, increment=True)
     assert res_6["allowed"] is False
-    assert "24 hours" in res_6["message"]
+    assert "2-minute" in res_6["message"] and "verify" in res_6["message"]
 
     # Expire window (simulate 25h ago)
     twenty_five_hours_ago = (get_ist_now() - datetime.timedelta(hours=25)).strftime("%Y-%m-%d %H:%M:%S IST")

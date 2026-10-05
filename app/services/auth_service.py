@@ -53,7 +53,7 @@ class AuthService:
                 "is_authenticated": False,
                 "current_count": current_searches,
                 "limit": limit,
-                "message": f"You have reached your {limit} free searches for today. Your {limit} free searches reset every 24 hours, or log in / sign up to unlock unlimited searches immediately."
+                "message": "To continue exploring verified job opportunities, please sign up or log in. It’s a short 2-minute process that helps us verify genuine users."
             }
 
         if not increment:

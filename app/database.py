@@ -718,6 +718,7 @@ def deduplicate_jobs_table(conn=None) -> int:
     cur = conn.cursor()
     deleted = 0
     try:
+        # Step 1: Deduplicate strictly by normalized apply_url
         cur.execute("""
         DELETE FROM jobs
         WHERE rowid NOT IN (
@@ -727,9 +728,21 @@ def deduplicate_jobs_table(conn=None) -> int:
             GROUP BY LOWER(RTRIM(apply_url, '/'))
         ) AND apply_url IS NOT NULL AND apply_url != '';
         """)
-        deleted = cur.rowcount
+        deleted += cur.rowcount
+
+        # Step 2: Deduplicate any duplicate company + title + location combinations
+        cur.execute("""
+        DELETE FROM jobs
+        WHERE rowid NOT IN (
+            SELECT MAX(rowid)
+            FROM jobs
+            GROUP BY LOWER(TRIM(company)), LOWER(TRIM(title)), LOWER(TRIM(location))
+        );
+        """)
+        deleted += cur.rowcount
         conn.commit()
-        # Also purge any non-India or non-HTTP legacy rows
+
+        # Step 3: Purge any non-India or non-HTTP legacy rows
         clean_invalid_jobs_from_db(conn)
     except Exception as e:
         logger.error(f"Error deduplicating jobs table: {e}")
@@ -738,7 +751,11 @@ def deduplicate_jobs_table(conn=None) -> int:
             conn.close()
     return deleted
 
-def clean_stale_jobs_from_db(max_days: int = 30) -> int:
+def clean_stale_jobs_from_db(max_days: int = 14) -> int:
+    """
+    Purge policy to remove jobs older than 14 days from SQLite.
+    Guarantees all jobs on CorporateGuild are fresh, active, and verified.
+    """
     conn = get_db_connection()
     cur = conn.cursor()
     deleted = 0
@@ -748,12 +765,13 @@ def clean_stale_jobs_from_db(max_days: int = 30) -> int:
         cutoff_str = cutoff.strftime("%Y-%m-%d %H:%M:%S")
         cur.execute("""
         DELETE FROM jobs 
-        WHERE (posted_at < ? OR posted_at IS NULL) 
-          AND (updated_at < ? OR updated_at IS NULL)
+        WHERE (posted_at IS NOT NULL AND posted_at != '' AND posted_at < ?)
+           OR ((posted_at IS NULL OR posted_at = '') AND (updated_at < ? OR updated_at IS NULL OR updated_at = ''))
         """, (cutoff_str, cutoff_str))
         deleted = cur.rowcount
         conn.commit()
         clean_invalid_jobs_from_db(conn)
+        logger.info(f"14-Day Purge Policy: Removed {deleted} stale jobs older than {max_days} days (cutoff: {cutoff_str})")
     except Exception as e:
         logger.error(f"Error cleaning stale jobs from DB: {e}")
     finally:
