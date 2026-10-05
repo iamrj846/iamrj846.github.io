@@ -684,9 +684,10 @@ ROLE_TAXONOMY_MAP = {
     "Business Analyst": {
         "synonyms": [
             "Business Analyst", "Technical Business Analyst", "Functional Analyst", 
-            "IT Business Analyst", "Senior Business Analyst", "Lead Business Analyst", "Business Analysis"
+            "IT Business Analyst", "Senior Business Analyst", "Lead Business Analyst", "Business Analysis",
+            "Business Systems Analyst", "Requirements Analyst", "Process Analyst", "Systems Analyst"
         ],
-        "skills": ["Business Analysis", "Requirements Elicitation", "Use Case Modeling", "BRD / FRD Creation", "Stakeholder Management", "User Stories", "Agile / Scrum", "Process Mapping", "SQL Basics", "Data Analysis"]
+        "skills": ["Business Analysis", "Requirements Elicitation", "Use Case Modeling", "BRD / FRD Creation", "Stakeholder Management", "User Stories", "Agile / Scrum", "Process Mapping", "SQL Basics", "Data Analysis", "Functional Specifications", "Business Systems"]
     },
     "Scrum Master / Agile Coach": {
         "synonyms": [
@@ -717,16 +718,35 @@ ROLE_TAXONOMY_MAP = {
         "skills": ["IT Support", "Desktop Support", "Troubleshooting", "Windows / macOS Administration", "Active Directory", "Hardware Maintenance", "Ticketing Systems", "Customer Service", "Remote Support"]
     },
     "Intern / Trainee": {
-        "synonyms": ["Software Intern", "Engineering Intern", "Graduate Trainee", "Summer Intern", "College Intern", "Apprentice"],
+        "synonyms": ["Software Intern", "Engineering Intern", "Graduate Trainee", "Summer Intern", "College Intern", "Apprentice", "Internship", "Trainee"],
         "skills": ["Learning Agility", "Software Engineering Fundamentals", "Problem Solving", "Academic Projects", "Team Collaboration", "Version Control", "Technical Curiosity", "Fast Learner", "Continuous Learning", "Hands-on Development"]
     },
     "Chief of Staff / Founder's Office": {
         "synonyms": ["Chief of Staff", "Founder's Office Associate", "Executive Assistant", "Strategic Initiatives Lead", "Special Projects Manager"],
         "skills": ["Strategic Initiatives", "Executive Support", "Cross-Functional Coordination", "Business Operations", "High-Impact Projects", "Organizational Strategy", "Executive Communication", "Program Management", "Problem Solving"]
     },
-    "Business Analyst / Strategy": {
-        "synonyms": ["Business Analyst", "Strategy Consultant", "Corporate Strategy Analyst", "Business Operations Analyst", "Functional Consultant"],
-        "skills": ["Business Analysis", "Requirements Gathering", "Process Modeling", "Strategic Planning", "Stakeholder Communication", "Cost-Benefit Analysis", "Gap Analysis", "Market Analysis", "Business Process Mapping", "Data Driven Strategy"]
+    "Strategy / Management Consultant": {
+        "synonyms": [
+            "Strategy Consultant", "Management Consultant", "Corporate Strategy Analyst", 
+            "Business Operations Analyst", "Functional Consultant", "Strategy Analyst", 
+            "Corporate Strategy", "Strategic Planning", "BizOps Analyst", "Strategy Associate", "Consulting Analyst"
+        ],
+        "skills": ["Strategic Planning", "Management Consulting", "Corporate Strategy", "Market Analysis", "Business Process Mapping", "Financial Modeling", "Competitive Analysis", "Stakeholder Communication", "Cost-Benefit Analysis", "Data Driven Strategy", "BizOps"]
+    },
+    "Education / Teaching": {
+        "synonyms": [
+            "Teacher", "Teaching", "Tutor", "Professor", "Lecturer", "Faculty", 
+            "Instructor", "Curriculum Developer", "Academic Counselor", "Educator", "Trainer", "Teaching Assistant"
+        ],
+        "skills": ["Curriculum Design", "Instructional Design", "Classroom Management", "Student Mentoring", "Lesson Planning", "Educational Technology", "Assessment & Grading", "Subject Matter Expertise", "Pedagogy", "Academic Research"]
+    },
+    "Healthcare / Medical Specialist": {
+        "synonyms": [
+            "Doctor", "Surgeon", "Physician", "Nurse", "Staff Nurse", "Medical Officer", 
+            "Pharmacist", "Clinical Specialist", "Pathologist", "Radiologist", "Therapist", 
+            "Healthcare Consultant", "Dentist", "Medical Assistant"
+        ],
+        "skills": ["Patient Care", "Clinical Diagnosis", "Medical Procedures", "Healthcare Management", "Pharmacology", "Emergency Care", "Electronic Health Records (EHR)", "Patient Safety", "Clinical Operations", "Medical Ethics"]
     },
     "Software Engineer": {
         "synonyms": ["Software Engineer", "Software Development Engineer", "SDE", "SWE", "Software Developer", "Programmer", "Application Developer", "Software Architecture"],
@@ -755,142 +775,293 @@ POPULAR_TECH_KEYWORDS = [
 ]
 
 def classify_job_canonical_role(title: str, role_cat: str = "") -> str:
-    combined = f"{title} {role_cat}".lower()
-    title_lower = title.lower()
+    t = (title or "").lower().strip()
 
-    # 1. UI/UX Design protection: if title clearly indicates UI/UX, product design, or interaction design,
-    # prevent it from being hijacked by 'growth', 'marketing', or generic engineering
-    if any(re.search(p, title_lower) for p in [
-        r"\bui\s*/\s*ux\b", r"\bproduct\s+designer\b", r"\bux\s+designer\b", r"\bui\s+designer\b",
-        r"\binteraction\s+designer\b", r"\buser\s+experience\b", r"\buser\s+interface\s+design(er)?\b",
-        r"\bux\s+researcher\b", r"\bvisual\s+designer\b", r"\bdesign\s+system\b", r"\bexperience\s+designer\b"
+    # 1. UI/UX Designer & Product Designer
+    if any(re.search(p, t) for p in [
+        r"\bui[\s\-_/]*ux\b", r"\bproduct\s+designer\b", r"\bux\s+designer\b", r"\bui\s+designer\b", 
+        r"\binteraction\s+designer\b", r"\buser\s+experience\b", r"\bux\s+researcher\b", 
+        r"\bvisual\s+designer\b", r"\bexperience\s+designer\b"
     ]):
         return "UI/UX Designer"
+    if any(re.search(p, t) for p in [
+        r"\bgraphic\b", r"\bvideo\s+edit", r"\bvideo\s+mak", r"\banimat", 
+        r"\bmotion\s+design", r"\billustrat", r"\bcreative\s+design"
+    ]):
+        return "Graphic / Brand Designer"
 
-    # 2. Engineering Management overrides
-    if any(re.search(p, title_lower) for p in [
+    # 2. Engineering Management
+    if any(re.search(p, t) for p in [
         r"\bengineering\s+manager\b", r"\bdirector\s+of\s+engineering\b", 
-        r"\bvp\s+(of\s+)?engineering\b", r"\bsoftware\s+engineering\s+manager\b", r"\bhead\s+of\s+engineering\b"
+        r"\bvp\s+(of\s+)?engineering\b", r"\bsoftware\s+engineering\s+manager\b", 
+        r"\bhead\s+of\s+engineering\b", r"\btech\s+lead\s+manager\b"
     ]):
         return "Engineering Manager / Lead"
 
-    # 3. Engineering specializations overrides (handles 'Software Engineer - Frontend', 'SDE 2 - Backend', etc.)
-    if any(re.search(p, title_lower) for p in [r"\bfull[\s\-_]*stack\b", r"\bmern\b", r"\bmean\b"]):
-        return "Full Stack Engineer"
-    if any(re.search(p, title_lower) for p in [r"\bfront[\s\-_]*end\b", r"\bui\s+developer\b", r"\bui\s+engineer\b", r"\bweb\s+developer\b", r"\breact\b", r"\bangular\b", r"\bvue\b"]):
-        return "Frontend Engineer"
-    if any(re.search(p, title_lower) for p in [r"\bback[\s\-_]*end\b", r"\bserver\s+side\b", r"\bmicroservices\b"]):
-        return "Backend Engineer"
-    if any(re.search(p, title_lower) for p in [r"\bmobile\b", r"\bios\b", r"\bandroid\b", r"\bflutter\b", r"\breact[\s\-_]*native\b", r"\bswift\b", r"\bkotlin\b"]) and "cloud" not in title_lower:
-        return "Mobile Engineer"
-    if any(re.search(p, title_lower) for p in [r"\bmachine\s+learning\b", r"\bml\s+engineer\b", r"\bdeep\s+learning\b", r"\bnlp\b", r"\bllm\b", r"\bcomputer\s+vision\b", r"\bgenai\b", r"\bgenerative\s+ai\b"]):
+    # 3. AI / Machine Learning
+    if any(re.search(p, t) for p in [
+        r"\bmachine\s+learning\b", r"\bml\s+engineer\b", r"\bdeep\s+learning\b", 
+        r"\bnlp\b", r"\bllm\b", r"\bcomputer\s+vision\b", r"\bgenai\b", 
+        r"\bgenerative\s+ai\b", r"\bartificial\s+intelligence\b"
+    ]):
         return "AI / Machine Learning Engineer"
-    if any(re.search(p, title_lower) for p in [r"\bdata\s+scientist\b", r"\bapplied\s+scientist\b", r"\bquantitative\s+analyst\b", r"\bresearch\s+scientist\b"]):
+
+    # 4. Data Science & Engineering
+    if any(re.search(p, t) for p in [
+        r"\bdata\s+scientist\b", r"\bapplied\s+scientist\b", 
+        r"\bquantitative\s+analyst\b", r"\bresearch\s+scientist\b", r"\bstatistician\b"
+    ]):
         return "Data Scientist"
-    if any(re.search(p, title_lower) for p in [r"\bdata\s+engineer\b", r"\bbig\s+data\b", r"\betl\b", r"\bdata\s+platform\b", r"\bdata\s+pipeline\b"]):
+    if any(re.search(p, t) for p in [
+        r"\bdata\s+engineer\b", r"\bbig\s+data\b", r"\betl\b", 
+        r"\bdata\s+platform\b", r"\bdata\s+pipeline\b", r"\bspark\s+developer\b", r"\bsnowflake\b"
+    ]):
         return "Data Engineer"
-    if any(re.search(p, title_lower) for p in [r"\bdevops\b", r"\bcloud\s+engineer\b", r"\bcloud\s+architect\b", r"\binfrastructure\s+engineer\b", r"\bplatform\s+engineer\b"]):
+    if any(re.search(p, t) for p in [
+        r"\bdata\s+analyst\b", r"\bbi\s+developer\b", r"\bbusiness\s+intelligence\b", 
+        r"\btableau\b", r"\bpower\s*bi\b", r"\banalytics\s+consultant\b", r"\bdata\s+analytics\b"
+    ]):
+        return "Data Analyst / BI"
+
+    # 5. Core Software Engineering disciplines
+    if any(re.search(p, t) for p in [
+        r"\bfull[\s\-_]*stack\b", r"\bmern\b", r"\bmean\b", 
+        r"\bweb\s+developer\b", r"\bweb\s+development\b"
+    ]):
+        return "Full Stack Engineer"
+    if any(re.search(p, t) for p in [
+        r"\bfront[\s\-_]*end\b", r"\bui\s+developer\b", r"\bui\s+engineer\b", 
+        r"\breact\b", r"\bangular\b", r"\bvue\b", r"\bnext\.?js\b", 
+        r"\bjavascript\s+developer\b", r"\btypescript\s+developer\b"
+    ]):
+        return "Frontend Engineer"
+    if any(re.search(p, t) for p in [
+        r"\bback[\s\-_]*end\b", r"\bserver\s+side\b", r"\bmicroservices\b", 
+        r"\bjava\s+developer\b", r"\bjava\s+development\b", r"\bpython\s+developer\b", 
+        r"\bpython\s+development\b", r"\bgolang\b", r"\bnode\.?js\b", 
+        r"\bspring\s*boot\b", r"\bdjango\b", r"\bfastapi\b", r"\bc\+\+\s+developer\b", 
+        r"\b\.net\s+developer\b", r"\bc#\s+developer\b"
+    ]):
+        return "Backend Engineer"
+    if any(re.search(p, t) for p in [
+        r"\bmobile\b", r"\bios\b", r"\bandroid\b", r"\bflutter\b", 
+        r"\breact[\s\-_]*native\b", r"\bswift\b", r"\bkotlin\b"
+    ]) and "cloud" not in t:
+        return "Mobile Engineer"
+
+    # 6. DevOps, Cloud, SRE, Platform
+    if any(re.search(p, t) for p in [
+        r"\bdevops\b", r"\bcloud\s+engineer\b", r"\bcloud\s+architect\b", 
+        r"\binfrastructure\s+engineer\b", r"\bplatform\s+engineer\b", 
+        r"\bkubernetes\b", r"\bterraform\b", r"\baws\s+engineer\b", 
+        r"\bazure\s+engineer\b", r"\bgcp\s+engineer\b"
+    ]):
         return "DevOps / Cloud Engineer"
-    if any(re.search(p, title_lower) for p in [r"\bsre\b", r"\bsite\s+reliability\b"]) and "director" not in title_lower:
+    if any(re.search(p, t) for p in [r"\bsre\b", r"\bsite\s+reliability\b"]):
         return "Site Reliability Engineer (SRE)"
-    if any(re.search(p, title_lower) for p in [r"\bsdet\b", r"\bqa\b", r"\bquality\s+assurance\b", r"\btest\s+automation\b", r"\bsoftware\s+tester\b", r"\btest\s+engineer\b", r"\bquality\s+engineer\b"]):
+    if any(re.search(p, t) for p in [
+        r"\bcyber\s*security\b", r"\binformation\s+security\b", 
+        r"\bsecurity\s+engineer\b", r"\bsecurity\s+analyst\b", 
+        r"\bpenetration\s+test", r"\bsoc\s+analyst\b", r"\binfosec\b"
+    ]):
+        return "Cybersecurity Engineer"
+    if any(re.search(p, t) for p in [
+        r"\bsdet\b", r"\bqa\b", r"\bquality\s+assurance\b", 
+        r"\btest\s+automation\b", r"\bsoftware\s+tester\b", 
+        r"\btest\s+engineer\b", r"\bquality\s+engineer\b", r"\bautomation\s+test"
+    ]):
         return "QA / SDET"
 
-    # Network Engineer overrides
-    if any(re.search(p, title_lower) for p in [r"\bnetwork\s+engineer\b", r"\bnetwork\s+administrator\b", r"\bccna\b", r"\bccnp\b", r"\bcisco\b", r"\bcloud\s+network\b", r"\bnoc\s+engineer\b"]):
+    # 7. Architecture & Specialized Software
+    if any(re.search(p, t) for p in [
+        r"\bsolution(s)?\s+architect\b", r"\benterprise\s+architect\b", 
+        r"\bsoftware\s+architect\b", r"\btechnical\s+architect\b"
+    ]):
+        return "Solutions Architect"
+    if any(re.search(p, t) for p in [r"\bdatabase\s+admin", r"\bdba\b", r"\bsql\s+dba\b"]):
+        return "Database Administrator (DBA)"
+    if any(re.search(p, t) for p in [
+        r"\bnetwork\s+engineer\b", r"\bnetwork\s+admin", r"\bccna\b", 
+        r"\bccnp\b", r"\bnetwork\s+specialist\b", r"\bnoc\s+engineer\b"
+    ]):
         return "Network Engineer"
+    if any(re.search(p, t) for p in [r"\bsalesforce\b", r"\bsfdc\b"]):
+        return "Salesforce Developer"
+    if any(re.search(p, t) for p in [r"\bgame\s+developer\b", r"\bgame\s+design", r"\bunity\b", r"\bunreal\b"]):
+        return "Game Developer"
+    if any(re.search(p, t) for p in [r"\bblockchain\b", r"\bweb3\b", r"\bsmart\s+contract", r"\bsolidity\b"]):
+        return "Blockchain / Web3 Engineer"
+    if any(re.search(p, t) for p in [
+        r"\bembedded\b", r"\bfirmware\b", r"\bvlsi\b", r"\basic\b", 
+        r"\bfpga\b", r"\bhardware\s+engineer\b", r"\bpcb\b", r"\bhardware\b"
+    ]):
+        return "Hardware / Embedded Engineer"
 
-    # Technical Support / IT overrides
-    if any(re.search(p, title_lower) for p in [r"\btechnical\s+support\b", r"\bsupport\s+engineer\b", r"\bapplication\s+support\b", r"\bdesktop\s+support\b", r"\bit\s+support\b", r"\bhelpdesk\b", r"\bservice\s+desk\b"]):
+    # 8. Product & Program Management
+    if any(re.search(p, t) for p in [
+        r"\bproduct\s+manager\b", r"\bassociate\s+product\s+manager\b", 
+        r"\bapm\b", r"\bproduct\s+owner\b", r"\btechnical\s+product\s+manager\b", 
+        r"\bgroup\s+product\s+manager\b"
+    ]):
+        return "Product Manager"
+    if any(re.search(p, t) for p in [
+        r"\btechnical\s+program\s+manager\b", r"\btpm\b", 
+        r"\bprogram\s+manager\b", r"\bproject\s+manager\b", r"\bpmo\b"
+    ]):
+        return "Technical Program Manager"
+    if any(re.search(p, t) for p in [r"\bscrum\s+master\b", r"\bagile\s+coach\b", r"\bcertified\s+scrum\b"]):
+        return "Scrum Master / Agile Coach"
+
+    # 9. Business Analysis (ACCURATE & SPECIFIC TO BUSINESS ANALYSIS!)
+    if any(re.search(p, t) for p in [
+        r"\bbusiness\s+analyst\b", r"\bbusiness\s+analysis\b", 
+        r"\btechnical\s+business\s+analyst\b", r"\bit\s+business\s+analyst\b", 
+        r"\bfunctional\s+analyst\b", r"\brequirements\s+analyst\b", 
+        r"\bsystems\s+analyst\b", r"\bprocess\s+analyst\b", r"\bbusiness\s+systems\s+analyst\b"
+    ]):
+        return "Business Analyst"
+
+    # 10. Healthcare & Medical
+    if any(re.search(p, t) for p in [
+        r"\bdoctor\b", r"\bsurgeon\b", r"\bphysician\b", r"\bnurse\b", 
+        r"\bnursing\b", r"\bmedical\b", r"\bclinical\b", r"\bhospital\b", 
+        r"\bhealthcare\b", r"\bhealth\b", r"\bpharmac\w*\b", r"\bpatholog\w*\b", 
+        r"\btherapist\b", r"\bdental\b", r"\bdentist\b", r"\bradiolog\w*\b", 
+        r"\borthopedic\b", r"\bpediatric\b", r"\bophthalm\w*\b", 
+        r"\bgynecolog\w*\b", r"\bcardiolog\w*\b"
+    ]):
+        return "Healthcare / Medical Specialist"
+
+    # 11. Education & Teaching
+    if any(re.search(p, t) for p in [
+        r"\bteach\w*\b", r"\btutor\b", r"\bprofessor\b", r"\blecturer\b", 
+        r"\bfaculty\b", r"\bcurriculum\b", r"\beducat\w*\b", r"\btrainer\b", 
+        r"\btraining\b", r"\bacademic\b", r"\bschool\b", r"\bcollege\b", r"\binstructor\b"
+    ]):
+        return "Education / Teaching"
+
+    # 12. Content & Writing
+    if any(re.search(p, t) for p in [
+        r"\bcontent\s+writ", r"\bcopywriter\b", r"\btechnical\s+writer\b", 
+        r"\bwriter\b", r"\bblogger\b", r"\bcontent\s+creator\b", 
+        r"\beditor\b", r"\bjournalis\w*\b", r"\bcontent\s+specialist\b"
+    ]):
+        return "Content Writer / Copywriter"
+
+    # 13. Marketing, Growth & SEO
+    if any(re.search(p, t) for p in [r"\bseo\b", r"\bsem\b", r"\bsearch\s+engine\s+optimiz"]):
+        return "SEO / SEM Specialist"
+    if any(re.search(p, t) for p in [
+        r"\bmarketing\b", r"\bgrowth\b", r"\bsocial\s+media\b", 
+        r"\bperformance\s+market", r"\bbrand\b", r"\bdigital\s+market", 
+        r"\bpublic\s+relations\b", r"\bpr\s+specialist\b", 
+        r"\bmarket\s+research\b", r"\bcommunity\s+manager\b"
+    ]):
+        return "Marketing / Growth Specialist"
+
+    # 14. Sales & Business Development
+    if any(re.search(p, t) for p in [
+        r"\bsales\b", r"\bbusiness\s+development\b", r"\bbdr\b", r"\bsdr\b", 
+        r"\baccount\s+executive\b", r"\btelecalling\b", r"\btelesales\b", 
+        r"\blead\s+generation\b", r"\bclient\s+acquisition\b", r"\binside\s+sales\b", 
+        r"\brelationship\s+manager\b", r"\brelationship\s+officer\b", r"\bcommercial\b"
+    ]):
+        return "Sales / Business Development"
+
+    # 15. Finance, Banking & Accounting
+    if any(re.search(p, t) for p in [
+        r"\bfinance\b", r"\bfinancial\b", r"\baccountant\b", r"\baccounting\b", 
+        r"\baudit\w*\b", r"\btax\b", r"\btaxation\b", r"\bbilling\b", 
+        r"\bpayroll\b", r"\bbank(ing)?\b", r"\bwealth\b", r"\binvestment\b", 
+        r"\bactuar\w*\b", r"\bcredit\b", r"\bequity\b", r"\btreasury\b"
+    ]):
+        return "Finance / Accounting"
+
+    # 16. Human Resources
+    if any(re.search(p, t) for p in [
+        r"\bhr\b", r"\bhuman\s+resources\b", r"\brecruiter\b", r"\brecruiting\b", 
+        r"\btalent\s+acquisition\b", r"\bpeople\s+partner\b", r"\bpeople\s+ops\b", r"\bonboarding\b"
+    ]):
+        return "Human Resources / Recruiter"
+
+    # 17. Customer Success & Support
+    if any(re.search(p, t) for p in [
+        r"\bcustomer\s+success\b", r"\bcustomer\s+support\b", 
+        r"\bcustomer\s+service\b", r"\bcustomer\s+care\b", 
+        r"\bclient\s+servicing\b", r"\bclient\s+success\b"
+    ]):
+        return "Customer Success / Account Manager"
+
+    # 18. Technical Support & IT Helpdesk
+    if any(re.search(p, t) for p in [
+        r"\bit\s+support\b", r"\btechnical\s+support\b", r"\bdesktop\s+support\b", 
+        r"\bhelpdesk\b", r"\bservice\s+desk\b", r"\bsystem\s+admin", 
+        r"\bsysadmin\b", r"\bit\s+admin", r"\bit\s+specialist\b", r"\bfield\s+support\b"
+    ]):
         return "Technical Support / IT"
 
-    # Hardware / Embedded / Firmware overrides
-    if any(re.search(p, title_lower) for p in [r"\bfirmware\b", r"\bbsp\s+engineer\b"]):
-        return "Firmware Engineer"
-    if any(re.search(p, title_lower) for p in [r"\bhardware\s+engineer\b", r"\bhardware\s+design\b", r"\bpcb\s+design\b", r"\bvlsi\b", r"\basic\b", r"\bfpga\b"]):
-        return "Hardware Engineer"
-    if any(re.search(p, title_lower) for p in [r"\bembedded\s+software\b", r"\bembedded\s+systems?\s+developer\b"]):
-        return "Embedded Software Engineer"
-
-    # Database Administrator overrides
-    if any(re.search(p, title_lower) for p in [r"\bdatabase\s+administrator\b", r"\bdba\b", r"\bsql\s+dba\b", r"\bpostgres\s+dba\b", r"\boracle\s+dba\b"]):
-        return "Database Administrator (DBA)"
-
-    # Manufacturing / Assistant / Operations overrides
-    if any(re.search(p, title_lower) for p in [r"\bmanufacturing\b", r"\btechnical\s+assistant\b", r"\bshop\s+floor\b", r"\btechnician\b", r"\bmachinist\b", r"\boperator\b"]):
-        return "Traditional / Core Engineering"
-
-    # 4. Specific non-engineering precedence overrides
-    if any(re.search(p, combined) for p in [r"\baccount(s|ing)?\b", r"\breceivable\b", r"\bpayable\b", r"\bfinance\b", r"\btax\b", r"\baudit\b", r"\bbilling\b"]) and "engineer" not in combined:
-        return "Finance / Accounting"
-    if any(re.search(p, combined) for p in [r"\bart\s+director\b", r"\bgraphic\b", r"\bcreative\s+director\b", r"\billustrator\b", r"\bmotion\s+designer\b"]):
-        return "Graphic / Brand Designer"
-    if any(re.search(p, combined) for p in [r"\banalytics\b", r"\bdata\s+analyst\b", r"\bbi\s+developer\b"]) and "engineer" not in combined:
-        return "Data Analyst / BI"
-    if any(re.search(p, combined) for p in [r"\baccount\s+manager\b", r"\bcustomer\s+success\b", r"\baircover\b", r"\bclient\s+success\b"]) and "engineer" not in combined:
-        return "Customer Success / Account Manager"
-    if any(re.search(p, combined) for p in [r"\btalent\s+acquisition\b", r"\brecruiter\b", r"\bpeople\s+partner\b", r"\bpeople\s+operations\b"]):
-        return "Human Resources / Recruiter"
-    if any(re.search(p, combined) for p in [r"\bbdr\b", r"\bsdr\b", r"\bbusiness\s+development\s+rep", r"\baccount\s+executive\b", r"\boutbound\s+sales\b"]):
-        return "Sales / Business Development"
-    if any(re.search(p, combined) for p in [r"\bmarket\s+manager\b", r"\bmarketing\b", r"\bgrowth\b", r"\bbrand\b"]) and "engineer" not in combined and "designer" not in combined:
-        return "Marketing / Growth Specialist"
-    if any(re.search(p, combined) for p in [r"\boperations\s+associate\b", r"\boperations\s+manager\b", r"\blogistics\b", r"\bwarehouse\b"]):
+    # 19. Operations & Supply Chain
+    if any(re.search(p, t) for p in [
+        r"\boperations\b", r"\bops\b", r"\bsupply\s+chain\b", 
+        r"\blogistics\b", r"\bwarehouse\b", r"\bprocurement\b", 
+        r"\binventory\b", r"\bshipping\b", r"\bdispatch\b"
+    ]):
         return "Operations / Supply Chain"
-    if any(re.search(p, combined) for p in [r"\blegal\s+counsel\b", r"\bparalegal\b", r"\bcompliance\s+analyst\b", r"\bcompliance\s+officer\b"]):
+
+    # 20. Legal & Compliance
+    if any(re.search(p, t) for p in [
+        r"\blegal\b", r"\blaw\b", r"\bcompliance\b", r"\bregulatory\b", 
+        r"\bparalegal\b", r"\battorney\b", r"\bcounsel\b", 
+        r"\bcontract\s+manager\b", r"\bgovernance\b"
+    ]):
         return "Legal / Compliance Specialist"
 
-    # Core / Non-software engineering overrides (chemical, civil, mechanical, materials, etc.)
-    non_sw_patterns = [
-        r"\bchemical\b", r"\bmaterials?\s+engineer(ing)?\b", r"\bcivil\b", r"\bmechanical\b",
-        r"\bproject\s+engineer\b", r"\bsite\s+engineer\b", r"\bstructural\b", r"\bpetroleum\b",
-        r"\bmining\b", r"\bpiping\b", r"\bhvac\b", r"\binstrumentation\b", r"\benvironmental\s+engineer\b",
-        r"\bsafety\s+engineer\b", r"\bprocess\s+engineer\b", r"\bcontrol\s+panel\b", r"\beica\b",
-        r"\bcommissioning\s+(\(?cx\)?\s+)?engineer\b", r"\bmetallurg\b", r"\bwelding\b", r"\bsubsurface\b",
-        r"\belectrical\s+design\b", r"\belectrical\s+engineer\b", r"\belectrical\s+drafter\b",
-        r"\bmanufacturing\b", r"\btechnical\s+assistant\b", r"\bshop\s+floor\b"
-    ]
-    is_non_sw_eng = any(re.search(p, combined) for p in non_sw_patterns)
-    has_sw_keyword = any(re.search(p, combined) for p in [r"\bsoftware\b", r"\bdeveloper\b", r"\bsde\b", r"\bswe\b", r"\bfirmware\b", r"\bembedded\b", r"\bfull[\s\-_]*stack\b", r"\bfront[\s\-_]*end\b", r"\bback[\s\-_]*end\b"])
-    if is_non_sw_eng and not has_sw_keyword:
+    # 21. Strategy & Consulting
+    if any(re.search(p, t) for p in [
+        r"\bstrategy\b", r"\bmanagement\s+consultant\b", r"\bstrategic\b", 
+        r"\bconsultant\b", r"\bconsulting\b", r"\bbizops\b", r"\bbusiness\s+operations\b"
+    ]):
+        return "Strategy / Management Consultant"
+
+    # 22. Traditional / Core Engineering
+    if any(re.search(p, t) for p in [
+        r"\bcivil\b", r"\bmechanical\b", r"\belectrical\b", r"\bchemical\b", 
+        r"\bstructural\b", r"\bpetroleum\b", r"\bmining\b", r"\bpiping\b", 
+        r"\bhvac\b", r"\binstrumentation\b", r"\bmetallurg\w*\b", 
+        r"\bmanufacturing\b", r"\bwelder\b", r"\bmachinist\b", 
+        r"\btechnician\b", r"\bplant\b", r"\bfacility\b", 
+        r"\bmaintenance\b", r"\bsite\s+engineer\b", r"\bfield\s+engineer\b"
+    ]):
         return "Traditional / Core Engineering"
 
-    # 5. Iterate through ordered taxonomy map (specific specializations are evaluated first)
-    for role_name, data in ROLE_TAXONOMY_MAP.items():
-        syns = [role_name.lower()] + [s.lower() for s in data["synonyms"]]
-        for s in syns:
-            if re.search(rf"\b{re.escape(s)}\b", combined):
-                return role_name
-            if " " in s and s in combined:
-                return role_name
-
-    # 6. Intelligent fallback based on title keywords
-    is_support_or_net = any(re.search(p, combined) for p in [r"\bnetwork\b", r"\bsupport\b", r"\bhelpdesk\b", r"\bhardware\b", r"\bmanufacturing\b", r"\bassistant\b", r"\btechnician\b"])
-    if any(k in combined for k in ["software engineer", "developer", "software", "programmer", "sde", "swe", "software architect"]):
-        if not is_support_or_net:
-            return "Software Engineer"
-    if re.search(r"\bengineer\b", combined) and not is_non_sw_eng and not is_support_or_net:
+    # 23. General Software Engineer fallback for remaining engineering/developer/software roles
+    if any(re.search(p, t) for p in [
+        r"\bsoftware\b", r"\bengineer\b", r"\bdeveloper\b", 
+        r"\bprogrammer\b", r"\bsde\b", r"\bswe\b", 
+        r"\bapplication\s+developer\b", r"\bcoding\b"
+    ]):
         return "Software Engineer"
-    if is_non_sw_eng:
-        return "Traditional / Core Engineering"
-    if is_support_or_net:
-        if "network" in combined:
-            return "Network Engineer"
-        if "support" in combined or "helpdesk" in combined:
-            return "Technical Support / IT"
-        return "Traditional / Core Engineering"
-    if any(k in combined for k in ["designer", "design", "creative"]):
-        return "UI/UX Designer"
-    if any(k in combined for k in ["sales", "bdr", "sdr", "account executive"]):
-        return "Sales / Business Development"
-    if any(k in combined for k in ["recruit", "talent", "hr", "people"]):
-        return "Human Resources / Recruiter"
-    if any(k in combined for k in ["operations", "logistics", "warehouse"]):
-        return "Operations / Supply Chain"
-    if any(k in combined for k in ["analyst", "strategy", "consultant", "business ops"]):
-        return "Business Analyst / Strategy"
 
-    return "Business Analyst / Strategy"
+    # 24. General Intern / Trainee for any internship not matched above
+    if any(re.search(p, t) for p in [
+        r"\bintern\b", r"\binternship\b", r"\btrainee\b", r"\bapprentice\b", r"\bfresher\b"
+    ]):
+        return "Intern / Trainee"
+
+    # 25. Founder's Office / Executive
+    if any(re.search(p, t) for p in [
+        r"\bchief\s+of\s+staff\b", r"\bfounder\b", r"\bexecutive\s+assistant\b", 
+        r"\bgeneral\s+manager\b", r"\bceo\b", r"\bcoo\b", r"\bvp\b", 
+        r"\bdirector\b", r"\bpresident\b"
+    ]):
+        return "Chief of Staff / Founder's Office"
+
+    # If role_cat is provided and is a valid canonical role (excluding legacy Business Analyst / Strategy)
+    if role_cat and role_cat in ROLE_TAXONOMY_MAP and role_cat != "Business Analyst / Strategy":
+        return role_cat
+
+    # Final intelligent fallback: Operations / Supply Chain
+    return "Operations / Supply Chain"
 
 def generate_job_tags(
     title: str,

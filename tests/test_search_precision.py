@@ -23,7 +23,15 @@ def test_taxonomy_classification():
         ("Talent Acquisition Partner", "Human Resources / Recruiter"),
         ("Operations Associate", "Operations / Supply Chain"),
         ("Paralegal", "Legal / Compliance Specialist"),
-        ("Senior Software Engineer", "Software Engineer")
+        ("Senior Software Engineer", "Software Engineer"),
+        ("Teaching Internship", "Education / Teaching"),
+        ("Java Development Internship", "Backend Engineer"),
+        ("Python Development Internship", "Backend Engineer"),
+        ("Business Analyst", "Business Analyst"),
+        ("Senior Business Systems Analyst", "Business Analyst"),
+        ("Staff Nurse", "Healthcare / Medical Specialist"),
+        ("Cardiologist", "Healthcare / Medical Specialist"),
+        ("Senior Strategy Consultant", "Strategy / Management Consultant")
     ]
     for title, expected in cases:
         assert classify_job_canonical_role(title) == expected, f"Failed for {title}"
@@ -64,6 +72,41 @@ def test_software_engineer_search_precision(search_service):
         t_lower = j["title"].lower()
         for d in disallowed:
             assert d not in t_lower, f"Irrelevant job found in Software Engineer search: {j['title']}"
+
+def test_business_analyst_search_precision(search_service):
+    res = search_service.search_jobs("role", "Business Analyst", page_size=50)
+    assert res["total_count"] > 0
+    disallowed = [
+        "teaching", "teacher", "tutor", "professor", "faculty", "lecturer",
+        "nurse", "nursing", "doctor", "surgeon", "hospital", "clinical",
+        "telecaller", "telecalling", "telesales",
+        "java development", "python development", "civil engineer", "mechanical engineer"
+    ]
+    for j in res["results"][:30]:
+        t_lower = j["title"].lower()
+        r_lower = j["role_name"].lower()
+        for d in disallowed:
+            assert d not in t_lower, f"Incompatible job found in Business Analyst search: {j['title']}"
+        assert any(k in t_lower or k in r_lower for k in ["analyst", "analysis", "business", "functional", "systems"])
+
+def test_100_percent_database_role_coverage():
+    from app.services.ats_service import ROLE_TAXONOMY_MAP
+    import sqlite3
+    conn = sqlite3.connect("data/jobs_portal.db")
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM jobs WHERE is_active = 1")
+    total_active = cur.fetchone()[0]
+    assert total_active > 0
+
+    cur.execute("SELECT DISTINCT role_category FROM jobs WHERE is_active = 1")
+    active_roles = [r[0] for r in cur.fetchall()]
+    for r in active_roles:
+        assert r in ROLE_TAXONOMY_MAP, f"Role category '{r}' is not in ROLE_TAXONOMY_MAP!"
+
+    cur.execute(f"SELECT COUNT(*) FROM jobs WHERE is_active = 1 AND role_category IN ({','.join(['?']*len(ROLE_TAXONOMY_MAP))})", list(ROLE_TAXONOMY_MAP.keys()))
+    covered = cur.fetchone()[0]
+    conn.close()
+    assert covered == total_active, f"Coverage must be 100%: covered={covered}, total={total_active}"
 
 def test_redis_kill_switch_search_parity(search_service):
     from app.database import set_redis_kill_switch

@@ -260,10 +260,41 @@ FIXED_ROLES = [
         ]
     },
     {
-        "role": "Business Analyst / Strategy",
+        "role": "Business Analyst",
         "synonyms": [
-            "business analyst", "strategy analyst", "management consultant", "operations analyst", 
-            "business operations", "bizops", "strategy associate", "commercial analyst"
+            "business analyst", "technical business analyst", "functional analyst", 
+            "it business analyst", "senior business analyst", "lead business analyst", "business analysis",
+            "business systems analyst", "requirements analyst", "process analyst", "systems analyst"
+        ]
+    },
+    {
+        "role": "Strategy / Management Consultant",
+        "synonyms": [
+            "strategy analyst", "management consultant", "corporate strategy", "strategic planning", 
+            "business operations analyst", "consulting analyst", "strategy associate", "bizops analyst",
+            "strategy consultant", "bizops"
+        ]
+    },
+    {
+        "role": "Education / Teaching",
+        "synonyms": [
+            "teacher", "teaching", "tutor", "professor", "lecturer", "faculty", 
+            "instructor", "curriculum developer", "academic counselor", "educator", "trainer"
+        ]
+    },
+    {
+        "role": "Healthcare / Medical Specialist",
+        "synonyms": [
+            "doctor", "surgeon", "physician", "nurse", "staff nurse", "medical officer", 
+            "pharmacist", "clinical specialist", "pathologist", "radiologist", "therapist", "dentist"
+        ]
+    },
+    {
+        "role": "Traditional / Core Engineering",
+        "synonyms": [
+            "mechanical engineer", "civil engineer", "chemical engineer", "materials engineer", 
+            "project engineer", "structural engineer", "electrical design engineer", "industrial engineer", 
+            "core engineering", "process engineer", "manufacturing engineer"
         ]
     },
     {
@@ -353,13 +384,7 @@ FIXED_ROLES = [
             "network security engineer", "telecom engineer", "infrastructure network", "network specialist"
         ]
     },
-    {
-        "role": "Business Analyst",
-        "synonyms": [
-            "business analyst", "technical business analyst", "functional analyst", 
-            "it business analyst", "senior business analyst", "lead business analyst", "business analysis"
-        ]
-    },
+
     {
         "role": "Scrum Master / Agile Coach",
         "synonyms": [
@@ -558,6 +583,26 @@ def is_incompatible_role_match(query: str, title: str, role_cat: str = "") -> bo
         if has_non_sw and not has_sw_override:
             return True
         if role_cat in ("Traditional / Core Engineering", "Technical Support / IT", "Network Engineer", "Hardware Engineer", "Hardware / Embedded Engineer") and not has_sw_override:
+            return True
+
+    # 5. Business Analyst queries - strictly disqualify teaching, medical, telecalling, and unrelated engineering roles
+    if any(k in q_norm for k in ["business analyst", "business analysis", "functional analyst", "business systems analyst"]):
+        has_ba = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in [
+            "business analyst", "business analysis", "functional analyst", "technical business analyst",
+            "it business analyst", "requirements analyst", "systems analyst", "process analyst", "business systems analyst"
+        ])
+        incompatible_terms = [
+            "teaching", "teacher", "tutor", "professor", "faculty", "lecturer",
+            "medical", "nurse", "nursing", "doctor", "surgeon", "clinical", "hospital",
+            "telecaller", "telecalling", "telesales",
+            "java developer", "java development", "python developer", "python development",
+            "full stack", "fullstack", "backend developer", "frontend developer",
+            "civil engineer", "mechanical engineer", "chemical engineer"
+        ]
+        has_incompatible = any(re.search(rf"\b{re.escape(k)}\b", t_lower) for k in incompatible_terms)
+        if has_incompatible and not has_ba:
+            return True
+        if role_cat in ("Education / Teaching", "Healthcare / Medical Specialist", "Backend Engineer", "Frontend Engineer", "Full Stack Engineer", "Traditional / Core Engineering", "QA / SDET", "DevOps / Cloud Engineer") and not has_ba:
             return True
 
     return False
