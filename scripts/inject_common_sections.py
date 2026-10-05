@@ -1,79 +1,94 @@
 #!/usr/bin/env python3
 import glob
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
 COMMON_CSS = """
-    /* ══ DIRECT APPLY GUARANTEE BANNER ══ */
+    /* ══ DIRECT APPLY GUARANTEE BANNER (CENTERED & CONCISE) ══ */
     .direct-apply-guarantee-banner {
-      background: linear-gradient(135deg, #F0FDF4 0%, #EFF6FF 100%);
-      border: 1.5px solid #BBF7D0;
-      border-radius: 16px;
-      padding: 14px 20px;
-      margin: 20px auto 16px;
-      max-width: 1060px;
+      background: linear-gradient(135deg, rgba(236,253,245,0.92) 0%, rgba(240,249,255,0.92) 100%);
+      border: 1.5px solid #A7F3D0;
+      border-radius: 99px;
+      padding: 7px 18px;
+      margin: 10px auto 16px;
+      max-width: 880px;
+      width: calc(100% - 24px);
       box-sizing: border-box;
       display: flex;
+      justify-content: center;
       align-items: center;
-      gap: 14px;
-      box-shadow: 0 2px 10px rgba(16, 185, 129, 0.05);
+      box-shadow: 0 1px 4px rgba(16, 185, 129, 0.06);
     }
-    .guarantee-badge {
+    .guarantee-inner {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      text-align: center;
+    }
+    .guarantee-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
       background: #FFFFFF;
-      border: 1px solid #86EFAC;
+      border: 1px solid #6EE7B7;
       color: #065F46;
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 800;
-      padding: 5px 12px;
+      padding: 3px 10px;
       border-radius: 99px;
       white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
       flex-shrink: 0;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
     .guarantee-text {
-      font-size: 13.5px;
+      font-size: 13px;
+      font-weight: 600;
       color: #1E293B;
-      line-height: 1.55;
+      line-height: 1.4;
+      text-align: center;
       margin: 0;
-    }
-    .guarantee-text strong {
-      color: #0F172A;
-      font-weight: 700;
     }
     @media (max-width: 640px) {
       .direct-apply-guarantee-banner {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-        padding: 12px 14px;
+        border-radius: 12px;
+        padding: 8px 12px;
+        margin: 8px auto 14px;
+        width: calc(100% - 16px);
       }
-      .guarantee-text { font-size: 12.5px; }
+      .guarantee-text { font-size: 12px; }
     }
 
-    /* ══ ROLES HORIZONTAL BAND ══ */
-    .roles-band-container {
+    /* ══ POPULAR ROLES MOVING HEADLINE TICKER ══ */
+    .roles-headline-ticker {
       max-width: 1060px;
-      margin: 0 auto 20px;
-      padding: 0 4px;
-      box-sizing: border-box;
+      margin: 0 auto 16px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 99px;
+      padding: 4px 6px 4px 12px;
+      box-shadow: 0 1px 4px rgba(15,23,42,0.03);
       overflow: hidden;
+      box-sizing: border-box;
+      width: calc(100% - 24px);
     }
-    .roles-band-label {
+    .roles-ticker-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      font-size: 12.5px;
-      font-weight: 750;
-      color: #475569;
+      font-size: 12px;
+      font-weight: 800;
+      color: #334155;
       white-space: nowrap;
       flex-shrink: 0;
+      padding-right: 8px;
+      border-right: 1.5px solid #E2E8F0;
     }
     .pulse-green-dot {
       width: 8px;
@@ -87,33 +102,47 @@ COMMON_CSS = """
       0%, 100% { transform: scale(1); opacity: 1; }
       50% { transform: scale(1.3); opacity: 0.6; }
     }
-    .roles-band-track {
+    .roles-ticker-viewport {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 16px), transparent);
+    }
+    .roles-ticker-track {
+      display: flex;
+      width: max-content;
+      animation: rolesHeadlineMarquee 42s linear infinite;
+    }
+    .roles-ticker-track:hover {
+      animation-play-state: paused;
+    }
+    .roles-ticker-group {
       display: flex;
       align-items: center;
       gap: 8px;
-      overflow-x: auto;
-      scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-      padding: 4px 2px;
-      flex: 1;
+      padding-right: 8px;
+      flex-shrink: 0;
     }
-    .roles-band-track::-webkit-scrollbar { display: none; }
+    @keyframes rolesHeadlineMarquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
     .role-band-chip {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: #FFFFFF;
+      background: #F8FAFC;
       border: 1px solid #E2E8F0;
       color: #1E293B;
-      padding: 6px 13px;
+      padding: 5px 12px;
       border-radius: 99px;
-      font-size: 12.5px;
+      font-size: 12px;
       font-weight: 600;
       white-space: nowrap;
       cursor: pointer;
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
       user-select: none;
       text-decoration: none;
     }
@@ -121,15 +150,14 @@ COMMON_CSS = """
       border-color: #818CF8;
       background: #EEF2FF;
       color: #3730A3;
-      transform: translateY(-1.5px);
-      box-shadow: 0 3px 8px rgba(99, 102, 241, 0.15);
+      transform: translateY(-1px);
     }
     .chip-count {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 750;
       color: #059669;
       background: #ECFDF5;
-      padding: 1px 6px;
+      padding: 1px 5px;
       border-radius: 99px;
       border: 1px solid #A7F3D0;
     }
@@ -147,12 +175,24 @@ COMMON_CSS = """
       background: #4338CA;
       color: #FFFFFF;
     }
+    @media (max-width: 640px) {
+      .roles-headline-ticker {
+        border-radius: 12px;
+        padding: 4px 6px;
+        margin: 0 auto 14px;
+        width: calc(100% - 16px);
+      }
+      .roles-ticker-badge {
+        font-size: 11px;
+        padding-right: 6px;
+      }
+    }
 
     /* ══ ANIMATED WORD CLOUD ══ */
     .word-cloud-section {
       max-width: 1060px;
-      margin: 36px auto;
-      padding: 26px 20px;
+      margin: 24px auto;
+      padding: 24px 20px;
       background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%);
       border: 1px solid #E2E8F0;
       border-radius: 20px;
@@ -160,9 +200,10 @@ COMMON_CSS = """
       text-align: center;
       overflow: hidden;
       box-sizing: border-box;
+      width: calc(100% - 24px);
     }
     .word-cloud-header {
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .word-cloud-badge {
       display: inline-flex;
@@ -185,7 +226,7 @@ COMMON_CSS = """
       letter-spacing: -0.02em;
     }
     .word-cloud-subtitle {
-      font-size: 13.5px;
+      font-size: 13px;
       color: #64748B;
       max-width: 600px;
       margin: 0 auto;
@@ -194,9 +235,12 @@ COMMON_CSS = """
       display: flex;
       flex-direction: column;
       gap: 12px;
-      margin-top: 18px;
+      margin-top: 16px;
       overflow: hidden;
       position: relative;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .word-cloud-canvas::before, .word-cloud-canvas::after {
       content: "";
@@ -244,22 +288,22 @@ COMMON_CSS = """
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 7px 15px;
+      padding: 6px 14px;
       border-radius: 99px;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 700;
       background: #FFFFFF;
       border: 1px solid #E2E8F0;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
       transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       user-select: none;
       flex-shrink: 0;
       text-decoration: none;
     }
     .wc-tag:hover {
-      transform: translateY(-2px) scale(1.04);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.09);
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
     .wc-glow-blue { color: #1D4ED8; border-color: #BFDBFE; background: #EFF6FF; }
     .wc-glow-indigo { color: #4338CA; border-color: #C7D2FE; background: #EEF2FF; }
@@ -270,57 +314,78 @@ COMMON_CSS = """
     .wc-glow-cyan { color: #0E7490; border-color: #A5F3FC; background: #ECFEFF; }
     .wc-ats {
       font-size: 10px;
-      padding: 2px 5px;
+      padding: 1px 5px;
       border-radius: 4px;
       background: rgba(0,0,0,0.06);
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.03em;
     }
+    @media (max-width: 680px) {
+      .word-cloud-section {
+        margin: 18px auto;
+        padding: 18px 12px;
+        border-radius: 16px;
+        width: calc(100% - 16px);
+      }
+      .word-cloud-title { font-size: 18px; }
+    }
     @media print {
-      .direct-apply-guarantee-banner, .roles-band-container, .word-cloud-section {
+      .direct-apply-guarantee-banner, .roles-headline-ticker, .word-cloud-section {
         display: none !important;
       }
     }
 """
 
-BANNER_AND_ROLES_HTML = """
-  <!-- Direct Apply Guarantee Banner -->
+BANNER_AND_ROLES_HTML = """  <!-- Direct Apply Guarantee Banner (Trust & No Intermediaries) -->
   <div class="direct-apply-guarantee-banner">
-    <div class="guarantee-badge">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-      <span>Direct Company Applications</span>
+    <div class="guarantee-inner">
+      <span class="guarantee-pill"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Direct ATS Apply</span>
+      <span class="guarantee-text">Apply directly on official company career portals &bull; 100% verified links with zero recruiter spam &amp; ad walls</span>
     </div>
-    <p class="guarantee-text">
-      Unlike traditional job aggregators that redirect you through spammy forms, ad walls, or third-party recruiters, <strong>CorporateGuild provides verified direct links to apply on official company career portals and ATS pages in one place.</strong>
-    </p>
   </div>
 
-  <!-- Horizontal Band for Job Roles with Count of Jobs -->
-  <div class="roles-band-container" aria-label="Browse Jobs by Role">
-    <div class="roles-band-label">
+  <!-- Popular Roles Moving Headline Ticker -->
+  <div class="roles-headline-ticker" aria-label="Popular Roles Ticker">
+    <div class="roles-ticker-badge">
       <span class="pulse-green-dot"></span>
       <span>Popular Roles:</span>
     </div>
-    <div class="roles-band-track" id="rolesBandTrack">
-      <a href="/jobs.html?role=Software%20Engineer" class="role-band-chip">💻 Software Engineer <span class="chip-count">14.2k</span></a>
-      <a href="/jobs.html?role=Full%20Stack%20Developer" class="role-band-chip">🚀 Full Stack Developer <span class="chip-count">6.8k</span></a>
-      <a href="/jobs.html?role=AI%20%2F%20Machine%20Learning%20Engineer" class="role-band-chip">🤖 AI &amp; ML Engineer <span class="chip-count">3.4k</span></a>
-      <a href="/jobs.html?role=DevOps%20%2F%20Cloud%20Engineer" class="role-band-chip">☁️ DevOps &amp; Cloud <span class="chip-count">4.1k</span></a>
-      <a href="/jobs.html?role=Data%20Scientist" class="role-band-chip">📊 Data Scientist <span class="chip-count">3.9k</span></a>
-      <a href="/jobs.html?role=Product%20Manager" class="role-band-chip">💼 Product Manager <span class="chip-count">1.8k</span></a>
-      <a href="/jobs.html?role=Cybersecurity%20Engineer" class="role-band-chip">🛡️ Cybersecurity <span class="chip-count">1.2k</span></a>
-      <a href="/jobs.html?role=UI%2FUX%20Designer" class="role-band-chip">🎨 UI/UX Design <span class="chip-count">980</span></a>
-      <a href="/jobs.html?role=Backend%20Developer" class="role-band-chip">⚙️ Backend Developer <span class="chip-count">5.2k</span></a>
-      <a href="/jobs.html?role=Frontend%20Developer" class="role-band-chip">✨ Frontend Developer <span class="chip-count">4.6k</span></a>
-      <a href="/jobs.html?role=Mobile%20Engineer" class="role-band-chip">📱 Mobile Developer <span class="chip-count">1.6k</span></a>
-      <a href="/jobs.html" class="role-band-chip chip-all">🌐 Browse All Jobs <span class="chip-count">26k+</span></a>
+    <div class="roles-ticker-viewport">
+      <div class="roles-ticker-track">
+        <div class="roles-ticker-group">
+          <a href="/jobs.html?role=Software%20Engineer" class="role-band-chip">💻 Software Engineer <span class="chip-count">14.2k</span></a>
+          <a href="/jobs.html?role=Full%20Stack%20Developer" class="role-band-chip">🚀 Full Stack Developer <span class="chip-count">6.8k</span></a>
+          <a href="/jobs.html?role=AI%20%2F%20Machine%20Learning%20Engineer" class="role-band-chip">🤖 AI &amp; ML Engineer <span class="chip-count">3.4k</span></a>
+          <a href="/jobs.html?role=DevOps%20%2F%20Cloud%20Engineer" class="role-band-chip">☁️ DevOps &amp; Cloud <span class="chip-count">4.1k</span></a>
+          <a href="/jobs.html?role=Data%20Scientist" class="role-band-chip">📊 Data Scientist <span class="chip-count">3.9k</span></a>
+          <a href="/jobs.html?role=Product%20Manager" class="role-band-chip">💼 Product Manager <span class="chip-count">1.8k</span></a>
+          <a href="/jobs.html?role=Cybersecurity%20Engineer" class="role-band-chip">🛡️ Cybersecurity <span class="chip-count">1.2k</span></a>
+          <a href="/jobs.html?role=UI%2FUX%20Designer" class="role-band-chip">🎨 UI/UX Design <span class="chip-count">980</span></a>
+          <a href="/jobs.html?role=Backend%20Developer" class="role-band-chip">⚙️ Backend Developer <span class="chip-count">5.2k</span></a>
+          <a href="/jobs.html?role=Frontend%20Developer" class="role-band-chip">✨ Frontend Developer <span class="chip-count">4.6k</span></a>
+          <a href="/jobs.html?role=Mobile%20Engineer" class="role-band-chip">📱 Mobile Developer <span class="chip-count">1.6k</span></a>
+          <a href="/jobs.html" class="role-band-chip chip-all">🌐 Browse All Jobs <span class="chip-count">26k+</span></a>
+        </div>
+        <div class="roles-ticker-group" aria-hidden="true">
+          <a href="/jobs.html?role=Software%20Engineer" class="role-band-chip">💻 Software Engineer <span class="chip-count">14.2k</span></a>
+          <a href="/jobs.html?role=Full%20Stack%20Developer" class="role-band-chip">🚀 Full Stack Developer <span class="chip-count">6.8k</span></a>
+          <a href="/jobs.html?role=AI%20%2F%20Machine%20Learning%20Engineer" class="role-band-chip">🤖 AI &amp; ML Engineer <span class="chip-count">3.4k</span></a>
+          <a href="/jobs.html?role=DevOps%20%2F%20Cloud%20Engineer" class="role-band-chip">☁️ DevOps &amp; Cloud <span class="chip-count">4.1k</span></a>
+          <a href="/jobs.html?role=Data%20Scientist" class="role-band-chip">📊 Data Scientist <span class="chip-count">3.9k</span></a>
+          <a href="/jobs.html?role=Product%20Manager" class="role-band-chip">💼 Product Manager <span class="chip-count">1.8k</span></a>
+          <a href="/jobs.html?role=Cybersecurity%20Engineer" class="role-band-chip">🛡️ Cybersecurity <span class="chip-count">1.2k</span></a>
+          <a href="/jobs.html?role=UI%2FUX%20Designer" class="role-band-chip">🎨 UI/UX Design <span class="chip-count">980</span></a>
+          <a href="/jobs.html?role=Backend%20Developer" class="role-band-chip">⚙️ Backend Developer <span class="chip-count">5.2k</span></a>
+          <a href="/jobs.html?role=Frontend%20Developer" class="role-band-chip">✨ Frontend Developer <span class="chip-count">4.6k</span></a>
+          <a href="/jobs.html?role=Mobile%20Engineer" class="role-band-chip">📱 Mobile Developer <span class="chip-count">1.6k</span></a>
+          <a href="/jobs.html" class="role-band-chip chip-all">🌐 Browse All Jobs <span class="chip-count">26k+</span></a>
+        </div>
+      </div>
     </div>
-  </div>
-"""
+  </div>"""
 
-WORD_CLOUD_HTML = """
-  <!-- Animated Word Cloud -->
+WORD_CLOUD_HTML = """  <!-- Animated Word Cloud -->
   <section class="word-cloud-section" aria-label="Verified Job Sources and Roles Cloud">
     <div class="word-cloud-header">
       <div class="word-cloud-badge">
@@ -356,22 +421,33 @@ WORD_CLOUD_HTML = """
         <a href="/jobs.html?role=Cybersecurity%20Engineer" class="wc-tag wc-role wc-glow-blue">🔒 DevSecOps Lead</a>
       </div>
     </div>
-  </section>
-"""
+  </section>"""
+
 
 def process_file(filepath):
     path = Path(filepath)
     if not path.exists():
         return
     content = path.read_text(encoding="utf-8")
-    
-    # 1. Add CSS before </style> if not present
-    if "/* ══ DIRECT APPLY GUARANTEE BANNER ══ */" not in content:
+
+    # 1. Update or inject CSS
+    if "/* ══ DIRECT APPLY GUARANTEE BANNER" in content:
+        content = re.sub(
+            r'/\*\s*══\s*DIRECT APPLY GUARANTEE BANNER[\s\S]*?(?=@media print[\s\S]*?\}[\s\S]*?\n\s*\*/|\*/|\n\s*</style>)',
+            COMMON_CSS.strip() + "\n",
+            content
+        )
+    else:
         content = content.replace("</style>", COMMON_CSS + "\n</style>", 1)
-        
-    # 2. Add BANNER_AND_ROLES_HTML and WORD_CLOUD_HTML
-    if "direct-apply-guarantee-banner" not in content:
-        # Place before footer
+
+    # 2. Update existing banner and roles or insert new ones
+    if "direct-apply-guarantee-banner" in content:
+        content = re.sub(
+            r'<!--\s*Direct Apply Guarantee Banner[\s\S]*?<!--\s*Animated Word Cloud',
+            BANNER_AND_ROLES_HTML + "\n\n  <!-- Animated Word Cloud",
+            content
+        )
+    else:
         if '<footer class="site-footer">' in content:
             content = content.replace(
                 '<footer class="site-footer">',
@@ -384,9 +460,13 @@ def process_file(filepath):
                 BANNER_AND_ROLES_HTML + "\n" + WORD_CLOUD_HTML + "\n" + '</footer>',
                 1
             )
-            
+
+    # Ensure overflow-x hidden on html, body
+    if "overflow-x: hidden" not in content[:2000]:
+        content = content.replace("body {", "html, body { max-width: 100%; overflow-x: hidden; position: relative; }\n    body {", 1)
+
     path.write_text(content, encoding="utf-8")
-    print(f"Injected components into {filepath}")
+
 
 if __name__ == "__main__":
     targets = [
@@ -398,7 +478,7 @@ if __name__ == "__main__":
     ]
     for t in targets:
         process_file(ROOT / t)
-        
+
     job_articles = glob.glob(str(ROOT / "frontend/jobs/*.html"))
     print(f"Processing {len(job_articles)} job articles...")
     for j in job_articles:
